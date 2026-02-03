@@ -15,7 +15,7 @@ class HoleScore(BaseModel):
     fairway_hit: Optional[bool] = None
     green_in_regulation: Optional[bool] = None
     penalties: int = Field(0, ge=0, le=5)
-    hole: Optional["Hole"] = None
+    hole: Optional[Hole] = None
 
     @model_validator(mode='after')
     def validate_score_consistency(self):
