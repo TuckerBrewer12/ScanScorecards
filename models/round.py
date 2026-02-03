@@ -1,21 +1,18 @@
 from datetime import datetime
-from pydantic import BaseModel, ConfigDict, Field, ValidationError
-from typing import Any, List, Optional, TYPE_CHECKING
+from pydantic import Field
+from typing import List, Optional
 
-if TYPE_CHECKING:
-    from .course import Course
-    from .hole_score import HoleScore
-    from .tee import Tee
+from .base import BaseGolfModel
+from .course import Course
+from .hole_score import HoleScore
+from .tee import Tee
 
 
-class Round(BaseModel):
+class Round(BaseGolfModel):
     """Represents a round of golf played by a user."""
-    model_config = ConfigDict(validate_assignment=True)
-
     id: Optional[str] = None
-    user_id: Optional[str] = None
     course: Optional[Course] = None
-    tee_color: Optional[str] = None
+    tee_box: Optional[str] = None
     date: Optional[datetime] = None
     hole_scores: List[HoleScore] = Field(default_factory=list)
     weather_conditions: Optional[str] = None
@@ -25,10 +22,10 @@ class Round(BaseModel):
     total_putts: Optional[int] = None
     total_gir: Optional[int] = None
 
-    def get_tee(self) -> Optional["Tee"]:
+    def get_tee(self) -> Optional[Tee]:
         """Get the tee used for this round."""
-        if self.course and self.tee_color:
-            return self.course.get_tee(self.tee_color)
+        if self.course and self.tee_box:
+            return self.course.get_tee(self.tee_box)
         return None
 
     def get_total_putts(self) -> Optional[int]:
@@ -52,16 +49,16 @@ class Round(BaseModel):
         return sum(strokes) if strokes else None
 
     def calculate_front_nine(self) -> Optional[int]:
-        """Calculate total strokes for holes 1-9."""
-        front = [s.strokes for s in self.hole_scores
-                 if s.hole_number and 1 <= s.hole_number <= 9 and s.strokes is not None]
-        return sum(front) if front else None
+        """Calculate total strokes for holes 1-9. Assumes hole_scores in order."""
+        front = self.hole_scores[:9]
+        strokes = [s.strokes for s in front if s.strokes is not None]
+        return sum(strokes) if strokes else None
 
     def calculate_back_nine(self) -> Optional[int]:
-        """Calculate total strokes for holes 10-18."""
-        back = [s.strokes for s in self.hole_scores
-                if s.hole_number and 10 <= s.hole_number <= 18 and s.strokes is not None]
-        return sum(back) if back else None
+        """Calculate total strokes for holes 10-18. Assumes hole_scores in order."""
+        back = self.hole_scores[9:18]
+        strokes = [s.strokes for s in back if s.strokes is not None]
+        return sum(strokes) if strokes else None
 
     def is_complete(self) -> bool:
         """Check if all holes have scores."""
@@ -71,17 +68,41 @@ class Round(BaseModel):
         valid_scores = [s for s in self.hole_scores if s.strokes is not None]
         return len(valid_scores) == expected
 
-    def update_field(self, field_name: str, value: Any) -> Optional[str]:
-        """Update a field with user correction. Returns error message if validation fails."""
-        try:
-            setattr(self, field_name, value)
-            return None
-        except ValidationError as e:
-            return e.errors()[0]['msg']
-
-    def get_hole_score(self, hole_number: int) -> Optional["HoleScore"]:
-        """Get score for a specific hole."""
-        for score in self.hole_scores:
-            if score.hole_number == hole_number:
-                return score
+    def get_hole_score(self, hole_number: int) -> Optional[HoleScore]:
+        """Get score for a specific hole. Assumes hole_scores in order."""
+        if 1 <= hole_number <= len(self.hole_scores):
+            return self.hole_scores[hole_number - 1]
         return None
+
+    def get_hole_par(self, hole_number: int) -> Optional[int]:
+        """Get par for a specific hole from course."""
+        if self.course:
+            hole = self.course.get_hole(hole_number)
+            return hole.par if hole else None
+        return None
+
+    def score_to_par(self, hole_number: int) -> Optional[int]:
+        """Get score relative to par for a specific hole."""
+        score = self.get_hole_score(hole_number)
+        par = self.get_hole_par(hole_number)
+        if score and par:
+            return score.to_par(par)
+        return None
+
+    def get_score_type(self, hole_number: int) -> Optional[str]:
+        """Get score name (eagle, birdie, par, bogey, etc.) for a hole."""
+        score = self.get_hole_score(hole_number)
+        par = self.get_hole_par(hole_number)
+        if score and par:
+            return score.get_score_type(par)
+        return None
+
+    def total_to_par(self) -> Optional[int]:
+        """Get total score relative to course par."""
+        total = self.calculate_total_score()
+        if total is None or not self.course:
+            return None
+        course_par = self.course.get_par()
+        if course_par is None:
+            return None
+        return total - course_par
