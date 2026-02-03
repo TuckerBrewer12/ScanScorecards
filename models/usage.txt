@@ -1,0 +1,99 @@
+GOLF SCORECARD MODELS - QUICK REFERENCE
+========================================
+
+IMPORTS
+-------
+from models import Course, Hole, Tee, HoleScore, Round, User
+
+
+CREATING A COURSE
+-----------------
+hole = Hole(number=1, par=4, handicap=7)
+
+tee = Tee(
+    color="blue",
+    slope_rating=128,
+    course_rating=72.5,
+    hole_yardages={1: 425, 2: 380, ...}
+)
+
+course = Course(
+    id="pebble-beach",
+    name="Pebble Beach",
+    location="Pebble Beach, CA",
+    par=72,  # or leave None to calculate from holes
+    holes=[hole1, hole2, ...],  # 18 Hole objects in order
+    tees=[tee1, tee2, ...]
+)
+
+# Access
+course.get_hole(5)           # returns Hole at position 5
+course.get_tee("blue")       # returns Tee by color
+course.get_par()             # returns direct par or calculates from holes
+course.front_nine_par        # calculated property
+course.back_nine_par         # calculated property
+
+
+CREATING A ROUND
+----------------
+score = HoleScore(
+    hole_number=1,
+    strokes=5,
+    putts=2,
+    fairway_hit=True,
+    green_in_regulation=False,
+    shots_to_green=3,
+    net_score=4  # after handicap strokes
+)
+
+round = Round(
+    id="round-123",
+    course=course,
+    tee_box="blue",
+    date=datetime.now(),
+    hole_scores=[score1, score2, ...],  # 18 HoleScore objects in order
+    total_putts=32,  # optional, can calculate from hole_scores
+    total_gir=8      # optional, can calculate from hole_scores
+)
+
+# Access
+round.get_tee()              # returns Tee from course by tee_box color
+round.get_hole_score(5)      # returns HoleScore at position 5
+round.calculate_total_score()
+round.calculate_front_nine()
+round.calculate_back_nine()
+round.total_to_par()         # total score vs course par
+round.score_to_par(5)        # score vs par for hole 5
+round.get_score_type(5)      # "birdie", "par", "bogey", etc.
+round.is_complete()          # True if all holes have strokes
+
+
+CREATING A USER
+---------------
+user = User(
+    id="user-123",
+    name="John Doe",
+    email="john@example.com",
+    handicap=12.5,
+    rounds=[round1, round2, ...]
+)
+
+
+UPDATING FIELDS (for scanner corrections)
+-----------------------------------------
+# All models inherit update_field() which validates on update
+error = course.update_field("par", 72)
+if error:
+    print(f"Invalid: {error}")
+
+# Direct assignment also validates (raises ValidationError)
+course.par = 72
+
+
+KEY POINTS
+----------
+- All fields are Optional for handling incomplete scanned data
+- Lists (holes, tees, hole_scores, rounds) are stored IN ORDER by hole number
+- Use get_xxx() methods for "direct value or calculate" pattern
+- Round connects HoleScores to Course for par-based calculations
+- HoleScore.get_score_type(par) needs par passed in from Round
