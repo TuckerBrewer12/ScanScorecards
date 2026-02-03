@@ -14,8 +14,8 @@ class Course(BaseModel):
     name: Optional[str] = None
     location: Optional[str] = None
     par: Optional[int] = Field(None, ge=54, le=80)
-    holes: List["Hole"] = Field(default_factory=list)
-    tees: List["Tee"] = Field(default_factory=list)
+    holes: List[Hole] = Field(default_factory=list)
+    tees: List[Tee] = Field(default_factory=list)
 
     def get_tee(self, color: str) -> Optional["Tee"]:
         """Get a tee by its color."""
