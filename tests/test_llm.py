@@ -406,7 +406,9 @@ class TestScorecardExtraction(unittest.TestCase):
             color="blue",
             slope_rating=135,
             course_rating=73.7,
-            hole_yardages={},
+            hole_yardages={1: 535, 2: 178, 3: 375, 4: 448, 5: 182, 6: 565, 
+                           7: 373, 8: 434, 9: 480, 10: 465, 11: 510, 12: 338, 
+                           13: 417, 14: 166, 15: 376, 16: 185, 17: 432, 18: 420},
         )
         member = Tee(
             color="member",
