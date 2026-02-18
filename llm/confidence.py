@@ -21,6 +21,7 @@ class FieldConfidence(BaseGolfModel):
     validation_flags: List[str] = Field(default_factory=list)
     final_confidence: float = Field(..., ge=0.0, le=1.0)
     level: ConfidenceLevel
+    source: str = "llm"  # "llm" or "database"
 
     @staticmethod
     def compute_final(llm_conf: float, val_conf: float) -> float:
