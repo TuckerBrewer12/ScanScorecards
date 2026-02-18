@@ -6,8 +6,9 @@ BEGIN;
 CREATE SCHEMA IF NOT EXISTS courses;
 CREATE SCHEMA IF NOT EXISTS users;
 
--- Extensions (for UUIDs)
+-- Extensions (for UUIDs and fuzzy text search)
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
 -- =============
 -- Auto-update updated_at on row modification
