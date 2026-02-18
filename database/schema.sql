@@ -1,5 +1,4 @@
 -- PostgreSQL schema aligned with Pydantic domain models
--- Includes multi-player scorecards via users.round_players.
 
 BEGIN;
 
@@ -9,6 +8,17 @@ CREATE SCHEMA IF NOT EXISTS users;
 
 -- Extensions (for UUIDs)
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- =============
+-- Auto-update updated_at on row modification
+-- =============
+CREATE OR REPLACE FUNCTION update_updated_at()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
 
 -- =============
 -- courses.courses
@@ -27,6 +37,10 @@ CREATE TABLE IF NOT EXISTS courses.courses (
 
 CREATE INDEX IF NOT EXISTS idx_courses_location ON courses.courses (location);
 CREATE INDEX IF NOT EXISTS idx_courses_name ON courses.courses (name);
+
+CREATE TRIGGER trg_courses_updated_at
+    BEFORE UPDATE ON courses.courses
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 
 -- =============
 -- courses.holes
@@ -54,7 +68,6 @@ CREATE TABLE IF NOT EXISTS courses.tees (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     course_id UUID NOT NULL REFERENCES courses.courses(id) ON DELETE CASCADE,
     color VARCHAR(50) NOT NULL,
-    total_yardage INTEGER CHECK (total_yardage BETWEEN 1500 AND 8000),
     slope_rating NUMERIC(4,1) CHECK (slope_rating BETWEEN 55 AND 155),
     course_rating NUMERIC(4,1) CHECK (course_rating BETWEEN 55 AND 85),
     created_at TIMESTAMP DEFAULT NOW(),
@@ -96,14 +109,18 @@ CREATE TABLE IF NOT EXISTS users.users (
 CREATE INDEX IF NOT EXISTS idx_users_email ON users.users (email);
 CREATE INDEX IF NOT EXISTS idx_users_home_course ON users.users (home_course_id);
 
+CREATE TRIGGER trg_users_updated_at
+    BEFORE UPDATE ON users.users
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
 -- =============
 -- users.rounds
 -- =============
 CREATE TABLE IF NOT EXISTS users.rounds (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID NOT NULL REFERENCES users.users(id) ON DELETE CASCADE,
-    course_id UUID NOT NULL REFERENCES courses.courses(id) ON DELETE RESTRICT,
-    tee_id UUID NOT NULL REFERENCES courses.tees(id) ON DELETE RESTRICT,
+    course_id UUID REFERENCES courses.courses(id) ON DELETE RESTRICT,
+    tee_id UUID REFERENCES courses.tees(id) ON DELETE RESTRICT,
     round_date DATE,
     total_score INTEGER CHECK (total_score BETWEEN 18 AND 200),
     adjusted_gross_score INTEGER CHECK (adjusted_gross_score BETWEEN 18 AND 200),
@@ -123,20 +140,9 @@ CREATE INDEX IF NOT EXISTS idx_rounds_user_date ON users.rounds (user_id, round_
 CREATE INDEX IF NOT EXISTS idx_rounds_differential ON users.rounds (score_differential)
     WHERE score_differential IS NOT NULL;
 
--- =============
--- users.round_players (multi-player scorecards)
--- =============
-CREATE TABLE IF NOT EXISTS users.round_players (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    round_id UUID NOT NULL REFERENCES users.rounds(id) ON DELETE CASCADE,
-    name VARCHAR(255) NOT NULL,
-    user_id UUID REFERENCES users.users(id) ON DELETE SET NULL,
-    created_at TIMESTAMP DEFAULT NOW(),
-    UNIQUE (round_id, name)
-);
-
-CREATE INDEX IF NOT EXISTS idx_round_players_round_id ON users.round_players (round_id);
-CREATE INDEX IF NOT EXISTS idx_round_players_user_id ON users.round_players (user_id);
+CREATE TRIGGER trg_rounds_updated_at
+    BEFORE UPDATE ON users.rounds
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 
 -- =============
 -- users.hole_scores
@@ -144,7 +150,6 @@ CREATE INDEX IF NOT EXISTS idx_round_players_user_id ON users.round_players (use
 CREATE TABLE IF NOT EXISTS users.hole_scores (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     round_id UUID NOT NULL REFERENCES users.rounds(id) ON DELETE CASCADE,
-    round_player_id UUID REFERENCES users.round_players(id) ON DELETE CASCADE,
     hole_id UUID NOT NULL REFERENCES courses.holes(id) ON DELETE RESTRICT,
     hole_number INTEGER NOT NULL CHECK (hole_number BETWEEN 1 AND 18),
     strokes INTEGER CHECK (strokes BETWEEN 1 AND 15),
@@ -155,7 +160,7 @@ CREATE TABLE IF NOT EXISTS users.hole_scores (
     green_in_regulation BOOLEAN,
     penalties INTEGER DEFAULT 0 CHECK (penalties BETWEEN 0 AND 5),
     created_at TIMESTAMP DEFAULT NOW(),
-    UNIQUE (round_id, round_player_id, hole_number)
+    UNIQUE (round_id, hole_number)
 );
 
 CREATE INDEX IF NOT EXISTS idx_hole_scores_round_id ON users.hole_scores (round_id);
