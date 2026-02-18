@@ -55,7 +55,7 @@ INSERT INTO courses.tees (id, course_id, color, slope_rating, course_rating) VAL
 
 -- Black tees
 INSERT INTO courses.tee_yardages (tee_id, hole_number, yardage) VALUES
-    ('00000000-0000-0000-0000-100000000001', 1,  523),
+    ('00000000-0000-0000-0000-100000000001', 1,  573),
     ('00000000-0000-0000-0000-100000000001', 2,  200),
     ('00000000-0000-0000-0000-100000000001', 3,  394),
     ('00000000-0000-0000-0000-100000000001', 4,  472),
