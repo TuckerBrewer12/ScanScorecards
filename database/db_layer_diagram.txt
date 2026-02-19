@@ -1,0 +1,55 @@
+
+  ┌─────────────────────────────────────────────────────┐
+  │                    Application                       │
+  │                                                     │
+  │   FastAPI (future)        scorecard_extractor.py    │
+  │        │                         │                  │
+  │        │ async                   │ sync             │
+  │        ▼                         ▼                  │
+  │   DatabaseManager         SyncCourseRepository      │
+  │        │                    Adapter                  │
+  │        │                         │                  │
+  └────────│─────────────────────────│──────────────────┘
+           │                         │
+           ▼                         ▼
+  ┌─────────────────────────────────────────────────────┐
+  │              DatabaseManager (facade)                │
+  │                                                     │
+  │   ┌──────────────┐ ┌────────────┐ ┌─────────────┐  │
+  │   │ CourseRepoDB  │ │ UserRepoDB │ │ RoundRepoDB │  │
+  │   │              │ │            │ │             │  │
+  │   │ • get_course │ │ • get_user │ │ • get_round │  │
+  │   │ • find_by_   │ │ • create   │ │ • create    │  │
+  │   │   name       │ │ • update   │ │ • upsert    │  │
+  │   │ • create     │ │ • delete   │ │   hole_score│  │
+  │   │ • update     │ │ • update_  │ │ • delete    │  │
+  │   │ • delete     │ │   handicap │ │ • save_scan │  │
+  │   │ • search     │ │            │ │             │  │
+  │   └──────────────┘ └────────────┘ └─────────────┘  │
+  │                                                     │
+  │   ┌─────────────────────────────────────────────┐   │
+  │   │            converters.py                     │   │
+  │   │   DB rows ←──────────────→ Pydantic models   │   │
+  │   └─────────────────────────────────────────────┘   │
+  │                                                     │
+  └──────────────────────┬──────────────────────────────┘
+                         │
+                         ▼
+  ┌─────────────────────────────────────────────────────┐
+  │          connection.py (asyncpg pool)                │
+  │                                                     │
+  └──────────────────────┬──────────────────────────────┘
+                         │
+                         ▼
+  ┌─────────────────────────────────────────────────────┐
+  │                   PostgreSQL                         │
+  │                                                     │
+  │   courses schema          │    users schema          │
+  │   ┌────────────┐          │    ┌────────────┐       │
+  │   │ courses    │          │    │ users      │       │
+  │   │ holes      │          │    │ rounds     │       │
+  │   │ tees       │          │    │ hole_scores│       │
+  │   │ tee_       │          │    │ scorecard_ │       │
+  │   │  yardages  │          │    │  scans     │       │
+  │   └────────────┘          │    └────────────┘       │
+  └─────────────────────────────────────────────────────┘

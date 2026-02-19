@@ -11,7 +11,7 @@ class Course(BaseGolfModel):
     id: Optional[str] = None
     name: Optional[str] = None
     location: Optional[str] = None
-    par: Optional[int] = Field(None, ge=54, le=80)  # can be directly inputted
+    par: Optional[int] = Field(None, ge=27, le=80)  # 27 for 9-hole, 80 for 18-hole
     holes: List[Hole] = Field(default_factory=list)
     tees: List[Tee] = Field(default_factory=list)
 
