@@ -1,0 +1,1847 @@
+[
+  {
+    "name": "Plantation Course at Kapalua",
+    "location": "Kapalua, Maui, HI",
+    "holes": [
+      {
+        "number": 1,
+        "par": 4,
+        "handicap": 9
+      },
+      {
+        "number": 2,
+        "par": 3,
+        "handicap": 17
+      },
+      {
+        "number": 3,
+        "par": 4,
+        "handicap": 11
+      },
+      {
+        "number": 4,
+        "par": 4,
+        "handicap": 7
+      },
+      {
+        "number": 5,
+        "par": 5,
+        "handicap": 5
+      },
+      {
+        "number": 6,
+        "par": 4,
+        "handicap": 3
+      },
+      {
+        "number": 7,
+        "par": 4,
+        "handicap": 13
+      },
+      {
+        "number": 8,
+        "par": 3,
+        "handicap": 15
+      },
+      {
+        "number": 9,
+        "par": 5,
+        "handicap": 1
+      },
+      {
+        "number": 10,
+        "par": 4,
+        "handicap": 10
+      },
+      {
+        "number": 11,
+        "par": 3,
+        "handicap": 18
+      },
+      {
+        "number": 12,
+        "par": 4,
+        "handicap": 6
+      },
+      {
+        "number": 13,
+        "par": 4,
+        "handicap": 12
+      },
+      {
+        "number": 14,
+        "par": 4,
+        "handicap": 8
+      },
+      {
+        "number": 15,
+        "par": 5,
+        "handicap": 2
+      },
+      {
+        "number": 16,
+        "par": 4,
+        "handicap": 14
+      },
+      {
+        "number": 17,
+        "par": 4,
+        "handicap": 4
+      },
+      {
+        "number": 18,
+        "par": 5,
+        "handicap": 16
+      }
+    ],
+    "tees": [
+      {
+        "color": "Tournament",
+        "slope_rating": 144,
+        "course_rating": 77.0,
+        "hole_yardages": {
+          "1": 520,
+          "2": 219,
+          "3": 424,
+          "4": 422,
+          "5": 526,
+          "6": 424,
+          "7": 522,
+          "8": 199,
+          "9": 550,
+          "10": 384,
+          "11": 161,
+          "12": 424,
+          "13": 407,
+          "14": 301,
+          "15": 541,
+          "16": 369,
+          "17": 550,
+          "18": 677
+        }
+      }
+    ]
+  },
+  {
+    "name": "Pebble Beach Golf Links",
+    "location": "Pebble Beach, CA",
+    "holes": [
+      {
+        "number": 1,
+        "par": 4,
+        "handicap": 8
+      },
+      {
+        "number": 2,
+        "par": 5,
+        "handicap": 10
+      },
+      {
+        "number": 3,
+        "par": 4,
+        "handicap": 12
+      },
+      {
+        "number": 4,
+        "par": 4,
+        "handicap": 16
+      },
+      {
+        "number": 5,
+        "par": 3,
+        "handicap": 14
+      },
+      {
+        "number": 6,
+        "par": 5,
+        "handicap": 2
+      },
+      {
+        "number": 7,
+        "par": 3,
+        "handicap": 18
+      },
+      {
+        "number": 8,
+        "par": 4,
+        "handicap": 6
+      },
+      {
+        "number": 9,
+        "par": 4,
+        "handicap": 4
+      },
+      {
+        "number": 10,
+        "par": 4,
+        "handicap": 7
+      },
+      {
+        "number": 11,
+        "par": 4,
+        "handicap": 5
+      },
+      {
+        "number": 12,
+        "par": 3,
+        "handicap": 17
+      },
+      {
+        "number": 13,
+        "par": 4,
+        "handicap": 9
+      },
+      {
+        "number": 14,
+        "par": 5,
+        "handicap": 1
+      },
+      {
+        "number": 15,
+        "par": 4,
+        "handicap": 13
+      },
+      {
+        "number": 16,
+        "par": 4,
+        "handicap": 11
+      },
+      {
+        "number": 17,
+        "par": 3,
+        "handicap": 15
+      },
+      {
+        "number": 18,
+        "par": 5,
+        "handicap": 3
+      }
+    ],
+    "tees": [
+      {
+        "color": "Tournament",
+        "slope_rating": 145,
+        "course_rating": 75.5,
+        "hole_yardages": {
+          "1": 380,
+          "2": 516,
+          "3": 404,
+          "4": 331,
+          "5": 195,
+          "6": 523,
+          "7": 106,
+          "8": 428,
+          "9": 504,
+          "10": 495,
+          "11": 390,
+          "12": 202,
+          "13": 445,
+          "14": 580,
+          "15": 397,
+          "16": 403,
+          "17": 208,
+          "18": 543
+        }
+      }
+    ]
+  },
+  {
+    "name": "Spyglass Hill Golf Course",
+    "location": "Pebble Beach, CA",
+    "holes": [
+      {
+        "number": 1,
+        "par": 5,
+        "handicap": 9
+      },
+      {
+        "number": 2,
+        "par": 4,
+        "handicap": 13
+      },
+      {
+        "number": 3,
+        "par": 3,
+        "handicap": 17
+      },
+      {
+        "number": 4,
+        "par": 4,
+        "handicap": 5
+      },
+      {
+        "number": 5,
+        "par": 3,
+        "handicap": 15
+      },
+      {
+        "number": 6,
+        "par": 4,
+        "handicap": 1
+      },
+      {
+        "number": 7,
+        "par": 5,
+        "handicap": 11
+      },
+      {
+        "number": 8,
+        "par": 4,
+        "handicap": 3
+      },
+      {
+        "number": 9,
+        "par": 4,
+        "handicap": 7
+      },
+      {
+        "number": 10,
+        "par": 4,
+        "handicap": 10
+      },
+      {
+        "number": 11,
+        "par": 5,
+        "handicap": 14
+      },
+      {
+        "number": 12,
+        "par": 3,
+        "handicap": 18
+      },
+      {
+        "number": 13,
+        "par": 4,
+        "handicap": 6
+      },
+      {
+        "number": 14,
+        "par": 5,
+        "handicap": 8
+      },
+      {
+        "number": 15,
+        "par": 3,
+        "handicap": 16
+      },
+      {
+        "number": 16,
+        "par": 4,
+        "handicap": 2
+      },
+      {
+        "number": 17,
+        "par": 4,
+        "handicap": 12
+      },
+      {
+        "number": 18,
+        "par": 4,
+        "handicap": 4
+      }
+    ],
+    "tees": [
+      {
+        "color": "Tournament",
+        "slope_rating": 147,
+        "course_rating": 75.8,
+        "hole_yardages": {
+          "1": 595,
+          "2": 349,
+          "3": 172,
+          "4": 370,
+          "5": 197,
+          "6": 446,
+          "7": 529,
+          "8": 399,
+          "9": 431,
+          "10": 407,
+          "11": 528,
+          "12": 178,
+          "13": 460,
+          "14": 560,
+          "15": 130,
+          "16": 476,
+          "17": 329,
+          "18": 408
+        }
+      }
+    ]
+  },
+  {
+    "name": "Riviera Country Club",
+    "location": "Pacific Palisades, CA",
+    "holes": [
+      {
+        "number": 1,
+        "par": 5,
+        "handicap": 17
+      },
+      {
+        "number": 2,
+        "par": 4,
+        "handicap": 1
+      },
+      {
+        "number": 3,
+        "par": 4,
+        "handicap": 5
+      },
+      {
+        "number": 4,
+        "par": 3,
+        "handicap": 7
+      },
+      {
+        "number": 5,
+        "par": 4,
+        "handicap": 3
+      },
+      {
+        "number": 6,
+        "par": 3,
+        "handicap": 13
+      },
+      {
+        "number": 7,
+        "par": 4,
+        "handicap": 11
+      },
+      {
+        "number": 8,
+        "par": 4,
+        "handicap": 9
+      },
+      {
+        "number": 9,
+        "par": 4,
+        "handicap": 15
+      },
+      {
+        "number": 10,
+        "par": 4,
+        "handicap": 16
+      },
+      {
+        "number": 11,
+        "par": 5,
+        "handicap": 12
+      },
+      {
+        "number": 12,
+        "par": 4,
+        "handicap": 2
+      },
+      {
+        "number": 13,
+        "par": 4,
+        "handicap": 8
+      },
+      {
+        "number": 14,
+        "par": 3,
+        "handicap": 14
+      },
+      {
+        "number": 15,
+        "par": 4,
+        "handicap": 6
+      },
+      {
+        "number": 16,
+        "par": 3,
+        "handicap": 18
+      },
+      {
+        "number": 17,
+        "par": 5,
+        "handicap": 10
+      },
+      {
+        "number": 18,
+        "par": 4,
+        "handicap": 4
+      }
+    ],
+    "tees": [
+      {
+        "color": "Tournament",
+        "slope_rating": 142,
+        "course_rating": 76.1,
+        "hole_yardages": {
+          "1": 503,
+          "2": 471,
+          "3": 434,
+          "4": 236,
+          "5": 434,
+          "6": 199,
+          "7": 408,
+          "8": 433,
+          "9": 458,
+          "10": 315,
+          "11": 583,
+          "12": 479,
+          "13": 459,
+          "14": 192,
+          "15": 487,
+          "16": 166,
+          "17": 590,
+          "18": 475
+        }
+      }
+    ]
+  },
+  {
+    "name": "Bay Hill Club & Lodge",
+    "location": "Orlando, FL",
+    "holes": [
+      {
+        "number": 1,
+        "par": 4,
+        "handicap": 7
+      },
+      {
+        "number": 2,
+        "par": 3,
+        "handicap": 15
+      },
+      {
+        "number": 3,
+        "par": 4,
+        "handicap": 5
+      },
+      {
+        "number": 4,
+        "par": 5,
+        "handicap": 13
+      },
+      {
+        "number": 5,
+        "par": 4,
+        "handicap": 9
+      },
+      {
+        "number": 6,
+        "par": 5,
+        "handicap": 3
+      },
+      {
+        "number": 7,
+        "par": 3,
+        "handicap": 17
+      },
+      {
+        "number": 8,
+        "par": 4,
+        "handicap": 1
+      },
+      {
+        "number": 9,
+        "par": 4,
+        "handicap": 11
+      },
+      {
+        "number": 10,
+        "par": 4,
+        "handicap": 8
+      },
+      {
+        "number": 11,
+        "par": 4,
+        "handicap": 2
+      },
+      {
+        "number": 12,
+        "par": 5,
+        "handicap": 12
+      },
+      {
+        "number": 13,
+        "par": 4,
+        "handicap": 6
+      },
+      {
+        "number": 14,
+        "par": 3,
+        "handicap": 16
+      },
+      {
+        "number": 15,
+        "par": 4,
+        "handicap": 4
+      },
+      {
+        "number": 16,
+        "par": 5,
+        "handicap": 10
+      },
+      {
+        "number": 17,
+        "par": 3,
+        "handicap": 18
+      },
+      {
+        "number": 18,
+        "par": 4,
+        "handicap": 14
+      }
+    ],
+    "tees": [
+      {
+        "color": "Tournament",
+        "slope_rating": 140,
+        "course_rating": 75.8,
+        "hole_yardages": {
+          "1": 461,
+          "2": 231,
+          "3": 434,
+          "4": 561,
+          "5": 390,
+          "6": 555,
+          "7": 199,
+          "8": 460,
+          "9": 474,
+          "10": 400,
+          "11": 438,
+          "12": 574,
+          "13": 370,
+          "14": 215,
+          "15": 429,
+          "16": 511,
+          "17": 221,
+          "18": 458
+        }
+      }
+    ]
+  },
+  {
+    "name": "TPC Sawgrass",
+    "location": "Ponte Vedra Beach, FL",
+    "holes": [
+      {
+        "number": 1,
+        "par": 4,
+        "handicap": 9
+      },
+      {
+        "number": 2,
+        "par": 5,
+        "handicap": 3
+      },
+      {
+        "number": 3,
+        "par": 3,
+        "handicap": 15
+      },
+      {
+        "number": 4,
+        "par": 4,
+        "handicap": 5
+      },
+      {
+        "number": 5,
+        "par": 4,
+        "handicap": 7
+      },
+      {
+        "number": 6,
+        "par": 4,
+        "handicap": 13
+      },
+      {
+        "number": 7,
+        "par": 4,
+        "handicap": 1
+      },
+      {
+        "number": 8,
+        "par": 3,
+        "handicap": 17
+      },
+      {
+        "number": 9,
+        "par": 5,
+        "handicap": 11
+      },
+      {
+        "number": 10,
+        "par": 4,
+        "handicap": 10
+      },
+      {
+        "number": 11,
+        "par": 5,
+        "handicap": 4
+      },
+      {
+        "number": 12,
+        "par": 4,
+        "handicap": 14
+      },
+      {
+        "number": 13,
+        "par": 3,
+        "handicap": 16
+      },
+      {
+        "number": 14,
+        "par": 4,
+        "handicap": 2
+      },
+      {
+        "number": 15,
+        "par": 4,
+        "handicap": 12
+      },
+      {
+        "number": 16,
+        "par": 5,
+        "handicap": 8
+      },
+      {
+        "number": 17,
+        "par": 3,
+        "handicap": 18
+      },
+      {
+        "number": 18,
+        "par": 4,
+        "handicap": 6
+      }
+    ],
+    "tees": [
+      {
+        "color": "Tournament",
+        "slope_rating": 155,
+        "course_rating": 76.4,
+        "hole_yardages": {
+          "1": 423,
+          "2": 532,
+          "3": 177,
+          "4": 384,
+          "5": 471,
+          "6": 393,
+          "7": 451,
+          "8": 237,
+          "9": 583,
+          "10": 424,
+          "11": 558,
+          "12": 302,
+          "13": 181,
+          "14": 481,
+          "15": 470,
+          "16": 523,
+          "17": 137,
+          "18": 462
+        }
+      }
+    ]
+  },
+  {
+    "name": "Augusta National Golf Club",
+    "location": "Augusta, GA",
+    "holes": [
+      {
+        "number": 1,
+        "par": 4,
+        "handicap": 6
+      },
+      {
+        "number": 2,
+        "par": 5,
+        "handicap": 13
+      },
+      {
+        "number": 3,
+        "par": 4,
+        "handicap": 11
+      },
+      {
+        "number": 4,
+        "par": 3,
+        "handicap": 15
+      },
+      {
+        "number": 5,
+        "par": 4,
+        "handicap": 1
+      },
+      {
+        "number": 6,
+        "par": 3,
+        "handicap": 17
+      },
+      {
+        "number": 7,
+        "par": 4,
+        "handicap": 7
+      },
+      {
+        "number": 8,
+        "par": 5,
+        "handicap": 9
+      },
+      {
+        "number": 9,
+        "par": 4,
+        "handicap": 3
+      },
+      {
+        "number": 10,
+        "par": 4,
+        "handicap": 2
+      },
+      {
+        "number": 11,
+        "par": 4,
+        "handicap": 4
+      },
+      {
+        "number": 12,
+        "par": 3,
+        "handicap": 18
+      },
+      {
+        "number": 13,
+        "par": 5,
+        "handicap": 12
+      },
+      {
+        "number": 14,
+        "par": 4,
+        "handicap": 8
+      },
+      {
+        "number": 15,
+        "par": 5,
+        "handicap": 14
+      },
+      {
+        "number": 16,
+        "par": 3,
+        "handicap": 16
+      },
+      {
+        "number": 17,
+        "par": 4,
+        "handicap": 10
+      },
+      {
+        "number": 18,
+        "par": 4,
+        "handicap": 5
+      }
+    ],
+    "tees": [
+      {
+        "color": "Tournament",
+        "slope_rating": 144,
+        "course_rating": 78.1,
+        "hole_yardages": {
+          "1": 445,
+          "2": 585,
+          "3": 350,
+          "4": 240,
+          "5": 495,
+          "6": 180,
+          "7": 450,
+          "8": 570,
+          "9": 460,
+          "10": 495,
+          "11": 520,
+          "12": 155,
+          "13": 510,
+          "14": 440,
+          "15": 550,
+          "16": 170,
+          "17": 440,
+          "18": 465
+        }
+      }
+    ]
+  },
+  {
+    "name": "TPC Craig Ranch",
+    "location": "McKinney, TX",
+    "holes": [
+      {
+        "number": 1,
+        "par": 4,
+        "handicap": 9
+      },
+      {
+        "number": 2,
+        "par": 4,
+        "handicap": 7
+      },
+      {
+        "number": 3,
+        "par": 4,
+        "handicap": 13
+      },
+      {
+        "number": 4,
+        "par": 3,
+        "handicap": 15
+      },
+      {
+        "number": 5,
+        "par": 5,
+        "handicap": 5
+      },
+      {
+        "number": 6,
+        "par": 4,
+        "handicap": 3
+      },
+      {
+        "number": 7,
+        "par": 3,
+        "handicap": 17
+      },
+      {
+        "number": 8,
+        "par": 4,
+        "handicap": 11
+      },
+      {
+        "number": 9,
+        "par": 5,
+        "handicap": 1
+      },
+      {
+        "number": 10,
+        "par": 4,
+        "handicap": 10
+      },
+      {
+        "number": 11,
+        "par": 4,
+        "handicap": 4
+      },
+      {
+        "number": 12,
+        "par": 5,
+        "handicap": 6
+      },
+      {
+        "number": 13,
+        "par": 4,
+        "handicap": 12
+      },
+      {
+        "number": 14,
+        "par": 4,
+        "handicap": 8
+      },
+      {
+        "number": 15,
+        "par": 3,
+        "handicap": 18
+      },
+      {
+        "number": 16,
+        "par": 4,
+        "handicap": 2
+      },
+      {
+        "number": 17,
+        "par": 3,
+        "handicap": 16
+      },
+      {
+        "number": 18,
+        "par": 5,
+        "handicap": 14
+      }
+    ],
+    "tees": [
+      {
+        "color": "Tournament",
+        "slope_rating": 140,
+        "course_rating": 75.3,
+        "hole_yardages": {
+          "1": 431,
+          "2": 466,
+          "3": 420,
+          "4": 219,
+          "5": 562,
+          "6": 361,
+          "7": 232,
+          "8": 482,
+          "9": 564,
+          "10": 471,
+          "11": 457,
+          "12": 547,
+          "13": 512,
+          "14": 330,
+          "15": 216,
+          "16": 493,
+          "17": 147,
+          "18": 552
+        }
+      }
+    ]
+  },
+  {
+    "name": "Quail Hollow Club",
+    "location": "Charlotte, NC",
+    "holes": [
+      {
+        "number": 1,
+        "par": 4,
+        "handicap": 9
+      },
+      {
+        "number": 2,
+        "par": 4,
+        "handicap": 7
+      },
+      {
+        "number": 3,
+        "par": 4,
+        "handicap": 3
+      },
+      {
+        "number": 4,
+        "par": 3,
+        "handicap": 15
+      },
+      {
+        "number": 5,
+        "par": 4,
+        "handicap": 5
+      },
+      {
+        "number": 6,
+        "par": 3,
+        "handicap": 13
+      },
+      {
+        "number": 7,
+        "par": 5,
+        "handicap": 1
+      },
+      {
+        "number": 8,
+        "par": 4,
+        "handicap": 11
+      },
+      {
+        "number": 9,
+        "par": 4,
+        "handicap": 17
+      },
+      {
+        "number": 10,
+        "par": 5,
+        "handicap": 6
+      },
+      {
+        "number": 11,
+        "par": 4,
+        "handicap": 2
+      },
+      {
+        "number": 12,
+        "par": 4,
+        "handicap": 8
+      },
+      {
+        "number": 13,
+        "par": 3,
+        "handicap": 14
+      },
+      {
+        "number": 14,
+        "par": 4,
+        "handicap": 12
+      },
+      {
+        "number": 15,
+        "par": 5,
+        "handicap": 10
+      },
+      {
+        "number": 16,
+        "par": 4,
+        "handicap": 4
+      },
+      {
+        "number": 17,
+        "par": 3,
+        "handicap": 16
+      },
+      {
+        "number": 18,
+        "par": 4,
+        "handicap": 18
+      }
+    ],
+    "tees": [
+      {
+        "color": "Tournament",
+        "slope_rating": 148,
+        "course_rating": 77.2,
+        "hole_yardages": {
+          "1": 529,
+          "2": 452,
+          "3": 483,
+          "4": 184,
+          "5": 449,
+          "6": 249,
+          "7": 546,
+          "8": 346,
+          "9": 505,
+          "10": 592,
+          "11": 462,
+          "12": 456,
+          "13": 208,
+          "14": 344,
+          "15": 577,
+          "16": 506,
+          "17": 223,
+          "18": 494
+        }
+      }
+    ]
+  },
+  {
+    "name": "Muirfield Village Golf Club",
+    "location": "Dublin, OH",
+    "holes": [
+      {
+        "number": 1,
+        "par": 4,
+        "handicap": 9
+      },
+      {
+        "number": 2,
+        "par": 4,
+        "handicap": 7
+      },
+      {
+        "number": 3,
+        "par": 4,
+        "handicap": 3
+      },
+      {
+        "number": 4,
+        "par": 3,
+        "handicap": 15
+      },
+      {
+        "number": 5,
+        "par": 5,
+        "handicap": 5
+      },
+      {
+        "number": 6,
+        "par": 4,
+        "handicap": 13
+      },
+      {
+        "number": 7,
+        "par": 5,
+        "handicap": 1
+      },
+      {
+        "number": 8,
+        "par": 3,
+        "handicap": 17
+      },
+      {
+        "number": 9,
+        "par": 4,
+        "handicap": 11
+      },
+      {
+        "number": 10,
+        "par": 4,
+        "handicap": 10
+      },
+      {
+        "number": 11,
+        "par": 5,
+        "handicap": 6
+      },
+      {
+        "number": 12,
+        "par": 3,
+        "handicap": 18
+      },
+      {
+        "number": 13,
+        "par": 4,
+        "handicap": 4
+      },
+      {
+        "number": 14,
+        "par": 4,
+        "handicap": 12
+      },
+      {
+        "number": 15,
+        "par": 5,
+        "handicap": 2
+      },
+      {
+        "number": 16,
+        "par": 3,
+        "handicap": 16
+      },
+      {
+        "number": 17,
+        "par": 4,
+        "handicap": 8
+      },
+      {
+        "number": 18,
+        "par": 4,
+        "handicap": 14
+      }
+    ],
+    "tees": [
+      {
+        "color": "Tournament",
+        "slope_rating": 153,
+        "course_rating": 77.4,
+        "hole_yardages": {
+          "1": 490,
+          "2": 459,
+          "3": 400,
+          "4": 210,
+          "5": 539,
+          "6": 455,
+          "7": 560,
+          "8": 200,
+          "9": 417,
+          "10": 472,
+          "11": 588,
+          "12": 180,
+          "13": 453,
+          "14": 360,
+          "15": 561,
+          "16": 200,
+          "17": 485,
+          "18": 480
+        }
+      }
+    ]
+  },
+  {
+    "name": "Oakmont Country Club",
+    "location": "Oakmont, PA",
+    "holes": [
+      {
+        "number": 1,
+        "par": 4,
+        "handicap": 7
+      },
+      {
+        "number": 2,
+        "par": 4,
+        "handicap": 9
+      },
+      {
+        "number": 3,
+        "par": 4,
+        "handicap": 3
+      },
+      {
+        "number": 4,
+        "par": 5,
+        "handicap": 13
+      },
+      {
+        "number": 5,
+        "par": 4,
+        "handicap": 5
+      },
+      {
+        "number": 6,
+        "par": 3,
+        "handicap": 17
+      },
+      {
+        "number": 7,
+        "par": 4,
+        "handicap": 1
+      },
+      {
+        "number": 8,
+        "par": 3,
+        "handicap": 15
+      },
+      {
+        "number": 9,
+        "par": 5,
+        "handicap": 11
+      },
+      {
+        "number": 10,
+        "par": 4,
+        "handicap": 10
+      },
+      {
+        "number": 11,
+        "par": 4,
+        "handicap": 8
+      },
+      {
+        "number": 12,
+        "par": 5,
+        "handicap": 6
+      },
+      {
+        "number": 13,
+        "par": 3,
+        "handicap": 18
+      },
+      {
+        "number": 14,
+        "par": 4,
+        "handicap": 4
+      },
+      {
+        "number": 15,
+        "par": 4,
+        "handicap": 2
+      },
+      {
+        "number": 16,
+        "par": 3,
+        "handicap": 16
+      },
+      {
+        "number": 17,
+        "par": 4,
+        "handicap": 12
+      },
+      {
+        "number": 18,
+        "par": 4,
+        "handicap": 14
+      }
+    ],
+    "tees": [
+      {
+        "color": "Tournament",
+        "slope_rating": 147,
+        "course_rating": 77.8,
+        "hole_yardages": {
+          "1": 482,
+          "2": 340,
+          "3": 428,
+          "4": 609,
+          "5": 382,
+          "6": 194,
+          "7": 479,
+          "8": 288,
+          "9": 477,
+          "10": 462,
+          "11": 379,
+          "12": 667,
+          "13": 183,
+          "14": 358,
+          "15": 499,
+          "16": 231,
+          "17": 313,
+          "18": 484
+        }
+      }
+    ]
+  },
+  {
+    "name": "Royal Portrush Golf Club",
+    "location": "Portrush, Northern Ireland",
+    "holes": [
+      {
+        "number": 1,
+        "par": 4,
+        "handicap": 9
+      },
+      {
+        "number": 2,
+        "par": 5,
+        "handicap": 5
+      },
+      {
+        "number": 3,
+        "par": 3,
+        "handicap": 15
+      },
+      {
+        "number": 4,
+        "par": 4,
+        "handicap": 7
+      },
+      {
+        "number": 5,
+        "par": 4,
+        "handicap": 3
+      },
+      {
+        "number": 6,
+        "par": 3,
+        "handicap": 17
+      },
+      {
+        "number": 7,
+        "par": 5,
+        "handicap": 1
+      },
+      {
+        "number": 8,
+        "par": 4,
+        "handicap": 11
+      },
+      {
+        "number": 9,
+        "par": 4,
+        "handicap": 13
+      },
+      {
+        "number": 10,
+        "par": 4,
+        "handicap": 10
+      },
+      {
+        "number": 11,
+        "par": 4,
+        "handicap": 4
+      },
+      {
+        "number": 12,
+        "par": 5,
+        "handicap": 6
+      },
+      {
+        "number": 13,
+        "par": 3,
+        "handicap": 18
+      },
+      {
+        "number": 14,
+        "par": 4,
+        "handicap": 2
+      },
+      {
+        "number": 15,
+        "par": 4,
+        "handicap": 12
+      },
+      {
+        "number": 16,
+        "par": 3,
+        "handicap": 16
+      },
+      {
+        "number": 17,
+        "par": 4,
+        "handicap": 8
+      },
+      {
+        "number": 18,
+        "par": 4,
+        "handicap": 14
+      }
+    ],
+    "tees": [
+      {
+        "color": "Tournament",
+        "slope_rating": 145,
+        "course_rating": 76.0,
+        "hole_yardages": {
+          "1": 421,
+          "2": 574,
+          "3": 177,
+          "4": 482,
+          "5": 374,
+          "6": 194,
+          "7": 592,
+          "8": 432,
+          "9": 432,
+          "10": 447,
+          "11": 474,
+          "12": 532,
+          "13": 194,
+          "14": 473,
+          "15": 426,
+          "16": 236,
+          "17": 408,
+          "18": 474
+        }
+      }
+    ]
+  },
+  {
+    "name": "TPC Southwind",
+    "location": "Memphis, TN",
+    "holes": [
+      {
+        "number": 1,
+        "par": 4,
+        "handicap": 9
+      },
+      {
+        "number": 2,
+        "par": 4,
+        "handicap": 7
+      },
+      {
+        "number": 3,
+        "par": 5,
+        "handicap": 5
+      },
+      {
+        "number": 4,
+        "par": 3,
+        "handicap": 15
+      },
+      {
+        "number": 5,
+        "par": 4,
+        "handicap": 3
+      },
+      {
+        "number": 6,
+        "par": 4,
+        "handicap": 11
+      },
+      {
+        "number": 7,
+        "par": 4,
+        "handicap": 1
+      },
+      {
+        "number": 8,
+        "par": 3,
+        "handicap": 17
+      },
+      {
+        "number": 9,
+        "par": 4,
+        "handicap": 13
+      },
+      {
+        "number": 10,
+        "par": 4,
+        "handicap": 10
+      },
+      {
+        "number": 11,
+        "par": 3,
+        "handicap": 18
+      },
+      {
+        "number": 12,
+        "par": 4,
+        "handicap": 4
+      },
+      {
+        "number": 13,
+        "par": 4,
+        "handicap": 8
+      },
+      {
+        "number": 14,
+        "par": 3,
+        "handicap": 16
+      },
+      {
+        "number": 15,
+        "par": 4,
+        "handicap": 2
+      },
+      {
+        "number": 16,
+        "par": 5,
+        "handicap": 6
+      },
+      {
+        "number": 17,
+        "par": 4,
+        "handicap": 12
+      },
+      {
+        "number": 18,
+        "par": 4,
+        "handicap": 14
+      }
+    ],
+    "tees": [
+      {
+        "color": "Tournament",
+        "slope_rating": 150,
+        "course_rating": 75.9,
+        "hole_yardages": {
+          "1": 434,
+          "2": 401,
+          "3": 554,
+          "4": 196,
+          "5": 485,
+          "6": 445,
+          "7": 482,
+          "8": 171,
+          "9": 457,
+          "10": 465,
+          "11": 157,
+          "12": 406,
+          "13": 472,
+          "14": 239,
+          "15": 395,
+          "16": 530,
+          "17": 505,
+          "18": 453
+        }
+      }
+    ]
+  },
+  {
+    "name": "Caves Valley Golf Club",
+    "location": "Owings Mills, MD",
+    "holes": [
+      {
+        "number": 1,
+        "par": 4,
+        "handicap": 9
+      },
+      {
+        "number": 2,
+        "par": 5,
+        "handicap": 5
+      },
+      {
+        "number": 3,
+        "par": 3,
+        "handicap": 17
+      },
+      {
+        "number": 4,
+        "par": 4,
+        "handicap": 3
+      },
+      {
+        "number": 5,
+        "par": 4,
+        "handicap": 11
+      },
+      {
+        "number": 6,
+        "par": 3,
+        "handicap": 15
+      },
+      {
+        "number": 7,
+        "par": 5,
+        "handicap": 7
+      },
+      {
+        "number": 8,
+        "par": 4,
+        "handicap": 1
+      },
+      {
+        "number": 9,
+        "par": 4,
+        "handicap": 13
+      },
+      {
+        "number": 10,
+        "par": 4,
+        "handicap": 10
+      },
+      {
+        "number": 11,
+        "par": 4,
+        "handicap": 4
+      },
+      {
+        "number": 12,
+        "par": 3,
+        "handicap": 18
+      },
+      {
+        "number": 13,
+        "par": 5,
+        "handicap": 8
+      },
+      {
+        "number": 14,
+        "par": 4,
+        "handicap": 12
+      },
+      {
+        "number": 15,
+        "par": 4,
+        "handicap": 2
+      },
+      {
+        "number": 16,
+        "par": 5,
+        "handicap": 6
+      },
+      {
+        "number": 17,
+        "par": 3,
+        "handicap": 16
+      },
+      {
+        "number": 18,
+        "par": 4,
+        "handicap": 14
+      }
+    ],
+    "tees": [
+      {
+        "color": "Tournament",
+        "slope_rating": 148,
+        "course_rating": 76.8,
+        "hole_yardages": {
+          "1": 486,
+          "2": 568,
+          "3": 248,
+          "4": 467,
+          "5": 353,
+          "6": 218,
+          "7": 564,
+          "8": 490,
+          "9": 458,
+          "10": 496,
+          "11": 393,
+          "12": 191,
+          "13": 612,
+          "14": 372,
+          "15": 475,
+          "16": 551,
+          "17": 235,
+          "18": 478
+        }
+      }
+    ]
+  },
+  {
+    "name": "East Lake Golf Club",
+    "location": "Atlanta, GA",
+    "holes": [
+      {
+        "number": 1,
+        "par": 4,
+        "handicap": 9
+      },
+      {
+        "number": 2,
+        "par": 3,
+        "handicap": 15
+      },
+      {
+        "number": 3,
+        "par": 4,
+        "handicap": 5
+      },
+      {
+        "number": 4,
+        "par": 4,
+        "handicap": 7
+      },
+      {
+        "number": 5,
+        "par": 4,
+        "handicap": 3
+      },
+      {
+        "number": 6,
+        "par": 5,
+        "handicap": 11
+      },
+      {
+        "number": 7,
+        "par": 4,
+        "handicap": 1
+      },
+      {
+        "number": 8,
+        "par": 4,
+        "handicap": 13
+      },
+      {
+        "number": 9,
+        "par": 3,
+        "handicap": 17
+      },
+      {
+        "number": 10,
+        "par": 4,
+        "handicap": 10
+      },
+      {
+        "number": 11,
+        "par": 3,
+        "handicap": 18
+      },
+      {
+        "number": 12,
+        "par": 4,
+        "handicap": 4
+      },
+      {
+        "number": 13,
+        "par": 4,
+        "handicap": 8
+      },
+      {
+        "number": 14,
+        "par": 5,
+        "handicap": 12
+      },
+      {
+        "number": 15,
+        "par": 3,
+        "handicap": 16
+      },
+      {
+        "number": 16,
+        "par": 4,
+        "handicap": 2
+      },
+      {
+        "number": 17,
+        "par": 4,
+        "handicap": 6
+      },
+      {
+        "number": 18,
+        "par": 5,
+        "handicap": 14
+      }
+    ],
+    "tees": [
+      {
+        "color": "Tournament",
+        "slope_rating": 146,
+        "course_rating": 76.2,
+        "hole_yardages": {
+          "1": 469,
+          "2": 213,
+          "3": 391,
+          "4": 479,
+          "5": 443,
+          "6": 525,
+          "7": 481,
+          "8": 455,
+          "9": 235,
+          "10": 466,
+          "11": 197,
+          "12": 389,
+          "13": 476,
+          "14": 555,
+          "15": 211,
+          "16": 454,
+          "17": 430,
+          "18": 590
+        }
+      }
+    ]
+  }
+]

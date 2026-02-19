@@ -15,7 +15,7 @@ class DatabasePool:
         host: str = "localhost",
         port: int = 5432,
         database: str = "golf_scorecard",
-        user: str = "postgres",
+        user: str = None,
         password: str = "",
         min_size: int = 2,
         max_size: int = 10,

@@ -1,0 +1,7506 @@
+[
+  {
+    "course_name": "Plantation Course at Kapalua",
+    "tournament": "The Sentry",
+    "date": "2025-01-02",
+    "tee_box": "Tournament",
+    "hole_scores": [
+      {
+        "hole_number": 1,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 2,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 3,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 4,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 5,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 6,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 7,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 8,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 9,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 10,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 11,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 12,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 13,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 14,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 15,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 16,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 17,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 18,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      }
+    ]
+  },
+  {
+    "course_name": "Plantation Course at Kapalua",
+    "tournament": "The Sentry",
+    "date": "2025-01-03",
+    "tee_box": "Tournament",
+    "hole_scores": [
+      {
+        "hole_number": 1,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 2,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 3,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 4,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 5,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 6,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 7,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 8,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 9,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 10,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 11,
+        "strokes": 2,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 12,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 13,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 14,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 15,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 16,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 17,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 18,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      }
+    ]
+  },
+  {
+    "course_name": "Plantation Course at Kapalua",
+    "tournament": "The Sentry",
+    "date": "2025-01-04",
+    "tee_box": "Tournament",
+    "hole_scores": [
+      {
+        "hole_number": 1,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 2,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 3,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 4,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 5,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 6,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 7,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 8,
+        "strokes": 2,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 9,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 10,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 11,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 12,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 13,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 14,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 15,
+        "strokes": 5,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 16,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 17,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 18,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      }
+    ]
+  },
+  {
+    "course_name": "Plantation Course at Kapalua",
+    "tournament": "The Sentry",
+    "date": "2025-01-05",
+    "tee_box": "Tournament",
+    "hole_scores": [
+      {
+        "hole_number": 1,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 2,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 3,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 4,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 5,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 6,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 7,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 8,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 9,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 10,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 11,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 12,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 13,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 14,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 15,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 16,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 17,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 18,
+        "strokes": 5,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      }
+    ]
+  },
+  {
+    "course_name": "Spyglass Hill Golf Course",
+    "tournament": "AT&T Pebble Beach Pro-Am",
+    "date": "2025-01-30",
+    "tee_box": "Tournament",
+    "hole_scores": [
+      {
+        "hole_number": 1,
+        "strokes": 5,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 2,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 3,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 4,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 5,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 6,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 7,
+        "strokes": 5,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 8,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 9,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 10,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 11,
+        "strokes": 5,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 12,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 13,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 14,
+        "strokes": 5,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 15,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 16,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 17,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 18,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      }
+    ]
+  },
+  {
+    "course_name": "Pebble Beach Golf Links",
+    "tournament": "AT&T Pebble Beach Pro-Am",
+    "date": "2025-01-31",
+    "tee_box": "Tournament",
+    "hole_scores": [
+      {
+        "hole_number": 1,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 2,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 3,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 4,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 5,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 6,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 7,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 8,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 9,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 10,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 11,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 12,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 13,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 14,
+        "strokes": 5,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 15,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 16,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 17,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 18,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      }
+    ]
+  },
+  {
+    "course_name": "Pebble Beach Golf Links",
+    "tournament": "AT&T Pebble Beach Pro-Am",
+    "date": "2025-02-01",
+    "tee_box": "Tournament",
+    "hole_scores": [
+      {
+        "hole_number": 1,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 2,
+        "strokes": 5,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 3,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 4,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 5,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 6,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 7,
+        "strokes": 2,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 8,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 9,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 10,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 11,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 12,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 13,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 14,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 15,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 16,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 17,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 18,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      }
+    ]
+  },
+  {
+    "course_name": "Pebble Beach Golf Links",
+    "tournament": "AT&T Pebble Beach Pro-Am",
+    "date": "2025-02-02",
+    "tee_box": "Tournament",
+    "hole_scores": [
+      {
+        "hole_number": 1,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 2,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 3,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 4,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 5,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 6,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 7,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 8,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 9,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 10,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 11,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 12,
+        "strokes": 2,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 13,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 14,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 15,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 16,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 17,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 18,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      }
+    ]
+  },
+  {
+    "course_name": "Riviera Country Club",
+    "tournament": "The Genesis Invitational",
+    "date": "2025-02-13",
+    "tee_box": "Tournament",
+    "hole_scores": [
+      {
+        "hole_number": 1,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 2,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 3,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 4,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 5,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 6,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 7,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 8,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 9,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 10,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 11,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 12,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 13,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 14,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 15,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 16,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 17,
+        "strokes": 5,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 18,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      }
+    ]
+  },
+  {
+    "course_name": "Riviera Country Club",
+    "tournament": "The Genesis Invitational",
+    "date": "2025-02-14",
+    "tee_box": "Tournament",
+    "hole_scores": [
+      {
+        "hole_number": 1,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 2,
+        "strokes": 5,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 3,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 4,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 5,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 6,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 7,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 8,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 9,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 10,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 11,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 12,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 13,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 14,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 15,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 16,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 17,
+        "strokes": 5,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 18,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      }
+    ]
+  },
+  {
+    "course_name": "Riviera Country Club",
+    "tournament": "The Genesis Invitational",
+    "date": "2025-02-15",
+    "tee_box": "Tournament",
+    "hole_scores": [
+      {
+        "hole_number": 1,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 2,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 3,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 4,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 5,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 6,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 7,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 8,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 9,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 10,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 11,
+        "strokes": 5,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 12,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 13,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 14,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 15,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 16,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 17,
+        "strokes": 5,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 18,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      }
+    ]
+  },
+  {
+    "course_name": "Riviera Country Club",
+    "tournament": "The Genesis Invitational",
+    "date": "2025-02-16",
+    "tee_box": "Tournament",
+    "hole_scores": [
+      {
+        "hole_number": 1,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 2,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 3,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 4,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 5,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 6,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 7,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 8,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 9,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 10,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 11,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 12,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 13,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 14,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 15,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 16,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 17,
+        "strokes": 5,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 18,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      }
+    ]
+  },
+  {
+    "course_name": "Bay Hill Club & Lodge",
+    "tournament": "Arnold Palmer Invitational",
+    "date": "2025-03-06",
+    "tee_box": "Tournament",
+    "hole_scores": [
+      {
+        "hole_number": 1,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 2,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 3,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 4,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 5,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 6,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 7,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 8,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 9,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 10,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 11,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 12,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 13,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 14,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 15,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 16,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 17,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 18,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      }
+    ]
+  },
+  {
+    "course_name": "Bay Hill Club & Lodge",
+    "tournament": "Arnold Palmer Invitational",
+    "date": "2025-03-07",
+    "tee_box": "Tournament",
+    "hole_scores": [
+      {
+        "hole_number": 1,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 2,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 3,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 4,
+        "strokes": 5,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 5,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 6,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 7,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 8,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 9,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 10,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 11,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 12,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 13,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 14,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 15,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 16,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 17,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 18,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      }
+    ]
+  },
+  {
+    "course_name": "Bay Hill Club & Lodge",
+    "tournament": "Arnold Palmer Invitational",
+    "date": "2025-03-08",
+    "tee_box": "Tournament",
+    "hole_scores": [
+      {
+        "hole_number": 1,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 2,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 3,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 4,
+        "strokes": 5,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 5,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 6,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 7,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 8,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 9,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 10,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 11,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 12,
+        "strokes": 5,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 13,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 14,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 15,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 16,
+        "strokes": 5,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 17,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 18,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      }
+    ]
+  },
+  {
+    "course_name": "Bay Hill Club & Lodge",
+    "tournament": "Arnold Palmer Invitational",
+    "date": "2025-03-09",
+    "tee_box": "Tournament",
+    "hole_scores": [
+      {
+        "hole_number": 1,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 2,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 3,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 4,
+        "strokes": 5,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 5,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 6,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 7,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 8,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 9,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 10,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 11,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 12,
+        "strokes": 5,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 13,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 14,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 15,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 16,
+        "strokes": 5,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 17,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 18,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      }
+    ]
+  },
+  {
+    "course_name": "TPC Sawgrass",
+    "tournament": "THE PLAYERS Championship",
+    "date": "2025-03-13",
+    "tee_box": "Tournament",
+    "hole_scores": [
+      {
+        "hole_number": 1,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 2,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 3,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 4,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 5,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 6,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 7,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 8,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 9,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 10,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 11,
+        "strokes": 5,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 12,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 13,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 14,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 15,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 16,
+        "strokes": 5,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 17,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 18,
+        "strokes": 5,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      }
+    ]
+  },
+  {
+    "course_name": "TPC Sawgrass",
+    "tournament": "THE PLAYERS Championship",
+    "date": "2025-03-14",
+    "tee_box": "Tournament",
+    "hole_scores": [
+      {
+        "hole_number": 1,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 2,
+        "strokes": 5,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 3,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 4,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 5,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 6,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 7,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 8,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 9,
+        "strokes": 5,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 10,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 11,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 12,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 13,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 14,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 15,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 16,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 17,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 18,
+        "strokes": 5,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      }
+    ]
+  },
+  {
+    "course_name": "TPC Sawgrass",
+    "tournament": "THE PLAYERS Championship",
+    "date": "2025-03-15",
+    "tee_box": "Tournament",
+    "hole_scores": [
+      {
+        "hole_number": 1,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 2,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 3,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 4,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 5,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 6,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 7,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 8,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 9,
+        "strokes": 5,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 10,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 11,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 12,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 13,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 14,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 15,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 16,
+        "strokes": 5,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 17,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 18,
+        "strokes": 5,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      }
+    ]
+  },
+  {
+    "course_name": "TPC Sawgrass",
+    "tournament": "THE PLAYERS Championship",
+    "date": "2025-03-16",
+    "tee_box": "Tournament",
+    "hole_scores": [
+      {
+        "hole_number": 1,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 2,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 3,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 4,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 5,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 6,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 7,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 8,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 9,
+        "strokes": 5,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 10,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 11,
+        "strokes": 5,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 12,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 13,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 14,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 15,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 16,
+        "strokes": 5,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 17,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 18,
+        "strokes": 5,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      }
+    ]
+  },
+  {
+    "course_name": "Augusta National Golf Club",
+    "tournament": "Masters Tournament",
+    "date": "2025-04-10",
+    "tee_box": "Tournament",
+    "hole_scores": [
+      {
+        "hole_number": 1,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 2,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 3,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 4,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 5,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 6,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 7,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 8,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 9,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 10,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 11,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 12,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 13,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 14,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 15,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 16,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 17,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 18,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      }
+    ]
+  },
+  {
+    "course_name": "Augusta National Golf Club",
+    "tournament": "Masters Tournament",
+    "date": "2025-04-11",
+    "tee_box": "Tournament",
+    "hole_scores": [
+      {
+        "hole_number": 1,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 2,
+        "strokes": 5,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 3,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 4,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 5,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 6,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 7,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 8,
+        "strokes": 5,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 9,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 10,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 11,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 12,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 13,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 14,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 15,
+        "strokes": 5,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 16,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 17,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 18,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      }
+    ]
+  },
+  {
+    "course_name": "Augusta National Golf Club",
+    "tournament": "Masters Tournament",
+    "date": "2025-04-12",
+    "tee_box": "Tournament",
+    "hole_scores": [
+      {
+        "hole_number": 1,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 2,
+        "strokes": 5,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 3,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 4,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 5,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 6,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 7,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 8,
+        "strokes": 5,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 9,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 10,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 11,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 12,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 13,
+        "strokes": 5,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 14,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 15,
+        "strokes": 5,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 16,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 17,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 18,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      }
+    ]
+  },
+  {
+    "course_name": "Augusta National Golf Club",
+    "tournament": "Masters Tournament",
+    "date": "2025-04-13",
+    "tee_box": "Tournament",
+    "hole_scores": [
+      {
+        "hole_number": 1,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 2,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 3,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 4,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 5,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 6,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 7,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 8,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 9,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 10,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 11,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 12,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 13,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 14,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 15,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 16,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 17,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 18,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      }
+    ]
+  },
+  {
+    "course_name": "TPC Craig Ranch",
+    "tournament": "THE CJ CUP Byron Nelson",
+    "date": "2025-05-01",
+    "tee_box": "Tournament",
+    "hole_scores": [
+      {
+        "hole_number": 1,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 2,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 3,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 4,
+        "strokes": 2,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 5,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 6,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 7,
+        "strokes": 2,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 8,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 9,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 10,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 11,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 12,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 13,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 14,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 15,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 16,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 17,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 18,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      }
+    ]
+  },
+  {
+    "course_name": "TPC Craig Ranch",
+    "tournament": "THE CJ CUP Byron Nelson",
+    "date": "2025-05-02",
+    "tee_box": "Tournament",
+    "hole_scores": [
+      {
+        "hole_number": 1,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 2,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 3,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 4,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 5,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 6,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 7,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 8,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 9,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 10,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 11,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 12,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 13,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 14,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 15,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 16,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 17,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 18,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      }
+    ]
+  },
+  {
+    "course_name": "TPC Craig Ranch",
+    "tournament": "THE CJ CUP Byron Nelson",
+    "date": "2025-05-03",
+    "tee_box": "Tournament",
+    "hole_scores": [
+      {
+        "hole_number": 1,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 2,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 3,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 4,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 5,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 6,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 7,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 8,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 9,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 10,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 11,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 12,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 13,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 14,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 15,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 16,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 17,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 18,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      }
+    ]
+  },
+  {
+    "course_name": "TPC Craig Ranch",
+    "tournament": "THE CJ CUP Byron Nelson",
+    "date": "2025-05-04",
+    "tee_box": "Tournament",
+    "hole_scores": [
+      {
+        "hole_number": 1,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 2,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 3,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 4,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 5,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 6,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 7,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 8,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 9,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 10,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 11,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 12,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 13,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 14,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 15,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 16,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 17,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 18,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      }
+    ]
+  },
+  {
+    "course_name": "Quail Hollow Club",
+    "tournament": "PGA Championship",
+    "date": "2025-05-15",
+    "tee_box": "Tournament",
+    "hole_scores": [
+      {
+        "hole_number": 1,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 2,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 3,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 4,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 5,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 6,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 7,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 8,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 9,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 10,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 11,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 12,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 13,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 14,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 15,
+        "strokes": 5,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 16,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 17,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 18,
+        "strokes": 5,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      }
+    ]
+  },
+  {
+    "course_name": "Quail Hollow Club",
+    "tournament": "PGA Championship",
+    "date": "2025-05-16",
+    "tee_box": "Tournament",
+    "hole_scores": [
+      {
+        "hole_number": 1,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 2,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 3,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 4,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 5,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 6,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 7,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 8,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 9,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 10,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 11,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 12,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 13,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 14,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 15,
+        "strokes": 5,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 16,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 17,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 18,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      }
+    ]
+  },
+  {
+    "course_name": "Quail Hollow Club",
+    "tournament": "PGA Championship",
+    "date": "2025-05-17",
+    "tee_box": "Tournament",
+    "hole_scores": [
+      {
+        "hole_number": 1,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 2,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 3,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 4,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 5,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 6,
+        "strokes": 2,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 7,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 8,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 9,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 10,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 11,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 12,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 13,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 14,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 15,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 16,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 17,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 18,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      }
+    ]
+  },
+  {
+    "course_name": "Quail Hollow Club",
+    "tournament": "PGA Championship",
+    "date": "2025-05-18",
+    "tee_box": "Tournament",
+    "hole_scores": [
+      {
+        "hole_number": 1,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 2,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 3,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 4,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 5,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 6,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 7,
+        "strokes": 5,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 8,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 9,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 10,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 11,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 12,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 13,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 14,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 15,
+        "strokes": 5,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 16,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 17,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 18,
+        "strokes": 5,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      }
+    ]
+  },
+  {
+    "course_name": "Muirfield Village Golf Club",
+    "tournament": "The Memorial Tournament",
+    "date": "2025-05-29",
+    "tee_box": "Tournament",
+    "hole_scores": [
+      {
+        "hole_number": 1,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 2,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 3,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 4,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 5,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 6,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 7,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 8,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 9,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 10,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 11,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 12,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 13,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 14,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 15,
+        "strokes": 5,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 16,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 17,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 18,
+        "strokes": 5,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      }
+    ]
+  },
+  {
+    "course_name": "Muirfield Village Golf Club",
+    "tournament": "The Memorial Tournament",
+    "date": "2025-05-30",
+    "tee_box": "Tournament",
+    "hole_scores": [
+      {
+        "hole_number": 1,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 2,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 3,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 4,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 5,
+        "strokes": 5,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 6,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 7,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 8,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 9,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 10,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 11,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 12,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 13,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 14,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 15,
+        "strokes": 5,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 16,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 17,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 18,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      }
+    ]
+  },
+  {
+    "course_name": "Muirfield Village Golf Club",
+    "tournament": "The Memorial Tournament",
+    "date": "2025-05-31",
+    "tee_box": "Tournament",
+    "hole_scores": [
+      {
+        "hole_number": 1,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 2,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 3,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 4,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 5,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 6,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 7,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 8,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 9,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 10,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 11,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 12,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 13,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 14,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 15,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 16,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 17,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 18,
+        "strokes": 5,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      }
+    ]
+  },
+  {
+    "course_name": "Muirfield Village Golf Club",
+    "tournament": "The Memorial Tournament",
+    "date": "2025-06-01",
+    "tee_box": "Tournament",
+    "hole_scores": [
+      {
+        "hole_number": 1,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 2,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 3,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 4,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 5,
+        "strokes": 5,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 6,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 7,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 8,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 9,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 10,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 11,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 12,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 13,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 14,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 15,
+        "strokes": 5,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 16,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 17,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 18,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      }
+    ]
+  },
+  {
+    "course_name": "Oakmont Country Club",
+    "tournament": "U.S. Open",
+    "date": "2025-06-12",
+    "tee_box": "Tournament",
+    "hole_scores": [
+      {
+        "hole_number": 1,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 2,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 3,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 4,
+        "strokes": 5,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 5,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 6,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 7,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 8,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 9,
+        "strokes": 5,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 10,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 11,
+        "strokes": 5,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 12,
+        "strokes": 5,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 13,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 14,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 15,
+        "strokes": 5,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 16,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 17,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 18,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      }
+    ]
+  },
+  {
+    "course_name": "Oakmont Country Club",
+    "tournament": "U.S. Open",
+    "date": "2025-06-13",
+    "tee_box": "Tournament",
+    "hole_scores": [
+      {
+        "hole_number": 1,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 2,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 3,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 4,
+        "strokes": 5,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 5,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 6,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 7,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 8,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 9,
+        "strokes": 5,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 10,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 11,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 12,
+        "strokes": 5,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 13,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 14,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 15,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 16,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 17,
+        "strokes": 5,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 18,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      }
+    ]
+  },
+  {
+    "course_name": "Oakmont Country Club",
+    "tournament": "U.S. Open",
+    "date": "2025-06-14",
+    "tee_box": "Tournament",
+    "hole_scores": [
+      {
+        "hole_number": 1,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 2,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 3,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 4,
+        "strokes": 5,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 5,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 6,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 7,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 8,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 9,
+        "strokes": 5,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 10,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 11,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 12,
+        "strokes": 5,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 13,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 14,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 15,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 16,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 17,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 18,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      }
+    ]
+  },
+  {
+    "course_name": "Oakmont Country Club",
+    "tournament": "U.S. Open",
+    "date": "2025-06-15",
+    "tee_box": "Tournament",
+    "hole_scores": [
+      {
+        "hole_number": 1,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 2,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 3,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 4,
+        "strokes": 5,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 5,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 6,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 7,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 8,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 9,
+        "strokes": 5,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 10,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 11,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 12,
+        "strokes": 5,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 13,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 14,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 15,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 16,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 17,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 18,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      }
+    ]
+  },
+  {
+    "course_name": "Royal Portrush Golf Club",
+    "tournament": "The Open Championship",
+    "date": "2025-07-17",
+    "tee_box": "Tournament",
+    "hole_scores": [
+      {
+        "hole_number": 1,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 2,
+        "strokes": 5,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 3,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 4,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 5,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 6,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 7,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 8,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 9,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 10,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 11,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 12,
+        "strokes": 5,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 13,
+        "strokes": 2,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 14,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 15,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 16,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 17,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 18,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      }
+    ]
+  },
+  {
+    "course_name": "Royal Portrush Golf Club",
+    "tournament": "The Open Championship",
+    "date": "2025-07-18",
+    "tee_box": "Tournament",
+    "hole_scores": [
+      {
+        "hole_number": 1,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 2,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 3,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 4,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 5,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 6,
+        "strokes": 2,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 7,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 8,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 9,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 10,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 11,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 12,
+        "strokes": 5,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 13,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 14,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 15,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 16,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 17,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 18,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      }
+    ]
+  },
+  {
+    "course_name": "Royal Portrush Golf Club",
+    "tournament": "The Open Championship",
+    "date": "2025-07-19",
+    "tee_box": "Tournament",
+    "hole_scores": [
+      {
+        "hole_number": 1,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 2,
+        "strokes": 5,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 3,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 4,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 5,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 6,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 7,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 8,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 9,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 10,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 11,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 12,
+        "strokes": 5,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 13,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 14,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 15,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 16,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 17,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 18,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      }
+    ]
+  },
+  {
+    "course_name": "Royal Portrush Golf Club",
+    "tournament": "The Open Championship",
+    "date": "2025-07-20",
+    "tee_box": "Tournament",
+    "hole_scores": [
+      {
+        "hole_number": 1,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 2,
+        "strokes": 5,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 3,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 4,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 5,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 6,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 7,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 8,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 9,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 10,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 11,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 12,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 13,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 14,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 15,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 16,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 17,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 18,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      }
+    ]
+  },
+  {
+    "course_name": "TPC Southwind",
+    "tournament": "FedEx St. Jude Championship",
+    "date": "2025-08-07",
+    "tee_box": "Tournament",
+    "hole_scores": [
+      {
+        "hole_number": 1,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 2,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 3,
+        "strokes": 5,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 4,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 5,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 6,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 7,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 8,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 9,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 10,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 11,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 12,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 13,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 14,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 15,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 16,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 17,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 18,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      }
+    ]
+  },
+  {
+    "course_name": "TPC Southwind",
+    "tournament": "FedEx St. Jude Championship",
+    "date": "2025-08-08",
+    "tee_box": "Tournament",
+    "hole_scores": [
+      {
+        "hole_number": 1,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 2,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 3,
+        "strokes": 5,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 4,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 5,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 6,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 7,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 8,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 9,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 10,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 11,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 12,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 13,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 14,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 15,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 16,
+        "strokes": 5,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 17,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 18,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      }
+    ]
+  },
+  {
+    "course_name": "TPC Southwind",
+    "tournament": "FedEx St. Jude Championship",
+    "date": "2025-08-09",
+    "tee_box": "Tournament",
+    "hole_scores": [
+      {
+        "hole_number": 1,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 2,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 3,
+        "strokes": 5,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 4,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 5,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 6,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 7,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 8,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 9,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 10,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 11,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 12,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 13,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 14,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 15,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 16,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 17,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 18,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      }
+    ]
+  },
+  {
+    "course_name": "TPC Southwind",
+    "tournament": "FedEx St. Jude Championship",
+    "date": "2025-08-10",
+    "tee_box": "Tournament",
+    "hole_scores": [
+      {
+        "hole_number": 1,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 2,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 3,
+        "strokes": 5,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 4,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 5,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 6,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 7,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 8,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 9,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 10,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 11,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 12,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 13,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 14,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 15,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 16,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 17,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 18,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      }
+    ]
+  },
+  {
+    "course_name": "Caves Valley Golf Club",
+    "tournament": "BMW Championship",
+    "date": "2025-08-14",
+    "tee_box": "Tournament",
+    "hole_scores": [
+      {
+        "hole_number": 1,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 2,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 3,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 4,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 5,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 6,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 7,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 8,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 9,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 10,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 11,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 12,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 13,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 14,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 15,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 16,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 17,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 18,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      }
+    ]
+  },
+  {
+    "course_name": "Caves Valley Golf Club",
+    "tournament": "BMW Championship",
+    "date": "2025-08-15",
+    "tee_box": "Tournament",
+    "hole_scores": [
+      {
+        "hole_number": 1,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 2,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 3,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 4,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 5,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 6,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 7,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 8,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 9,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 10,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 11,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 12,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 13,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 14,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 15,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 16,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 17,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 18,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      }
+    ]
+  },
+  {
+    "course_name": "Caves Valley Golf Club",
+    "tournament": "BMW Championship",
+    "date": "2025-08-16",
+    "tee_box": "Tournament",
+    "hole_scores": [
+      {
+        "hole_number": 1,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 2,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 3,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 4,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 5,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 6,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 7,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 8,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 9,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 10,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 11,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 12,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 13,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 14,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 15,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 16,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 17,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 18,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      }
+    ]
+  },
+  {
+    "course_name": "Caves Valley Golf Club",
+    "tournament": "BMW Championship",
+    "date": "2025-08-17",
+    "tee_box": "Tournament",
+    "hole_scores": [
+      {
+        "hole_number": 1,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 2,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 3,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 4,
+        "strokes": 5,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 5,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 6,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 7,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 8,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 9,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 10,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 11,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 12,
+        "strokes": 6,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 13,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 14,
+        "strokes": 5,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 15,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 16,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 17,
+        "strokes": 2,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 18,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      }
+    ]
+  },
+  {
+    "course_name": "East Lake Golf Club",
+    "tournament": "TOUR Championship",
+    "date": "2025-08-21",
+    "tee_box": "Tournament",
+    "hole_scores": [
+      {
+        "hole_number": 1,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 2,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 3,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 4,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 5,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 6,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 7,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 8,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 9,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 10,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 11,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 12,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 13,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 14,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 15,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 16,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 17,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 18,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      }
+    ]
+  },
+  {
+    "course_name": "East Lake Golf Club",
+    "tournament": "TOUR Championship",
+    "date": "2025-08-22",
+    "tee_box": "Tournament",
+    "hole_scores": [
+      {
+        "hole_number": 1,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 2,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 3,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 4,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 5,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 6,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 7,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 8,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 9,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 10,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 11,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 12,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 13,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 14,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 15,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 16,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 17,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 18,
+        "strokes": 5,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      }
+    ]
+  },
+  {
+    "course_name": "East Lake Golf Club",
+    "tournament": "TOUR Championship",
+    "date": "2025-08-23",
+    "tee_box": "Tournament",
+    "hole_scores": [
+      {
+        "hole_number": 1,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 2,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 3,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 4,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 5,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 6,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 7,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 8,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 9,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 10,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 11,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 12,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 13,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 14,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 15,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 16,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 17,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 18,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      }
+    ]
+  },
+  {
+    "course_name": "East Lake Golf Club",
+    "tournament": "TOUR Championship",
+    "date": "2025-08-24",
+    "tee_box": "Tournament",
+    "hole_scores": [
+      {
+        "hole_number": 1,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 2,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 3,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 4,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 5,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 6,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 7,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 8,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 9,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 10,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 11,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 12,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 13,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 14,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 15,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 16,
+        "strokes": 3,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 17,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      },
+      {
+        "hole_number": 18,
+        "strokes": 4,
+        "putts": null,
+        "fairway_hit": null,
+        "green_in_regulation": null
+      }
+    ]
+  }
+]

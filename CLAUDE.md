@@ -4,20 +4,28 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Golf scorecard app that scans physical scorecards (via LLM) and tracks rounds, courses, and player statistics. Python project using Pydantic v2 for data modeling and validation.
+Golf scorecard app that scans physical scorecards (via LLM) and tracks rounds, courses, and player statistics. Python project using Pydantic v2 for data modeling, asyncpg for database access, and Google Gemini for scorecard OCR.
 
 ## Setup & Dependencies
 
 ```bash
-pip install -r requirements.txt   # currently just pydantic>=2.0
+pip install -r requirements.txt   # pydantic, google-genai, python-dotenv, asyncpg
 pip freeze > requirements.txt     # run before pushing new dependencies
 ```
 
-No test framework, linter, or build system is configured yet. Test files exist as empty placeholders in `tests/`.
+Requires a `.env` file with `GOOGLE_API_KEY` for LLM extraction.
+
+## Running Tests
+
+```bash
+python -m unittest tests.test_llm.TestScorecardExtraction.test_example_scorecard      # full extraction
+python -m unittest tests.test_llm.TestScorecardExtraction.test_scores_only_extraction  # scores-only
+python -m unittest tests.test_llm.TestScorecardExtraction.test_smart_with_null_repo    # SMART strategy
+```
 
 ## Architecture
 
-### Core: `models/` — Pydantic v2 domain models
+### `models/` — Pydantic v2 domain models
 
 All models inherit from `BaseGolfModel` (in `base.py`), which provides `validate_assignment=True` and an `update_field()` method for safe field updates with error messages.
 
@@ -36,10 +44,33 @@ All models inherit from `BaseGolfModel` (in `base.py`), which provides `validate
 - "Get or calculate" pattern: methods like `get_par()`, `get_total_putts()` return the stored value if set, otherwise calculate from child objects
 - Round connects to Course for par-based calculations — `HoleScore.get_score_type()` requires par passed in
 
-### Placeholder modules (not yet implemented)
+### `llm/` — Scorecard extraction via Google Gemini
 
-- `database/` — DB manager and schema
-- `llm/` — LLM-based scorecard extraction from images
+Three extraction strategies (`llm/strategies.py`):
+- **FULL** (default) — extracts everything from a scorecard image (course, tees, holes, scores)
+- **SCORES_ONLY** — extracts only player scores when course is already known
+- **SMART** — identifies course name first (using fast Flash model), looks up in DB, then uses SCORES_ONLY if found, else falls back to FULL
+
+Key files:
+- `scorecard_extractor.py` — `extract_scorecard()` public API, Gemini calls, model building
+- `prompts.py` — prompt templates + Pydantic models for raw LLM JSON responses
+- `strategies.py` — `ExtractionStrategy` enum, `CourseRepository` protocol
+- `confidence.py` — per-field confidence scoring from LLM extraction
+
+### `database/` — Async PostgreSQL layer (asyncpg)
+
+Two DB schemas: `courses` (courses, holes, tees, tee_yardages) and `users` (users, rounds, hole_scores, scorecard_scans).
+
+- `connection.py` — `DatabasePool` singleton for pool lifecycle
+- `converters.py` — all row↔model conversion between DB rows and Pydantic objects
+- `db_manager.py` — `DatabaseManager` facade composing three repositories
+- `sync_adapter.py` — `SyncCourseRepositoryAdapter` wraps async repo for sync `CourseRepository` protocol
+- `repositories/course_repo.py` — CRUD for courses + fuzzy name search (pg_trgm)
+- `repositories/user_repo.py` — CRUD for users
+- `repositories/round_repo.py` — CRUD for rounds, hole_scores, scorecard_scans
+
+### Not yet implemented
+
 - `analytics/` — stats and visualizations
 - `data/` — sample course data
 
@@ -47,4 +78,6 @@ All models inherit from `BaseGolfModel` (in `base.py`), which provides `validate
 
 ```python
 from models import Course, Hole, Tee, HoleScore, Round, User
+from database import DatabaseManager, DatabasePool, SyncCourseRepositoryAdapter
+from llm import extract_scorecard, ExtractionStrategy, CourseRepository
 ```

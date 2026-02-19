@@ -110,12 +110,12 @@ class CourseRepositoryDB:
                         f"%{name}%",
                     )
 
-            # Tier 3: trigram similarity
+            # Tier 3: trigram similarity (0.4 threshold to avoid false positives)
             if not row:
                 row = await conn.fetchrow(
                     """SELECT *, similarity(name, $1) AS sim
                        FROM courses.courses
-                       WHERE similarity(name, $1) > 0.3
+                       WHERE similarity(name, $1) > 0.4
                        ORDER BY sim DESC LIMIT 1""",
                     name,
                 )
