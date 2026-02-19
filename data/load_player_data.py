@@ -1,5 +1,6 @@
 """Load player JSON data (courses + rounds) into the database.
-    python data/load_player_data.py data/scheffler_courses.json data/scheffler_rounds.json "Scottie Scheffler" "scheffler@example.com"
+    pip install -r requirements.txt  
+    python3 data/load_player_data.py data/scheffler_courses.json data/scheffler_rounds.json "Scottie Scheffler" "scheffler@example.com"
 """
 
 import asyncio
@@ -63,7 +64,13 @@ async def load_data(
 
         print(f"\n{len(course_map)} courses ready")
 
-        # 3. Load rounds
+        # 3. Load rounds (skip duplicates by user + course + date)
+        existing_rounds = await db.rounds.get_rounds_for_user(user.id, limit=9999)
+        existing_keys = {
+            (r.course.id if r.course else None, r.date.strftime("%Y-%m-%d") if r.date else None)
+            for r in existing_rounds
+        }
+
         created = 0
         skipped = 0
         for r_data in rounds_data:
@@ -71,6 +78,12 @@ async def load_data(
             course = course_map.get(course_name)
             if not course:
                 print(f"  SKIP: no course found for '{course_name}'")
+                skipped += 1
+                continue
+
+            # Duplicate check: same course + date
+            if (course.id, r_data["date"]) in existing_keys:
+                print(f"  EXISTS: {r_data.get('tournament', '?')} {r_data['date']} — skipping")
                 skipped += 1
                 continue
 
