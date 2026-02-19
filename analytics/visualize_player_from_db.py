@@ -8,6 +8,7 @@ from typing import List
 from analytics.visualizations import (
     plot_gir_per_round,
     plot_putts_per_round,
+    plot_scrambling_per_round,
     plot_scoring_by_par,
     plot_score_trend,
     plot_score_type_distribution_per_round,
@@ -68,6 +69,23 @@ def _has_handicap_scoring_data(rounds: List[Round]) -> bool:
                 continue
             hole = round_obj.course.get_hole(score.hole_number)
             if hole and hole.par is not None and hole.handicap is not None:
+                return True
+    return False
+
+
+def _has_scrambling_data(rounds: List[Round]) -> bool:
+    for round_obj in rounds:
+        if not round_obj.course:
+            continue
+        for score in round_obj.hole_scores:
+            if (
+                score.hole_number is None
+                or score.strokes is None
+                or score.green_in_regulation is None
+            ):
+                continue
+            hole = round_obj.course.get_hole(score.hole_number)
+            if hole and hole.par is not None:
                 return True
     return False
 
@@ -160,6 +178,14 @@ async def main_async() -> None:
         written.append(gir_path)
     else:
         print("Skipping GIR chart: no GIR values found.")
+
+    if _has_scrambling_data(rounds):
+        fig, _, _ = plot_scrambling_per_round(rounds)
+        scrambling_path = outdir / "scrambling_per_round.png"
+        fig.savefig(scrambling_path, dpi=150)
+        written.append(scrambling_path)
+    else:
+        print("Skipping scrambling chart: missing GIR/par/strokes data.")
 
     print(f"Generated {len(written)} chart(s) for {player_label}:")
     for path in written:
