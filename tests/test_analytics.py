@@ -7,6 +7,7 @@ from analytics.stats import (
     putts_per_round,
     round_summary,
     score_trend,
+    score_type_distribution_per_round,
     scoring_by_par,
     scoring_vs_hole_handicap,
 )
@@ -100,6 +101,36 @@ def test_scoring_by_par():
     assert by_par[3]["average_to_par"] == pytest.approx(1.25)
     assert by_par[4]["average_to_par"] == pytest.approx(0.25)
     assert by_par[5]["average_to_par"] == pytest.approx(-0.75)
+
+
+def test_score_type_distribution_per_round():
+    rounds = _build_rounds()
+    rows = score_type_distribution_per_round(rounds)
+
+    # Round 1: all holes are +1 on this synthetic dataset.
+    assert rows[0]["bogey"] == pytest.approx(100.0)
+    assert rows[0]["birdie"] == 0.0
+    assert rows[0]["par"] == 0.0
+
+    # Round 2 on this synthetic dataset:
+    # holes 1-4 (par3): +2 on odd, +1 on even -> 2 double, 2 bogey
+    # holes 5-14 (par4): +1 on odd, 0 on even -> 5 bogey, 5 par
+    # holes 15-18 (par5): 0 on odd, -1 on even -> 2 par, 2 birdie
+    assert rows[1]["double_bogey"] == pytest.approx((2 / 18) * 100)
+    assert rows[1]["bogey"] == pytest.approx((7 / 18) * 100)
+    assert rows[1]["par"] == pytest.approx((7 / 18) * 100)
+    assert rows[1]["birdie"] == pytest.approx((2 / 18) * 100)
+
+    total_pct = (
+        rows[1]["eagle"]
+        + rows[1]["birdie"]
+        + rows[1]["par"]
+        + rows[1]["bogey"]
+        + rows[1]["double_bogey"]
+        + rows[1]["triple_bogey"]
+        + rows[1]["quad_bogey"]
+    )
+    assert total_pct == pytest.approx(100.0)
 
 
 def test_scoring_vs_hole_handicap():

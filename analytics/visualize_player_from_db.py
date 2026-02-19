@@ -10,6 +10,7 @@ from analytics.visualizations import (
     plot_putts_per_round,
     plot_scoring_by_par,
     plot_score_trend,
+    plot_score_type_distribution_per_round,
     plot_scoring_vs_handicap,
 )
 from database.connection import DatabasePool
@@ -129,6 +130,14 @@ async def main_async() -> None:
         written.append(sbp_path)
     else:
         print("Skipping scoring-by-par chart: missing par or strokes data.")
+
+    if _has_par_scoring_data(rounds):
+        fig, _ = plot_score_type_distribution_per_round(rounds)
+        std_path = outdir / "score_type_distribution_per_round.png"
+        fig.savefig(std_path, dpi=150)
+        written.append(std_path)
+    else:
+        print("Skipping score-type distribution chart: missing par or strokes data.")
 
     if _has_putt_data(rounds):
         fig, _ = plot_putts_per_round(rounds)

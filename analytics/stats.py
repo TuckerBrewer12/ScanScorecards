@@ -4,6 +4,16 @@ from typing import Any, Dict, Iterable, List, Optional
 
 from models.round import Round
 
+SCORE_TYPE_ORDER = [
+    "eagle",
+    "birdie",
+    "par",
+    "bogey",
+    "double_bogey",
+    "triple_bogey",
+    "quad_bogey",
+]
+
 
 def _valid_hole_scores(round_obj: Round):
     return [score for score in round_obj.hole_scores if score.hole_number is not None]
@@ -167,4 +177,60 @@ def scoring_by_par(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
                 "sample_size": len(strokes),
             }
         )
+    return results
+
+
+def _score_type_from_to_par(to_par: int) -> str:
+    if to_par <= -2:
+        return "eagle"
+    if to_par == -1:
+        return "birdie"
+    if to_par == 0:
+        return "par"
+    if to_par == 1:
+        return "bogey"
+    if to_par == 2:
+        return "double_bogey"
+    if to_par == 3:
+        return "triple_bogey"
+    return "quad_bogey"
+
+
+def score_type_distribution_per_round(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
+    """
+    Percentage of holes by score type for each round.
+
+    Categories:
+    - eagle (includes eagle or better)
+    - birdie, par, bogey, double_bogey, triple_bogey, quad_bogey
+
+    Anything worse than quad bogey is counted as quad_bogey.
+    """
+    results: List[Dict[str, Any]] = []
+
+    for index, round_obj in enumerate(rounds, start=1):
+        counts = {name: 0 for name in SCORE_TYPE_ORDER}
+        total = 0
+
+        if round_obj.course:
+            for hole_score in _valid_hole_scores(round_obj):
+                if hole_score.hole_number is None or hole_score.strokes is None:
+                    continue
+                hole = round_obj.course.get_hole(hole_score.hole_number)
+                if not hole or hole.par is None:
+                    continue
+
+                score_type = _score_type_from_to_par(hole_score.strokes - hole.par)
+                counts[score_type] += 1
+                total += 1
+
+        row: Dict[str, Any] = {
+            "round_index": index,
+            "round_id": round_obj.id,
+            "holes_counted": total,
+        }
+        for name in SCORE_TYPE_ORDER:
+            row[name] = (counts[name] / total * 100.0) if total else 0.0
+        results.append(row)
+
     return results

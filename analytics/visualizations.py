@@ -9,6 +9,7 @@ from .stats import (
     gir_per_round,
     putts_per_round,
     score_trend,
+    score_type_distribution_per_round,
     scoring_by_par,
     scoring_vs_hole_handicap,
 )
@@ -147,6 +148,45 @@ def plot_scoring_by_par(rounds: Iterable[Round]):
     ax.set_xlabel("Hole Type")
     ax.set_ylabel("Average To Par")
     ax.axhline(0, color="black", linewidth=1, alpha=0.6)
+    ax.grid(axis="y", alpha=0.2)
+    fig.tight_layout()
+    return fig, ax
+
+
+def plot_score_type_distribution_per_round(
+    rounds: Sequence[Round], labels: Optional[Sequence[str]] = None
+):
+    """
+    Stacked bar chart of score-type percentages per round.
+    """
+    plt = _load_plt()
+    rows = score_type_distribution_per_round(rounds)
+    x_labels = list(labels) if labels is not None else _default_labels(rounds)
+    x = list(range(len(x_labels)))
+
+    categories = [
+        ("eagle", "Eagle"),
+        ("birdie", "Birdie"),
+        ("par", "Par"),
+        ("bogey", "Bogey"),
+        ("double_bogey", "Double"),
+        ("triple_bogey", "Triple"),
+        ("quad_bogey", "Quad+"),
+    ]
+
+    fig, ax = plt.subplots(figsize=(12, 6))
+    bottom = [0.0] * len(rows)
+    for key, label in categories:
+        values = [row[key] for row in rows]
+        ax.bar(x, values, bottom=bottom, label=label)
+        bottom = [b + v for b, v in zip(bottom, values)]
+
+    ax.set_title("Score Type Distribution Per Round")
+    ax.set_xlabel("Round")
+    ax.set_ylabel("Percent Of Holes")
+    ax.set_ylim(0, 100)
+    _apply_sparse_xticks(ax, x_labels)
+    ax.legend(loc="upper right", ncols=4, fontsize=8)
     ax.grid(axis="y", alpha=0.2)
     fig.tight_layout()
     return fig, ax
