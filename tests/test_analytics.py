@@ -10,6 +10,7 @@ from analytics.stats import (
     score_type_distribution_per_round,
     scoring_by_par,
     scoring_vs_hole_handicap,
+    three_putts_per_round,
 )
 from models.course import Course
 from models.hole import Hole
@@ -78,6 +79,21 @@ def test_putts_and_gir_per_round():
     assert [row["total_gir"] for row in gir_rows] == [10, 9]
     assert gir_rows[0]["gir_percentage"] == pytest.approx(55.5555, rel=1e-3)
     assert gir_rows[1]["gir_percentage"] == 50.0
+
+
+def test_three_putts_per_round():
+    rounds = _build_rounds()
+    rows = three_putts_per_round(rounds)
+
+    # In round 1, all holes are 2-putts.
+    assert rows[0]["three_putt_count"] == 0
+    assert rows[0]["holes_with_putt_data"] == 18
+    assert rows[0]["three_putt_percentage"] == 0.0
+
+    # In round 2, odd holes are 2-putts and even holes are 1-putts.
+    assert rows[1]["three_putt_count"] == 0
+    assert rows[1]["holes_with_putt_data"] == 18
+    assert rows[1]["three_putt_percentage"] == 0.0
 
 
 def test_score_trend():

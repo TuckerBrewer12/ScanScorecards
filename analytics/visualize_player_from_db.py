@@ -12,6 +12,7 @@ from analytics.visualizations import (
     plot_score_trend,
     plot_score_type_distribution_per_round,
     plot_scoring_vs_handicap,
+    plot_three_putts_per_round,
 )
 from database.connection import DatabasePool
 from database.db_manager import DatabaseManager
@@ -144,6 +145,11 @@ async def main_async() -> None:
         putts_path = outdir / "putts_per_round.png"
         fig.savefig(putts_path, dpi=150)
         written.append(putts_path)
+
+        fig, _, _ = plot_three_putts_per_round(rounds)
+        three_putts_path = outdir / "three_putts_per_round.png"
+        fig.savefig(three_putts_path, dpi=150)
+        written.append(three_putts_path)
     else:
         print("Skipping putts chart: no putt values found.")
 

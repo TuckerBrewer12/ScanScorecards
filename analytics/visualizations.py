@@ -12,6 +12,7 @@ from .stats import (
     score_type_distribution_per_round,
     scoring_by_par,
     scoring_vs_hole_handicap,
+    three_putts_per_round,
 )
 
 
@@ -190,3 +191,40 @@ def plot_score_type_distribution_per_round(
     ax.grid(axis="y", alpha=0.2)
     fig.tight_layout()
     return fig, ax
+
+
+def plot_three_putts_per_round(
+    rounds: Sequence[Round], labels: Optional[Sequence[str]] = None
+):
+    """
+    Combined chart:
+    - bars: number of 3-putts per round
+    - line: 3-putt percentage per round
+    """
+    plt = _load_plt()
+    rows = three_putts_per_round(rounds)
+    x_labels = list(labels) if labels is not None else _default_labels(rounds)
+    x = list(range(len(x_labels)))
+    counts = [row["three_putt_count"] for row in rows]
+    percentages = [row["three_putt_percentage"] for row in rows]
+
+    fig, ax1 = plt.subplots(figsize=(11, 5))
+    ax1.bar(x, counts, alpha=0.8, label="3-Putt Count")
+    ax1.set_xlabel("Round")
+    ax1.set_ylabel("3-Putt Count")
+    _apply_sparse_xticks(ax1, x_labels)
+    ax1.grid(axis="y", alpha=0.2)
+
+    ax2 = ax1.twinx()
+    ax2.plot(x, percentages, color="black", marker="o", linewidth=1.5, label="3-Putt %")
+    ax2.set_ylabel("3-Putt %")
+    ax2.set_ylim(0, 100)
+
+    ax1.set_title("3-Putts Per Round")
+
+    lines1, labels1 = ax1.get_legend_handles_labels()
+    lines2, labels2 = ax2.get_legend_handles_labels()
+    ax1.legend(lines1 + lines2, labels1 + labels2, loc="upper left")
+
+    fig.tight_layout()
+    return fig, ax1, ax2

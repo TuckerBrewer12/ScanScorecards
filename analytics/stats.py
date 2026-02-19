@@ -58,6 +58,37 @@ def putts_per_round(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
     return results
 
 
+def three_putts_per_round(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
+    """
+    Return 3-putt count and percentage for each round.
+
+    3-putt percentage is based on holes with a non-null putts value.
+    """
+    results: List[Dict[str, Any]] = []
+    for index, round_obj in enumerate(rounds, start=1):
+        scores_with_putts = [
+            score for score in _valid_hole_scores(round_obj) if score.putts is not None
+        ]
+        three_putt_count = sum(1 for score in scores_with_putts if score.putts >= 3)
+        holes_with_putt_data = len(scores_with_putts)
+        three_putt_percentage = (
+            (three_putt_count / holes_with_putt_data) * 100.0
+            if holes_with_putt_data
+            else 0.0
+        )
+
+        results.append(
+            {
+                "round_index": index,
+                "round_id": round_obj.id,
+                "three_putt_count": three_putt_count,
+                "holes_with_putt_data": holes_with_putt_data,
+                "three_putt_percentage": three_putt_percentage,
+            }
+        )
+    return results
+
+
 def score_trend(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
     """Return total score trend data by round."""
     results: List[Dict[str, Any]] = []
