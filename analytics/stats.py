@@ -48,6 +48,23 @@ def putts_per_round(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
     return results
 
 
+def score_trend(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
+    """Return total score trend data by round."""
+    results: List[Dict[str, Any]] = []
+    for index, round_obj in enumerate(rounds, start=1):
+        total_score = round_obj.calculate_total_score()
+        total_to_par = round_obj.total_to_par()
+        results.append(
+            {
+                "round_index": index,
+                "round_id": round_obj.id,
+                "total_score": total_score,
+                "to_par": total_to_par,
+            }
+        )
+    return results
+
+
 def gir_per_round(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
     """Return GIR totals and percentage by round."""
     results: List[Dict[str, Any]] = []

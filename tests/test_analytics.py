@@ -2,7 +2,13 @@ from datetime import datetime
 
 import pytest
 
-from analytics.stats import gir_per_round, putts_per_round, round_summary, scoring_vs_hole_handicap
+from analytics.stats import (
+    gir_per_round,
+    putts_per_round,
+    round_summary,
+    score_trend,
+    scoring_vs_hole_handicap,
+)
 from models.course import Course
 from models.hole import Hole
 from models.hole_score import HoleScore
@@ -65,6 +71,14 @@ def test_putts_and_gir_per_round():
     assert [row["total_gir"] for row in gir_rows] == [10, 9]
     assert gir_rows[0]["gir_percentage"] == pytest.approx(55.5555, rel=1e-3)
     assert gir_rows[1]["gir_percentage"] == 50.0
+
+
+def test_score_trend():
+    rounds = _build_rounds()
+    rows = score_trend(rounds)
+
+    assert [row["total_score"] for row in rows] == [72, 81]
+    assert [row["to_par"] for row in rows] == [0, 9]
 
 
 def test_scoring_vs_hole_handicap():

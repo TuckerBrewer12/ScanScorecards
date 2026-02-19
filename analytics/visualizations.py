@@ -4,7 +4,7 @@ from typing import Iterable, Optional, Sequence
 
 from models.round import Round
 
-from .stats import gir_per_round, putts_per_round, scoring_vs_hole_handicap
+from .stats import gir_per_round, putts_per_round, score_trend, scoring_vs_hole_handicap
 
 
 def _load_plt():
@@ -54,6 +54,23 @@ def plot_gir_per_round(rounds: Sequence[Round], labels: Optional[Sequence[str]] 
     ax.set_xlabel("Round")
     ax.set_ylabel("GIR %")
     ax.set_ylim(0, 100)
+    ax.grid(axis="y", alpha=0.2)
+    fig.tight_layout()
+    return fig, ax
+
+
+def plot_score_trend(rounds: Sequence[Round], labels: Optional[Sequence[str]] = None):
+    """Line chart: total score trend by round."""
+    plt = _load_plt()
+    rows = score_trend(rounds)
+    x_labels = list(labels) if labels is not None else _default_labels(rounds)
+    values = [row["total_score"] or 0 for row in rows]
+
+    fig, ax = plt.subplots(figsize=(10, 5))
+    ax.plot(x_labels, values, marker="o")
+    ax.set_title("Score Trend")
+    ax.set_xlabel("Round")
+    ax.set_ylabel("Total Score")
     ax.grid(axis="y", alpha=0.2)
     fig.tight_layout()
     return fig, ax

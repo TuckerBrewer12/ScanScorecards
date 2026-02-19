@@ -11,6 +11,7 @@ from models.round import Round
 from .visualizations import (
     plot_gir_per_round,
     plot_putts_per_round,
+    plot_score_trend,
     plot_scoring_vs_handicap,
 )
 
@@ -69,8 +70,11 @@ def main() -> None:
     fig2, _ = plot_gir_per_round(rounds)
     fig2.savefig(output_dir / "gir_per_round.png", dpi=150)
 
-    fig3, _ = plot_scoring_vs_handicap(rounds)
-    fig3.savefig(output_dir / "scoring_vs_handicap.png", dpi=150)
+    fig3, _ = plot_score_trend(rounds)
+    fig3.savefig(output_dir / "score_trend.png", dpi=150)
+
+    fig4, _ = plot_scoring_vs_handicap(rounds)
+    fig4.savefig(output_dir / "scoring_vs_handicap.png", dpi=150)
 
     print(f"Saved charts to: {output_dir.resolve()}")
 
