@@ -8,6 +8,7 @@ from models.round import Round
 from .stats import (
     gir_per_round,
     putts_per_round,
+    scrambling_per_round,
     score_trend,
     score_type_distribution_per_round,
     scoring_by_par,
@@ -221,6 +222,43 @@ def plot_three_putts_per_round(
     ax2.set_ylim(0, 100)
 
     ax1.set_title("3-Putts Per Round")
+
+    lines1, labels1 = ax1.get_legend_handles_labels()
+    lines2, labels2 = ax2.get_legend_handles_labels()
+    ax1.legend(lines1 + lines2, labels1 + labels2, loc="upper left")
+
+    fig.tight_layout()
+    return fig, ax1, ax2
+
+
+def plot_scrambling_per_round(
+    rounds: Sequence[Round], labels: Optional[Sequence[str]] = None
+):
+    """
+    Combined chart:
+    - bars: scramble successes (up-and-downs)
+    - line: scrambling percentage
+    """
+    plt = _load_plt()
+    rows = scrambling_per_round(rounds)
+    x_labels = list(labels) if labels is not None else _default_labels(rounds)
+    x = list(range(len(x_labels)))
+    successes = [row["scramble_successes"] for row in rows]
+    percentages = [row["scrambling_percentage"] for row in rows]
+
+    fig, ax1 = plt.subplots(figsize=(11, 5))
+    ax1.bar(x, successes, alpha=0.8, label="Up-and-Downs")
+    ax1.set_xlabel("Round")
+    ax1.set_ylabel("Scramble Successes")
+    _apply_sparse_xticks(ax1, x_labels)
+    ax1.grid(axis="y", alpha=0.2)
+
+    ax2 = ax1.twinx()
+    ax2.plot(x, percentages, color="black", marker="o", linewidth=1.5, label="Scrambling %")
+    ax2.set_ylabel("Scrambling %")
+    ax2.set_ylim(0, 100)
+
+    ax1.set_title("Scrambling Per Round")
 
     lines1, labels1 = ax1.get_legend_handles_labels()
     lines2, labels2 = ax2.get_legend_handles_labels()

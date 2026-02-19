@@ -89,6 +89,47 @@ def three_putts_per_round(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
     return results
 
 
+def scrambling_per_round(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
+    """
+    Scrambling by round using the user's rule:
+    - Opportunity: hole where GIR is False
+    - Success: opportunity hole where strokes == par
+    """
+    results: List[Dict[str, Any]] = []
+    for index, round_obj in enumerate(rounds, start=1):
+        opportunities = 0
+        successes = 0
+
+        if round_obj.course:
+            for score in _valid_hole_scores(round_obj):
+                if (
+                    score.hole_number is None
+                    or score.green_in_regulation is None
+                    or score.strokes is None
+                ):
+                    continue
+                hole = round_obj.course.get_hole(score.hole_number)
+                if not hole or hole.par is None:
+                    continue
+
+                if score.green_in_regulation is False:
+                    opportunities += 1
+                    if score.strokes == hole.par:
+                        successes += 1
+
+        percentage = (successes / opportunities * 100.0) if opportunities else 0.0
+        results.append(
+            {
+                "round_index": index,
+                "round_id": round_obj.id,
+                "scramble_opportunities": opportunities,
+                "scramble_successes": successes,
+                "scrambling_percentage": percentage,
+            }
+        )
+    return results
+
+
 def score_trend(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
     """Return total score trend data by round."""
     results: List[Dict[str, Any]] = []

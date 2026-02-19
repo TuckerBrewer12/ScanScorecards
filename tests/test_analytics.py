@@ -6,6 +6,7 @@ from analytics.stats import (
     gir_per_round,
     putts_per_round,
     round_summary,
+    scrambling_per_round,
     score_trend,
     score_type_distribution_per_round,
     scoring_by_par,
@@ -94,6 +95,23 @@ def test_three_putts_per_round():
     assert rows[1]["three_putt_count"] == 0
     assert rows[1]["holes_with_putt_data"] == 18
     assert rows[1]["three_putt_percentage"] == 0.0
+
+
+def test_scrambling_per_round():
+    rounds = _build_rounds()
+    rows = scrambling_per_round(rounds)
+
+    # Round 1: holes 11-18 are missed GIRs; par4 on 11-14 are 4 (success),
+    # par5 on 15-18 are 4 (not par, no success).
+    assert rows[0]["scramble_opportunities"] == 8
+    assert rows[0]["scramble_successes"] == 4
+    assert rows[0]["scrambling_percentage"] == 50.0
+
+    # Round 2: missed GIR on odd holes only (9 opps), all odd scores are 5.
+    # Success only on odd par5 holes (15,17): 2 successes.
+    assert rows[1]["scramble_opportunities"] == 9
+    assert rows[1]["scramble_successes"] == 2
+    assert rows[1]["scrambling_percentage"] == pytest.approx((2 / 9) * 100)
 
 
 def test_score_trend():
