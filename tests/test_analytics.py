@@ -7,6 +7,7 @@ from analytics.stats import (
     putts_per_round,
     round_summary,
     score_trend,
+    scoring_by_par,
     scoring_vs_hole_handicap,
 )
 from models.course import Course
@@ -16,10 +17,15 @@ from models.round import Round
 
 
 def _build_course() -> Course:
-    holes = [
-        Hole(number=i, par=4, handicap=i)
-        for i in range(1, 19)
-    ]
+    holes = []
+    for i in range(1, 19):
+        if i <= 4:
+            par = 3
+        elif i <= 14:
+            par = 4
+        else:
+            par = 5
+        holes.append(Hole(number=i, par=par, handicap=i))
     return Course(id="course-1", name="Demo Course", par=72, holes=holes)
 
 
@@ -81,15 +87,30 @@ def test_score_trend():
     assert [row["to_par"] for row in rows] == [0, 9]
 
 
+def test_scoring_by_par():
+    rounds = _build_rounds()
+    rows = scoring_by_par(rounds)
+    by_par = {row["par"]: row for row in rows}
+
+    assert set(by_par.keys()) == {3, 4, 5}
+    assert by_par[3]["sample_size"] == 8
+    assert by_par[4]["sample_size"] == 20
+    assert by_par[5]["sample_size"] == 8
+
+    assert by_par[3]["average_to_par"] == pytest.approx(1.25)
+    assert by_par[4]["average_to_par"] == pytest.approx(0.25)
+    assert by_par[5]["average_to_par"] == pytest.approx(-0.75)
+
+
 def test_scoring_vs_hole_handicap():
     rounds = _build_rounds()
     rows = scoring_vs_hole_handicap(rounds)
 
     assert len(rows) == 18
     assert rows[0]["handicap"] == 1
-    assert rows[0]["average_to_par"] == pytest.approx(0.5)
+    assert rows[0]["average_to_par"] == pytest.approx(1.5)
     assert rows[0]["sample_size"] == 2
 
     assert rows[1]["handicap"] == 2
-    assert rows[1]["average_to_par"] == pytest.approx(0.0)
+    assert rows[1]["average_to_par"] == pytest.approx(1.0)
     assert rows[1]["sample_size"] == 2

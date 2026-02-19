@@ -125,3 +125,46 @@ def scoring_vs_hole_handicap(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
         )
 
     return results
+
+
+def scoring_by_par(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
+    """
+    Aggregate scoring performance by hole par (3, 4, 5).
+
+    Output rows:
+    - par: 3, 4, or 5
+    - average_to_par: mean(strokes - par)
+    - average_strokes: mean(strokes)
+    - sample_size: number of holes included
+    """
+    by_par: Dict[int, List[int]] = {}
+
+    for round_obj in rounds:
+        if not round_obj.course:
+            continue
+
+        for hole_score in _valid_hole_scores(round_obj):
+            if hole_score.hole_number is None or hole_score.strokes is None:
+                continue
+
+            hole = round_obj.course.get_hole(hole_score.hole_number)
+            if not hole or hole.par is None:
+                continue
+            if hole.par not in (3, 4, 5):
+                continue
+
+            by_par.setdefault(hole.par, []).append(hole_score.strokes)
+
+    results: List[Dict[str, Any]] = []
+    for par in sorted(by_par):
+        strokes = by_par[par]
+        avg_strokes = sum(strokes) / len(strokes)
+        results.append(
+            {
+                "par": par,
+                "average_to_par": avg_strokes - par,
+                "average_strokes": avg_strokes,
+                "sample_size": len(strokes),
+            }
+        )
+    return results
