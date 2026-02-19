@@ -1,0 +1,110 @@
+from __future__ import annotations
+
+from typing import Any, Dict, Iterable, List, Optional
+
+from models.round import Round
+
+
+def _valid_hole_scores(round_obj: Round):
+    return [score for score in round_obj.hole_scores if score.hole_number is not None]
+
+
+def round_summary(round_obj: Round) -> Dict[str, Optional[float]]:
+    """Compute summary metrics for a single round."""
+    hole_scores = _valid_hole_scores(round_obj)
+    holes_played = len(hole_scores)
+    total_putts = round_obj.get_total_putts()
+    total_gir = round_obj.get_total_gir()
+    total_strokes = round_obj.calculate_total_score()
+
+    gir_percentage: Optional[float] = None
+    putts_per_hole: Optional[float] = None
+    if holes_played:
+        gir_percentage = (total_gir / holes_played) * 100 if total_gir is not None else None
+        putts_per_hole = total_putts / holes_played if total_putts is not None else None
+
+    return {
+        "holes_played": float(holes_played),
+        "total_strokes": float(total_strokes) if total_strokes is not None else None,
+        "total_putts": float(total_putts) if total_putts is not None else None,
+        "total_gir": float(total_gir) if total_gir is not None else None,
+        "gir_percentage": gir_percentage,
+        "putts_per_hole": putts_per_hole,
+    }
+
+
+def putts_per_round(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
+    """Return putt totals by round for plotting/reporting."""
+    results: List[Dict[str, Any]] = []
+    for index, round_obj in enumerate(rounds, start=1):
+        results.append(
+            {
+                "round_index": index,
+                "round_id": round_obj.id,
+                "total_putts": round_obj.get_total_putts(),
+                "holes_played": len(_valid_hole_scores(round_obj)),
+            }
+        )
+    return results
+
+
+def gir_per_round(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
+    """Return GIR totals and percentage by round."""
+    results: List[Dict[str, Any]] = []
+    for index, round_obj in enumerate(rounds, start=1):
+        holes_played = len(_valid_hole_scores(round_obj))
+        total_gir = round_obj.get_total_gir()
+        gir_percentage: Optional[float] = None
+        if holes_played and total_gir is not None:
+            gir_percentage = (total_gir / holes_played) * 100
+
+        results.append(
+            {
+                "round_index": index,
+                "round_id": round_obj.id,
+                "total_gir": total_gir,
+                "holes_played": holes_played,
+                "gir_percentage": gir_percentage,
+            }
+        )
+    return results
+
+
+def scoring_vs_hole_handicap(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
+    """
+    Aggregate average score-to-par by hole handicap.
+
+    Output rows:
+    - handicap: 1-18
+    - average_to_par: mean(strokes - par)
+    - sample_size: number of scored holes used
+    """
+    by_handicap: Dict[int, List[int]] = {}
+
+    for round_obj in rounds:
+        if not round_obj.course:
+            continue
+
+        for hole_score in _valid_hole_scores(round_obj):
+            if hole_score.hole_number is None or hole_score.strokes is None:
+                continue
+
+            hole = round_obj.course.get_hole(hole_score.hole_number)
+            if not hole or hole.par is None or hole.handicap is None:
+                continue
+
+            to_par = hole_score.strokes - hole.par
+            by_handicap.setdefault(hole.handicap, []).append(to_par)
+
+    results: List[Dict[str, Any]] = []
+    for handicap in sorted(by_handicap):
+        values = by_handicap[handicap]
+        results.append(
+            {
+                "handicap": handicap,
+                "average_to_par": sum(values) / len(values),
+                "sample_size": len(values),
+            }
+        )
+
+    return results
