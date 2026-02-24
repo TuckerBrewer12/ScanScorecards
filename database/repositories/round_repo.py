@@ -250,6 +250,67 @@ class RoundRepositoryDB:
                 hole_score.fairway_hit, hole_score.green_in_regulation,
             )
 
+    async def update_hole_scores(
+        self, round_id: str, hole_scores: list
+    ) -> Optional[Round]:
+        """Batch-upsert hole scores and recalculate round totals.
+
+        hole_scores: list of HoleScore objects.
+        Returns the updated Round.
+        """
+        async with self._pool.acquire() as conn:
+            round_row = await conn.fetchrow(
+                "SELECT * FROM users.rounds WHERE id = $1", UUID(round_id)
+            )
+            if not round_row:
+                raise NotFoundError(f"Round {round_id} not found")
+
+            course_id = round_row["course_id"]
+            hole_id_map = {}
+            if course_id:
+                hole_id_map = await self._load_hole_id_map(conn, course_id)
+
+            async with conn.transaction():
+                for hs in hole_scores:
+                    hole_id = hole_id_map.get(hs.hole_number)
+                    await conn.execute(
+                        """INSERT INTO users.hole_scores
+                           (round_id, hole_id, hole_number, strokes, net_score,
+                            putts, shots_to_green, fairway_hit, green_in_regulation)
+                           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+                           ON CONFLICT (round_id, hole_number)
+                           DO UPDATE SET
+                               strokes = EXCLUDED.strokes,
+                               net_score = EXCLUDED.net_score,
+                               putts = EXCLUDED.putts,
+                               shots_to_green = EXCLUDED.shots_to_green,
+                               fairway_hit = EXCLUDED.fairway_hit,
+                               green_in_regulation = EXCLUDED.green_in_regulation""",
+                        UUID(round_id), hole_id, hs.hole_number,
+                        hs.strokes, hs.net_score,
+                        hs.putts, hs.shots_to_green,
+                        hs.fairway_hit, hs.green_in_regulation,
+                    )
+
+                # Recalculate totals
+                score_rows = await conn.fetch(
+                    "SELECT strokes FROM users.hole_scores WHERE round_id = $1",
+                    UUID(round_id),
+                )
+                valid_strokes = [r["strokes"] for r in score_rows if r["strokes"] is not None]
+                new_total = sum(valid_strokes) if valid_strokes else None
+                holes_played = len(valid_strokes)
+                is_complete = holes_played == 18
+
+                await conn.execute(
+                    """UPDATE users.rounds
+                       SET total_score = $2, holes_played = $3, is_complete = $4
+                       WHERE id = $1""",
+                    UUID(round_id), new_total, holes_played, is_complete,
+                )
+
+        return await self.get_round(round_id)
+
     # ================================================================
     # Delete
     # ================================================================
