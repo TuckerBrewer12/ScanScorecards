@@ -5,10 +5,14 @@ import { DashboardPage } from "./pages/DashboardPage";
 import { RoundsPage } from "./pages/RoundsPage";
 import { RoundDetailPage } from "./pages/RoundDetailPage";
 import { CoursesPage } from "./pages/CoursesPage";
+import { ScanPage } from "./pages/ScanPage";
+import type { ScanState } from "./types/scan";
+import { initialScanState } from "./types/scan";
 import { api } from "./lib/api";
 
 export default function App() {
   const [userId, setUserId] = useState<string | null>(null);
+  const [scanState, setScanState] = useState<ScanState>(initialScanState);
 
   useEffect(() => {
     api.getUserByEmail("scheffler@example.com").then((user) => {
@@ -32,6 +36,7 @@ export default function App() {
           <Route path="/rounds" element={<RoundsPage userId={userId} />} />
           <Route path="/rounds/:roundId" element={<RoundDetailPage />} />
           <Route path="/courses" element={<CoursesPage />} />
+          <Route path="/scan" element={<ScanPage userId={userId} scanState={scanState} setScanState={setScanState} />} />
         </Routes>
       </AppLayout>
     </BrowserRouter>

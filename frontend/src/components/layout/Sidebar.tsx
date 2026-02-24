@@ -1,8 +1,9 @@
 import { NavLink } from "react-router-dom";
-import { LayoutDashboard, ListOrdered, MapPin } from "lucide-react";
+import { LayoutDashboard, ListOrdered, MapPin, ScanLine } from "lucide-react";
 
 const navItems = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
+  { to: "/scan", label: "Scan Scorecard", icon: ScanLine },
   { to: "/rounds", label: "Rounds", icon: ListOrdered },
   { to: "/courses", label: "Courses", icon: MapPin },
 ];

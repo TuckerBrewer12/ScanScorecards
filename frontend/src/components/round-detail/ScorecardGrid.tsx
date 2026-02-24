@@ -27,6 +27,20 @@ function sumPars(holes: (Hole | undefined)[]): number | null {
   return valid.reduce((sum, h) => sum + (h.par ?? 0), 0);
 }
 
+function formatToPar(diff: number | null): string {
+  if (diff === null) return "-";
+  if (diff === 0) return "E";
+  if (diff > 0) return `+${diff}`;
+  return `${diff}`;
+}
+
+function toParColorClass(diff: number | null): string {
+  if (diff === null) return "text-gray-400";
+  if (diff < 0) return "text-green-600 font-semibold";
+  if (diff > 0) return "text-red-500";
+  return "text-gray-600";
+}
+
 function NineTable({
   round,
   holes,
@@ -47,6 +61,8 @@ function NineTable({
   const outPar = sumPars(data.map((d) => d.hole));
   const totalScore = showTotal ? sumScores(allData.map((d) => d.score)) : null;
   const totalPar = showTotal ? sumPars(allData.map((d) => d.hole)) : null;
+  const outToPar = outScore !== null && outPar !== null ? outScore - outPar : null;
+  const totalToPar = totalScore !== null && totalPar !== null ? totalScore - totalPar : null;
 
   return (
     <table className="w-full border-collapse">
@@ -103,7 +119,7 @@ function NineTable({
             </td>
           )}
         </tr>
-        <tr className="border-b border-gray-200 text-sm">
+        <tr className="border-b border-gray-100 text-sm">
           <td className="px-3 py-1.5 font-semibold text-gray-900">Score</td>
           {data.map((d, i) => (
             <ScoreCell
@@ -118,6 +134,28 @@ function NineTable({
           {showTotal && (
             <td className="px-2 py-1.5 text-center bg-gray-100 font-bold text-lg text-gray-900">
               {totalScore ?? "-"}
+            </td>
+          )}
+        </tr>
+        <tr className="border-b border-gray-200 text-xs">
+          <td className="px-3 py-1.5 font-medium text-gray-500">To Par</td>
+          {data.map((d, i) => {
+            const diff =
+              d.score?.strokes != null && d.hole?.par != null
+                ? d.score.strokes - d.hole.par
+                : null;
+            return (
+              <td key={holes[i]} className={`px-2 py-1.5 text-center ${toParColorClass(diff)}`}>
+                {formatToPar(diff)}
+              </td>
+            );
+          })}
+          <td className={`px-2 py-1.5 text-center bg-gray-50 font-bold ${toParColorClass(outToPar)}`}>
+            {formatToPar(outToPar)}
+          </td>
+          {showTotal && (
+            <td className={`px-2 py-1.5 text-center bg-gray-100 font-bold text-sm ${toParColorClass(totalToPar)}`}>
+              {formatToPar(totalToPar)}
             </td>
           )}
         </tr>
@@ -159,9 +197,37 @@ export function ScorecardGrid({ round }: ScorecardGridProps) {
   const front = [1, 2, 3, 4, 5, 6, 7, 8, 9];
   const back = [10, 11, 12, 13, 14, 15, 16, 17, 18];
 
+  const tee = round.course?.tees.find(
+    (t) => t.color?.toLowerCase() === round.tee_box?.toLowerCase()
+  );
+
   return (
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-x-auto">
       <div className="min-w-[700px]">
+        {/* Scorecard header */}
+        <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
+          <div>
+            <div className="font-bold text-gray-900 text-base">
+              {round.course?.name ?? "Unknown Course"}
+            </div>
+            {round.course?.location && (
+              <div className="text-xs text-gray-500">{round.course.location}</div>
+            )}
+          </div>
+          <div className="text-right text-sm text-gray-600 space-y-0.5">
+            {round.tee_box && (
+              <div>
+                <span className="font-medium">{round.tee_box} tees</span>
+              </div>
+            )}
+            {tee && (
+              <div className="text-xs text-gray-400">
+                {tee.course_rating != null && `Rating ${tee.course_rating}`}
+                {tee.slope_rating != null && ` / Slope ${tee.slope_rating}`}
+              </div>
+            )}
+          </div>
+        </div>
         <NineTable round={round} holes={front} label="OUT" />
         <div className="border-t-2 border-gray-300" />
         <NineTable round={round} holes={back} label="IN" showTotal />

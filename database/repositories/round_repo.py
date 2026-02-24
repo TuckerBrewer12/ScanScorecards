@@ -115,6 +115,7 @@ class RoundRepositoryDB:
         Resolves tee_id from round_.tee_box + course if not provided.
         """
         try:
+            new_round_id: UUID
             async with self._pool.acquire() as conn:
                 async with conn.transaction():
                     # Resolve IDs
@@ -145,7 +146,7 @@ class RoundRepositoryDB:
                         row_data["is_complete"], row_data["holes_played"],
                         row_data["weather_conditions"], row_data["notes"],
                     )
-                    round_id = round_row["id"]
+                    new_round_id = round_row["id"]
 
                     # Map hole_number -> hole_id for FK resolution
                     hole_id_map = {}
@@ -162,7 +163,7 @@ class RoundRepositoryDB:
                             if not hole_id and resolved_course_id:
                                 continue  # skip scores for holes not in course
                             score_tuples.append(hole_score_to_row(
-                                hs, round_id, hole_id
+                                hs, new_round_id, hole_id
                             ))
                         if score_tuples:
                             await conn.executemany(
@@ -173,8 +174,10 @@ class RoundRepositoryDB:
                                    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)""",
                                 score_tuples,
                             )
-
-                    return await self._assemble_round(conn, round_row)
+            # Transaction committed and connection released — now read back with a
+            # fresh connection so _assemble_round's get_course() doesn't compete
+            # for the same pool slot and deadlock.
+            return await self.get_round(str(new_round_id))
         except asyncpg.UniqueViolationError as e:
             raise DuplicateError(str(e)) from e
         except asyncpg.ForeignKeyViolationError as e:
