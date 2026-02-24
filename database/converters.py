@@ -57,6 +57,7 @@ def course_from_rows(
         par=course_row["par"],
         holes=holes,
         tees=tees,
+        user_id=str(course_row["user_id"]) if course_row["user_id"] else None,
     )
 
 
@@ -113,13 +114,14 @@ def user_from_row(user_row, rounds: Optional[List[Round]] = None) -> User:
 # Model -> Row dict (writes)
 # ================================================================
 
-def course_to_row(course: Course) -> dict:
+def course_to_row(course: Course, user_id: Optional[UUID] = None) -> dict:
     """Course -> dict for courses.courses INSERT."""
     return {
         "name": course.name,
         "location": course.location,
         "par": course.get_par(),
         "total_holes": len(course.holes) if course.holes else None,
+        "user_id": user_id,
     }
 
 

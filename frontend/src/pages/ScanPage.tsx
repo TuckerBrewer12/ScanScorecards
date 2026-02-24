@@ -91,7 +91,7 @@ export function ScanPage({ userId, scanState, setScanState }: ScanPageProps) {
   const handleSave = async () => {
     if (!result) return;
     setSaving(true);
-    setError(null);
+    update({ error: null });
 
     try {
       const res = await fetch("/api/scan/save", {
@@ -105,6 +105,11 @@ export function ScanPage({ userId, scanState, setScanState }: ScanPageProps) {
           date: editedDate,
           notes: editedNotes,
           hole_scores: editedScores,
+          // Hole data lets the API auto-create a custom course if not found in DB
+          course_holes: result.round.course?.holes?.map((h) => ({
+            hole_number: h.number,
+            par: h.par,
+          })),
         }),
       });
 

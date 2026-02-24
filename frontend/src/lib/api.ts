@@ -10,6 +10,36 @@ async function fetchJSON<T>(path: string): Promise<T> {
   return res.json();
 }
 
+async function postJSON<T>(path: string, body: unknown): Promise<T> {
+  const res = await fetch(`${BASE_URL}${path}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    let msg = `API error: ${res.status}`;
+    try { msg = JSON.parse(text).detail ?? msg; } catch { if (text) msg = text; }
+    throw new Error(msg);
+  }
+  return res.json();
+}
+
+async function putJSON<T>(path: string, body: unknown): Promise<T> {
+  const res = await fetch(`${BASE_URL}${path}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    let msg = `API error: ${res.status}`;
+    try { msg = JSON.parse(text).detail ?? msg; } catch { if (text) msg = text; }
+    throw new Error(msg);
+  }
+  return res.json();
+}
+
 export const api = {
   getDashboard: (userId: string) =>
     fetchJSON<DashboardData>(`/stats/dashboard/${userId}`),
@@ -20,14 +50,32 @@ export const api = {
   getRound: (roundId: string) =>
     fetchJSON<Round>(`/rounds/${roundId}`),
 
-  getCourses: (limit = 50, offset = 0) =>
-    fetchJSON<CourseSummary[]>(`/courses?limit=${limit}&offset=${offset}`),
+  updateRound: (
+    roundId: string,
+    body: {
+      hole_scores?: { hole_number: number; strokes?: number | null; putts?: number | null; fairway_hit?: boolean | null; green_in_regulation?: boolean | null }[];
+      notes?: string;
+      weather_conditions?: string;
+    }
+  ) => putJSON<Round>(`/rounds/${roundId}`, body),
 
-  searchCourses: (query: string) =>
-    fetchJSON<CourseSummary[]>(`/courses/search?q=${encodeURIComponent(query)}`),
+  getCourses: (userId?: string, limit = 50, offset = 0) => {
+    const params = new URLSearchParams({ limit: String(limit), offset: String(offset) });
+    if (userId) params.set("user_id", userId);
+    return fetchJSON<CourseSummary[]>(`/courses?${params}`);
+  },
+
+  searchCourses: (query: string, userId?: string) => {
+    const params = new URLSearchParams({ q: query });
+    if (userId) params.set("user_id", userId);
+    return fetchJSON<CourseSummary[]>(`/courses/search?${params}`);
+  },
 
   getCourse: (courseId: string) =>
     fetchJSON<Course>(`/courses/${courseId}`),
+
+  cloneCourse: (courseId: string, userId: string) =>
+    postJSON<CourseSummary>(`/courses/${courseId}/clone?user_id=${encodeURIComponent(userId)}`, {}),
 
   getUserByEmail: (email: string) =>
     fetchJSON<User>(`/users/by-email/${encodeURIComponent(email)}`),

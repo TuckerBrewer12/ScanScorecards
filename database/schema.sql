@@ -24,20 +24,31 @@ $$ LANGUAGE plpgsql;
 -- =============
 -- courses.courses
 -- =============
+-- user_id IS NULL  => master/global course
+-- user_id IS NOT NULL => custom course owned by that user
+-- user_id FK added via ALTER TABLE at end of schema (circular dependency with users.users)
 CREATE TABLE IF NOT EXISTS courses.courses (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name VARCHAR(255) NOT NULL,
     location VARCHAR(255),
     par INTEGER CHECK (par BETWEEN 27 AND 80),
     total_holes INTEGER CHECK (total_holes IN (9, 18)),
+    user_id UUID,  -- FK added later; NULL = master course
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW(),
-    metadata JSONB,
-    UNIQUE (name, location)
+    metadata JSONB
 );
 
 CREATE INDEX IF NOT EXISTS idx_courses_location ON courses.courses (location);
 CREATE INDEX IF NOT EXISTS idx_courses_name ON courses.courses (name);
+CREATE INDEX IF NOT EXISTS idx_courses_user_id ON courses.courses (user_id);
+
+-- Partial unique indexes: master courses unique by (name, location),
+-- user courses unique by (name, location, user_id)
+CREATE UNIQUE INDEX IF NOT EXISTS idx_courses_unique_master
+    ON courses.courses (LOWER(name), location) WHERE user_id IS NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS idx_courses_unique_user
+    ON courses.courses (LOWER(name), location, user_id) WHERE user_id IS NOT NULL;
 
 CREATE TRIGGER trg_courses_updated_at
     BEFORE UPDATE ON courses.courses
@@ -180,5 +191,31 @@ CREATE TABLE IF NOT EXISTS users.scorecard_scans (
     llm_raw_json JSONB,
     created_at TIMESTAMP DEFAULT NOW()
 );
+
+-- =============
+-- Add user_id FK to courses.courses
+-- (Must come after users.users is defined to avoid circular dependency)
+-- =============
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_schema = 'courses' AND table_name = 'courses' AND column_name = 'user_id'
+    ) THEN
+        ALTER TABLE courses.courses
+            ADD COLUMN user_id UUID REFERENCES users.users(id) ON DELETE CASCADE;
+    ELSIF NOT EXISTS (
+        SELECT 1 FROM information_schema.table_constraints tc
+        JOIN information_schema.key_column_usage kcu
+            ON tc.constraint_name = kcu.constraint_name
+        WHERE tc.table_schema = 'courses' AND tc.table_name = 'courses'
+          AND tc.constraint_type = 'FOREIGN KEY' AND kcu.column_name = 'user_id'
+    ) THEN
+        ALTER TABLE courses.courses
+            ADD CONSTRAINT courses_user_id_fkey
+            FOREIGN KEY (user_id) REFERENCES users.users(id) ON DELETE CASCADE;
+    END IF;
+END
+$$;
 
 COMMIT;

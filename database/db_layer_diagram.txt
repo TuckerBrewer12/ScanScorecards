@@ -1,55 +1,93 @@
 
-  ┌─────────────────────────────────────────────────────┐
-  │                    Application                       │
-  │                                                     │
-  │   FastAPI (future)        scorecard_extractor.py    │
-  │        │                         │                  │
-  │        │ async                   │ sync             │
-  │        ▼                         ▼                  │
-  │   DatabaseManager         SyncCourseRepository      │
-  │        │                    Adapter                  │
-  │        │                         │                  │
-  └────────│─────────────────────────│──────────────────┘
-           │                         │
-           ▼                         ▼
-  ┌─────────────────────────────────────────────────────┐
-  │              DatabaseManager (facade)                │
-  │                                                     │
-  │   ┌──────────────┐ ┌────────────┐ ┌─────────────┐  │
-  │   │ CourseRepoDB  │ │ UserRepoDB │ │ RoundRepoDB │  │
-  │   │              │ │            │ │             │  │
-  │   │ • get_course │ │ • get_user │ │ • get_round │  │
-  │   │ • find_by_   │ │ • create   │ │ • create    │  │
-  │   │   name       │ │ • update   │ │ • upsert    │  │
-  │   │ • create     │ │ • delete   │ │   hole_score│  │
-  │   │ • update     │ │ • update_  │ │ • delete    │  │
-  │   │ • delete     │ │   handicap │ │ • save_scan │  │
-  │   │ • search     │ │            │ │             │  │
-  │   └──────────────┘ └────────────┘ └─────────────┘  │
-  │                                                     │
-  │   ┌─────────────────────────────────────────────┐   │
-  │   │            converters.py                     │   │
-  │   │   DB rows ←──────────────→ Pydantic models   │   │
-  │   └─────────────────────────────────────────────┘   │
-  │                                                     │
-  └──────────────────────┬──────────────────────────────┘
-                         │
-                         ▼
-  ┌─────────────────────────────────────────────────────┐
-  │          connection.py (asyncpg pool)                │
-  │                                                     │
-  └──────────────────────┬──────────────────────────────┘
-                         │
-                         ▼
-  ┌─────────────────────────────────────────────────────┐
-  │                   PostgreSQL                         │
-  │                                                     │
-  │   courses schema          │    users schema          │
-  │   ┌────────────┐          │    ┌────────────┐       │
-  │   │ courses    │          │    │ users      │       │
-  │   │ holes      │          │    │ rounds     │       │
-  │   │ tees       │          │    │ hole_scores│       │
-  │   │ tee_       │          │    │ scorecard_ │       │
-  │   │  yardages  │          │    │  scans     │       │
-  │   └────────────┘          │    └────────────┘       │
-  └─────────────────────────────────────────────────────┘
+  ┌──────────────────────────────────────────────────────────────────────┐
+  │                          Application                                  │
+  │                                                                      │
+  │   FastAPI routers               scorecard_extractor.py               │
+  │   ┌─────────────────────┐             │                              │
+  │   │ /api/courses        │             │ sync (runs in thread pool)   │
+  │   │   GET  list/search  │             ▼                              │
+  │   │   GET  /{id}        │       SyncCourseRepositoryAdapter          │
+  │   │   POST create       │       wraps CourseRepoDB; bridges          │
+  │   │   PUT  /{id}        │       async→sync via run_coroutine_        │
+  │   │   POST /{id}/clone  │       threadsafe on FastAPI's event loop   │
+  │   ├─────────────────────┤                                            │
+  │   │ /api/rounds         │                                            │
+  │   │   GET  user/{uid}   │                                            │
+  │   │   GET  /{id}        │                                            │
+  │   │   PUT  /{id}        │                                            │
+  │   │   DELETE /{id}      │                                            │
+  │   ├─────────────────────┤                                            │
+  │   │ /api/scan           │                                            │
+  │   │   POST /extract     │                                            │
+  │   │   POST /save        │ ← auto-creates custom course if not in DB  │
+  │   ├─────────────────────┤                                            │
+  │   │ /api/users          │                                            │
+  │   │ /api/stats          │                                            │
+  │   └─────────────────────┘                                            │
+  │              │  async                                                │
+  └──────────────│───────────────────────────────────────────────────────┘
+                 │
+                 ▼
+  ┌──────────────────────────────────────────────────────────────────────┐
+  │                   DatabaseManager  (facade)                           │
+  │                                                                      │
+  │  ┌─────────────────────┐ ┌──────────────┐ ┌────────────────────┐    │
+  │  │   CourseRepoDB       │ │ UserRepoDB   │ │   RoundRepoDB       │   │
+  │  ├─────────────────────┤ ├──────────────┤ ├────────────────────┤   │
+  │  │ get_course          │ │ get_user     │ │ get_round          │   │
+  │  │ find_course_by_name │ │ get_by_email │ │ get_rounds_for_user│   │
+  │  │  (user_id-aware,    │ │ create_user  │ │ create_round       │   │
+  │  │   searches master   │ │ update_user  │ │ update_round       │   │
+  │  │   + user's own)     │ │ delete_user  │ │ update_hole_scores │   │
+  │  │ list_courses        │ │              │ │ upsert_hole_score  │   │
+  │  │  (master + user's)  │ │              │ │ delete_round       │   │
+  │  │ search_courses      │ │              │ │ save_scan          │   │
+  │  │ create_course       │ │              │ │ get_scans_for_round│   │
+  │  │  (user_id= for      │ │              │ │                    │   │
+  │  │   custom courses)   │ │              │ │                    │   │
+  │  │ clone_course        │ │              │ │                    │   │
+  │  │  (master → user     │ │              │ │                    │   │
+  │  │   owned copy)       │ │              │ │                    │   │
+  │  │ update_course       │ │              │ │                    │   │
+  │  │  (owner-only,       │ │              │ │                    │   │
+  │  │   403 on master)    │ │              │ │                    │   │
+  │  │ delete_course       │ │              │ │                    │   │
+  │  └─────────────────────┘ └──────────────┘ └────────────────────┘   │
+  │                                                                      │
+  │  ┌──────────────────────────────────────────────────────────────┐   │
+  │  │                      converters.py                            │   │
+  │  │   DB rows  ◄──────────────────────────────►  Pydantic models  │   │
+  │  │                                                               │   │
+  │  │   course_from_rows / course_to_row  (includes user_id)        │   │
+  │  │   hole_from_row / hole_to_row                                 │   │
+  │  │   tee_from_row / tee_to_row / tee_yardages_to_rows            │   │
+  │  │   round_from_rows / round_to_row                              │   │
+  │  │   hole_score_from_row / hole_score_to_row                     │   │
+  │  │   user_from_row / user_to_row                                 │   │
+  │  └──────────────────────────────────────────────────────────────┘   │
+  │                                                                      │
+  └──────────────────────────────┬───────────────────────────────────────┘
+                                 │
+                                 ▼
+  ┌──────────────────────────────────────────────────────────────────────┐
+  │              connection.py  (asyncpg pool singleton)                  │
+  │              host=localhost  port=5432  db=golf_scorecard             │
+  └──────────────────────────────┬───────────────────────────────────────┘
+                                 │
+                                 ▼
+  ┌──────────────────────────────────────────────────────────────────────┐
+  │                          PostgreSQL                                   │
+  │                                                                      │
+  │   courses schema                    users schema                     │
+  │   ┌──────────────────────────┐      ┌──────────────────────────┐    │
+  │   │ courses  (+ user_id)     │      │ users                    │    │
+  │   │   NULL  = master course  │      │ rounds                   │    │
+  │   │   <uid> = custom course  │      │ hole_scores              │    │
+  │   │ holes                    │      │ scorecard_scans          │    │
+  │   │ tees                     │      └──────────────────────────┘    │
+  │   │ tee_yardages             │                                      │
+  │   └──────────────────────────┘                                      │
+  │                                                                      │
+  │   migrations/                                                        │
+  │   └── 001_add_course_user_id.sql  (applied)                         │
+  └──────────────────────────────────────────────────────────────────────┘
