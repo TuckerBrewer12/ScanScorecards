@@ -19,10 +19,19 @@
   │   ├─────────────────────┤                                            │
   │   │ /api/scan           │                                            │
   │   │   POST /extract     │                                            │
-  │   │   POST /save        │ ← auto-creates custom course if not in DB  │
+  │   │   POST /save        │ ← looks up course; populates par_played    │
+  │   │                     │   on each hole_score from master holes or  │
+  │   │                     │   course_holes in request; no auto-course  │
   │   ├─────────────────────┤                                            │
   │   │ /api/users          │                                            │
-  │   │ /api/stats          │                                            │
+  │   │   GET  by-email/    │                                            │
+  │   │   GET  /{id}        │                                            │
+  │   │   GET  /{id}/tees   │                                            │
+  │   │   POST /{id}/tees   │                                            │
+  │   │   PUT  /{id}/tees/  │                                            │
+  │   │        {tee_id}     │                                            │
+  │   │   DELETE /{id}/tees/│                                            │
+  │   │        {tee_id}     │                                            │
   │   └─────────────────────┘                                            │
   │              │  async                                                │
   └──────────────│───────────────────────────────────────────────────────┘
@@ -31,28 +40,32 @@
   ┌──────────────────────────────────────────────────────────────────────┐
   │                   DatabaseManager  (facade)                           │
   │                                                                      │
-  │  ┌─────────────────────┐ ┌──────────────┐ ┌────────────────────┐    │
-  │  │   CourseRepoDB       │ │ UserRepoDB   │ │   RoundRepoDB       │   │
-  │  ├─────────────────────┤ ├──────────────┤ ├────────────────────┤   │
-  │  │ get_course          │ │ get_user     │ │ get_round          │   │
-  │  │ find_course_by_name │ │ get_by_email │ │ get_rounds_for_user│   │
-  │  │  (user_id-aware,    │ │ create_user  │ │ create_round       │   │
-  │  │   searches master   │ │ update_user  │ │ update_round       │   │
-  │  │   + user's own)     │ │ delete_user  │ │ update_hole_scores │   │
-  │  │ list_courses        │ │              │ │ upsert_hole_score  │   │
-  │  │  (master + user's)  │ │              │ │ delete_round       │   │
-  │  │ search_courses      │ │              │ │ save_scan          │   │
-  │  │ create_course       │ │              │ │ get_scans_for_round│   │
-  │  │  (user_id= for      │ │              │ │                    │   │
-  │  │   custom courses)   │ │              │ │                    │   │
-  │  │ clone_course        │ │              │ │                    │   │
-  │  │  (master → user     │ │              │ │                    │   │
-  │  │   owned copy)       │ │              │ │                    │   │
-  │  │ update_course       │ │              │ │                    │   │
-  │  │  (owner-only,       │ │              │ │                    │   │
-  │  │   403 on master)    │ │              │ │                    │   │
-  │  │ delete_course       │ │              │ │                    │   │
-  │  └─────────────────────┘ └──────────────┘ └────────────────────┘   │
+  │  ┌──────────────┐ ┌────────────┐ ┌──────────────────┐ ┌──────────┐  │
+  │  │ CourseRepoDB  │ │ UserRepoDB │ │   RoundRepoDB     │ │UserTee-  │  │
+  │  ├──────────────┤ ├────────────┤ ├──────────────────┤ │ RepoDB   │  │
+  │  │ get_course   │ │ get_user   │ │ get_round        │ ├──────────┤  │
+  │  │ find_by_name │ │ get_by_    │ │ get_rounds_for_  │ │ get_user_│  │
+  │  │  (user_id-   │ │  email     │ │  user            │ │  tees    │  │
+  │  │   aware;     │ │ create_    │ │ create_round     │ │ get_user_│  │
+  │  │   master +   │ │  user      │ │  (hole_id may be │ │  tee     │  │
+  │  │   user own)  │ │ update_    │ │   NULL; populates│ │ create_  │  │
+  │  │ list_courses │ │  user      │ │   par_played from│ │  user_   │  │
+  │  │  (master +   │ │ delete_    │ │   course holes)  │ │  tee     │  │
+  │  │   user own)  │ │  user      │ │ update_round     │ │ update_  │  │
+  │  │ search_      │ │            │ │ update_hole_     │ │  user_   │  │
+  │  │  courses     │ │            │ │  scores          │ │  tee     │  │
+  │  │ create_      │ │            │ │ upsert_hole_     │ │ delete_  │  │
+  │  │  course      │ │            │ │  score           │ │  user_   │  │
+  │  │  (user_id=   │ │            │ │ delete_round     │ │  tee     │  │
+  │  │   for custom)│ │            │ │ save_scan        │ └──────────┘  │
+  │  │ clone_course │ │            │ │ get_scans_for_   │               │
+  │  │  (master →   │ │            │ │  round           │               │
+  │  │   user copy) │ │            │ └──────────────────┘               │
+  │  │ update_      │ │            │                                    │
+  │  │  course      │ │            │                                    │
+  │  │ delete_      │ │            │                                    │
+  │  │  course      │ │            │                                    │
+  │  └──────────────┘ └────────────┘                                    │
   │                                                                      │
   │  ┌──────────────────────────────────────────────────────────────┐   │
   │  │                      converters.py                            │   │
@@ -61,9 +74,12 @@
   │  │   course_from_rows / course_to_row  (includes user_id)        │   │
   │  │   hole_from_row / hole_to_row                                 │   │
   │  │   tee_from_row / tee_to_row / tee_yardages_to_rows            │   │
-  │  │   round_from_rows / round_to_row                              │   │
-  │  │   hole_score_from_row / hole_score_to_row                     │   │
+  │  │   round_from_rows / round_to_row  (includes course_name_      │   │
+  │  │     played)                                                   │   │
+  │  │   hole_score_from_row / hole_score_to_row  (includes          │   │
+  │  │     par_played, handicap_played; hole_id may be None)         │   │
   │  │   user_from_row / user_to_row                                 │   │
+  │  │   user_tee_from_row / user_tee_to_row                         │   │
   │  └──────────────────────────────────────────────────────────────┘   │
   │                                                                      │
   └──────────────────────────────┬───────────────────────────────────────┘
@@ -81,13 +97,16 @@
   │   courses schema                    users schema                     │
   │   ┌──────────────────────────┐      ┌──────────────────────────┐    │
   │   │ courses  (+ user_id)     │      │ users                    │    │
-  │   │   NULL  = master course  │      │ rounds                   │    │
-  │   │   <uid> = custom course  │      │ hole_scores              │    │
-  │   │ holes                    │      │ scorecard_scans          │    │
-  │   │ tees                     │      └──────────────────────────┘    │
-  │   │ tee_yardages             │                                      │
-  │   └──────────────────────────┘                                      │
+  │   │   NULL  = master course  │      │ rounds  (+ course_name_  │    │
+  │   │   <uid> = custom course  │      │   played, user_tee_id)   │    │
+  │   │ holes                    │      │ hole_scores  (hole_id     │    │
+  │   │ tees                     │      │   NULLABLE; + par_played, │    │
+  │   │ tee_yardages             │      │   handicap_played)        │    │
+  │   └──────────────────────────┘      │ user_tees                │    │
+  │                                     │ scorecard_scans          │    │
+  │                                     └──────────────────────────┘    │
   │                                                                      │
   │   migrations/                                                        │
-  │   └── 001_add_course_user_id.sql  (applied)                         │
+  │   ├── 001_add_course_user_id.sql          (applied)                 │
+  │   └── 002_par_played_nullable_hole_id.sql (applied)                 │
   └──────────────────────────────────────────────────────────────────────┘

@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Upload, Camera, Loader2, CheckCircle, AlertTriangle, X } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { formatToPar } from "@/types/golf";
-import type { ScanState, ScanResult, ExtractedHoleScore } from "@/types/scan";
+import type { ScanState, ScanResult, ExtractedHoleScore, FieldConfidence } from "@/types/scan";
 import { initialScanState } from "@/types/scan";
 
 interface ScanPageProps {
@@ -270,7 +270,7 @@ export function ScanPage({ userId, scanState, setScanState }: ScanPageProps) {
 
   function getFieldConfidence(holeNumber: number | null, index: number, field: string): FieldConfidence | null {
     const num = holeNumber ?? index + 1;
-    const hc = result.confidence.hole_scores?.find((h) => h.hole_number === num);
+    const hc = result?.confidence.hole_scores?.find((h) => h.hole_number === num);
     return hc?.fields?.[field] ?? null;
   }
 

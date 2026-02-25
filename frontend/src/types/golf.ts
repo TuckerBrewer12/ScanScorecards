@@ -29,6 +29,8 @@ export interface HoleScore {
   shots_to_green: number | null;
   fairway_hit: boolean | null;
   green_in_regulation: boolean | null;
+  par_played: number | null;
+  handicap_played: number | null;
 }
 
 export interface Round {
@@ -41,6 +43,7 @@ export interface Round {
   notes: string | null;
   total_putts: number | null;
   total_gir: number | null;
+  course_name_played: string | null;
 }
 
 export interface RoundSummary {

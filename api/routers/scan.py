@@ -11,11 +11,10 @@ from pydantic import BaseModel
 
 from database.db_manager import DatabaseManager
 from database.sync_adapter import SyncCourseRepositoryAdapter
-from database.exceptions import DuplicateError
 from api.dependencies import get_db
 from llm.scorecard_extractor import extract_scorecard, ExtractionResult
 from llm.strategies import ExtractionStrategy
-from models import Course, Hole, Tee, HoleScore, Round
+from models import HoleScore, Round
 
 router = APIRouter()
 
@@ -117,11 +116,12 @@ async def save_round(
 ):
     """Save a reviewed/edited round to the database.
 
-    If the course is not found in the DB and course_holes are provided,
-    a custom course is automatically created for the user.
+    If the course is found in the DB, par data comes from master course holes.
+    If not found, par data is sourced from course_holes in the request.
+    No custom course is created — each round is self-contained via par_played.
     """
     try:
-        # Find or create course
+        # Look up course (never auto-create)
         course = None
         course_id = None
 
@@ -131,48 +131,50 @@ async def save_round(
             )
             if course:
                 course_id = course.id
-            elif req.course_holes:
-                # Auto-create a custom course from the extracted hole data
-                holes = [
-                    Hole(
-                        number=h["hole_number"],
-                        par=h.get("par"),
-                        handicap=h.get("handicap"),
-                    )
-                    for h in req.course_holes
-                    if h.get("hole_number") is not None
-                ]
-                tees = [Tee(color=req.tee_box)] if req.tee_box else []
-                new_course = Course(
-                    name=req.course_name,
-                    location=req.course_location,
-                    holes=holes,
-                    tees=tees,
-                )
-                try:
-                    course = await db.courses.create_course(new_course, user_id=req.user_id)
-                    course_id = course.id
-                except DuplicateError:
-                    # User already has a custom course with this name (e.g. duplicate scan)
-                    course = await db.courses.find_course_by_name(
-                        req.course_name, req.course_location, user_id=req.user_id
-                    )
-                    if course:
-                        course_id = course.id
 
-        # Build hole scores
-        hole_scores = [HoleScore(**hs) for hs in req.hole_scores]
+        # Build par/handicap lookup: master course takes priority over request data
+        par_by_hole: dict = {}
+        handicap_by_hole: dict = {}
+        if course and course.holes:
+            for hole in course.holes:
+                if hole.number is not None:
+                    if hole.par is not None:
+                        par_by_hole[hole.number] = hole.par
+                    if hole.handicap is not None:
+                        handicap_by_hole[hole.number] = hole.handicap
+        elif req.course_holes:
+            for h in req.course_holes:
+                hole_num = h.get("hole_number") if isinstance(h, dict) else getattr(h, "hole_number", None)
+                par = h.get("par") if isinstance(h, dict) else getattr(h, "par", None)
+                handicap = h.get("handicap") if isinstance(h, dict) else getattr(h, "handicap", None)
+                if hole_num is not None:
+                    if par is not None:
+                        par_by_hole[hole_num] = par
+                    if handicap is not None:
+                        handicap_by_hole[hole_num] = handicap
 
-        # Build round
+        # Build hole scores with par_played populated
+        hole_scores = []
+        for hs_data in req.hole_scores:
+            hs_dict = dict(hs_data) if isinstance(hs_data, dict) else hs_data
+            hole_num = hs_dict.get("hole_number")
+            if hole_num is not None:
+                if not hs_dict.get("par_played"):
+                    hs_dict["par_played"] = par_by_hole.get(hole_num)
+                if not hs_dict.get("handicap_played"):
+                    hs_dict["handicap_played"] = handicap_by_hole.get(hole_num)
+            hole_scores.append(HoleScore(**hs_dict))
+
+        # Build round — store course_name_played when no master course found
         round_ = Round(
             course=course,
             tee_box=req.tee_box,
             date=req.date,
             hole_scores=hole_scores,
             notes=req.notes,
+            course_name_played=req.course_name if not course else None,
         )
 
-        # Save to database
         saved = await db.rounds.create_round(round_, req.user_id, course_id=course_id)
 
         return {"id": saved.id, "total_score": saved.calculate_total_score()}

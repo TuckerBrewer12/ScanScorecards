@@ -20,6 +20,8 @@ class HoleScoreUpdate(BaseModel):
     green_in_regulation: Optional[bool] = None
     net_score: Optional[int] = None
     shots_to_green: Optional[int] = None
+    par_played: Optional[int] = None
+    handicap_played: Optional[int] = None
 
 
 class UpdateRoundRequest(BaseModel):
@@ -33,9 +35,9 @@ def summarize_round(r) -> RoundSummaryResponse:
     fairways = [s.fairway_hit for s in r.hole_scores if s.fairway_hit is not None]
     return RoundSummaryResponse(
         id=r.id,
-        course_name=r.course.name if r.course else None,
+        course_name=r.course.name if r.course else r.course_name_played,
         course_location=r.course.location if r.course else None,
-        course_par=r.course.get_par() if r.course else None,
+        course_par=r.get_par(),
         tee_box=r.tee_box,
         date=r.date,
         total_score=r.calculate_total_score(),
@@ -87,6 +89,8 @@ async def update_round(
                     green_in_regulation=hs.green_in_regulation,
                     net_score=hs.net_score,
                     shots_to_green=hs.shots_to_green,
+                    par_played=hs.par_played,
+                    handicap_played=hs.handicap_played,
                 )
                 for hs in req.hole_scores
             ]

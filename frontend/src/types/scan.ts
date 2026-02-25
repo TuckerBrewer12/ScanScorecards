@@ -19,7 +19,7 @@ export interface ExtractedRound {
   notes: string | null;
 }
 
-interface FieldConfidence {
+export interface FieldConfidence {
   final_confidence: number;
   level: string;
   validation_flags: string[];

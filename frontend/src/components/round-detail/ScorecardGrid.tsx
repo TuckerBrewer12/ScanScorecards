@@ -1,4 +1,4 @@
-import type { Round, HoleScore, Hole, Tee } from "@/types/golf";
+import type { Round, HoleScore } from "@/types/golf";
 import { ScoreCell } from "./ScoreCell";
 
 interface ScorecardGridProps {
@@ -12,7 +12,9 @@ function getHoleData(round: Round, holeNum: number) {
     (t) => t.color?.toLowerCase() === round.tee_box?.toLowerCase()
   );
   const yardage = tee?.hole_yardages?.[holeNum];
-  return { score, hole, yardage };
+  // Use master course hole par if available, otherwise fall back to par_played on score
+  const effectivePar: number | null = hole?.par ?? score?.par_played ?? null;
+  return { score, hole, yardage, effectivePar };
 }
 
 function sumScores(scores: (HoleScore | undefined)[]): number | null {
@@ -21,10 +23,10 @@ function sumScores(scores: (HoleScore | undefined)[]): number | null {
   return valid.reduce((sum, s) => sum + (s.strokes ?? 0), 0);
 }
 
-function sumPars(holes: (Hole | undefined)[]): number | null {
-  const valid = holes.filter((h): h is Hole => h?.par != null);
+function sumEffectivePars(pars: (number | null)[]): number | null {
+  const valid = pars.filter((p): p is number => p != null);
   if (valid.length === 0) return null;
-  return valid.reduce((sum, h) => sum + (h.par ?? 0), 0);
+  return valid.reduce((sum, p) => sum + p, 0);
 }
 
 function formatToPar(diff: number | null): string {
@@ -58,9 +60,9 @@ function NineTable({
     : [];
 
   const outScore = sumScores(data.map((d) => d.score));
-  const outPar = sumPars(data.map((d) => d.hole));
+  const outPar = sumEffectivePars(data.map((d) => d.effectivePar));
   const totalScore = showTotal ? sumScores(allData.map((d) => d.score)) : null;
-  const totalPar = showTotal ? sumPars(allData.map((d) => d.hole)) : null;
+  const totalPar = showTotal ? sumEffectivePars(allData.map((d) => d.effectivePar)) : null;
   const outToPar = outScore !== null && outPar !== null ? outScore - outPar : null;
   const totalToPar = totalScore !== null && totalPar !== null ? totalScore - totalPar : null;
 
@@ -97,7 +99,7 @@ function NineTable({
           <td className="px-3 py-1.5 font-medium">Hcp</td>
           {data.map((d, i) => (
             <td key={holes[i]} className="px-2 py-1.5 text-center">
-              {d.hole?.handicap ?? "-"}
+              {d.hole?.handicap ?? d.score?.handicap_played ?? "-"}
             </td>
           ))}
           <td className="px-2 py-1.5 bg-gray-50" />
@@ -107,7 +109,7 @@ function NineTable({
           <td className="px-3 py-1.5">Par</td>
           {data.map((d, i) => (
             <td key={holes[i]} className="px-2 py-1.5 text-center">
-              {d.hole?.par ?? "-"}
+              {d.effectivePar ?? "-"}
             </td>
           ))}
           <td className="px-2 py-1.5 text-center bg-gray-50 font-bold">
@@ -125,7 +127,7 @@ function NineTable({
             <ScoreCell
               key={holes[i]}
               strokes={d.score?.strokes ?? null}
-              par={d.hole?.par ?? null}
+              par={d.effectivePar}
             />
           ))}
           <td className="px-2 py-1.5 text-center bg-gray-50 font-bold text-gray-900">
@@ -141,8 +143,8 @@ function NineTable({
           <td className="px-3 py-1.5 font-medium text-gray-500">To Par</td>
           {data.map((d, i) => {
             const diff =
-              d.score?.strokes != null && d.hole?.par != null
-                ? d.score.strokes - d.hole.par
+              d.score?.strokes != null && d.effectivePar != null
+                ? d.score.strokes - d.effectivePar
                 : null;
             return (
               <td key={holes[i]} className={`px-2 py-1.5 text-center ${toParColorClass(diff)}`}>
@@ -208,7 +210,7 @@ export function ScorecardGrid({ round }: ScorecardGridProps) {
         <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
           <div>
             <div className="font-bold text-gray-900 text-base">
-              {round.course?.name ?? "Unknown Course"}
+              {round.course?.name ?? round.course_name_played ?? "Unknown Course"}
             </div>
             {round.course?.location && (
               <div className="text-xs text-gray-500">{round.course.location}</div>

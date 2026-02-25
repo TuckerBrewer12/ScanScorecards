@@ -138,13 +138,15 @@ class RoundRepositoryDB:
                     round_row = await conn.fetchrow(
                         """INSERT INTO users.rounds
                            (user_id, course_id, tee_id, round_date, total_score,
-                            is_complete, holes_played, weather_conditions, notes)
-                           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+                            is_complete, holes_played, weather_conditions, notes,
+                            course_name_played)
+                           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
                            RETURNING *""",
                         row_data["user_id"], row_data["course_id"], row_data["tee_id"],
                         row_data["round_date"], row_data["total_score"],
                         row_data["is_complete"], row_data["holes_played"],
                         row_data["weather_conditions"], row_data["notes"],
+                        row_data["course_name_played"],
                     )
                     new_round_id = round_row["id"]
 
@@ -155,13 +157,24 @@ class RoundRepositoryDB:
                             conn, resolved_course_id
                         )
 
+                    # Build par_by_hole from course holes for populating par_played
+                    par_by_hole = {}
+                    if round_.course and round_.course.holes:
+                        for h in round_.course.holes:
+                            if h.number is not None and h.par is not None:
+                                par_by_hole[h.number] = h.par
+
                     # Batch insert hole scores
                     if round_.hole_scores:
                         score_tuples = []
                         for hs in round_.hole_scores:
                             hole_id = hole_id_map.get(hs.hole_number)
-                            if not hole_id and resolved_course_id:
-                                continue  # skip scores for holes not in course
+                            # Populate par_played from course if available, else keep existing
+                            if hs.hole_number in par_by_hole and hs.par_played is None:
+                                from models import HoleScore as _HS
+                                hs = _HS(
+                                    **{**hs.model_dump(), "par_played": par_by_hole[hs.hole_number]}
+                                )
                             score_tuples.append(hole_score_to_row(
                                 hs, new_round_id, hole_id
                             ))
@@ -170,8 +183,9 @@ class RoundRepositoryDB:
                                 """INSERT INTO users.hole_scores
                                    (round_id, hole_id, hole_number, strokes,
                                     net_score, putts, shots_to_green,
-                                    fairway_hit, green_in_regulation)
-                                   VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)""",
+                                    fairway_hit, green_in_regulation,
+                                    par_played, handicap_played)
+                                   VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)""",
                                 score_tuples,
                             )
             # Transaction committed and connection released — now read back with a
@@ -192,7 +206,7 @@ class RoundRepositoryDB:
         allowed = {
             "round_date", "total_score", "adjusted_gross_score",
             "score_differential", "is_complete", "holes_played",
-            "weather_conditions", "notes",
+            "weather_conditions", "notes", "course_name_played",
         }
         updates = {k: v for k, v in fields.items() if k in allowed}
         if not updates:
@@ -235,19 +249,23 @@ class RoundRepositoryDB:
             await conn.execute(
                 """INSERT INTO users.hole_scores
                    (round_id, hole_id, hole_number, strokes, net_score,
-                    putts, shots_to_green, fairway_hit, green_in_regulation)
-                   VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+                    putts, shots_to_green, fairway_hit, green_in_regulation,
+                    par_played, handicap_played)
+                   VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
                    ON CONFLICT (round_id, hole_number)
                    DO UPDATE SET strokes = EXCLUDED.strokes,
                                  net_score = EXCLUDED.net_score,
                                  putts = EXCLUDED.putts,
                                  shots_to_green = EXCLUDED.shots_to_green,
                                  fairway_hit = EXCLUDED.fairway_hit,
-                                 green_in_regulation = EXCLUDED.green_in_regulation""",
+                                 green_in_regulation = EXCLUDED.green_in_regulation,
+                                 par_played = COALESCE(EXCLUDED.par_played, users.hole_scores.par_played),
+                                 handicap_played = COALESCE(EXCLUDED.handicap_played, users.hole_scores.handicap_played)""",
                 UUID(round_id), hole_id, hole_score.hole_number,
                 hole_score.strokes, hole_score.net_score,
                 hole_score.putts, hole_score.shots_to_green,
                 hole_score.fairway_hit, hole_score.green_in_regulation,
+                hole_score.par_played, hole_score.handicap_played,
             )
 
     async def update_hole_scores(
@@ -276,8 +294,9 @@ class RoundRepositoryDB:
                     await conn.execute(
                         """INSERT INTO users.hole_scores
                            (round_id, hole_id, hole_number, strokes, net_score,
-                            putts, shots_to_green, fairway_hit, green_in_regulation)
-                           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+                            putts, shots_to_green, fairway_hit, green_in_regulation,
+                            par_played, handicap_played)
+                           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
                            ON CONFLICT (round_id, hole_number)
                            DO UPDATE SET
                                strokes = EXCLUDED.strokes,
@@ -285,11 +304,14 @@ class RoundRepositoryDB:
                                putts = EXCLUDED.putts,
                                shots_to_green = EXCLUDED.shots_to_green,
                                fairway_hit = EXCLUDED.fairway_hit,
-                               green_in_regulation = EXCLUDED.green_in_regulation""",
+                               green_in_regulation = EXCLUDED.green_in_regulation,
+                               par_played = COALESCE(EXCLUDED.par_played, users.hole_scores.par_played),
+                               handicap_played = COALESCE(EXCLUDED.handicap_played, users.hole_scores.handicap_played)""",
                         UUID(round_id), hole_id, hs.hole_number,
                         hs.strokes, hs.net_score,
                         hs.putts, hs.shots_to_green,
                         hs.fairway_hit, hs.green_in_regulation,
+                        hs.par_played, hs.handicap_played,
                     )
 
                 # Recalculate totals

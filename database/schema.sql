@@ -133,6 +133,7 @@ CREATE TABLE IF NOT EXISTS users.rounds (
     user_id UUID NOT NULL REFERENCES users.users(id) ON DELETE CASCADE,
     course_id UUID REFERENCES courses.courses(id) ON DELETE RESTRICT,
     tee_id UUID REFERENCES courses.tees(id) ON DELETE RESTRICT,
+    user_tee_id UUID REFERENCES users.user_tees(id),  -- optional user-owned tee config
     round_date DATE,
     total_score INTEGER CHECK (total_score BETWEEN 18 AND 200),
     adjusted_gross_score INTEGER CHECK (adjusted_gross_score BETWEEN 18 AND 200),
@@ -141,6 +142,7 @@ CREATE TABLE IF NOT EXISTS users.rounds (
     holes_played INTEGER CHECK (holes_played BETWEEN 1 AND 18),
     weather_conditions VARCHAR(255),
     notes TEXT,
+    course_name_played VARCHAR(255),  -- denormalized: used when course_id is NULL
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW()
 );
@@ -162,7 +164,7 @@ CREATE TRIGGER trg_rounds_updated_at
 CREATE TABLE IF NOT EXISTS users.hole_scores (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     round_id UUID NOT NULL REFERENCES users.rounds(id) ON DELETE CASCADE,
-    hole_id UUID NOT NULL REFERENCES courses.holes(id) ON DELETE RESTRICT,
+    hole_id UUID REFERENCES courses.holes(id) ON DELETE RESTRICT,  -- nullable: rounds for unknown courses have no hole FK
     hole_number INTEGER NOT NULL CHECK (hole_number BETWEEN 1 AND 18),
     strokes INTEGER CHECK (strokes BETWEEN 1 AND 15),
     net_score INTEGER CHECK (net_score BETWEEN -3 AND 15),
@@ -171,6 +173,8 @@ CREATE TABLE IF NOT EXISTS users.hole_scores (
     fairway_hit BOOLEAN,
     green_in_regulation BOOLEAN,
     penalties INTEGER DEFAULT 0 CHECK (penalties BETWEEN 0 AND 5),
+    par_played INTEGER CHECK (par_played BETWEEN 3 AND 6),          -- par for this hole as played
+    handicap_played INTEGER CHECK (handicap_played BETWEEN 1 AND 18),
     created_at TIMESTAMP DEFAULT NOW(),
     UNIQUE (round_id, hole_number)
 );
@@ -179,6 +183,25 @@ CREATE INDEX IF NOT EXISTS idx_hole_scores_round_id ON users.hole_scores (round_
 CREATE INDEX IF NOT EXISTS idx_hole_scores_hole_id ON users.hole_scores (hole_id);
 CREATE INDEX IF NOT EXISTS idx_hole_scores_gir ON users.hole_scores (green_in_regulation)
     WHERE green_in_regulation IS NOT NULL;
+
+-- =============
+-- users.user_tees
+-- User-owned tee configurations (hybrid tees without cloning a master course)
+-- =============
+CREATE TABLE IF NOT EXISTS users.user_tees (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users.users(id) ON DELETE CASCADE,
+    course_id UUID REFERENCES courses.courses(id) ON DELETE CASCADE,
+    name VARCHAR(100) NOT NULL,
+    slope_rating NUMERIC(4,1) CHECK (slope_rating BETWEEN 55 AND 155),
+    course_rating NUMERIC(4,1) CHECK (course_rating BETWEEN 55 AND 85),
+    hole_yardages JSONB DEFAULT '{}',
+    created_at TIMESTAMP DEFAULT NOW(),
+    UNIQUE (user_id, course_id, name)
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_tees_user_id ON users.user_tees (user_id);
+CREATE INDEX IF NOT EXISTS idx_user_tees_course_id ON users.user_tees (course_id);
 
 -- =============
 -- users.scorecard_scans (raw LLM output)
