@@ -12,6 +12,7 @@ export interface ExtractedRound {
     location: string | null;
     par: number | null;
     holes: { number: number | null; par: number | null }[];
+    tees: { color: string | null; slope_rating: number | null; course_rating: number | null; hole_yardages: Record<string, number> }[];
   } | null;
   tee_box: string | null;
   date: string | null;
@@ -52,6 +53,7 @@ export interface ScanState {
   editedScores: ExtractedHoleScore[];
   editedNotes: string;
   editedDate: string;
+  editedTeeBox: string | null;
   error: string | null;
   userContext: string;
 }
@@ -64,6 +66,7 @@ export const initialScanState: ScanState = {
   editedScores: [],
   editedNotes: "",
   editedDate: "",
+  editedTeeBox: null,
   error: null,
   userContext: "",
 };

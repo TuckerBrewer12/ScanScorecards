@@ -143,6 +143,7 @@ CREATE TABLE IF NOT EXISTS users.rounds (
     weather_conditions VARCHAR(255),
     notes TEXT,
     course_name_played VARCHAR(255),  -- denormalized: used when course_id is NULL
+    tee_box_played VARCHAR(100),      -- denormalized: used when tee_id is NULL
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW()
 );

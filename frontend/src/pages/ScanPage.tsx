@@ -14,7 +14,7 @@ interface ScanPageProps {
 
 export function ScanPage({ userId, scanState, setScanState }: ScanPageProps) {
   const navigate = useNavigate();
-  const { step, file, preview, result, editedScores, editedNotes, editedDate, error, userContext } = scanState;
+  const { step, file, preview, result, editedScores, editedNotes, editedDate, editedTeeBox, error, userContext } = scanState;
   const update = (patch: Partial<ScanState>) => setScanState(prev => ({ ...prev, ...patch }));
 
   // Transient UI state — fine to reset on navigation
@@ -72,6 +72,7 @@ export function ScanPage({ userId, scanState, setScanState }: ScanPageProps) {
         editedDate: data.round.date
           ? data.round.date.substring(0, 10)
           : new Date().toISOString().substring(0, 10),
+        editedTeeBox: data.round.tee_box ?? null,
         step: "review",
       });
     } catch (err) {
@@ -101,11 +102,26 @@ export function ScanPage({ userId, scanState, setScanState }: ScanPageProps) {
           user_id: userId,
           course_name: result.round.course?.name,
           course_location: result.round.course?.location,
-          tee_box: result.round.tee_box,
+          tee_box: editedTeeBox,
+          ...(() => {
+            const tee = editedTeeBox
+              ? result.round.course?.tees?.find(
+                  (t) => t.color?.toLowerCase() === editedTeeBox.toLowerCase()
+                )
+              : null;
+            return tee
+              ? {
+                  tee_slope_rating: tee.slope_rating,
+                  tee_course_rating: tee.course_rating,
+                  tee_yardages: Object.keys(tee.hole_yardages).length > 0
+                    ? tee.hole_yardages
+                    : undefined,
+                }
+              : {};
+          })(),
           date: editedDate,
           notes: editedNotes,
           hole_scores: editedScores,
-          // Hole data lets the API auto-create a custom course if not found in DB
           course_holes: result.round.course?.holes?.map((h) => ({
             hole_number: h.number,
             par: h.par,
@@ -298,6 +314,22 @@ export function ScanPage({ userId, scanState, setScanState }: ScanPageProps) {
     const hasScores = slice.some((hs) => hs.strokes != null);
     const nineToPar = hasScores && ninePar > 0 ? nineScore - ninePar : null;
 
+    const selectedTee = editedTeeBox
+      ? (rd.course?.tees ?? []).find((t) => t.color?.toLowerCase() === editedTeeBox.toLowerCase()) ?? null
+      : null;
+    const nineYardage = selectedTee
+      ? slice.reduce((sum, hs, si) => {
+          const holeNum = hs.hole_number ?? startIdx + si + 1;
+          return sum + (selectedTee.hole_yardages[String(holeNum)] ?? 0);
+        }, 0)
+      : null;
+    const totalYardage = selectedTee
+      ? editedScores.reduce((sum, hs, i) => {
+          const holeNum = hs.hole_number ?? i + 1;
+          return sum + (selectedTee.hole_yardages[String(holeNum)] ?? 0);
+        }, 0)
+      : null;
+
     return (
       <table className="w-full border-collapse">
         <thead>
@@ -313,6 +345,19 @@ export function ScanPage({ userId, scanState, setScanState }: ScanPageProps) {
           </tr>
         </thead>
         <tbody>
+          {/* Yardage — only when a tee with yardage data is selected */}
+          {selectedTee && Object.keys(selectedTee.hole_yardages).length > 0 && (
+            <tr className="border-b border-gray-100 text-xs text-gray-400">
+              <td className="px-3 py-1.5 font-medium">Yds</td>
+              {slice.map((hs, si) => {
+                const holeNum = hs.hole_number ?? startIdx + si + 1;
+                const yds = selectedTee.hole_yardages[String(holeNum)];
+                return <td key={si} className="px-1 py-1.5 text-center">{yds ?? "-"}</td>;
+              })}
+              <td className="px-2 py-1.5 text-center bg-gray-50 font-bold">{nineYardage || "-"}</td>
+              {showGrandTotal && <td className="px-2 py-1.5 text-center bg-gray-100 font-bold">{totalYardage || "-"}</td>}
+            </tr>
+          )}
           {/* Par */}
           <tr className="border-b border-gray-100 text-xs text-gray-500">
             <td className="px-3 py-1.5 font-medium">Par</td>
@@ -484,8 +529,38 @@ export function ScanPage({ userId, scanState, setScanState }: ScanPageProps) {
             {rd.course?.location && <div className="text-sm text-gray-500">{rd.course.location}</div>}
             <div className="flex gap-4 mt-2 text-sm text-gray-600">
               <span>Par: {coursePar ?? "-"}</span>
-              <span>Tee: {rd.tee_box ?? "-"}</span>
             </div>
+            {/* Tee selector — only when matched course has tee data */}
+            {rd.course?.tees && rd.course.tees.length > 0 ? (() => {
+              const selectedTee = rd.course!.tees.find(
+                (t) => t.color?.toLowerCase() === editedTeeBox?.toLowerCase()
+              ) ?? null;
+              return (
+                <div className="mt-3">
+                  <label className="text-xs text-gray-500 block mb-1">Tee Played</label>
+                  <select
+                    value={editedTeeBox ?? ""}
+                    onChange={(e) => update({ editedTeeBox: e.target.value || null })}
+                    className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                  >
+                    <option value="">— select tee —</option>
+                    {rd.course!.tees.map((t, i) => (
+                      <option key={i} value={t.color ?? ""}>{t.color ?? "Unknown"}</option>
+                    ))}
+                  </select>
+                  {selectedTee && (selectedTee.slope_rating != null || selectedTee.course_rating != null) && (
+                    <div className="mt-1.5 flex gap-3 text-xs text-gray-500">
+                      {selectedTee.slope_rating != null && <span>Slope {selectedTee.slope_rating}</span>}
+                      {selectedTee.course_rating != null && <span>Rating {selectedTee.course_rating}</span>}
+                    </div>
+                  )}
+                </div>
+              );
+            })() : (
+              <div className="mt-2 text-sm text-gray-600">
+                Tee: {editedTeeBox ?? "-"}
+              </div>
+            )}
           </div>
 
           {/* Date + Notes */}
