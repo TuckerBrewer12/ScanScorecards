@@ -14,7 +14,7 @@ from database.sync_adapter import SyncCourseRepositoryAdapter
 from api.dependencies import get_db
 from llm.scorecard_extractor import extract_scorecard, ExtractionResult
 from llm.strategies import ExtractionStrategy
-from models import HoleScore, Round, UserTee
+from models import Course, Hole, HoleScore, Round, Tee, UserTee
 
 router = APIRouter()
 
@@ -118,23 +118,86 @@ async def save_round(
 ):
     """Save a reviewed/edited round to the database.
 
-    If the course is found in the DB, par data comes from master course holes.
-    If not found, par data is sourced from course_holes in the request.
-    No custom course is created — each round is self-contained via par_played.
+    Course resolution (4-tier):
+      1. Master exists → use it
+      2. No master, user has it → fill gaps from scan, use it
+      3. No master, another user has it → fill gaps, promote to master, use it
+      4. Nobody has it → create user-owned course, use it
+    par_played on each HoleScore is populated from the resolved course + scan data.
     """
     try:
-        # Look up course (never auto-create)
+        # ── 4-tier course resolution ──────────────────────────────────────────
+        # 1. Master exists → use it (authoritative, no writes needed)
+        # 2. No master, current user has a course → fill gaps from scan, use it
+        # 3. No master, another user has a course → fill gaps, promote to master
+        # 4. Nobody has it → create a new user-owned course from scan data
         course = None
         course_id = None
 
         if req.course_name:
-            course = await db.courses.find_course_by_name(
-                req.course_name, req.course_location, user_id=req.user_id
-            )
+            # Tier 1: master only (no user_id → masters only)
+            course = await db.courses.find_course_by_name(req.course_name, req.course_location)
+
+            if not course:
+                scan_holes = [
+                    dict(h) if isinstance(h, dict) else h
+                    for h in (req.course_holes or [])
+                ]
+
+                # Tier 2: current user's own courses
+                course = await db.courses.find_user_course_by_name(
+                    req.course_name, req.course_location, req.user_id
+                )
+                if course:
+                    await db.courses.fill_course_gaps(
+                        str(course.id), scan_holes,
+                        req.tee_box, req.tee_slope_rating, req.tee_course_rating, req.tee_yardages,
+                    )
+                else:
+                    # Tier 3: any other user's course → merge + promote to master
+                    course = await db.courses.find_any_user_course_by_name(
+                        req.course_name, req.course_location
+                    )
+                    if course:
+                        await db.courses.fill_course_gaps(
+                            str(course.id), scan_holes,
+                            req.tee_box, req.tee_slope_rating, req.tee_course_rating, req.tee_yardages,
+                        )
+                        course = await db.courses.promote_to_master(str(course.id))
+                    else:
+                        # Tier 4: create new user-owned course from scan data
+                        holes = [
+                            Hole(
+                                number=h.get("hole_number"),
+                                par=h.get("par"),
+                                handicap=h.get("handicap"),
+                            )
+                            for h in scan_holes if h.get("hole_number") is not None
+                        ]
+                        tees = []
+                        if req.tee_box:
+                            tee_yardages_int = {
+                                int(k): v for k, v in (req.tee_yardages or {}).items() if v is not None
+                            }
+                            tees = [Tee(
+                                color=req.tee_box,
+                                slope_rating=req.tee_slope_rating,
+                                course_rating=req.tee_course_rating,
+                                hole_yardages=tee_yardages_int,
+                            )]
+                        new_course = Course(
+                            name=req.course_name,
+                            location=req.course_location,
+                            holes=holes,
+                            tees=tees,
+                        )
+                        course = await db.courses.create_course(new_course, user_id=req.user_id)
+
             if course:
                 course_id = course.id
 
-        # Build par/handicap lookup: master course takes priority over request data
+        # Build par/handicap lookup: layer course holes (authoritative) then fill
+        # any remaining gaps from the current scan's course_holes.
         par_by_hole: dict = {}
         handicap_by_hole: dict = {}
         if course and course.holes:
@@ -144,15 +207,15 @@ async def save_round(
                         par_by_hole[hole.number] = hole.par
                     if hole.handicap is not None:
                         handicap_by_hole[hole.number] = hole.handicap
-        elif req.course_holes:
+        if req.course_holes:
             for h in req.course_holes:
                 hole_num = h.get("hole_number") if isinstance(h, dict) else getattr(h, "hole_number", None)
                 par = h.get("par") if isinstance(h, dict) else getattr(h, "par", None)
                 handicap = h.get("handicap") if isinstance(h, dict) else getattr(h, "handicap", None)
                 if hole_num is not None:
-                    if par is not None:
+                    if par is not None and hole_num not in par_by_hole:
                         par_by_hole[hole_num] = par
-                    if handicap is not None:
+                    if handicap is not None and hole_num not in handicap_by_hole:
                         handicap_by_hole[hole_num] = handicap
 
         # Build hole scores with par_played populated
