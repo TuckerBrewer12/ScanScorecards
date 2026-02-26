@@ -1,107 +1,131 @@
 
-  ┌─────────────────────────────────────────────────────────────────────┐
-  │                        SCHEMA: courses                             │
-  │                                                                    │
-  │  ┌──────────────────┐       ┌──────────────────┐                   │
-  │  │  courses.courses  │       │   courses.holes   │                  │
-  │  ├──────────────────┤       ├──────────────────┤                   │
-  │  │ id (PK)          │──┐    │ id (PK)          │                   │
-  │  │ name             │  │    │ course_id (FK) ──│───┐               │
-  │  │ location         │  │    │ hole_number      │   │               │
-  │  │ par              │  │    │ par              │   │               │
-  │  │ total_holes      │  │    │ handicap         │   │               │
-  │  │ created_at       │  │    │ created_at       │   │               │
-  │  │ updated_at       │  │    └──────────────────┘   │               │
-  │  │ metadata         │  │                           │               │
-  │  └──────────────────┘  │    ┌──────────────────┐   │               │
-  │                        │    │   courses.tees    │   │               │
-  │                        │    ├──────────────────┤   │               │
-  │                        │    │ id (PK)          │   │               │
-  │                        ├────│─ course_id (FK)  │   │               │
-  │                        │    │ color            │   │               │
-  │                        │    │ slope_rating     │   │               │
-  │                        │    │ course_rating    │   │               │
-  │                        │    │ created_at       │   │               │
-  │                        │    └──────────────────┘   │               │
-  │                        │             │             │               │
-  │                        │             │             │               │
-  │                        │    ┌────────┴─────────┐   │               │
-  │                        │    │ courses.tee_     │   │               │
-  │                        │    │    yardages      │   │               │
-  │                        │    ├──────────────────┤   │               │
-  │                        │    │ id (PK)          │   │               │
-  │                        │    │ tee_id (FK) ─────│───┘*              │
-  │                        │    │ hole_number      │                   │
-  │                        │    │ yardage          │                   │
-  │                        │    └──────────────────┘                   │
-  │                        │                                           │
-  └────────────────────────│───────────────────────────────────────────┘
-                           │
-  ┌────────────────────────│───────────────────────────────────────────┐
-  │                        │       SCHEMA: users                       │
-  │                        │                                           │
-  │  ┌──────────────────┐  │    ┌──────────────────┐                   │
-  │  │   users.users     │  │    │   users.rounds    │                  │
-  │  ├──────────────────┤  │    ├──────────────────┤                   │
-  │  │ id (PK)          │──│──┐ │ id (PK)          │──┐               │
-  │  │ name             │  │  │ │ user_id (FK) ────│──│───┐           │
-  │  │ email            │  │  │ │ course_id (FK) ──│──┘   │           │
-  │  │ handicap_index   │  ├──│─│─ tee_id (FK)     │      │           │
-  │  │ home_course_id ──│──┘  │ │ round_date       │      │           │
-  │  │ created_at       │     │ │ total_score       │      │           │
-  │  │ updated_at       │     │ │ adjusted_gross    │      │           │
-  │  │ last_handicap_   │     │ │ score_differential│      │           │
-  │  │   update         │     │ │ is_complete       │      │           │
-  │  │ preferences      │     │ │ holes_played      │      │           │
-  │  └──────────────────┘     │ │ weather_conditions│      │           │
-  │                           │ │ notes             │      │           │
-  │                           │ │ created_at        │      │           │
-  │                           │ │ updated_at        │      │           │
-  │                           │ └──────────────────┘      │           │
-  │                           │          │                 │           │
-  │                           │          │                 │           │
-  │                           │ ┌────────┴─────────┐      │           │
-  │                           │ │ users.hole_scores │      │           │
-  │                           │ ├──────────────────┤      │           │
-  │                           │ │ id (PK)          │      │           │
-  │                           │ │ round_id (FK) ───│──────┘           │
-  │                           │ │ hole_id (FK) ────│──── courses.holes│
-  │                           │ │ hole_number      │                   │
-  │                           │ │ strokes          │                   │
-  │                           │ │ net_score        │                   │
-  │                           │ │ putts            │                   │
-  │                           │ │ shots_to_green   │                   │
-  │                           │ │ fairway_hit      │                   │
-  │                           │ │ green_in_reg     │                   │
-  │                           │ │ penalties        │                   │
-  │                           │ │ created_at       │                   │
-  │                           │ └──────────────────┘                   │
-  │                           │                                        │
-  │                           │ ┌──────────────────┐                   │
-  │                           │ │ users.scorecard_ │                   │
-  │                           │ │    scans         │                   │
-  │                           │ ├──────────────────┤                   │
-  │                           │ │ id (PK)          │                   │
-  │                           └─│─ round_id (FK)   │                   │
-  │                             │ image_path       │                   │
-  │                             │ llm_model        │                   │
-  │                             │ llm_raw_json     │                   │
-  │                             │ created_at       │                   │
-  │                             └──────────────────┘                   │
-  │                                                                    │
-  └────────────────────────────────────────────────────────────────────┘
+  ┌─────────────────────────────────────────────────────────────────────────────┐
+  │                            SCHEMA: courses                                  │
+  │                                                                             │
+  │  ┌──────────────────────┐       ┌──────────────────┐                        │
+  │  │  courses.courses      │       │   courses.holes   │                       │
+  │  ├──────────────────────┤       ├──────────────────┤                        │
+  │  │ id (PK)              │──┐    │ id (PK)          │                        │
+  │  │ name                 │  │    │ course_id (FK) ◄─┤──┐                     │
+  │  │ location             │  │    │ hole_number      │  │                     │
+  │  │ par                  │  ├───►│ par              │  │                     │
+  │  │ total_holes          │  │    │ handicap         │  │                     │
+  │  │ user_id (FK) ────────│──│────│──────────────────│──│──► users.users      │
+  │  │   NULL  = master     │  │    └──────────────────┘  │    (see below)      │
+  │  │   <uid> = custom     │  │                          │                     │
+  │  │ created_at           │  │    ┌──────────────────┐  │                     │
+  │  │ updated_at           │  │    │   courses.tees    │  │                     │
+  │  │ metadata             │  │    ├──────────────────┤  │                     │
+  │  └──────────────────────┘  │    │ id (PK)          │  │                     │
+  │                             ├───►│ course_id (FK)   │  │                     │
+  │                             │    │ color            │  │                     │
+  │                             │    │ slope_rating     │  │                     │
+  │                             │    │ course_rating    │  │                     │
+  │                             │    │ created_at       │  │                     │
+  │                             │    └────────┬─────────┘  │                     │
+  │                             │             │             │                     │
+  │                             │    ┌────────▼─────────┐  │                     │
+  │                             │    │ courses.tee_     │  │                     │
+  │                             │    │    yardages      │  │                     │
+  │                             │    ├──────────────────┤  │                     │
+  │                             │    │ id (PK)          │  │                     │
+  │                             │    │ tee_id (FK)      │  │                     │
+  │                             │    │ hole_number      │  │                     │
+  │                             │    │ yardage          │  │                     │
+  │                             │    └──────────────────┘  │                     │
+  │                             │                          │                     │
+  └─────────────────────────────│──────────────────────────│─────────────────────┘
+                                │                          │
+  ┌─────────────────────────────│──────────────────────────│─────────────────────┐
+  │                             │       SCHEMA: users       │                     │
+  │                             │                          │                     │
+  │  ┌──────────────────────┐   │    ┌──────────────────────────┐                │
+  │  │   users.users         │   │    │      users.rounds         │               │
+  │  ├──────────────────────┤   │    ├──────────────────────────┤               │
+  │  │ id (PK)              │◄──┘    │ id (PK)                  │──┐            │
+  │  │ name                 │◄───────│ user_id (FK)             │  │            │
+  │  │ email                │    ┌───│ course_id (FK, nullable) │  │            │
+  │  │ handicap_index       │    │ ┌─│ tee_id (FK, nullable)    │  │            │
+  │  │ home_course_id ──────│────┘ │ │ user_tee_id (FK) ────────│──│──┐         │
+  │  │   (→ courses.courses)│      │ │ round_date               │  │  │         │
+  │  │ created_at           │      │ │ total_score              │  │  │         │
+  │  │ updated_at           │      │ │ adjusted_gross_score     │  │  │         │
+  │  │ last_handicap_update │      │ │ score_differential       │  │  │         │
+  │  │ preferences          │      │ │ is_complete              │  │  │         │
+  │  └──────────────────────┘      │ │ holes_played             │  │  │         │
+  │                                │ │ weather_conditions       │  │  │         │
+  │                                │ │ notes                    │  │  │         │
+  │                                │ │ course_name_played       │  │  │         │
+  │                                │ │   (when course_id NULL)  │  │  │         │
+  │                                │ │ created_at               │  │  │         │
+  │                                │ │ updated_at               │  │  │         │
+  │                                │ └──────────────────────────┘  │  │         │
+  │                                │              │                │  │         │
+  │                                │   ┌──────────▼────────────┐   │  │         │
+  │                                │   │   users.hole_scores   │   │  │         │
+  │                                │   ├───────────────────────┤   │  │         │
+  │                                │   │ id (PK)               │   │  │         │
+  │                                │   │ round_id (FK) ◄────────│───┘  │         │
+  │                                └──►│ hole_id (FK, NULLABLE) │◄──── courses.holes │
+  │                                    │   NULL = unknown course│      │         │
+  │                                    │ hole_number            │      │         │
+  │                                    │ strokes                │      │         │
+  │                                    │ net_score              │      │         │
+  │                                    │ putts                  │      │         │
+  │                                    │ shots_to_green         │      │         │
+  │                                    │ fairway_hit            │      │         │
+  │                                    │ green_in_reg           │      │         │
+  │                                    │ par_played             │ ← par for hole │
+  │                                    │ handicap_played        │      │         │
+  │                                    │ penalties              │      │         │
+  │                                    │ created_at             │      │         │
+  │                                    └───────────────────────┘      │         │
+  │                                                                    │         │
+  │  ┌──────────────────────────────────┐  ┌──────────────────────┐   │         │
+  │  │      users.user_tees             │  │ users.scorecard_scans│   │         │
+  │  ├──────────────────────────────────┤  ├──────────────────────┤   │         │
+  │  │ id (PK)                          │◄─┘ id (PK)              │   │         │
+  │  │ user_id (FK) ────────────────────│──► users.users          │   │         │
+  │  │ course_id (FK, nullable) ────────│──► courses.courses      │   │         │
+  │  │ name                             │  │ round_id (FK)        │◄── users.rounds │
+  │  │ slope_rating                     │  │ image_path           │   │         │
+  │  │ course_rating                    │  │ llm_model            │   │         │
+  │  │ hole_yardages (JSONB)            │  │ llm_raw_json         │   │         │
+  │  │ created_at                       │  │ created_at           │   │         │
+  │  └──────────────────────────────────┘  └──────────────────────┘   │         │
+  │                                                                              │
+  └──────────────────────────────────────────────────────────────────────────────┘
 
-  * tee_yardages.tee_id references courses.tees (not holes)
+  MASTER vs CUSTOM COURSES
+  ────────────────────────
+  courses.courses.user_id = NULL    →  Master course  (global, read-only)
+  courses.courses.user_id = <uid>   →  Custom course  (user-owned, editable)
 
-  RELATIONSHIPS:
+  Unique constraints (partial indexes):
+    idx_courses_unique_master : (lower(name), location) WHERE user_id IS NULL
+    idx_courses_unique_user   : (lower(name), location, user_id) WHERE user_id IS NOT NULL
+
+  PAR_PLAYED DESIGN  (migration 002)
+  ───────────────────────────────────
+  hole_id on hole_scores is NULLABLE — rounds for unknown courses need no course row.
+  par_played / handicap_played stored directly on each hole_score — round is self-contained.
+  course_name_played on rounds — display name when course_id IS NULL.
+  user_tees — user-owned tee configs (slope/rating/yardages) linked to a master course;
+              allows custom tee data without cloning the full course.
+
+  RELATIONSHIPS
   ─────────────
-  courses.holes.course_id        ──> courses.courses.id   (CASCADE)
-  courses.tees.course_id         ──> courses.courses.id   (CASCADE)
-  courses.tee_yardages.tee_id    ──> courses.tees.id      (CASCADE)
-  users.users.home_course_id     ──> courses.courses.id   (SET NULL)
-  users.rounds.user_id           ──> users.users.id       (CASCADE)
-  users.rounds.course_id         ──> courses.courses.id   (RESTRICT)
-  users.rounds.tee_id            ──> courses.tees.id      (RESTRICT)
-  users.hole_scores.round_id     ──> users.rounds.id      (CASCADE)
-  users.hole_scores.hole_id      ──> courses.holes.id     (RESTRICT)
-  users.scorecard_scans.round_id ──> users.rounds.id      (SET NULL)
+  courses.courses.user_id         ──► users.users.id              (CASCADE)
+  courses.holes.course_id         ──► courses.courses.id          (CASCADE)
+  courses.tees.course_id          ──► courses.courses.id          (CASCADE)
+  courses.tee_yardages.tee_id     ──► courses.tees.id             (CASCADE)
+  users.users.home_course_id      ──► courses.courses.id          (SET NULL)
+  users.rounds.user_id            ──► users.users.id              (CASCADE)
+  users.rounds.course_id          ──► courses.courses.id          (RESTRICT, nullable)
+  users.rounds.tee_id             ──► courses.tees.id             (RESTRICT, nullable)
+  users.rounds.user_tee_id        ──► users.user_tees.id          (nullable)
+  users.hole_scores.round_id      ──► users.rounds.id             (CASCADE)
+  users.hole_scores.hole_id       ──► courses.holes.id            (RESTRICT, NULLABLE)
+  users.user_tees.user_id         ──► users.users.id              (CASCADE)
+  users.user_tees.course_id       ──► courses.courses.id          (CASCADE, nullable)
+  users.scorecard_scans.round_id  ──► users.rounds.id             (SET NULL)

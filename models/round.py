@@ -6,6 +6,7 @@ from .base import BaseGolfModel
 from .course import Course
 from .hole_score import HoleScore
 from .tee import Tee
+from .user_tee import UserTee
 
 
 class Round(BaseGolfModel):
@@ -17,6 +18,8 @@ class Round(BaseGolfModel):
     hole_scores: List[HoleScore] = Field(default_factory=list)
     weather_conditions: Optional[str] = None
     notes: Optional[str] = None
+    course_name_played: Optional[str] = None  # denormalized name when no master course
+    user_tee: Optional[UserTee] = None        # user-owned tee config (yardages etc.)
 
     # Optional summary totals - can be provided directly or calculated
     total_putts: Optional[int] = None
@@ -75,11 +78,19 @@ class Round(BaseGolfModel):
         return None
 
     def get_hole_par(self, hole_number: int) -> Optional[int]:
-        """Get par for a specific hole from course."""
+        """Get par for a specific hole — from course, or par_played on the hole score."""
         if self.course:
             hole = self.course.get_hole(hole_number)
             return hole.par if hole else None
-        return None
+        score = self.get_hole_score(hole_number)
+        return score.par_played if score else None
+
+    def get_par(self) -> Optional[int]:
+        """Get course par — from course, or calculated from par_played on hole scores."""
+        if self.course:
+            return self.course.get_par()
+        pars = [hs.par_played for hs in self.hole_scores if hs.par_played is not None]
+        return sum(pars) if pars else None
 
     def score_to_par(self, hole_number: int) -> Optional[int]:
         """Get score relative to par for a specific hole."""
@@ -98,11 +109,11 @@ class Round(BaseGolfModel):
         return None
 
     def total_to_par(self) -> Optional[int]:
-        """Get total score relative to course par."""
+        """Get total score relative to course par (uses par_played when no course attached)."""
         total = self.calculate_total_score()
-        if total is None or not self.course:
+        if total is None:
             return None
-        course_par = self.course.get_par()
+        course_par = self.get_par()
         if course_par is None:
             return None
         return total - course_par
