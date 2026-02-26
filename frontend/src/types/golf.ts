@@ -44,6 +44,7 @@ export interface Round {
   total_putts: number | null;
   total_gir: number | null;
   course_name_played: string | null;
+  user_tee: UserTee | null;
 }
 
 export interface RoundSummary {
@@ -82,6 +83,14 @@ export interface CourseSummary {
   par: number | null;
   total_holes: number;
   tee_count: number;
+}
+
+export interface UserTee {
+  id: string | null;
+  name: string | null;
+  slope_rating: number | null;
+  course_rating: number | null;
+  hole_yardages: Record<number, number>;
 }
 
 export interface User {

@@ -81,6 +81,7 @@ def round_from_rows(
     hole_score_rows: list,
     course: Optional[Course],
     tee_color: Optional[str] = None,
+    user_tee: Optional["UserTee"] = None,
 ) -> Round:
     """Assemble a Round from DB rows + pre-loaded Course."""
     hole_scores = sorted(
@@ -96,6 +97,7 @@ def round_from_rows(
         weather_conditions=round_row["weather_conditions"],
         notes=round_row["notes"],
         course_name_played=round_row["course_name_played"],
+        user_tee=user_tee,
     )
 
 
@@ -173,6 +175,7 @@ def round_to_row(
         "weather_conditions": round_.weather_conditions,
         "notes": round_.notes,
         "course_name_played": round_.course_name_played,
+        "tee_box_played": round_.tee_box,
     }
 
 
@@ -188,7 +191,10 @@ def user_to_row(user: User) -> dict:
 
 def user_tee_from_row(row) -> UserTee:
     """users.user_tees row -> UserTee model."""
+    import json as _json
     hole_yardages = row["hole_yardages"] or {}
+    if isinstance(hole_yardages, str):
+        hole_yardages = _json.loads(hole_yardages)
     # Keys come back as strings from JSONB; convert to int
     return UserTee(
         id=str(row["id"]),

@@ -6,6 +6,7 @@ from .base import BaseGolfModel
 from .course import Course
 from .hole_score import HoleScore
 from .tee import Tee
+from .user_tee import UserTee
 
 
 class Round(BaseGolfModel):
@@ -18,6 +19,7 @@ class Round(BaseGolfModel):
     weather_conditions: Optional[str] = None
     notes: Optional[str] = None
     course_name_played: Optional[str] = None  # denormalized name when no master course
+    user_tee: Optional[UserTee] = None        # user-owned tee config (yardages etc.)
 
     # Optional summary totals - can be provided directly or calculated
     total_putts: Optional[int] = None

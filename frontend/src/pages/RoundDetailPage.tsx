@@ -35,7 +35,11 @@ export function RoundDetailPage() {
     0
   );
   const coursePar =
-    round.course?.holes.reduce((sum, h) => sum + (h.par ?? 0), 0) ?? null;
+    round.course
+      ? round.course.holes.reduce((sum, h) => sum + (h.par ?? 0), 0) || null
+      : round.hole_scores.some((s) => s.par_played != null)
+      ? round.hole_scores.reduce((sum, s) => sum + (s.par_played ?? 0), 0)
+      : null;
   const toPar = coursePar !== null ? totalScore - coursePar : null;
 
   return (
@@ -49,7 +53,7 @@ export function RoundDetailPage() {
       </Link>
 
       <PageHeader
-        title={round.course?.name ?? "Unknown Course"}
+        title={round.course?.name ?? round.course_name_played ?? "Unknown Course"}
         subtitle={
           [
             round.date

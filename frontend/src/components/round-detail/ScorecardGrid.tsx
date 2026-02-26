@@ -11,7 +11,7 @@ function getHoleData(round: Round, holeNum: number) {
   const tee = round.course?.tees.find(
     (t) => t.color?.toLowerCase() === round.tee_box?.toLowerCase()
   );
-  const yardage = tee?.hole_yardages?.[holeNum];
+  const yardage = tee?.hole_yardages?.[holeNum] ?? round.user_tee?.hole_yardages?.[holeNum];
   // Use master course hole par if available, otherwise fall back to par_played on score
   const effectivePar: number | null = hole?.par ?? score?.par_played ?? null;
   return { score, hole, yardage, effectivePar };
@@ -201,7 +201,7 @@ export function ScorecardGrid({ round }: ScorecardGridProps) {
 
   const tee = round.course?.tees.find(
     (t) => t.color?.toLowerCase() === round.tee_box?.toLowerCase()
-  );
+  ) ?? round.user_tee ?? null;
 
   return (
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-x-auto">

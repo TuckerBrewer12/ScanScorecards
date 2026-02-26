@@ -14,7 +14,7 @@ from database.sync_adapter import SyncCourseRepositoryAdapter
 from api.dependencies import get_db
 from llm.scorecard_extractor import extract_scorecard, ExtractionResult
 from llm.strategies import ExtractionStrategy
-from models import HoleScore, Round
+from models import HoleScore, Round, UserTee
 
 router = APIRouter()
 
@@ -39,11 +39,13 @@ class SaveRoundRequest(BaseModel):
     course_name: Optional[str] = None
     course_location: Optional[str] = None
     tee_box: Optional[str] = None
+    tee_slope_rating: Optional[float] = None
+    tee_course_rating: Optional[float] = None
+    tee_yardages: Optional[dict] = None  # {hole_number_str: yardage} from extracted tee
     date: Optional[str] = None
     notes: Optional[str] = None
-    hole_scores: list  # List of {hole_number, strokes, putts, fairway_hit, green_in_regulation}
-    # Hole data from extraction — used to auto-create a custom course if not found in DB
-    course_holes: Optional[list] = None  # List of CourseHoleInput dicts
+    hole_scores: list
+    course_holes: Optional[list] = None
 
 
 @router.post("/extract")
@@ -175,7 +177,20 @@ async def save_round(
             course_name_played=req.course_name if not course else None,
         )
 
-        saved = await db.rounds.create_round(round_, req.user_id, course_id=course_id)
+        # Auto-create user_tee from extracted tee data when no master tee is available
+        user_tee_id = None
+        if req.tee_box and req.tee_yardages and not course_id:
+            user_tee = UserTee(
+                user_id=req.user_id,
+                name=req.tee_box,
+                slope_rating=req.tee_slope_rating,
+                course_rating=req.tee_course_rating,
+                hole_yardages={int(k): v for k, v in req.tee_yardages.items() if v is not None},
+            )
+            created_tee = await db.user_tees.create_user_tee(user_tee)
+            user_tee_id = created_tee.id
+
+        saved = await db.rounds.create_round(round_, req.user_id, course_id=course_id, user_tee_id=user_tee_id)
 
         return {"id": saved.id, "total_score": saved.calculate_total_score()}
 

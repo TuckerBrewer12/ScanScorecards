@@ -6,7 +6,7 @@ from typing import List, Optional
 from uuid import UUID
 
 from models import HoleScore, Round
-from database.converters import round_from_rows, round_to_row, hole_score_to_row
+from database.converters import round_from_rows, round_to_row, hole_score_to_row, user_tee_from_row
 from database.exceptions import DuplicateError, IntegrityError, NotFoundError
 from database.repositories.course_repo import CourseRepositoryDB
 
@@ -64,10 +64,22 @@ class RoundRepositoryDB:
         if round_row["course_id"]:
             course = await self._course_repo.get_course(str(round_row["course_id"]))
 
-        # Resolve tee color
+        # Resolve tee color — prefer master tee lookup, fall back to stored string
         tee_color = await self._resolve_tee_color(conn, round_row["tee_id"])
+        if not tee_color:
+            tee_color = round_row["tee_box_played"]
 
-        return round_from_rows(round_row, score_rows, course, tee_color)
+        # Load user_tee if present
+        user_tee = None
+        if round_row["user_tee_id"]:
+            ut_row = await conn.fetchrow(
+                "SELECT * FROM users.user_tees WHERE id = $1",
+                round_row["user_tee_id"],
+            )
+            if ut_row:
+                user_tee = user_tee_from_row(ut_row)
+
+        return round_from_rows(round_row, score_rows, course, tee_color, user_tee)
 
     # ================================================================
     # Read
@@ -108,6 +120,7 @@ class RoundRepositoryDB:
         *,
         course_id: Optional[str] = None,
         tee_id: Optional[str] = None,
+        user_tee_id: Optional[str] = None,
     ) -> Round:
         """Create a round with all hole_scores in a transaction.
 
@@ -135,18 +148,20 @@ class RoundRepositoryDB:
                     row_data = round_to_row(
                         round_, UUID(user_id), resolved_course_id, resolved_tee_id
                     )
+                    resolved_user_tee_id = UUID(user_tee_id) if user_tee_id else None
                     round_row = await conn.fetchrow(
                         """INSERT INTO users.rounds
-                           (user_id, course_id, tee_id, round_date, total_score,
+                           (user_id, course_id, tee_id, user_tee_id, round_date, total_score,
                             is_complete, holes_played, weather_conditions, notes,
-                            course_name_played)
-                           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+                            course_name_played, tee_box_played)
+                           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
                            RETURNING *""",
                         row_data["user_id"], row_data["course_id"], row_data["tee_id"],
+                        resolved_user_tee_id,
                         row_data["round_date"], row_data["total_score"],
                         row_data["is_complete"], row_data["holes_played"],
                         row_data["weather_conditions"], row_data["notes"],
-                        row_data["course_name_played"],
+                        row_data["course_name_played"], row_data["tee_box_played"],
                     )
                     new_round_id = round_row["id"]
 
@@ -206,7 +221,7 @@ class RoundRepositoryDB:
         allowed = {
             "round_date", "total_score", "adjusted_gross_score",
             "score_differential", "is_complete", "holes_played",
-            "weather_conditions", "notes", "course_name_played",
+            "weather_conditions", "notes", "course_name_played", "tee_box_played",
         }
         updates = {k: v for k, v in fields.items() if k in allowed}
         if not updates:
