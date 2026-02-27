@@ -5,7 +5,6 @@ so it can do real DB lookups without being refactored to async.
 """
 
 import asyncio
-import concurrent.futures
 from typing import Optional
 
 from models import Course
@@ -15,9 +14,12 @@ from database.repositories.course_repo import CourseRepositoryDB
 class SyncCourseRepositoryAdapter:
     """Wraps async CourseRepositoryDB to satisfy the sync CourseRepository protocol.
 
+    Pass the running event loop so DB coroutines are scheduled on it (and use
+    its asyncpg pool) rather than on a new loop created by asyncio.run().
+
     Usage:
-        async_repo = CourseRepositoryDB(pool)
-        sync_repo = SyncCourseRepositoryAdapter(async_repo)
+        loop = asyncio.get_event_loop()
+        sync_repo = SyncCourseRepositoryAdapter(db.courses, loop)
         result = extract_scorecard(
             "card.jpg",
             strategy=ExtractionStrategy.SMART,
@@ -25,21 +27,16 @@ class SyncCourseRepositoryAdapter:
         )
     """
 
-    def __init__(self, async_repo: CourseRepositoryDB):
+    def __init__(self, async_repo: CourseRepositoryDB, main_loop: asyncio.AbstractEventLoop = None):
         self._async_repo = async_repo
+        self._main_loop = main_loop
 
     def _run(self, coro):
         """Run an async coroutine synchronously."""
-        try:
-            loop = asyncio.get_running_loop()
-        except RuntimeError:
-            loop = None
-
-        if loop and loop.is_running():
-            # Inside an async context (e.g., FastAPI) — use a thread
-            with concurrent.futures.ThreadPoolExecutor(max_workers=1) as executor:
-                future = executor.submit(asyncio.run, coro)
-                return future.result()
+        if self._main_loop and self._main_loop.is_running():
+            # Schedule on the existing loop (which owns the asyncpg pool)
+            future = asyncio.run_coroutine_threadsafe(coro, self._main_loop)
+            return future.result()
         else:
             return asyncio.run(coro)
 

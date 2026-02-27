@@ -8,7 +8,7 @@ from datetime import datetime
 from typing import Dict, List, Optional
 from uuid import UUID
 
-from models import Course, Hole, Tee, HoleScore, Round, User
+from models import Course, Hole, Tee, HoleScore, Round, User, UserTee
 
 
 # ================================================================
@@ -57,6 +57,7 @@ def course_from_rows(
         par=course_row["par"],
         holes=holes,
         tees=tees,
+        user_id=str(course_row["user_id"]) if course_row["user_id"] else None,
     )
 
 
@@ -70,6 +71,8 @@ def hole_score_from_row(row) -> HoleScore:
         shots_to_green=row["shots_to_green"],
         fairway_hit=row["fairway_hit"],
         green_in_regulation=row["green_in_regulation"],
+        par_played=row["par_played"],
+        handicap_played=row["handicap_played"],
     )
 
 
@@ -78,6 +81,7 @@ def round_from_rows(
     hole_score_rows: list,
     course: Optional[Course],
     tee_color: Optional[str] = None,
+    user_tee: Optional["UserTee"] = None,
 ) -> Round:
     """Assemble a Round from DB rows + pre-loaded Course."""
     hole_scores = sorted(
@@ -92,7 +96,8 @@ def round_from_rows(
         hole_scores=hole_scores,
         weather_conditions=round_row["weather_conditions"],
         notes=round_row["notes"],
-        total_putts=round_row.get("total_putts") if hasattr(round_row, "get") else None,
+        course_name_played=round_row["course_name_played"],
+        user_tee=user_tee,
     )
 
 
@@ -113,13 +118,14 @@ def user_from_row(user_row, rounds: Optional[List[Round]] = None) -> User:
 # Model -> Row dict (writes)
 # ================================================================
 
-def course_to_row(course: Course) -> dict:
+def course_to_row(course: Course, user_id: Optional[UUID] = None) -> dict:
     """Course -> dict for courses.courses INSERT."""
     return {
         "name": course.name,
         "location": course.location,
         "par": course.get_par(),
         "total_holes": len(course.holes) if course.holes else None,
+        "user_id": user_id,
     }
 
 
@@ -141,12 +147,13 @@ def tee_yardages_to_rows(tee: Tee, tee_id: UUID) -> list:
     ]
 
 
-def hole_score_to_row(hs: HoleScore, round_id: UUID, hole_id: UUID) -> tuple:
-    """HoleScore -> tuple for users.hole_scores INSERT."""
+def hole_score_to_row(hs: HoleScore, round_id: UUID, hole_id: Optional[UUID]) -> tuple:
+    """HoleScore -> tuple for users.hole_scores INSERT (hole_id may be None)."""
     return (
         round_id, hole_id, hs.hole_number,
         hs.strokes, hs.net_score, hs.putts, hs.shots_to_green,
         hs.fairway_hit, hs.green_in_regulation,
+        hs.par_played, hs.handicap_played,
     )
 
 
@@ -167,6 +174,8 @@ def round_to_row(
         "holes_played": len([s for s in round_.hole_scores if s.strokes is not None]),
         "weather_conditions": round_.weather_conditions,
         "notes": round_.notes,
+        "course_name_played": round_.course_name_played,
+        "tee_box_played": round_.tee_box,
     }
 
 
@@ -177,4 +186,35 @@ def user_to_row(user: User) -> dict:
         "email": user.email,
         "handicap_index": user.handicap,
         "home_course_id": UUID(user.home_course_id) if user.home_course_id else None,
+    }
+
+
+def user_tee_from_row(row) -> UserTee:
+    """users.user_tees row -> UserTee model."""
+    import json as _json
+    hole_yardages = row["hole_yardages"] or {}
+    if isinstance(hole_yardages, str):
+        hole_yardages = _json.loads(hole_yardages)
+    # Keys come back as strings from JSONB; convert to int
+    return UserTee(
+        id=str(row["id"]),
+        user_id=str(row["user_id"]),
+        course_id=str(row["course_id"]) if row["course_id"] else None,
+        name=row["name"],
+        slope_rating=float(row["slope_rating"]) if row["slope_rating"] else None,
+        course_rating=float(row["course_rating"]) if row["course_rating"] else None,
+        hole_yardages={int(k): v for k, v in hole_yardages.items()},
+        created_at=row["created_at"],
+    )
+
+
+def user_tee_to_row(ut: UserTee) -> dict:
+    """UserTee -> dict for users.user_tees INSERT."""
+    return {
+        "user_id": UUID(ut.user_id),
+        "course_id": UUID(ut.course_id) if ut.course_id else None,
+        "name": ut.name,
+        "slope_rating": ut.slope_rating,
+        "course_rating": ut.course_rating,
+        "hole_yardages": {str(k): v for k, v in (ut.hole_yardages or {}).items()},
     }

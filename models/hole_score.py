@@ -13,6 +13,8 @@ class HoleScore(BaseGolfModel):
     shots_to_green: Optional[int] = Field(None, ge=1, le=10)
     fairway_hit: Optional[bool] = None
     green_in_regulation: Optional[bool] = None
+    par_played: Optional[int] = Field(None, ge=3, le=6)
+    handicap_played: Optional[int] = Field(None, ge=1, le=18)
 
     @model_validator(mode='after')
     def validate_score_consistency(self):
@@ -21,14 +23,17 @@ class HoleScore(BaseGolfModel):
                 raise ValueError(f"Putts ({self.putts}) cannot exceed strokes ({self.strokes})")
         return self
 
-    def to_par(self, par: int) -> Optional[int]:
-        """Calculate score relative to par."""
+    def to_par(self, par: Optional[int] = None) -> Optional[int]:
+        """Calculate score relative to par. Falls back to par_played if par not passed."""
         if self.strokes is None:
             return None
-        return self.strokes - par
+        effective_par = par if par is not None else self.par_played
+        if effective_par is None:
+            return None
+        return self.strokes - effective_par
 
-    def get_score_type(self, par: int) -> Optional[str]:
-        """Get score name (eagle, birdie, par, bogey, etc.)."""
+    def get_score_type(self, par: Optional[int] = None) -> Optional[str]:
+        """Get score name (eagle, birdie, par, bogey, etc.). Falls back to par_played."""
         relative = self.to_par(par)
         if relative is None:
             return None

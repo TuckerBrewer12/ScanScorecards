@@ -71,9 +71,15 @@ class CourseRepositoryDB:
             return await self._assemble(conn, row)
 
     async def find_course_by_name(
-        self, name: str, location: Optional[str] = None
+        self,
+        name: str,
+        location: Optional[str] = None,
+        user_id: Optional[str] = None,
     ) -> Optional[Course]:
         """Fuzzy/case-insensitive course lookup.
+
+        Searches both master courses (user_id IS NULL) and the user's own
+        custom courses when user_id is provided.
 
         Search tiers:
         1. Exact case-insensitive match
@@ -81,86 +87,176 @@ class CourseRepositoryDB:
         3. Trigram similarity (requires pg_trgm extension)
         """
         async with self._pool.acquire() as conn:
+            # Build the user filter clause
+            if user_id:
+                uid = UUID(user_id)
+                user_filter = "(c.user_id IS NULL OR c.user_id = $3)"
+            else:
+                uid = None
+                user_filter = "c.user_id IS NULL"
+
+            def make_query(where_name: str, where_loc: str = "") -> str:
+                loc_part = f" AND {where_loc}" if where_loc else ""
+                user_part = f" AND {user_filter}"
+                return f"SELECT * FROM courses.courses c WHERE {where_name}{loc_part}{user_part}"
+
             # Tier 1: exact (case-insensitive)
-            if location:
+            if location and user_id:
                 row = await conn.fetchrow(
-                    """SELECT * FROM courses.courses
-                       WHERE LOWER(name) = LOWER($1)
-                         AND LOWER(location) = LOWER($2)""",
+                    """SELECT * FROM courses.courses c
+                       WHERE LOWER(c.name) = LOWER($1) AND LOWER(c.location) = LOWER($2)
+                         AND (c.user_id IS NULL OR c.user_id = $3)""",
+                    name, location, uid,
+                )
+            elif location:
+                row = await conn.fetchrow(
+                    """SELECT * FROM courses.courses c
+                       WHERE LOWER(c.name) = LOWER($1) AND LOWER(c.location) = LOWER($2)
+                         AND c.user_id IS NULL""",
                     name, location,
+                )
+            elif user_id:
+                row = await conn.fetchrow(
+                    """SELECT * FROM courses.courses c
+                       WHERE LOWER(c.name) = LOWER($1)
+                         AND (c.user_id IS NULL OR c.user_id = $2)""",
+                    name, uid,
                 )
             else:
                 row = await conn.fetchrow(
-                    "SELECT * FROM courses.courses WHERE LOWER(name) = LOWER($1)",
+                    """SELECT * FROM courses.courses c
+                       WHERE LOWER(c.name) = LOWER($1) AND c.user_id IS NULL""",
                     name,
                 )
 
             # Tier 2: ILIKE partial
             if not row:
-                if location:
+                if location and user_id:
                     row = await conn.fetchrow(
-                        """SELECT * FROM courses.courses
-                           WHERE name ILIKE $1 AND location ILIKE $2
+                        """SELECT * FROM courses.courses c
+                           WHERE c.name ILIKE $1 AND c.location ILIKE $2
+                             AND (c.user_id IS NULL OR c.user_id = $3)
                            LIMIT 1""",
+                        f"%{name}%", f"%{location}%", uid,
+                    )
+                elif location:
+                    row = await conn.fetchrow(
+                        """SELECT * FROM courses.courses c
+                           WHERE c.name ILIKE $1 AND c.location ILIKE $2
+                             AND c.user_id IS NULL LIMIT 1""",
                         f"%{name}%", f"%{location}%",
+                    )
+                elif user_id:
+                    row = await conn.fetchrow(
+                        """SELECT * FROM courses.courses c
+                           WHERE c.name ILIKE $1
+                             AND (c.user_id IS NULL OR c.user_id = $2)
+                           LIMIT 1""",
+                        f"%{name}%", uid,
                     )
                 else:
                     row = await conn.fetchrow(
-                        "SELECT * FROM courses.courses WHERE name ILIKE $1 LIMIT 1",
+                        """SELECT * FROM courses.courses c
+                           WHERE c.name ILIKE $1 AND c.user_id IS NULL LIMIT 1""",
                         f"%{name}%",
                     )
 
             # Tier 3: trigram similarity (0.4 threshold to avoid false positives)
             if not row:
-                row = await conn.fetchrow(
-                    """SELECT *, similarity(name, $1) AS sim
-                       FROM courses.courses
-                       WHERE similarity(name, $1) > 0.4
-                       ORDER BY sim DESC LIMIT 1""",
-                    name,
-                )
+                if user_id:
+                    row = await conn.fetchrow(
+                        """SELECT *, similarity(name, $1) AS sim
+                           FROM courses.courses
+                           WHERE similarity(name, $1) > 0.4
+                             AND (user_id IS NULL OR user_id = $2)
+                           ORDER BY sim DESC LIMIT 1""",
+                        name, uid,
+                    )
+                else:
+                    row = await conn.fetchrow(
+                        """SELECT *, similarity(name, $1) AS sim
+                           FROM courses.courses
+                           WHERE similarity(name, $1) > 0.4 AND user_id IS NULL
+                           ORDER BY sim DESC LIMIT 1""",
+                        name,
+                    )
 
             if not row:
                 return None
             return await self._assemble(conn, row)
 
     async def list_courses(
-        self, *, limit: int = 50, offset: int = 0
+        self,
+        *,
+        limit: int = 50,
+        offset: int = 0,
+        user_id: Optional[str] = None,
     ) -> List[Course]:
-        """List courses with pagination (fully populated)."""
+        """List courses with pagination (fully populated).
+
+        Returns master courses plus the user's custom courses when user_id provided.
+        """
         async with self._pool.acquire() as conn:
-            rows = await conn.fetch(
-                "SELECT * FROM courses.courses ORDER BY name LIMIT $1 OFFSET $2",
-                limit, offset,
-            )
+            if user_id:
+                rows = await conn.fetch(
+                    """SELECT * FROM courses.courses
+                       WHERE user_id IS NULL OR user_id = $3
+                       ORDER BY name LIMIT $1 OFFSET $2""",
+                    limit, offset, UUID(user_id),
+                )
+            else:
+                rows = await conn.fetch(
+                    """SELECT * FROM courses.courses WHERE user_id IS NULL
+                       ORDER BY name LIMIT $1 OFFSET $2""",
+                    limit, offset,
+                )
             return [await self._assemble(conn, r) for r in rows]
 
-    async def search_courses(self, query: str) -> List[Course]:
+    async def search_courses(
+        self, query: str, *, user_id: Optional[str] = None
+    ) -> List[Course]:
         """Search courses by name or location substring."""
         async with self._pool.acquire() as conn:
-            rows = await conn.fetch(
-                """SELECT * FROM courses.courses
-                   WHERE name ILIKE $1 OR location ILIKE $1
-                   ORDER BY name LIMIT 20""",
-                f"%{query}%",
-            )
+            if user_id:
+                rows = await conn.fetch(
+                    """SELECT * FROM courses.courses
+                       WHERE (name ILIKE $1 OR location ILIKE $1)
+                         AND (user_id IS NULL OR user_id = $2)
+                       ORDER BY name LIMIT 20""",
+                    f"%{query}%", UUID(user_id),
+                )
+            else:
+                rows = await conn.fetch(
+                    """SELECT * FROM courses.courses
+                       WHERE (name ILIKE $1 OR location ILIKE $1)
+                         AND user_id IS NULL
+                       ORDER BY name LIMIT 20""",
+                    f"%{query}%",
+                )
             return [await self._assemble(conn, r) for r in rows]
 
     # ================================================================
     # Create
     # ================================================================
 
-    async def create_course(self, course: Course) -> Course:
-        """Insert a full Course with holes, tees, and yardages in one transaction."""
+    async def create_course(
+        self, course: Course, *, user_id: Optional[str] = None
+    ) -> Course:
+        """Insert a full Course with holes, tees, and yardages in one transaction.
+
+        user_id=None creates a master/global course.
+        user_id=<uuid> creates a custom course owned by that user.
+        """
         try:
+            uid = UUID(user_id) if user_id else None
             async with self._pool.acquire() as conn:
                 async with conn.transaction():
-                    row_data = course_to_row(course)
+                    row_data = course_to_row(course, user_id=uid)
                     course_row = await conn.fetchrow(
-                        """INSERT INTO courses.courses (name, location, par, total_holes)
-                           VALUES ($1, $2, $3, $4) RETURNING *""",
+                        """INSERT INTO courses.courses (name, location, par, total_holes, user_id)
+                           VALUES ($1, $2, $3, $4, $5) RETURNING *""",
                         row_data["name"], row_data["location"],
-                        row_data["par"], row_data["total_holes"],
+                        row_data["par"], row_data["total_holes"], row_data["user_id"],
                     )
                     course_id = course_row["id"]
 
@@ -198,24 +294,71 @@ class CourseRepositoryDB:
         except asyncpg.ForeignKeyViolationError as e:
             raise IntegrityError(str(e)) from e
 
+    async def clone_course(self, course_id: str, user_id: str) -> Course:
+        """Clone a master course as a custom course for a user.
+
+        Copies the course, all its holes, all its tees, and all tee yardages.
+        Returns the newly created custom Course.
+        """
+        uid = UUID(user_id)
+        async with self._pool.acquire() as conn:
+            # Load the source course
+            source_row = await conn.fetchrow(
+                "SELECT * FROM courses.courses WHERE id = $1", UUID(course_id)
+            )
+            if not source_row:
+                raise NotFoundError(f"Course {course_id} not found")
+
+            hole_rows, tee_rows, yardage_map = await self._load_children(
+                conn, source_row["id"]
+            )
+
+        # Build a Course model and create it for the user
+        # (uses a fresh connection to avoid nested acquire)
+        source = course_from_rows(source_row, hole_rows, tee_rows, yardage_map)
+        # Clear id so create_course generates a new one
+        source.id = None
+        try:
+            return await self.create_course(source, user_id=user_id)
+        except DuplicateError:
+            # User already has a custom course with this name — return it
+            existing = await self.find_course_by_name(
+                source.name, source.location, user_id=user_id
+            )
+            if existing and existing.user_id == user_id:
+                return existing
+            raise
+
     # ================================================================
     # Update
     # ================================================================
 
-    async def update_course(self, course_id: str, **fields) -> Optional[Course]:
-        """Update top-level course fields (name, location, par, total_holes, metadata).
+    async def update_course(
+        self, course_id: str, *, user_id: Optional[str] = None, **fields
+    ) -> Optional[Course]:
+        """Update top-level course fields.
 
-        For updating holes/tees, use upsert_hole/upsert_tee.
+        When user_id is provided, enforces that the course is owned by that user
+        (returns None if it's a master course or belongs to another user).
         """
         allowed = {"name", "location", "par", "total_holes", "metadata"}
         updates = {k: v for k, v in fields.items() if k in allowed}
         if not updates:
             return await self.get_course(course_id)
 
-        set_clause = ", ".join(f"{k} = ${i+2}" for i, k in enumerate(updates))
-        values = [UUID(course_id)] + list(updates.values())
-
         async with self._pool.acquire() as conn:
+            # Ownership check for user-scoped updates
+            if user_id:
+                row = await conn.fetchrow(
+                    "SELECT user_id FROM courses.courses WHERE id = $1",
+                    UUID(course_id),
+                )
+                if not row or str(row["user_id"]) != user_id:
+                    return None  # Not found or not owned by this user
+
+            set_clause = ", ".join(f"{k} = ${i+2}" for i, k in enumerate(updates))
+            values = [UUID(course_id)] + list(updates.values())
+
             row = await conn.fetchrow(
                 f"UPDATE courses.courses SET {set_clause} WHERE id = $1 RETURNING *",
                 *values,
@@ -268,10 +411,21 @@ class CourseRepositoryDB:
     # Delete
     # ================================================================
 
-    async def delete_course(self, course_id: str) -> bool:
-        """Delete a course and all children (CASCADE). Returns True if deleted."""
+    async def delete_course(
+        self, course_id: str, *, user_id: Optional[str] = None
+    ) -> bool:
+        """Delete a course and all children (CASCADE). Returns True if deleted.
+
+        When user_id is provided, only deletes if the course is owned by that user.
+        """
         async with self._pool.acquire() as conn:
-            result = await conn.execute(
-                "DELETE FROM courses.courses WHERE id = $1", UUID(course_id)
-            )
+            if user_id:
+                result = await conn.execute(
+                    "DELETE FROM courses.courses WHERE id = $1 AND user_id = $2",
+                    UUID(course_id), UUID(user_id),
+                )
+            else:
+                result = await conn.execute(
+                    "DELETE FROM courses.courses WHERE id = $1", UUID(course_id)
+                )
             return result == "DELETE 1"
