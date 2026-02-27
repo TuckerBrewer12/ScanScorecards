@@ -3,10 +3,11 @@
 import asyncpg
 from typing import List, Optional
 
-from models import Course, Hole, Tee, HoleScore, Round, User
+from models import Course, Hole, Tee, HoleScore, Round, User, UserTee
 from database.repositories.course_repo import CourseRepositoryDB
 from database.repositories.user_repo import UserRepositoryDB
 from database.repositories.round_repo import RoundRepositoryDB
+from database.repositories.user_tee_repo import UserTeeRepositoryDB
 
 
 class DatabaseManager:
@@ -29,6 +30,7 @@ class DatabaseManager:
         self.courses = CourseRepositoryDB(pool)
         self.users = UserRepositoryDB(pool)
         self.rounds = RoundRepositoryDB(pool, self.courses)
+        self.user_tees = UserTeeRepositoryDB(pool)
 
     # ================================================================
     # Course delegates

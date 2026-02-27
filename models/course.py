@@ -7,13 +7,18 @@ from .tee import Tee
 
 
 class Course(BaseGolfModel):
-    """Represents a golf course with its holes and tee options."""
+    """Represents a golf course with its holes and tee options.
+
+    user_id IS None  => master/global course (read-only for regular users)
+    user_id IS set   => custom course owned by that user
+    """
     id: Optional[str] = None
     name: Optional[str] = None
     location: Optional[str] = None
     par: Optional[int] = Field(None, ge=27, le=80)  # 27 for 9-hole, 80 for 18-hole
     holes: List[Hole] = Field(default_factory=list)
     tees: List[Tee] = Field(default_factory=list)
+    user_id: Optional[str] = None  # None = master course; set = user-owned custom course
 
     def get_tee(self, color: str) -> Optional[Tee]:
         """Get a tee by its color."""
