@@ -6,8 +6,12 @@ from analytics.stats import (
     gir_per_round,
     putts_per_round,
     round_summary,
+    scrambling_per_round,
     score_trend,
+    score_type_distribution_per_round,
+    scoring_by_par,
     scoring_vs_hole_handicap,
+    three_putts_per_round,
 )
 from models.course import Course
 from models.hole import Hole
@@ -16,10 +20,15 @@ from models.round import Round
 
 
 def _build_course() -> Course:
-    holes = [
-        Hole(number=i, par=4, handicap=i)
-        for i in range(1, 19)
-    ]
+    holes = []
+    for i in range(1, 19):
+        if i <= 4:
+            par = 3
+        elif i <= 14:
+            par = 4
+        else:
+            par = 5
+        holes.append(Hole(number=i, par=par, handicap=i))
     return Course(id="course-1", name="Demo Course", par=72, holes=holes)
 
 
@@ -73,6 +82,38 @@ def test_putts_and_gir_per_round():
     assert gir_rows[1]["gir_percentage"] == 50.0
 
 
+def test_three_putts_per_round():
+    rounds = _build_rounds()
+    rows = three_putts_per_round(rounds)
+
+    # In round 1, all holes are 2-putts.
+    assert rows[0]["three_putt_count"] == 0
+    assert rows[0]["holes_with_putt_data"] == 18
+    assert rows[0]["three_putt_percentage"] == 0.0
+
+    # In round 2, odd holes are 2-putts and even holes are 1-putts.
+    assert rows[1]["three_putt_count"] == 0
+    assert rows[1]["holes_with_putt_data"] == 18
+    assert rows[1]["three_putt_percentage"] == 0.0
+
+
+def test_scrambling_per_round():
+    rounds = _build_rounds()
+    rows = scrambling_per_round(rounds)
+
+    # Round 1: holes 11-18 are missed GIRs; par4 on 11-14 are 4 (success),
+    # par5 on 15-18 are 4 (not par, no success).
+    assert rows[0]["scramble_opportunities"] == 8
+    assert rows[0]["scramble_successes"] == 4
+    assert rows[0]["scrambling_percentage"] == 50.0
+
+    # Round 2: missed GIR on odd holes only (9 opps), all odd scores are 5.
+    # Success only on odd par5 holes (15,17): 2 successes.
+    assert rows[1]["scramble_opportunities"] == 9
+    assert rows[1]["scramble_successes"] == 2
+    assert rows[1]["scrambling_percentage"] == pytest.approx((2 / 9) * 100)
+
+
 def test_score_trend():
     rounds = _build_rounds()
     rows = score_trend(rounds)
@@ -81,15 +122,60 @@ def test_score_trend():
     assert [row["to_par"] for row in rows] == [0, 9]
 
 
+def test_scoring_by_par():
+    rounds = _build_rounds()
+    rows = scoring_by_par(rounds)
+    by_par = {row["par"]: row for row in rows}
+
+    assert set(by_par.keys()) == {3, 4, 5}
+    assert by_par[3]["sample_size"] == 8
+    assert by_par[4]["sample_size"] == 20
+    assert by_par[5]["sample_size"] == 8
+
+    assert by_par[3]["average_to_par"] == pytest.approx(1.25)
+    assert by_par[4]["average_to_par"] == pytest.approx(0.25)
+    assert by_par[5]["average_to_par"] == pytest.approx(-0.75)
+
+
+def test_score_type_distribution_per_round():
+    rounds = _build_rounds()
+    rows = score_type_distribution_per_round(rounds)
+
+    # Round 1: all holes are +1 on this synthetic dataset.
+    assert rows[0]["bogey"] == pytest.approx(100.0)
+    assert rows[0]["birdie"] == 0.0
+    assert rows[0]["par"] == 0.0
+
+    # Round 2 on this synthetic dataset:
+    # holes 1-4 (par3): +2 on odd, +1 on even -> 2 double, 2 bogey
+    # holes 5-14 (par4): +1 on odd, 0 on even -> 5 bogey, 5 par
+    # holes 15-18 (par5): 0 on odd, -1 on even -> 2 par, 2 birdie
+    assert rows[1]["double_bogey"] == pytest.approx((2 / 18) * 100)
+    assert rows[1]["bogey"] == pytest.approx((7 / 18) * 100)
+    assert rows[1]["par"] == pytest.approx((7 / 18) * 100)
+    assert rows[1]["birdie"] == pytest.approx((2 / 18) * 100)
+
+    total_pct = (
+        rows[1]["eagle"]
+        + rows[1]["birdie"]
+        + rows[1]["par"]
+        + rows[1]["bogey"]
+        + rows[1]["double_bogey"]
+        + rows[1]["triple_bogey"]
+        + rows[1]["quad_bogey"]
+    )
+    assert total_pct == pytest.approx(100.0)
+
+
 def test_scoring_vs_hole_handicap():
     rounds = _build_rounds()
     rows = scoring_vs_hole_handicap(rounds)
 
     assert len(rows) == 18
     assert rows[0]["handicap"] == 1
-    assert rows[0]["average_to_par"] == pytest.approx(0.5)
+    assert rows[0]["average_to_par"] == pytest.approx(1.5)
     assert rows[0]["sample_size"] == 2
 
     assert rows[1]["handicap"] == 2
-    assert rows[1]["average_to_par"] == pytest.approx(0.0)
+    assert rows[1]["average_to_par"] == pytest.approx(1.0)
     assert rows[1]["sample_size"] == 2

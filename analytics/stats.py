@@ -4,6 +4,16 @@ from typing import Any, Dict, Iterable, List, Optional
 
 from models.round import Round
 
+SCORE_TYPE_ORDER = [
+    "eagle",
+    "birdie",
+    "par",
+    "bogey",
+    "double_bogey",
+    "triple_bogey",
+    "quad_bogey",
+]
+
 
 def _valid_hole_scores(round_obj: Round):
     return [score for score in round_obj.hole_scores if score.hole_number is not None]
@@ -43,6 +53,78 @@ def putts_per_round(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
                 "round_id": round_obj.id,
                 "total_putts": round_obj.get_total_putts(),
                 "holes_played": len(_valid_hole_scores(round_obj)),
+            }
+        )
+    return results
+
+
+def three_putts_per_round(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
+    """
+    Return 3-putt count and percentage for each round.
+
+    3-putt percentage is based on holes with a non-null putts value.
+    """
+    results: List[Dict[str, Any]] = []
+    for index, round_obj in enumerate(rounds, start=1):
+        scores_with_putts = [
+            score for score in _valid_hole_scores(round_obj) if score.putts is not None
+        ]
+        three_putt_count = sum(1 for score in scores_with_putts if score.putts >= 3)
+        holes_with_putt_data = len(scores_with_putts)
+        three_putt_percentage = (
+            (three_putt_count / holes_with_putt_data) * 100.0
+            if holes_with_putt_data
+            else 0.0
+        )
+
+        results.append(
+            {
+                "round_index": index,
+                "round_id": round_obj.id,
+                "three_putt_count": three_putt_count,
+                "holes_with_putt_data": holes_with_putt_data,
+                "three_putt_percentage": three_putt_percentage,
+            }
+        )
+    return results
+
+
+def scrambling_per_round(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
+    """
+    Scrambling by round using the user's rule:
+    - Opportunity: hole where GIR is False
+    - Success: opportunity hole where strokes == par
+    """
+    results: List[Dict[str, Any]] = []
+    for index, round_obj in enumerate(rounds, start=1):
+        opportunities = 0
+        successes = 0
+
+        if round_obj.course:
+            for score in _valid_hole_scores(round_obj):
+                if (
+                    score.hole_number is None
+                    or score.green_in_regulation is None
+                    or score.strokes is None
+                ):
+                    continue
+                hole = round_obj.course.get_hole(score.hole_number)
+                if not hole or hole.par is None:
+                    continue
+
+                if score.green_in_regulation is False:
+                    opportunities += 1
+                    if score.strokes == hole.par:
+                        successes += 1
+
+        percentage = (successes / opportunities * 100.0) if opportunities else 0.0
+        results.append(
+            {
+                "round_index": index,
+                "round_id": round_obj.id,
+                "scramble_opportunities": opportunities,
+                "scramble_successes": successes,
+                "scrambling_percentage": percentage,
             }
         )
     return results
@@ -123,5 +205,104 @@ def scoring_vs_hole_handicap(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
                 "sample_size": len(values),
             }
         )
+
+    return results
+
+
+def scoring_by_par(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
+    """
+    Aggregate scoring performance by hole par (3, 4, 5).
+
+    Output rows:
+    - par: 3, 4, or 5
+    - average_to_par: mean(strokes - par)
+    - average_strokes: mean(strokes)
+    - sample_size: number of holes included
+    """
+    by_par: Dict[int, List[int]] = {}
+
+    for round_obj in rounds:
+        if not round_obj.course:
+            continue
+
+        for hole_score in _valid_hole_scores(round_obj):
+            if hole_score.hole_number is None or hole_score.strokes is None:
+                continue
+
+            hole = round_obj.course.get_hole(hole_score.hole_number)
+            if not hole or hole.par is None:
+                continue
+            if hole.par not in (3, 4, 5):
+                continue
+
+            by_par.setdefault(hole.par, []).append(hole_score.strokes)
+
+    results: List[Dict[str, Any]] = []
+    for par in sorted(by_par):
+        strokes = by_par[par]
+        avg_strokes = sum(strokes) / len(strokes)
+        results.append(
+            {
+                "par": par,
+                "average_to_par": avg_strokes - par,
+                "average_strokes": avg_strokes,
+                "sample_size": len(strokes),
+            }
+        )
+    return results
+
+
+def _score_type_from_to_par(to_par: int) -> str:
+    if to_par <= -2:
+        return "eagle"
+    if to_par == -1:
+        return "birdie"
+    if to_par == 0:
+        return "par"
+    if to_par == 1:
+        return "bogey"
+    if to_par == 2:
+        return "double_bogey"
+    if to_par == 3:
+        return "triple_bogey"
+    return "quad_bogey"
+
+
+def score_type_distribution_per_round(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
+    """
+    Percentage of holes by score type for each round.
+
+    Categories:
+    - eagle (includes eagle or better)
+    - birdie, par, bogey, double_bogey, triple_bogey, quad_bogey
+
+    Anything worse than quad bogey is counted as quad_bogey.
+    """
+    results: List[Dict[str, Any]] = []
+
+    for index, round_obj in enumerate(rounds, start=1):
+        counts = {name: 0 for name in SCORE_TYPE_ORDER}
+        total = 0
+
+        if round_obj.course:
+            for hole_score in _valid_hole_scores(round_obj):
+                if hole_score.hole_number is None or hole_score.strokes is None:
+                    continue
+                hole = round_obj.course.get_hole(hole_score.hole_number)
+                if not hole or hole.par is None:
+                    continue
+
+                score_type = _score_type_from_to_par(hole_score.strokes - hole.par)
+                counts[score_type] += 1
+                total += 1
+
+        row: Dict[str, Any] = {
+            "round_index": index,
+            "round_id": round_obj.id,
+            "holes_counted": total,
+        }
+        for name in SCORE_TYPE_ORDER:
+            row[name] = (counts[name] / total * 100.0) if total else 0.0
+        results.append(row)
 
     return results
