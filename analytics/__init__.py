@@ -1,5 +1,7 @@
 from .stats import (
     gir_per_round,
+    gir_vs_non_gir_score_distribution,
+    putts_per_gir,
     putts_per_round,
     round_summary,
     scrambling_per_round,
@@ -11,6 +13,8 @@ from .stats import (
 )
 from .visualizations import (
     plot_gir_per_round,
+    plot_gir_vs_non_gir_score_distribution,
+    plot_putts_per_gir,
     plot_putts_per_round,
     plot_scrambling_per_round,
     plot_score_trend,
@@ -23,16 +27,20 @@ from .visualizations import (
 __all__ = [
     "round_summary",
     "putts_per_round",
+    "putts_per_gir",
     "scrambling_per_round",
     "gir_per_round",
+    "gir_vs_non_gir_score_distribution",
     "score_trend",
     "score_type_distribution_per_round",
     "scoring_by_par",
     "scoring_vs_hole_handicap",
     "three_putts_per_round",
     "plot_putts_per_round",
+    "plot_putts_per_gir",
     "plot_scrambling_per_round",
     "plot_gir_per_round",
+    "plot_gir_vs_non_gir_score_distribution",
     "plot_score_trend",
     "plot_score_type_distribution_per_round",
     "plot_scoring_by_par",

@@ -7,6 +7,8 @@ from typing import List
 
 from analytics.visualizations import (
     plot_gir_per_round,
+    plot_gir_vs_non_gir_score_distribution,
+    plot_putts_per_gir,
     plot_putts_per_round,
     plot_scrambling_per_round,
     plot_scoring_by_par,
@@ -48,6 +50,14 @@ def _has_putt_data(rounds: List[Round]) -> bool:
     for round_obj in rounds:
         for score in round_obj.hole_scores:
             if score.putts is not None:
+                return True
+    return False
+
+
+def _has_putts_per_gir_data(rounds: List[Round]) -> bool:
+    for round_obj in rounds:
+        for score in round_obj.hole_scores:
+            if score.green_in_regulation is True and score.putts is not None:
                 return True
     return False
 
@@ -171,11 +181,24 @@ async def main_async() -> None:
     else:
         print("Skipping putts chart: no putt values found.")
 
+    if _has_putts_per_gir_data(rounds):
+        fig, _, _ = plot_putts_per_gir(rounds)
+        ppg_path = outdir / "putts_per_gir.png"
+        fig.savefig(ppg_path, dpi=150)
+        written.append(ppg_path)
+    else:
+        print("Skipping putts-per-GIR chart: missing GIR holes with putt data.")
+
     if _has_gir_data(rounds):
-        fig, _ = plot_gir_per_round(rounds)
+        fig, _, _ = plot_gir_per_round(rounds)
         gir_path = outdir / "gir_per_round.png"
         fig.savefig(gir_path, dpi=150)
         written.append(gir_path)
+
+        fig, _ = plot_gir_vs_non_gir_score_distribution(rounds)
+        gir_compare_path = outdir / "gir_vs_non_gir_score_distribution.png"
+        fig.savefig(gir_compare_path, dpi=150)
+        written.append(gir_compare_path)
     else:
         print("Skipping GIR chart: no GIR values found.")
 
