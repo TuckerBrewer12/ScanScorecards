@@ -4,7 +4,7 @@ import { api } from "@/lib/api";
 import type { CourseSummary } from "@/types/golf";
 import { PageHeader } from "@/components/layout/PageHeader";
 
-export function CoursesPage() {
+export function CoursesPage({ userId }: { userId: string }) {
   const [courses, setCourses] = useState<CourseSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -12,11 +12,11 @@ export function CoursesPage() {
   const loadCourses = useCallback(async () => {
     setLoading(true);
     const data = search
-      ? await api.searchCourses(search)
-      : await api.getCourses();
+      ? await api.searchCourses(search, userId)
+      : await api.getCourses(userId);
     setCourses(data);
     setLoading(false);
-  }, [search]);
+  }, [search, userId]);
 
   useEffect(() => {
     const timer = setTimeout(loadCourses, search ? 300 : 0);

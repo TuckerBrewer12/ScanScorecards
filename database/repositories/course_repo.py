@@ -185,6 +185,216 @@ class CourseRepositoryDB:
                 return None
             return await self._assemble(conn, row)
 
+    async def find_user_course_by_name(
+        self,
+        name: str,
+        location: Optional[str] = None,
+        user_id: str = None,
+    ) -> Optional[Course]:
+        """Find a course owned by this specific user (excludes masters)."""
+        uid = UUID(user_id)
+        async with self._pool.acquire() as conn:
+            # Tier 1: exact
+            if location:
+                row = await conn.fetchrow(
+                    """SELECT * FROM courses.courses
+                       WHERE LOWER(name) = LOWER($1) AND LOWER(location) = LOWER($2)
+                         AND user_id = $3""",
+                    name, location, uid,
+                )
+            else:
+                row = await conn.fetchrow(
+                    """SELECT * FROM courses.courses
+                       WHERE LOWER(name) = LOWER($1) AND user_id = $2""",
+                    name, uid,
+                )
+            # Tier 2: ILIKE
+            if not row:
+                if location:
+                    row = await conn.fetchrow(
+                        """SELECT * FROM courses.courses
+                           WHERE name ILIKE $1 AND location ILIKE $2
+                             AND user_id = $3 LIMIT 1""",
+                        f"%{name}%", f"%{location}%", uid,
+                    )
+                else:
+                    row = await conn.fetchrow(
+                        """SELECT * FROM courses.courses
+                           WHERE name ILIKE $1 AND user_id = $2 LIMIT 1""",
+                        f"%{name}%", uid,
+                    )
+            # Tier 3: trigram
+            if not row:
+                row = await conn.fetchrow(
+                    """SELECT *, similarity(name, $1) AS sim
+                       FROM courses.courses
+                       WHERE similarity(name, $1) > 0.4 AND user_id = $2
+                       ORDER BY sim DESC LIMIT 1""",
+                    name, uid,
+                )
+            if not row:
+                return None
+            return await self._assemble(conn, row)
+
+    async def find_any_user_course_by_name(
+        self,
+        name: str,
+        location: Optional[str] = None,
+    ) -> Optional[Course]:
+        """Find a course owned by any user (excludes masters). Used for cross-user discovery."""
+        async with self._pool.acquire() as conn:
+            # Tier 1: exact
+            if location:
+                row = await conn.fetchrow(
+                    """SELECT * FROM courses.courses
+                       WHERE LOWER(name) = LOWER($1) AND LOWER(location) = LOWER($2)
+                         AND user_id IS NOT NULL LIMIT 1""",
+                    name, location,
+                )
+            else:
+                row = await conn.fetchrow(
+                    """SELECT * FROM courses.courses
+                       WHERE LOWER(name) = LOWER($1) AND user_id IS NOT NULL LIMIT 1""",
+                    name,
+                )
+            # Tier 2: ILIKE
+            if not row:
+                if location:
+                    row = await conn.fetchrow(
+                        """SELECT * FROM courses.courses
+                           WHERE name ILIKE $1 AND location ILIKE $2
+                             AND user_id IS NOT NULL LIMIT 1""",
+                        f"%{name}%", f"%{location}%",
+                    )
+                else:
+                    row = await conn.fetchrow(
+                        """SELECT * FROM courses.courses
+                           WHERE name ILIKE $1 AND user_id IS NOT NULL LIMIT 1""",
+                        f"%{name}%",
+                    )
+            # Tier 3: trigram
+            if not row:
+                row = await conn.fetchrow(
+                    """SELECT *, similarity(name, $1) AS sim
+                       FROM courses.courses
+                       WHERE similarity(name, $1) > 0.4 AND user_id IS NOT NULL
+                       ORDER BY sim DESC LIMIT 1""",
+                    name,
+                )
+            if not row:
+                return None
+            return await self._assemble(conn, row)
+
+    async def fill_course_gaps(
+        self,
+        course_id: str,
+        holes: list,
+        tee_color: Optional[str] = None,
+        slope_rating: Optional[float] = None,
+        course_rating: Optional[float] = None,
+        yardages: Optional[dict] = None,
+    ) -> None:
+        """Fill null fields on an existing course from new scan data.
+
+        Never overwrites existing values — only patches holes where data is missing.
+        holes: list of dicts with hole_number, par, handicap keys.
+        yardages: {hole_number_str: yardage} dict from scan.
+        """
+        cid = UUID(course_id)
+        async with self._pool.acquire() as conn:
+            async with conn.transaction():
+                # Fill hole par/handicap where NULL (or insert if hole row missing)
+                for hole in holes:
+                    h = hole if isinstance(hole, dict) else hole.__dict__
+                    hole_num = h.get("hole_number")
+                    par = h.get("par")
+                    handicap = h.get("handicap")
+                    if hole_num is None:
+                        continue
+                    await conn.execute(
+                        """INSERT INTO courses.holes (course_id, hole_number, par, handicap)
+                           VALUES ($1, $2, $3, $4)
+                           ON CONFLICT (course_id, hole_number) DO UPDATE SET
+                               par = CASE WHEN courses.holes.par IS NULL
+                                         THEN EXCLUDED.par ELSE courses.holes.par END,
+                               handicap = CASE WHEN courses.holes.handicap IS NULL
+                                              THEN EXCLUDED.handicap ELSE courses.holes.handicap END""",
+                        cid, hole_num, par, handicap,
+                    )
+
+                # Fill tee rating gaps and insert missing yardages.
+                # Use explicit SELECT + INSERT/UPDATE to handle case-insensitive color
+                # matching and avoid ON CONFLICT dependency on live-DB constraint state.
+                if tee_color:
+                    existing_tee = await conn.fetchrow(
+                        "SELECT id, slope_rating, course_rating FROM courses.tees "
+                        "WHERE course_id = $1 AND LOWER(color) = LOWER($2)",
+                        cid, tee_color,
+                    )
+                    if existing_tee:
+                        tee_id = existing_tee["id"]
+                        # Fill NULL slots only — never overwrite existing data
+                        updates = {}
+                        if slope_rating is not None and existing_tee["slope_rating"] is None:
+                            updates["slope_rating"] = slope_rating
+                        if course_rating is not None and existing_tee["course_rating"] is None:
+                            updates["course_rating"] = course_rating
+                        if updates:
+                            set_clause = ", ".join(
+                                f"{k} = ${i + 2}" for i, k in enumerate(updates)
+                            )
+                            await conn.execute(
+                                f"UPDATE courses.tees SET {set_clause} WHERE id = $1",
+                                tee_id, *updates.values(),
+                            )
+                    else:
+                        # New tee — insert it
+                        tee_row = await conn.fetchrow(
+                            """INSERT INTO courses.tees (course_id, color, slope_rating, course_rating)
+                               VALUES ($1, $2, $3, $4) RETURNING id""",
+                            cid, tee_color, slope_rating, course_rating,
+                        )
+                        tee_id = tee_row["id"]
+
+                    if yardages:
+                        for hole_num_str, yardage in yardages.items():
+                            if yardage is not None:
+                                hole_num = int(hole_num_str)
+                                exists = await conn.fetchval(
+                                    "SELECT 1 FROM courses.tee_yardages "
+                                    "WHERE tee_id = $1 AND hole_number = $2",
+                                    tee_id, hole_num,
+                                )
+                                if not exists:
+                                    await conn.execute(
+                                        """INSERT INTO courses.tee_yardages (tee_id, hole_number, yardage)
+                                           VALUES ($1, $2, $3)""",
+                                        tee_id, hole_num, yardage,
+                                    )
+
+    async def promote_to_master(self, course_id: str) -> Course:
+        """Promote a user-owned course to master by setting user_id = NULL.
+
+        If a master with the same name already exists (race condition), returns the
+        course as-is rather than raising.
+        """
+        cid = UUID(course_id)
+        async with self._pool.acquire() as conn:
+            try:
+                row = await conn.fetchrow(
+                    "UPDATE courses.courses SET user_id = NULL WHERE id = $1 RETURNING *",
+                    cid,
+                )
+                if not row:
+                    raise NotFoundError(f"Course {course_id} not found")
+                return await self._assemble(conn, row)
+            except asyncpg.UniqueViolationError:
+                # Race condition: another master with this name now exists
+                row = await conn.fetchrow(
+                    "SELECT * FROM courses.courses WHERE id = $1", cid
+                )
+                return await self._assemble(conn, row)
+
     async def list_courses(
         self,
         *,

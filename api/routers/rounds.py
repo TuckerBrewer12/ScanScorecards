@@ -28,6 +28,7 @@ class UpdateRoundRequest(BaseModel):
     hole_scores: Optional[List[HoleScoreUpdate]] = None
     notes: Optional[str] = None
     weather_conditions: Optional[str] = None
+    tee_box: Optional[str] = None
 
 
 def summarize_round(r) -> RoundSummaryResponse:
@@ -107,6 +108,8 @@ async def update_round(
             meta_updates["notes"] = req.notes
         if req.weather_conditions is not None:
             meta_updates["weather_conditions"] = req.weather_conditions
+        if req.tee_box is not None:
+            meta_updates["tee_box_played"] = req.tee_box
 
         if meta_updates:
             updated = await db.rounds.update_round(round_id, **meta_updates)

@@ -54,10 +54,16 @@ export const api = {
     roundId: string,
     body: {
       hole_scores?: { hole_number: number; strokes?: number | null; putts?: number | null; fairway_hit?: boolean | null; green_in_regulation?: boolean | null }[];
+      tee_box?: string | null;
       notes?: string;
       weather_conditions?: string;
     }
   ) => putJSON<Round>(`/rounds/${roundId}`, body),
+
+  deleteRound: (roundId: string) =>
+    fetch(`${BASE_URL}/rounds/${roundId}`, { method: "DELETE" }).then((res) => {
+      if (!res.ok) throw new Error(`Delete failed: ${res.status}`);
+    }),
 
   getCourses: (userId?: string, limit = 50, offset = 0) => {
     const params = new URLSearchParams({ limit: String(limit), offset: String(offset) });
