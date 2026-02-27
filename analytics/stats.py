@@ -352,6 +352,58 @@ def putts_per_gir_comparison(rounds: Iterable[Round], round_index: Optional[int]
     )
 
 
+def overall_putts_per_gir(rounds: Iterable[Round]) -> Dict[str, Optional[float]]:
+    """Aggregate putts-on-GIR and putts-per-GIR across all rounds."""
+    total_putts_on_gir = 0
+    total_gir = 0
+    rounds_with_data = 0
+
+    for round_obj in rounds:
+        gir_scores = [
+            score for score in _valid_hole_scores(round_obj)
+            if score.green_in_regulation is True
+        ]
+        gir_count = len(gir_scores)
+        if gir_count:
+            rounds_with_data += 1
+
+        total_gir += gir_count
+        total_putts_on_gir += sum(score.putts for score in gir_scores if score.putts is not None)
+
+    return {
+        "rounds_with_data": float(rounds_with_data),
+        "total_gir": float(total_gir),
+        "total_putts_on_gir": float(total_putts_on_gir),
+        "putts_per_gir": (total_putts_on_gir / total_gir) if total_gir else None,
+    }
+
+
+def overall_gir_percentage(rounds: Iterable[Round]) -> Dict[str, Optional[float]]:
+    """Aggregate GIR percentage across all rounds."""
+    total_holes = 0
+    total_gir = 0
+    rounds_with_data = 0
+
+    for round_obj in rounds:
+        hole_scores = _valid_hole_scores(round_obj)
+        holes_played = len(hole_scores)
+        gir = round_obj.get_total_gir()
+        if holes_played:
+            total_holes += holes_played
+            if gir is not None:
+                total_gir += gir
+                rounds_with_data += 1
+
+    misses = total_holes - total_gir
+    return {
+        "rounds_with_data": float(rounds_with_data),
+        "holes_played": float(total_holes),
+        "total_gir": float(total_gir),
+        "total_missed_gir": float(misses),
+        "gir_percentage": (total_gir / total_holes) * 100 if total_holes else None,
+    }
+
+
 def gir_vs_non_gir_score_distribution(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
     """
     Aggregate score-type percentages for GIR holes vs non-GIR holes.

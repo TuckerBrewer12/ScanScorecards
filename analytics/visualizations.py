@@ -7,6 +7,8 @@ from models.round import Round
 
 from .stats import (
     gir_per_round,
+    overall_gir_percentage,
+    overall_putts_per_gir,
     gir_vs_non_gir_score_distribution,
     gir_comparison,
     putts_per_gir,
@@ -291,6 +293,43 @@ def plot_gir_vs_non_gir_score_distribution(rounds: Iterable[Round]):
     ax.set_ylim(0, 100)
     ax.legend(loc="upper right", ncols=4, fontsize=8)
     ax.grid(axis="y", alpha=0.2)
+    fig.tight_layout()
+    return fig, ax
+
+
+def plot_overall_putts_per_gir(rounds: Iterable[Round]):
+    """Single-bar chart for aggregate putts per GIR across all rounds."""
+    plt = _load_plt()
+    summary = overall_putts_per_gir(rounds)
+    value = summary["putts_per_gir"] or 0
+
+    fig, ax = plt.subplots(figsize=(6, 5))
+    ax.bar(["All Rounds"], [value], color="#1f2937", alpha=0.85)
+    ax.set_title("Overall Putts Per GIR")
+    ax.set_ylabel("Putts Per GIR")
+    ax.set_ylim(0, max(3.0, value + 0.25))
+    ax.grid(axis="y", alpha=0.2)
+
+    fig.tight_layout()
+    return fig, ax
+
+
+def plot_overall_gir_percentage(rounds: Iterable[Round]):
+    """Single stacked bar for aggregate GIR makes vs misses across all rounds."""
+    plt = _load_plt()
+    summary = overall_gir_percentage(rounds)
+    makes = summary["total_gir"] or 0
+    misses = summary["total_missed_gir"] or 0
+    percentage = summary["gir_percentage"] or 0
+
+    fig, ax = plt.subplots(figsize=(6, 5))
+    ax.bar(["All Rounds"], [makes], color="#22c55e", alpha=0.85, label="GIR")
+    ax.bar(["All Rounds"], [misses], bottom=[makes], color="#e5e7eb", alpha=0.95, label="Missed GIR")
+    ax.set_title(f"Overall GIR Percentage ({percentage:.1f}%)")
+    ax.set_ylabel("Holes")
+    ax.grid(axis="y", alpha=0.2)
+    ax.legend(loc="upper right")
+
     fig.tight_layout()
     return fig, ax
 
