@@ -6,6 +6,8 @@ from analytics.stats import (
     gir_comparison,
     gir_per_round,
     gir_vs_non_gir_score_distribution,
+    overall_gir_percentage,
+    overall_putts_per_gir,
     putts_comparison,
     putts_per_gir,
     putts_per_gir_comparison,
@@ -101,6 +103,21 @@ def test_putts_per_gir():
     assert rows[1]["gir_count"] == 9
     assert rows[1]["putts_on_gir"] == 9
     assert rows[1]["putts_per_gir"] == pytest.approx(1.0)
+
+
+def test_overall_putts_per_gir_and_gir_percentage():
+    rounds = _build_rounds()
+
+    overall_ppg = overall_putts_per_gir(rounds)
+    assert overall_ppg["total_gir"] == 19
+    assert overall_ppg["total_putts_on_gir"] == 29
+    assert overall_ppg["putts_per_gir"] == pytest.approx(29 / 19)
+
+    overall_gir = overall_gir_percentage(rounds)
+    assert overall_gir["holes_played"] == 36
+    assert overall_gir["total_gir"] == 19
+    assert overall_gir["total_missed_gir"] == 17
+    assert overall_gir["gir_percentage"] == pytest.approx((19 / 36) * 100)
 
 
 def test_recent_comparison_snapshots():
