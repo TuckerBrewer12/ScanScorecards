@@ -241,6 +241,7 @@ def scrambling_per_round(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
                 "round_id": round_obj.id,
                 "scramble_opportunities": opportunities,
                 "scramble_successes": successes,
+                "scramble_failures": opportunities - successes,
                 "scrambling_percentage": percentage,
             }
         )
