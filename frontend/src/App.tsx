@@ -35,7 +35,7 @@ export default function App() {
           <Route path="/" element={<DashboardPage userId={userId} />} />
           <Route path="/rounds" element={<RoundsPage userId={userId} />} />
           <Route path="/rounds/:roundId" element={<RoundDetailPage />} />
-          <Route path="/courses" element={<CoursesPage />} />
+          <Route path="/courses" element={<CoursesPage userId={userId} />} />
           <Route path="/scan" element={<ScanPage userId={userId} scanState={scanState} setScanState={setScanState} />} />
         </Routes>
       </AppLayout>
