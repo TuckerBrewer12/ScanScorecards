@@ -11,6 +11,7 @@ from analytics.visualizations import (
     plot_gir_vs_non_gir_score_distribution,
     plot_putts_comparison,
     plot_putts_per_gir_comparison,
+    plot_putts_per_gir_rate_per_round,
     plot_putts_per_gir,
     plot_putts_per_round,
     plot_score_comparison,
@@ -20,6 +21,7 @@ from analytics.visualizations import (
     plot_score_trend,
     plot_score_type_distribution_per_round,
     plot_scoring_vs_handicap,
+    plot_three_putt_percentage_per_round,
     plot_three_putts_comparison,
     plot_three_putts_per_round,
 )
@@ -190,10 +192,15 @@ async def main_async() -> None:
         fig.savefig(putts_compare_path, dpi=150)
         written.append(putts_compare_path)
 
-        fig, _, _ = plot_three_putts_per_round(rounds)
+        fig, _ = plot_three_putts_per_round(rounds)
         three_putts_path = outdir / "three_putts_per_round.png"
         fig.savefig(three_putts_path, dpi=150)
         written.append(three_putts_path)
+
+        fig, _ = plot_three_putt_percentage_per_round(rounds)
+        three_putts_pct_path = outdir / "three_putt_percentage_per_round.png"
+        fig.savefig(three_putts_pct_path, dpi=150)
+        written.append(three_putts_pct_path)
 
         fig, _, _ = plot_three_putts_comparison(rounds)
         three_putts_compare_path = outdir / "three_putts_comparison.png"
@@ -203,10 +210,15 @@ async def main_async() -> None:
         print("Skipping putts chart: no putt values found.")
 
     if _has_putts_per_gir_data(rounds):
-        fig, _, _ = plot_putts_per_gir(rounds)
+        fig, _ = plot_putts_per_gir(rounds)
         ppg_path = outdir / "putts_per_gir.png"
         fig.savefig(ppg_path, dpi=150)
         written.append(ppg_path)
+
+        fig, _ = plot_putts_per_gir_rate_per_round(rounds)
+        ppg_rate_path = outdir / "putts_per_gir_rate_per_round.png"
+        fig.savefig(ppg_rate_path, dpi=150)
+        written.append(ppg_rate_path)
 
         fig, _, _ = plot_putts_per_gir_comparison(rounds)
         ppg_compare_path = outdir / "putts_per_gir_comparison.png"
@@ -216,7 +228,7 @@ async def main_async() -> None:
         print("Skipping putts-per-GIR chart: missing GIR holes with putt data.")
 
     if _has_gir_data(rounds):
-        fig, _, _ = plot_gir_per_round(rounds)
+        fig, _ = plot_gir_per_round(rounds)
         gir_path = outdir / "gir_per_round.png"
         fig.savefig(gir_path, dpi=150)
         written.append(gir_path)
@@ -234,7 +246,7 @@ async def main_async() -> None:
         print("Skipping GIR chart: no GIR values found.")
 
     if _has_scrambling_data(rounds):
-        fig, _, _ = plot_scrambling_per_round(rounds)
+        fig, _ = plot_scrambling_per_round(rounds)
         scrambling_path = outdir / "scrambling_per_round.png"
         fig.savefig(scrambling_path, dpi=150)
         written.append(scrambling_path)

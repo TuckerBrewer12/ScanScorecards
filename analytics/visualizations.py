@@ -171,37 +171,24 @@ def plot_putts_comparison(rounds: Sequence[Round], round_index: Optional[int] = 
 
 
 def plot_gir_per_round(rounds: Sequence[Round], labels: Optional[Sequence[str]] = None):
-    """
-    Combined chart:
-    - bars: GIR count per round
-    - line: GIR percentage per round
-    """
+    """Line chart: GIR percentage per round."""
     plt = _load_plt()
     rows = gir_per_round(rounds)
     x_labels = list(labels) if labels is not None else _default_labels(rounds)
     x = list(range(len(x_labels)))
-    counts = [row["total_gir"] or 0 for row in rows]
     percentages = [row["gir_percentage"] or 0 for row in rows]
 
-    fig, ax1 = plt.subplots(figsize=(11, 5))
-    ax1.bar(x, counts, alpha=0.8, label="GIR Count")
-    ax1.set_title("GIR Per Round")
-    ax1.set_xlabel("Round")
-    ax1.set_ylabel("GIR Count")
-    _apply_sparse_xticks(ax1, x_labels)
-    ax1.grid(axis="y", alpha=0.2)
-
-    ax2 = ax1.twinx()
-    ax2.plot(x, percentages, color="black", marker="o", linewidth=1.5, label="GIR %")
-    ax2.set_ylabel("GIR %")
-    ax2.set_ylim(0, 100)
-
-    lines1, labels1 = ax1.get_legend_handles_labels()
-    lines2, labels2 = ax2.get_legend_handles_labels()
-    ax1.legend(lines1 + lines2, labels1 + labels2, loc="upper left")
+    fig, ax = plt.subplots(figsize=(11, 5))
+    ax.plot(x, percentages, color="black", marker="o", linewidth=1.5)
+    ax.set_title("GIR Percentage Per Round")
+    ax.set_xlabel("Round")
+    ax.set_ylabel("GIR %")
+    ax.set_ylim(0, 100)
+    _apply_sparse_xticks(ax, x_labels)
+    ax.grid(axis="y", alpha=0.2)
 
     fig.tight_layout()
-    return fig, ax1, ax2
+    return fig, ax
 
 
 def plot_gir_comparison(rounds: Sequence[Round], round_index: Optional[int] = None):
@@ -217,38 +204,46 @@ def plot_gir_comparison(rounds: Sequence[Round], round_index: Optional[int] = No
 
 
 def plot_putts_per_gir(rounds: Sequence[Round], labels: Optional[Sequence[str]] = None):
-    """
-    Combined chart:
-    - bars: total putts taken on GIR holes
-    - line: putts on GIR / GIR count
-    """
+    """Bar chart: total putts taken on GIR holes by round."""
     plt = _load_plt()
     rows = putts_per_gir(rounds)
     x_labels = list(labels) if labels is not None else _default_labels(rounds)
     x = list(range(len(x_labels)))
     putts_on_gir = [row["putts_on_gir"] for row in rows]
-    rates = [row["putts_per_gir"] or 0 for row in rows]
 
-    fig, ax1 = plt.subplots(figsize=(11, 5))
-    ax1.bar(x, putts_on_gir, alpha=0.8, label="Putts On GIR")
-    ax1.set_xlabel("Round")
-    ax1.set_ylabel("Putts On GIR")
-    _apply_sparse_xticks(ax1, x_labels)
-    ax1.grid(axis="y", alpha=0.2)
-
-    ax2 = ax1.twinx()
-    ax2.plot(x, rates, color="black", marker="o", linewidth=1.5, label="Putts Per GIR")
-    ax2.set_ylabel("Putts Per GIR")
-    ax2.set_ylim(0, max(3.0, max(rates, default=0) + 0.25))
-
-    ax1.set_title("Putts Per GIR")
-
-    lines1, labels1 = ax1.get_legend_handles_labels()
-    lines2, labels2 = ax2.get_legend_handles_labels()
-    ax1.legend(lines1 + lines2, labels1 + labels2, loc="upper left")
+    fig, ax = plt.subplots(figsize=(11, 5))
+    ax.bar(x, putts_on_gir, alpha=0.8)
+    ax.set_title("Putts On GIR Per Round")
+    ax.set_xlabel("Round")
+    ax.set_ylabel("Putts On GIR")
+    _apply_sparse_xticks(ax, x_labels)
+    ax.grid(axis="y", alpha=0.2)
 
     fig.tight_layout()
-    return fig, ax1, ax2
+    return fig, ax
+
+
+def plot_putts_per_gir_rate_per_round(
+    rounds: Sequence[Round], labels: Optional[Sequence[str]] = None
+):
+    """Line chart: putts per GIR by round."""
+    plt = _load_plt()
+    rows = putts_per_gir(rounds)
+    x_labels = list(labels) if labels is not None else _default_labels(rounds)
+    x = list(range(len(x_labels)))
+    rates = [row["putts_per_gir"] or 0 for row in rows]
+
+    fig, ax = plt.subplots(figsize=(11, 5))
+    ax.plot(x, rates, color="black", marker="o", linewidth=1.5)
+    ax.set_title("Putts Per GIR By Round")
+    ax.set_xlabel("Round")
+    ax.set_ylabel("Putts Per GIR")
+    ax.set_ylim(0, max(3.0, max(rates, default=0) + 0.25))
+    _apply_sparse_xticks(ax, x_labels)
+    ax.grid(axis="y", alpha=0.2)
+
+    fig.tight_layout()
+    return fig, ax
 
 
 def plot_putts_per_gir_comparison(rounds: Sequence[Round], round_index: Optional[int] = None):
@@ -398,37 +393,47 @@ def plot_three_putts_per_round(
     rounds: Sequence[Round], labels: Optional[Sequence[str]] = None
 ):
     """
-    Combined chart:
-    - bars: number of 3-putts per round
-    - line: 3-putt percentage per round
+    Bar chart: number of 3-putts per round.
     """
     plt = _load_plt()
     rows = three_putts_per_round(rounds)
     x_labels = list(labels) if labels is not None else _default_labels(rounds)
     x = list(range(len(x_labels)))
     counts = [row["three_putt_count"] for row in rows]
-    percentages = [row["three_putt_percentage"] for row in rows]
 
-    fig, ax1 = plt.subplots(figsize=(11, 5))
-    ax1.bar(x, counts, alpha=0.8, label="3-Putt Count")
-    ax1.set_xlabel("Round")
-    ax1.set_ylabel("3-Putt Count")
-    _apply_sparse_xticks(ax1, x_labels)
-    ax1.grid(axis="y", alpha=0.2)
-
-    ax2 = ax1.twinx()
-    ax2.plot(x, percentages, color="black", marker="o", linewidth=1.5, label="3-Putt %")
-    ax2.set_ylabel("3-Putt %")
-    ax2.set_ylim(0, 100)
-
-    ax1.set_title("3-Putts Per Round")
-
-    lines1, labels1 = ax1.get_legend_handles_labels()
-    lines2, labels2 = ax2.get_legend_handles_labels()
-    ax1.legend(lines1 + lines2, labels1 + labels2, loc="upper left")
+    fig, ax = plt.subplots(figsize=(11, 5))
+    ax.bar(x, counts, alpha=0.8)
+    ax.set_title("3-Putts Per Round")
+    ax.set_xlabel("Round")
+    ax.set_ylabel("3-Putt Count")
+    _apply_sparse_xticks(ax, x_labels)
+    ax.grid(axis="y", alpha=0.2)
 
     fig.tight_layout()
-    return fig, ax1, ax2
+    return fig, ax
+
+
+def plot_three_putt_percentage_per_round(
+    rounds: Sequence[Round], labels: Optional[Sequence[str]] = None
+):
+    """Line chart: 3-putt percentage per round."""
+    plt = _load_plt()
+    rows = three_putts_per_round(rounds)
+    x_labels = list(labels) if labels is not None else _default_labels(rounds)
+    x = list(range(len(x_labels)))
+    percentages = [row["three_putt_percentage"] for row in rows]
+
+    fig, ax = plt.subplots(figsize=(11, 5))
+    ax.plot(x, percentages, color="black", marker="o", linewidth=1.5)
+    ax.set_title("3-Putt Percentage Per Round")
+    ax.set_xlabel("Round")
+    ax.set_ylabel("3-Putt %")
+    ax.set_ylim(0, 100)
+    _apply_sparse_xticks(ax, x_labels)
+    ax.grid(axis="y", alpha=0.2)
+
+    fig.tight_layout()
+    return fig, ax
 
 
 def plot_three_putts_comparison(rounds: Sequence[Round], round_index: Optional[int] = None):
@@ -447,37 +452,30 @@ def plot_scrambling_per_round(
     rounds: Sequence[Round], labels: Optional[Sequence[str]] = None
 ):
     """
-    Combined chart:
-    - bars: scramble successes (up-and-downs)
-    - line: scrambling percentage
+    Stacked bar chart:
+    - green: scramble successes
+    - red: scramble failures
+    Total bar height equals scramble opportunities.
     """
     plt = _load_plt()
     rows = scrambling_per_round(rounds)
     x_labels = list(labels) if labels is not None else _default_labels(rounds)
     x = list(range(len(x_labels)))
     successes = [row["scramble_successes"] for row in rows]
-    percentages = [row["scrambling_percentage"] for row in rows]
+    failures = [row["scramble_failures"] for row in rows]
 
-    fig, ax1 = plt.subplots(figsize=(11, 5))
-    ax1.bar(x, successes, alpha=0.8, label="Up-and-Downs")
-    ax1.set_xlabel("Round")
-    ax1.set_ylabel("Scramble Successes")
-    _apply_sparse_xticks(ax1, x_labels)
-    ax1.grid(axis="y", alpha=0.2)
-
-    ax2 = ax1.twinx()
-    ax2.plot(x, percentages, color="black", marker="o", linewidth=1.5, label="Scrambling %")
-    ax2.set_ylabel("Scrambling %")
-    ax2.set_ylim(0, 100)
-
-    ax1.set_title("Scrambling Per Round")
-
-    lines1, labels1 = ax1.get_legend_handles_labels()
-    lines2, labels2 = ax2.get_legend_handles_labels()
-    ax1.legend(lines1 + lines2, labels1 + labels2, loc="upper left")
+    fig, ax = plt.subplots(figsize=(11, 5))
+    ax.bar(x, successes, color="#22c55e", alpha=0.85, label="Successful Up-and-Downs")
+    ax.bar(x, failures, bottom=successes, color="#ef4444", alpha=0.85, label="Missed Chances")
+    ax.set_title("Scrambling Opportunities Per Round")
+    ax.set_xlabel("Round")
+    ax.set_ylabel("Scramble Opportunities")
+    _apply_sparse_xticks(ax, x_labels)
+    ax.grid(axis="y", alpha=0.2)
+    ax.legend(loc="upper left")
 
     fig.tight_layout()
-    return fig, ax1, ax2
+    return fig, ax
 
 
 def plot_scrambling_comparison(rounds: Sequence[Round], round_index: Optional[int] = None):

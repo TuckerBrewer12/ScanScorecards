@@ -23,6 +23,7 @@ from .visualizations import (
     plot_gir_vs_non_gir_score_distribution,
     plot_putts_comparison,
     plot_putts_per_gir_comparison,
+    plot_putts_per_gir_rate_per_round,
     plot_putts_per_gir,
     plot_putts_per_round,
     plot_score_comparison,
@@ -32,6 +33,7 @@ from .visualizations import (
     plot_score_type_distribution_per_round,
     plot_scoring_by_par,
     plot_scoring_vs_handicap,
+    plot_three_putt_percentage_per_round,
     plot_three_putts_comparison,
     plot_three_putts_per_round,
 )
@@ -58,6 +60,7 @@ __all__ = [
     "plot_putts_comparison",
     "plot_putts_per_round",
     "plot_putts_per_gir_comparison",
+    "plot_putts_per_gir_rate_per_round",
     "plot_putts_per_gir",
     "plot_scrambling_comparison",
     "plot_scrambling_per_round",
@@ -68,6 +71,7 @@ __all__ = [
     "plot_score_type_distribution_per_round",
     "plot_scoring_by_par",
     "plot_scoring_vs_handicap",
+    "plot_three_putt_percentage_per_round",
     "plot_three_putts_comparison",
     "plot_three_putts_per_round",
 ]
