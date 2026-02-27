@@ -3,16 +3,22 @@ from datetime import datetime
 import pytest
 
 from analytics.stats import (
+    gir_comparison,
     gir_per_round,
     gir_vs_non_gir_score_distribution,
+    putts_comparison,
     putts_per_gir,
+    putts_per_gir_comparison,
     putts_per_round,
     round_summary,
+    scrambling_comparison,
+    score_comparison,
     scrambling_per_round,
     score_trend,
     score_type_distribution_per_round,
     scoring_by_par,
     scoring_vs_hole_handicap,
+    three_putts_comparison,
     three_putts_per_round,
 )
 from models.course import Course
@@ -95,6 +101,41 @@ def test_putts_per_gir():
     assert rows[1]["gir_count"] == 9
     assert rows[1]["putts_on_gir"] == 9
     assert rows[1]["putts_per_gir"] == pytest.approx(1.0)
+
+
+def test_recent_comparison_snapshots():
+    rounds = _build_rounds()
+
+    putts_rows = putts_comparison(rounds)
+    assert putts_rows[0]["label"] == "Selected Round"
+    assert putts_rows[0]["primary_value"] == 27
+    assert putts_rows[1]["label"] == "Last 5 Avg"
+    assert putts_rows[1]["primary_value"] == pytest.approx((36 + 27) / 2)
+    assert putts_rows[3]["label"] == "Last 20 Avg"
+    assert putts_rows[3]["sample_size"] == 2
+
+    gir_rows = gir_comparison(rounds)
+    assert gir_rows[0]["primary_value"] == 9
+    assert gir_rows[0]["secondary_value"] == 50.0
+    assert gir_rows[1]["primary_value"] == pytest.approx((10 + 9) / 2)
+
+    score_rows = score_comparison(rounds)
+    assert score_rows[0]["primary_value"] == 81
+    assert score_rows[0]["secondary_value"] == 9
+    assert score_rows[1]["primary_value"] == pytest.approx((72 + 81) / 2)
+    assert score_rows[1]["secondary_value"] == pytest.approx((0 + 9) / 2)
+
+    three_putt_rows = three_putts_comparison(rounds)
+    assert three_putt_rows[0]["primary_value"] == 0
+    assert three_putt_rows[0]["secondary_value"] == 0.0
+
+    scrambling_rows = scrambling_comparison(rounds)
+    assert scrambling_rows[0]["primary_value"] == 2
+    assert scrambling_rows[0]["secondary_value"] == pytest.approx((2 / 9) * 100)
+
+    ppg_rows = putts_per_gir_comparison(rounds)
+    assert ppg_rows[0]["primary_value"] == pytest.approx(1.0)
+    assert ppg_rows[0]["secondary_value"] == 9
 
 
 def test_gir_vs_non_gir_score_distribution():

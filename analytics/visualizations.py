@@ -8,13 +8,19 @@ from models.round import Round
 from .stats import (
     gir_per_round,
     gir_vs_non_gir_score_distribution,
+    gir_comparison,
     putts_per_gir,
+    putts_per_gir_comparison,
     putts_per_round,
+    putts_comparison,
     scrambling_per_round,
+    scrambling_comparison,
+    score_comparison,
     score_trend,
     score_type_distribution_per_round,
     scoring_by_par,
     scoring_vs_hole_handicap,
+    three_putts_comparison,
     three_putts_per_round,
 )
 
@@ -63,6 +69,47 @@ def _apply_sparse_xticks(ax, labels: Sequence[str], max_labels: int = 12) -> Non
     ax.set_xticklabels(tick_labels, rotation=45, ha="right")
 
 
+def _plot_comparison_bars(
+    title: str,
+    rows: Sequence[dict],
+    *,
+    primary_label: str,
+    secondary_label: Optional[str] = None,
+    secondary_limit: Optional[float] = None,
+):
+    plt = _load_plt()
+    labels = [row["label"] for row in rows]
+    x = list(range(len(labels)))
+    primary_values = [row["primary_value"] or 0 for row in rows]
+
+    fig, ax1 = plt.subplots(figsize=(10, 5))
+    ax1.bar(x, primary_values, alpha=0.85, label=primary_label)
+    ax1.set_title(title)
+    ax1.set_xlabel("Comparison Window")
+    ax1.set_ylabel(primary_label)
+    ax1.set_xticks(x)
+    ax1.set_xticklabels(labels)
+    ax1.grid(axis="y", alpha=0.2)
+
+    if secondary_label is None:
+        fig.tight_layout()
+        return fig, ax1
+
+    secondary_values = [row["secondary_value"] or 0 for row in rows]
+    ax2 = ax1.twinx()
+    ax2.plot(x, secondary_values, color="black", marker="o", linewidth=1.5, label=secondary_label)
+    ax2.set_ylabel(secondary_label)
+    if secondary_limit is not None:
+        ax2.set_ylim(0, secondary_limit)
+
+    lines1, labels1 = ax1.get_legend_handles_labels()
+    lines2, labels2 = ax2.get_legend_handles_labels()
+    ax1.legend(lines1 + lines2, labels1 + labels2, loc="upper left")
+
+    fig.tight_layout()
+    return fig, ax1, ax2
+
+
 def plot_putts_per_round(rounds: Sequence[Round], labels: Optional[Sequence[str]] = None):
     """Bar chart: total putts per round."""
     plt = _load_plt()
@@ -80,6 +127,27 @@ def plot_putts_per_round(rounds: Sequence[Round], labels: Optional[Sequence[str]
     ax.grid(axis="y", alpha=0.2)
     fig.tight_layout()
     return fig, ax
+
+
+def plot_score_comparison(rounds: Sequence[Round], round_index: Optional[int] = None):
+    """Selected round score vs recent average windows."""
+    rows = score_comparison(rounds, round_index=round_index)
+    return _plot_comparison_bars(
+        "Score vs Recent Averages",
+        rows,
+        primary_label="Total Score",
+        secondary_label="To Par",
+    )
+
+
+def plot_putts_comparison(rounds: Sequence[Round], round_index: Optional[int] = None):
+    """Selected round putts vs recent average windows."""
+    rows = putts_comparison(rounds, round_index=round_index)
+    return _plot_comparison_bars(
+        "Putts vs Recent Averages",
+        rows,
+        primary_label="Total Putts",
+    )
 
 
 def plot_gir_per_round(rounds: Sequence[Round], labels: Optional[Sequence[str]] = None):
@@ -116,6 +184,18 @@ def plot_gir_per_round(rounds: Sequence[Round], labels: Optional[Sequence[str]] 
     return fig, ax1, ax2
 
 
+def plot_gir_comparison(rounds: Sequence[Round], round_index: Optional[int] = None):
+    """Selected round GIR vs recent average windows."""
+    rows = gir_comparison(rounds, round_index=round_index)
+    return _plot_comparison_bars(
+        "GIR vs Recent Averages",
+        rows,
+        primary_label="GIR Count",
+        secondary_label="GIR %",
+        secondary_limit=100,
+    )
+
+
 def plot_putts_per_gir(rounds: Sequence[Round], labels: Optional[Sequence[str]] = None):
     """
     Combined chart:
@@ -149,6 +229,17 @@ def plot_putts_per_gir(rounds: Sequence[Round], labels: Optional[Sequence[str]] 
 
     fig.tight_layout()
     return fig, ax1, ax2
+
+
+def plot_putts_per_gir_comparison(rounds: Sequence[Round], round_index: Optional[int] = None):
+    """Selected round putts-per-GIR vs recent average windows."""
+    rows = putts_per_gir_comparison(rounds, round_index=round_index)
+    return _plot_comparison_bars(
+        "Putts Per GIR vs Recent Averages",
+        rows,
+        primary_label="Putts Per GIR",
+        secondary_label="Putts On GIR",
+    )
 
 
 def plot_gir_vs_non_gir_score_distribution(rounds: Iterable[Round]):
@@ -320,6 +411,18 @@ def plot_three_putts_per_round(
     return fig, ax1, ax2
 
 
+def plot_three_putts_comparison(rounds: Sequence[Round], round_index: Optional[int] = None):
+    """Selected round 3-putts vs recent average windows."""
+    rows = three_putts_comparison(rounds, round_index=round_index)
+    return _plot_comparison_bars(
+        "3-Putts vs Recent Averages",
+        rows,
+        primary_label="3-Putt Count",
+        secondary_label="3-Putt %",
+        secondary_limit=100,
+    )
+
+
 def plot_scrambling_per_round(
     rounds: Sequence[Round], labels: Optional[Sequence[str]] = None
 ):
@@ -355,3 +458,15 @@ def plot_scrambling_per_round(
 
     fig.tight_layout()
     return fig, ax1, ax2
+
+
+def plot_scrambling_comparison(rounds: Sequence[Round], round_index: Optional[int] = None):
+    """Selected round scrambling vs recent average windows."""
+    rows = scrambling_comparison(rounds, round_index=round_index)
+    return _plot_comparison_bars(
+        "Scrambling vs Recent Averages",
+        rows,
+        primary_label="Scramble Successes",
+        secondary_label="Scrambling %",
+        secondary_limit=100,
+    )

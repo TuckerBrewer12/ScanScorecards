@@ -6,15 +6,21 @@ from pathlib import Path
 from typing import List
 
 from analytics.visualizations import (
+    plot_gir_comparison,
     plot_gir_per_round,
     plot_gir_vs_non_gir_score_distribution,
+    plot_putts_comparison,
+    plot_putts_per_gir_comparison,
     plot_putts_per_gir,
     plot_putts_per_round,
+    plot_score_comparison,
+    plot_scrambling_comparison,
     plot_scrambling_per_round,
     plot_scoring_by_par,
     plot_score_trend,
     plot_score_type_distribution_per_round,
     plot_scoring_vs_handicap,
+    plot_three_putts_comparison,
     plot_three_putts_per_round,
 )
 from database.connection import DatabasePool
@@ -144,6 +150,11 @@ async def main_async() -> None:
     fig.savefig(score_path, dpi=150)
     written.append(score_path)
 
+    fig, _, _ = plot_score_comparison(rounds)
+    score_compare_path = outdir / "score_comparison.png"
+    fig.savefig(score_compare_path, dpi=150)
+    written.append(score_compare_path)
+
     if _has_handicap_scoring_data(rounds):
         fig, _ = plot_scoring_vs_handicap(rounds)
         svh_path = outdir / "scoring_vs_handicap.png"
@@ -174,10 +185,20 @@ async def main_async() -> None:
         fig.savefig(putts_path, dpi=150)
         written.append(putts_path)
 
+        fig, _ = plot_putts_comparison(rounds)
+        putts_compare_path = outdir / "putts_comparison.png"
+        fig.savefig(putts_compare_path, dpi=150)
+        written.append(putts_compare_path)
+
         fig, _, _ = plot_three_putts_per_round(rounds)
         three_putts_path = outdir / "three_putts_per_round.png"
         fig.savefig(three_putts_path, dpi=150)
         written.append(three_putts_path)
+
+        fig, _, _ = plot_three_putts_comparison(rounds)
+        three_putts_compare_path = outdir / "three_putts_comparison.png"
+        fig.savefig(three_putts_compare_path, dpi=150)
+        written.append(three_putts_compare_path)
     else:
         print("Skipping putts chart: no putt values found.")
 
@@ -186,6 +207,11 @@ async def main_async() -> None:
         ppg_path = outdir / "putts_per_gir.png"
         fig.savefig(ppg_path, dpi=150)
         written.append(ppg_path)
+
+        fig, _, _ = plot_putts_per_gir_comparison(rounds)
+        ppg_compare_path = outdir / "putts_per_gir_comparison.png"
+        fig.savefig(ppg_compare_path, dpi=150)
+        written.append(ppg_compare_path)
     else:
         print("Skipping putts-per-GIR chart: missing GIR holes with putt data.")
 
@@ -194,6 +220,11 @@ async def main_async() -> None:
         gir_path = outdir / "gir_per_round.png"
         fig.savefig(gir_path, dpi=150)
         written.append(gir_path)
+
+        fig, _, _ = plot_gir_comparison(rounds)
+        gir_compare_recent_path = outdir / "gir_comparison.png"
+        fig.savefig(gir_compare_recent_path, dpi=150)
+        written.append(gir_compare_recent_path)
 
         fig, _ = plot_gir_vs_non_gir_score_distribution(rounds)
         gir_compare_path = outdir / "gir_vs_non_gir_score_distribution.png"
@@ -207,6 +238,11 @@ async def main_async() -> None:
         scrambling_path = outdir / "scrambling_per_round.png"
         fig.savefig(scrambling_path, dpi=150)
         written.append(scrambling_path)
+
+        fig, _, _ = plot_scrambling_comparison(rounds)
+        scrambling_compare_path = outdir / "scrambling_comparison.png"
+        fig.savefig(scrambling_compare_path, dpi=150)
+        written.append(scrambling_compare_path)
     else:
         print("Skipping scrambling chart: missing GIR/par/strokes data.")
 

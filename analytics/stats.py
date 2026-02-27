@@ -19,6 +19,25 @@ def _valid_hole_scores(round_obj: Round):
     return [score for score in round_obj.hole_scores if score.hole_number is not None]
 
 
+def _resolve_round_index(rows: List[Dict[str, Any]], round_index: Optional[int]) -> int:
+    if not rows:
+        raise ValueError("At least one round is required")
+    if round_index is None:
+        return len(rows) - 1
+    if round_index < 0:
+        round_index = len(rows) + round_index
+    if round_index < 0 or round_index >= len(rows):
+        raise IndexError("round_index out of range")
+    return round_index
+
+
+def _average_non_null(values: List[Optional[float]]) -> Optional[float]:
+    filtered = [value for value in values if value is not None]
+    if not filtered:
+        return None
+    return sum(filtered) / len(filtered)
+
+
 def _score_type_from_to_par(to_par: int) -> str:
     if to_par <= -2:
         return "eagle"
@@ -59,6 +78,56 @@ def round_summary(round_obj: Round) -> Dict[str, Optional[float]]:
     }
 
 
+def metric_comparison_snapshot(
+    rows: List[Dict[str, Any]],
+    *,
+    primary_key: str,
+    secondary_key: Optional[str] = None,
+    round_index: Optional[int] = None,
+    windows: tuple[int, ...] = (5, 10, 20),
+    selected_label: str = "Selected Round",
+) -> List[Dict[str, Any]]:
+    """
+    Compare one round against trailing average windows ending at that round.
+
+    The selected round defaults to the most recent row. If a round_index is
+    supplied, the trailing averages are computed using rows up to that round.
+    """
+    target_index = _resolve_round_index(rows, round_index)
+    history = rows[: target_index + 1]
+    target_row = history[-1]
+
+    result_rows: List[Dict[str, Any]] = [
+        {
+            "label": selected_label,
+            "sample_size": 1,
+            "round_id": target_row.get("round_id"),
+            "primary_value": target_row.get(primary_key),
+            "secondary_value": target_row.get(secondary_key) if secondary_key else None,
+        }
+    ]
+
+    for window in windows:
+        window_rows = history[-window:]
+        primary_avg = _average_non_null([row.get(primary_key) for row in window_rows])
+        secondary_avg = (
+            _average_non_null([row.get(secondary_key) for row in window_rows])
+            if secondary_key
+            else None
+        )
+        result_rows.append(
+            {
+                "label": f"Last {window} Avg",
+                "sample_size": len(window_rows),
+                "round_id": None,
+                "primary_value": primary_avg,
+                "secondary_value": secondary_avg,
+            }
+        )
+
+    return result_rows
+
+
 def putts_per_round(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
     """Return putt totals by round for plotting/reporting."""
     results: List[Dict[str, Any]] = []
@@ -72,6 +141,27 @@ def putts_per_round(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
             }
         )
     return results
+
+
+def score_comparison(rounds: Iterable[Round], round_index: Optional[int] = None) -> List[Dict[str, Any]]:
+    """Selected round score vs trailing averages."""
+    return metric_comparison_snapshot(
+        score_trend(list(rounds)),
+        primary_key="total_score",
+        secondary_key="to_par",
+        round_index=round_index,
+        selected_label="Selected Round",
+    )
+
+
+def putts_comparison(rounds: Iterable[Round], round_index: Optional[int] = None) -> List[Dict[str, Any]]:
+    """Selected round putts vs trailing averages."""
+    return metric_comparison_snapshot(
+        putts_per_round(list(rounds)),
+        primary_key="total_putts",
+        round_index=round_index,
+        selected_label="Selected Round",
+    )
 
 
 def three_putts_per_round(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
@@ -103,6 +193,17 @@ def three_putts_per_round(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
             }
         )
     return results
+
+
+def three_putts_comparison(rounds: Iterable[Round], round_index: Optional[int] = None) -> List[Dict[str, Any]]:
+    """Selected round 3-putts vs trailing averages."""
+    return metric_comparison_snapshot(
+        three_putts_per_round(list(rounds)),
+        primary_key="three_putt_count",
+        secondary_key="three_putt_percentage",
+        round_index=round_index,
+        selected_label="Selected Round",
+    )
 
 
 def scrambling_per_round(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
@@ -146,6 +247,17 @@ def scrambling_per_round(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
     return results
 
 
+def scrambling_comparison(rounds: Iterable[Round], round_index: Optional[int] = None) -> List[Dict[str, Any]]:
+    """Selected round scrambling vs trailing averages."""
+    return metric_comparison_snapshot(
+        scrambling_per_round(list(rounds)),
+        primary_key="scramble_successes",
+        secondary_key="scrambling_percentage",
+        round_index=round_index,
+        selected_label="Selected Round",
+    )
+
+
 def score_trend(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
     """Return total score trend data by round."""
     results: List[Dict[str, Any]] = []
@@ -185,6 +297,17 @@ def gir_per_round(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
     return results
 
 
+def gir_comparison(rounds: Iterable[Round], round_index: Optional[int] = None) -> List[Dict[str, Any]]:
+    """Selected round GIR vs trailing averages."""
+    return metric_comparison_snapshot(
+        gir_per_round(list(rounds)),
+        primary_key="total_gir",
+        secondary_key="gir_percentage",
+        round_index=round_index,
+        selected_label="Selected Round",
+    )
+
+
 def putts_per_gir(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
     """
     Return putts-per-GIR by round.
@@ -215,6 +338,17 @@ def putts_per_gir(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
             }
         )
     return results
+
+
+def putts_per_gir_comparison(rounds: Iterable[Round], round_index: Optional[int] = None) -> List[Dict[str, Any]]:
+    """Selected round putts-per-GIR vs trailing averages."""
+    return metric_comparison_snapshot(
+        putts_per_gir(list(rounds)),
+        primary_key="putts_per_gir",
+        secondary_key="putts_on_gir",
+        round_index=round_index,
+        selected_label="Selected Round",
+    )
 
 
 def gir_vs_non_gir_score_distribution(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
