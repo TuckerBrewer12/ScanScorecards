@@ -42,6 +42,7 @@ class SaveRoundRequest(BaseModel):
     tee_slope_rating: Optional[float] = None
     tee_course_rating: Optional[float] = None
     tee_yardages: Optional[dict] = None  # {hole_number_str: yardage} from extracted tee
+    all_tees: Optional[list] = None     # all tees scanned: [{color, slope_rating, course_rating, hole_yardages}]
     date: Optional[str] = None
     notes: Optional[str] = None
     hole_scores: list
@@ -135,37 +136,69 @@ async def save_round(
         course_id = None
 
         if req.course_name:
+            # Build normalised tee list from all_tees (preferred) or single played tee (fallback)
+            def _parse_tees(all_tees, single_color, single_slope, single_rating, single_yardages):
+                if all_tees:
+                    result = []
+                    for t in all_tees:
+                        td = dict(t) if isinstance(t, dict) else t
+                        color = td.get("color")
+                        if not color:
+                            continue
+                        result.append({
+                            "color": color,
+                            "slope_rating": td.get("slope_rating"),
+                            "course_rating": td.get("course_rating"),
+                            "hole_yardages": td.get("hole_yardages") or {},
+                        })
+                    return result
+                if single_color:
+                    return [{"color": single_color, "slope_rating": single_slope,
+                             "course_rating": single_rating, "hole_yardages": single_yardages or {}}]
+                return []
+
+            tees_to_merge = _parse_tees(
+                req.all_tees, req.tee_box, req.tee_slope_rating, req.tee_course_rating, req.tee_yardages
+            )
+
+            async def _fill_gaps(course_id: str, scan_holes: list) -> None:
+                for t in tees_to_merge:
+                    await db.courses.fill_course_gaps(
+                        course_id, scan_holes,
+                        t["color"], t["slope_rating"], t["course_rating"], t["hole_yardages"],
+                    )
+
+            scan_holes = [
+                dict(h) if isinstance(h, dict) else h
+                for h in (req.course_holes or [])
+            ]
+
             # Tier 1: master only (no user_id → masters only)
             course = await db.courses.find_course_by_name(req.course_name, req.course_location)
 
-            if not course:
-                scan_holes = [
-                    dict(h) if isinstance(h, dict) else h
-                    for h in (req.course_holes or [])
-                ]
+            if course:
+                # Fill any new tees from the scan into the master course.
+                # fill_course_gaps is fill-only — it never overwrites existing values,
+                # only adds tees/yardages that are missing from the DB.
+                await _fill_gaps(str(course.id), scan_holes)
 
+            else:
                 # Tier 2: current user's own courses
                 course = await db.courses.find_user_course_by_name(
                     req.course_name, req.course_location, req.user_id
                 )
                 if course:
-                    await db.courses.fill_course_gaps(
-                        str(course.id), scan_holes,
-                        req.tee_box, req.tee_slope_rating, req.tee_course_rating, req.tee_yardages,
-                    )
+                    await _fill_gaps(str(course.id), scan_holes)
                 else:
-                    # Tier 3: any other user's course → merge + promote to master
+                    # Tier 3: any other user's course → merge all tees + promote to master
                     course = await db.courses.find_any_user_course_by_name(
                         req.course_name, req.course_location
                     )
                     if course:
-                        await db.courses.fill_course_gaps(
-                            str(course.id), scan_holes,
-                            req.tee_box, req.tee_slope_rating, req.tee_course_rating, req.tee_yardages,
-                        )
+                        await _fill_gaps(str(course.id), scan_holes)
                         course = await db.courses.promote_to_master(str(course.id))
                     else:
-                        # Tier 4: create new user-owned course from scan data
+                        # Tier 4: create new user-owned course with all scanned tees
                         holes = [
                             Hole(
                                 number=h.get("hole_number"),
@@ -174,17 +207,17 @@ async def save_round(
                             )
                             for h in scan_holes if h.get("hole_number") is not None
                         ]
-                        tees = []
-                        if req.tee_box:
-                            tee_yardages_int = {
-                                int(k): v for k, v in (req.tee_yardages or {}).items() if v is not None
-                            }
-                            tees = [Tee(
-                                color=req.tee_box,
-                                slope_rating=req.tee_slope_rating,
-                                course_rating=req.tee_course_rating,
-                                hole_yardages=tee_yardages_int,
-                            )]
+                        tees = [
+                            Tee(
+                                color=t["color"],
+                                slope_rating=t["slope_rating"],
+                                course_rating=t["course_rating"],
+                                hole_yardages={
+                                    int(k): v for k, v in t["hole_yardages"].items() if v is not None
+                                },
+                            )
+                            for t in tees_to_merge
+                        ]
                         new_course = Course(
                             name=req.course_name,
                             location=req.course_location,
