@@ -3,14 +3,24 @@ from datetime import datetime
 import pytest
 
 from analytics.stats import (
+    gir_comparison,
     gir_per_round,
+    gir_vs_non_gir_score_distribution,
+    overall_gir_percentage,
+    overall_putts_per_gir,
+    putts_comparison,
+    putts_per_gir,
+    putts_per_gir_comparison,
     putts_per_round,
     round_summary,
+    scrambling_comparison,
+    score_comparison,
     scrambling_per_round,
     score_trend,
     score_type_distribution_per_round,
     scoring_by_par,
     scoring_vs_hole_handicap,
+    three_putts_comparison,
     three_putts_per_round,
 )
 from models.course import Course
@@ -80,6 +90,99 @@ def test_putts_and_gir_per_round():
     assert [row["total_gir"] for row in gir_rows] == [10, 9]
     assert gir_rows[0]["gir_percentage"] == pytest.approx(55.5555, rel=1e-3)
     assert gir_rows[1]["gir_percentage"] == 50.0
+
+
+def test_putts_per_gir():
+    rounds = _build_rounds()
+    rows = putts_per_gir(rounds)
+
+    assert rows[0]["gir_count"] == 10
+    assert rows[0]["putts_on_gir"] == 20
+    assert rows[0]["putts_per_gir"] == pytest.approx(2.0)
+
+    assert rows[1]["gir_count"] == 9
+    assert rows[1]["putts_on_gir"] == 9
+    assert rows[1]["putts_per_gir"] == pytest.approx(1.0)
+
+
+def test_overall_putts_per_gir_and_gir_percentage():
+    rounds = _build_rounds()
+
+    overall_ppg = overall_putts_per_gir(rounds)
+    assert overall_ppg["total_gir"] == 19
+    assert overall_ppg["total_putts_on_gir"] == 29
+    assert overall_ppg["putts_per_gir"] == pytest.approx(29 / 19)
+
+    overall_gir = overall_gir_percentage(rounds)
+    assert overall_gir["holes_played"] == 36
+    assert overall_gir["total_gir"] == 19
+    assert overall_gir["total_missed_gir"] == 17
+    assert overall_gir["gir_percentage"] == pytest.approx((19 / 36) * 100)
+
+
+def test_recent_comparison_snapshots():
+    rounds = _build_rounds()
+
+    putts_rows = putts_comparison(rounds)
+    assert putts_rows[0]["label"] == "Selected Round"
+    assert putts_rows[0]["primary_value"] == 27
+    assert putts_rows[1]["label"] == "Last 5 Avg"
+    assert putts_rows[1]["primary_value"] == pytest.approx((36 + 27) / 2)
+    assert putts_rows[3]["label"] == "Last 20 Avg"
+    assert putts_rows[3]["sample_size"] == 2
+
+    gir_rows = gir_comparison(rounds)
+    assert gir_rows[0]["primary_value"] == 9
+    assert gir_rows[0]["secondary_value"] == 50.0
+    assert gir_rows[1]["primary_value"] == pytest.approx((10 + 9) / 2)
+
+    score_rows = score_comparison(rounds)
+    assert score_rows[0]["primary_value"] == 81
+    assert score_rows[0]["secondary_value"] == 9
+    assert score_rows[1]["primary_value"] == pytest.approx((72 + 81) / 2)
+    assert score_rows[1]["secondary_value"] == pytest.approx((0 + 9) / 2)
+
+    three_putt_rows = three_putts_comparison(rounds)
+    assert three_putt_rows[0]["primary_value"] == 0
+    assert three_putt_rows[0]["secondary_value"] == 0.0
+
+    scrambling_rows = scrambling_comparison(rounds)
+    assert scrambling_rows[0]["primary_value"] == 2
+    assert scrambling_rows[0]["secondary_value"] == pytest.approx((2 / 9) * 100)
+
+    ppg_rows = putts_per_gir_comparison(rounds)
+    assert ppg_rows[0]["primary_value"] == pytest.approx(1.0)
+    assert ppg_rows[0]["secondary_value"] == 9
+
+
+def test_gir_vs_non_gir_score_distribution():
+    rounds = _build_rounds()
+    rows = gir_vs_non_gir_score_distribution(rounds)
+    by_bucket = {row["bucket"]: row for row in rows}
+
+    assert by_bucket["GIR"]["holes_counted"] == 19
+    assert by_bucket["No GIR"]["holes_counted"] == 17
+
+    assert by_bucket["GIR"]["bogey"] == pytest.approx((6 / 19) * 100)
+    assert by_bucket["GIR"]["par"] == pytest.approx((11 / 19) * 100)
+    assert by_bucket["GIR"]["birdie"] == pytest.approx((2 / 19) * 100)
+
+    assert by_bucket["No GIR"]["double_bogey"] == pytest.approx((2 / 17) * 100)
+    assert by_bucket["No GIR"]["bogey"] == pytest.approx((5 / 17) * 100)
+    assert by_bucket["No GIR"]["par"] == pytest.approx((6 / 17) * 100)
+    assert by_bucket["No GIR"]["birdie"] == pytest.approx((4 / 17) * 100)
+
+    for row in rows:
+        total_pct = sum(row[name] for name in (
+            "eagle",
+            "birdie",
+            "par",
+            "bogey",
+            "double_bogey",
+            "triple_bogey",
+            "quad_bogey",
+        ))
+        assert total_pct == pytest.approx(100.0)
 
 
 def test_three_putts_per_round():

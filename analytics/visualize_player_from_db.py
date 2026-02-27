@@ -6,13 +6,25 @@ from pathlib import Path
 from typing import List
 
 from analytics.visualizations import (
+    plot_gir_comparison,
     plot_gir_per_round,
+    plot_gir_vs_non_gir_score_distribution,
+    plot_overall_gir_percentage,
+    plot_overall_putts_per_gir,
+    plot_putts_comparison,
+    plot_putts_per_gir_comparison,
+    plot_putts_per_gir_rate_per_round,
+    plot_putts_per_gir,
     plot_putts_per_round,
+    plot_score_comparison,
+    plot_scrambling_comparison,
     plot_scrambling_per_round,
     plot_scoring_by_par,
     plot_score_trend,
     plot_score_type_distribution_per_round,
     plot_scoring_vs_handicap,
+    plot_three_putt_percentage_per_round,
+    plot_three_putts_comparison,
     plot_three_putts_per_round,
 )
 from database.connection import DatabasePool
@@ -48,6 +60,14 @@ def _has_putt_data(rounds: List[Round]) -> bool:
     for round_obj in rounds:
         for score in round_obj.hole_scores:
             if score.putts is not None:
+                return True
+    return False
+
+
+def _has_putts_per_gir_data(rounds: List[Round]) -> bool:
+    for round_obj in rounds:
+        for score in round_obj.hole_scores:
+            if score.green_in_regulation is True and score.putts is not None:
                 return True
     return False
 
@@ -126,17 +146,28 @@ async def main_async() -> None:
 
     outdir = Path(args.outdir)
     outdir.mkdir(parents=True, exist_ok=True)
+    round_comparison_dir = outdir / "round_comparison"
+    round_trends_dir = outdir / "round_trends"
+    overall_player_dir = outdir / "overall_player"
+    round_comparison_dir.mkdir(parents=True, exist_ok=True)
+    round_trends_dir.mkdir(parents=True, exist_ok=True)
+    overall_player_dir.mkdir(parents=True, exist_ok=True)
 
     written: list[Path] = []
 
     fig, _ = plot_score_trend(rounds)
-    score_path = outdir / "score_trend.png"
+    score_path = round_trends_dir / "score_trend.png"
     fig.savefig(score_path, dpi=150)
     written.append(score_path)
 
+    fig, _, _ = plot_score_comparison(rounds)
+    score_compare_path = round_comparison_dir / "score_comparison.png"
+    fig.savefig(score_compare_path, dpi=150)
+    written.append(score_compare_path)
+
     if _has_handicap_scoring_data(rounds):
         fig, _ = plot_scoring_vs_handicap(rounds)
-        svh_path = outdir / "scoring_vs_handicap.png"
+        svh_path = overall_player_dir / "scoring_vs_handicap.png"
         fig.savefig(svh_path, dpi=150)
         written.append(svh_path)
     else:
@@ -144,7 +175,7 @@ async def main_async() -> None:
 
     if _has_par_scoring_data(rounds):
         fig, _ = plot_scoring_by_par(rounds)
-        sbp_path = outdir / "scoring_by_par.png"
+        sbp_path = overall_player_dir / "scoring_by_par.png"
         fig.savefig(sbp_path, dpi=150)
         written.append(sbp_path)
     else:
@@ -152,7 +183,7 @@ async def main_async() -> None:
 
     if _has_par_scoring_data(rounds):
         fig, _ = plot_score_type_distribution_per_round(rounds)
-        std_path = outdir / "score_type_distribution_per_round.png"
+        std_path = round_trends_dir / "score_type_distribution_per_round.png"
         fig.savefig(std_path, dpi=150)
         written.append(std_path)
     else:
@@ -160,30 +191,88 @@ async def main_async() -> None:
 
     if _has_putt_data(rounds):
         fig, _ = plot_putts_per_round(rounds)
-        putts_path = outdir / "putts_per_round.png"
+        putts_path = round_trends_dir / "putts_per_round.png"
         fig.savefig(putts_path, dpi=150)
         written.append(putts_path)
 
-        fig, _, _ = plot_three_putts_per_round(rounds)
-        three_putts_path = outdir / "three_putts_per_round.png"
+        fig, _ = plot_putts_comparison(rounds)
+        putts_compare_path = round_comparison_dir / "putts_comparison.png"
+        fig.savefig(putts_compare_path, dpi=150)
+        written.append(putts_compare_path)
+
+        fig, _ = plot_three_putts_per_round(rounds)
+        three_putts_path = round_trends_dir / "three_putts_per_round.png"
         fig.savefig(three_putts_path, dpi=150)
         written.append(three_putts_path)
+
+        fig, _ = plot_three_putt_percentage_per_round(rounds)
+        three_putts_pct_path = round_trends_dir / "three_putt_percentage_per_round.png"
+        fig.savefig(three_putts_pct_path, dpi=150)
+        written.append(three_putts_pct_path)
+
+        fig, _, _ = plot_three_putts_comparison(rounds)
+        three_putts_compare_path = round_comparison_dir / "three_putts_comparison.png"
+        fig.savefig(three_putts_compare_path, dpi=150)
+        written.append(three_putts_compare_path)
     else:
         print("Skipping putts chart: no putt values found.")
 
+    if _has_putts_per_gir_data(rounds):
+        fig, _ = plot_putts_per_gir(rounds)
+        ppg_path = round_trends_dir / "putts_per_gir.png"
+        fig.savefig(ppg_path, dpi=150)
+        written.append(ppg_path)
+
+        fig, _ = plot_putts_per_gir_rate_per_round(rounds)
+        ppg_rate_path = round_trends_dir / "putts_per_gir_rate_per_round.png"
+        fig.savefig(ppg_rate_path, dpi=150)
+        written.append(ppg_rate_path)
+
+        fig, _, _ = plot_putts_per_gir_comparison(rounds)
+        ppg_compare_path = round_comparison_dir / "putts_per_gir_comparison.png"
+        fig.savefig(ppg_compare_path, dpi=150)
+        written.append(ppg_compare_path)
+
+        fig, _ = plot_overall_putts_per_gir(rounds)
+        overall_ppg_path = overall_player_dir / "overall_putts_per_gir.png"
+        fig.savefig(overall_ppg_path, dpi=150)
+        written.append(overall_ppg_path)
+    else:
+        print("Skipping putts-per-GIR chart: missing GIR holes with putt data.")
+
     if _has_gir_data(rounds):
         fig, _ = plot_gir_per_round(rounds)
-        gir_path = outdir / "gir_per_round.png"
+        gir_path = round_trends_dir / "gir_per_round.png"
         fig.savefig(gir_path, dpi=150)
         written.append(gir_path)
+
+        fig, _, _ = plot_gir_comparison(rounds)
+        gir_compare_recent_path = round_comparison_dir / "gir_comparison.png"
+        fig.savefig(gir_compare_recent_path, dpi=150)
+        written.append(gir_compare_recent_path)
+
+        fig, _ = plot_gir_vs_non_gir_score_distribution(rounds)
+        gir_compare_path = overall_player_dir / "gir_vs_non_gir_score_distribution.png"
+        fig.savefig(gir_compare_path, dpi=150)
+        written.append(gir_compare_path)
+
+        fig, _ = plot_overall_gir_percentage(rounds)
+        overall_gir_path = overall_player_dir / "overall_gir_percentage.png"
+        fig.savefig(overall_gir_path, dpi=150)
+        written.append(overall_gir_path)
     else:
         print("Skipping GIR chart: no GIR values found.")
 
     if _has_scrambling_data(rounds):
-        fig, _, _ = plot_scrambling_per_round(rounds)
-        scrambling_path = outdir / "scrambling_per_round.png"
+        fig, _ = plot_scrambling_per_round(rounds)
+        scrambling_path = round_trends_dir / "scrambling_per_round.png"
         fig.savefig(scrambling_path, dpi=150)
         written.append(scrambling_path)
+
+        fig, _, _ = plot_scrambling_comparison(rounds)
+        scrambling_compare_path = round_comparison_dir / "scrambling_comparison.png"
+        fig.savefig(scrambling_compare_path, dpi=150)
+        written.append(scrambling_compare_path)
     else:
         print("Skipping scrambling chart: missing GIR/par/strokes data.")
 
