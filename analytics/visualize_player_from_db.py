@@ -9,6 +9,8 @@ from analytics.visualizations import (
     plot_gir_comparison,
     plot_gir_per_round,
     plot_gir_vs_non_gir_score_distribution,
+    plot_overall_gir_percentage,
+    plot_overall_putts_per_gir,
     plot_putts_comparison,
     plot_putts_per_gir_comparison,
     plot_putts_per_gir_rate_per_round,
@@ -224,6 +226,11 @@ async def main_async() -> None:
         ppg_compare_path = outdir / "putts_per_gir_comparison.png"
         fig.savefig(ppg_compare_path, dpi=150)
         written.append(ppg_compare_path)
+
+        fig, _ = plot_overall_putts_per_gir(rounds)
+        overall_ppg_path = outdir / "overall_putts_per_gir.png"
+        fig.savefig(overall_ppg_path, dpi=150)
+        written.append(overall_ppg_path)
     else:
         print("Skipping putts-per-GIR chart: missing GIR holes with putt data.")
 
@@ -242,6 +249,11 @@ async def main_async() -> None:
         gir_compare_path = outdir / "gir_vs_non_gir_score_distribution.png"
         fig.savefig(gir_compare_path, dpi=150)
         written.append(gir_compare_path)
+
+        fig, _ = plot_overall_gir_percentage(rounds)
+        overall_gir_path = outdir / "overall_gir_percentage.png"
+        fig.savefig(overall_gir_path, dpi=150)
+        written.append(overall_gir_path)
     else:
         print("Skipping GIR chart: no GIR values found.")
 
