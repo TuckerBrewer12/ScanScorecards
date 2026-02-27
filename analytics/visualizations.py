@@ -69,13 +69,11 @@ def _apply_sparse_xticks(ax, labels: Sequence[str], max_labels: int = 12) -> Non
     ax.set_xticklabels(tick_labels, rotation=45, ha="right")
 
 
-def _plot_comparison_bars(
+def _plot_single_axis_comparison_bars(
     title: str,
     rows: Sequence[dict],
     *,
     primary_label: str,
-    secondary_label: Optional[str] = None,
-    secondary_limit: Optional[float] = None,
 ):
     plt = _load_plt()
     labels = [row["label"] for row in rows]
@@ -91,11 +89,33 @@ def _plot_comparison_bars(
     ax1.set_xticklabels(labels)
     ax1.grid(axis="y", alpha=0.2)
 
-    if secondary_label is None:
-        fig.tight_layout()
-        return fig, ax1
+    fig.tight_layout()
+    return fig, ax1
 
+
+def _plot_dual_axis_comparison_bars(
+    title: str,
+    rows: Sequence[dict],
+    *,
+    primary_label: str,
+    secondary_label: str,
+    secondary_limit: Optional[float] = None,
+):
+    plt = _load_plt()
+    labels = [row["label"] for row in rows]
+    x = list(range(len(labels)))
+    primary_values = [row["primary_value"] or 0 for row in rows]
     secondary_values = [row["secondary_value"] or 0 for row in rows]
+
+    fig, ax1 = plt.subplots(figsize=(10, 5))
+    ax1.bar(x, primary_values, alpha=0.85, label=primary_label)
+    ax1.set_title(title)
+    ax1.set_xlabel("Comparison Window")
+    ax1.set_ylabel(primary_label)
+    ax1.set_xticks(x)
+    ax1.set_xticklabels(labels)
+    ax1.grid(axis="y", alpha=0.2)
+
     ax2 = ax1.twinx()
     ax2.plot(x, secondary_values, color="black", marker="o", linewidth=1.5, label=secondary_label)
     ax2.set_ylabel(secondary_label)
@@ -132,7 +152,7 @@ def plot_putts_per_round(rounds: Sequence[Round], labels: Optional[Sequence[str]
 def plot_score_comparison(rounds: Sequence[Round], round_index: Optional[int] = None):
     """Selected round score vs recent average windows."""
     rows = score_comparison(rounds, round_index=round_index)
-    return _plot_comparison_bars(
+    return _plot_dual_axis_comparison_bars(
         "Score vs Recent Averages",
         rows,
         primary_label="Total Score",
@@ -143,7 +163,7 @@ def plot_score_comparison(rounds: Sequence[Round], round_index: Optional[int] = 
 def plot_putts_comparison(rounds: Sequence[Round], round_index: Optional[int] = None):
     """Selected round putts vs recent average windows."""
     rows = putts_comparison(rounds, round_index=round_index)
-    return _plot_comparison_bars(
+    return _plot_single_axis_comparison_bars(
         "Putts vs Recent Averages",
         rows,
         primary_label="Total Putts",
@@ -187,7 +207,7 @@ def plot_gir_per_round(rounds: Sequence[Round], labels: Optional[Sequence[str]] 
 def plot_gir_comparison(rounds: Sequence[Round], round_index: Optional[int] = None):
     """Selected round GIR vs recent average windows."""
     rows = gir_comparison(rounds, round_index=round_index)
-    return _plot_comparison_bars(
+    return _plot_dual_axis_comparison_bars(
         "GIR vs Recent Averages",
         rows,
         primary_label="GIR Count",
@@ -234,7 +254,7 @@ def plot_putts_per_gir(rounds: Sequence[Round], labels: Optional[Sequence[str]] 
 def plot_putts_per_gir_comparison(rounds: Sequence[Round], round_index: Optional[int] = None):
     """Selected round putts-per-GIR vs recent average windows."""
     rows = putts_per_gir_comparison(rounds, round_index=round_index)
-    return _plot_comparison_bars(
+    return _plot_dual_axis_comparison_bars(
         "Putts Per GIR vs Recent Averages",
         rows,
         primary_label="Putts Per GIR",
@@ -414,7 +434,7 @@ def plot_three_putts_per_round(
 def plot_three_putts_comparison(rounds: Sequence[Round], round_index: Optional[int] = None):
     """Selected round 3-putts vs recent average windows."""
     rows = three_putts_comparison(rounds, round_index=round_index)
-    return _plot_comparison_bars(
+    return _plot_dual_axis_comparison_bars(
         "3-Putts vs Recent Averages",
         rows,
         primary_label="3-Putt Count",
@@ -463,7 +483,7 @@ def plot_scrambling_per_round(
 def plot_scrambling_comparison(rounds: Sequence[Round], round_index: Optional[int] = None):
     """Selected round scrambling vs recent average windows."""
     rows = scrambling_comparison(rounds, round_index=round_index)
-    return _plot_comparison_bars(
+    return _plot_dual_axis_comparison_bars(
         "Scrambling vs Recent Averages",
         rows,
         primary_label="Scramble Successes",
