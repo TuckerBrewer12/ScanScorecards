@@ -7,6 +7,8 @@ from models.round import Round
 
 from .stats import (
     gir_per_round,
+    gir_vs_non_gir_score_distribution,
+    putts_per_gir,
     putts_per_round,
     scrambling_per_round,
     score_trend,
@@ -81,20 +83,107 @@ def plot_putts_per_round(rounds: Sequence[Round], labels: Optional[Sequence[str]
 
 
 def plot_gir_per_round(rounds: Sequence[Round], labels: Optional[Sequence[str]] = None):
-    """Bar chart: GIR percentage per round."""
+    """
+    Combined chart:
+    - bars: GIR count per round
+    - line: GIR percentage per round
+    """
     plt = _load_plt()
     rows = gir_per_round(rounds)
     x_labels = list(labels) if labels is not None else _default_labels(rounds)
-    values = [row["gir_percentage"] or 0 for row in rows]
-
-    fig, ax = plt.subplots(figsize=(10, 5))
     x = list(range(len(x_labels)))
-    ax.bar(x, values)
-    ax.set_title("GIR Percentage Per Round")
-    ax.set_xlabel("Round")
-    ax.set_ylabel("GIR %")
+    counts = [row["total_gir"] or 0 for row in rows]
+    percentages = [row["gir_percentage"] or 0 for row in rows]
+
+    fig, ax1 = plt.subplots(figsize=(11, 5))
+    ax1.bar(x, counts, alpha=0.8, label="GIR Count")
+    ax1.set_title("GIR Per Round")
+    ax1.set_xlabel("Round")
+    ax1.set_ylabel("GIR Count")
+    _apply_sparse_xticks(ax1, x_labels)
+    ax1.grid(axis="y", alpha=0.2)
+
+    ax2 = ax1.twinx()
+    ax2.plot(x, percentages, color="black", marker="o", linewidth=1.5, label="GIR %")
+    ax2.set_ylabel("GIR %")
+    ax2.set_ylim(0, 100)
+
+    lines1, labels1 = ax1.get_legend_handles_labels()
+    lines2, labels2 = ax2.get_legend_handles_labels()
+    ax1.legend(lines1 + lines2, labels1 + labels2, loc="upper left")
+
+    fig.tight_layout()
+    return fig, ax1, ax2
+
+
+def plot_putts_per_gir(rounds: Sequence[Round], labels: Optional[Sequence[str]] = None):
+    """
+    Combined chart:
+    - bars: total putts taken on GIR holes
+    - line: putts on GIR / GIR count
+    """
+    plt = _load_plt()
+    rows = putts_per_gir(rounds)
+    x_labels = list(labels) if labels is not None else _default_labels(rounds)
+    x = list(range(len(x_labels)))
+    putts_on_gir = [row["putts_on_gir"] for row in rows]
+    rates = [row["putts_per_gir"] or 0 for row in rows]
+
+    fig, ax1 = plt.subplots(figsize=(11, 5))
+    ax1.bar(x, putts_on_gir, alpha=0.8, label="Putts On GIR")
+    ax1.set_xlabel("Round")
+    ax1.set_ylabel("Putts On GIR")
+    _apply_sparse_xticks(ax1, x_labels)
+    ax1.grid(axis="y", alpha=0.2)
+
+    ax2 = ax1.twinx()
+    ax2.plot(x, rates, color="black", marker="o", linewidth=1.5, label="Putts Per GIR")
+    ax2.set_ylabel("Putts Per GIR")
+    ax2.set_ylim(0, max(3.0, max(rates, default=0) + 0.25))
+
+    ax1.set_title("Putts Per GIR")
+
+    lines1, labels1 = ax1.get_legend_handles_labels()
+    lines2, labels2 = ax2.get_legend_handles_labels()
+    ax1.legend(lines1 + lines2, labels1 + labels2, loc="upper left")
+
+    fig.tight_layout()
+    return fig, ax1, ax2
+
+
+def plot_gir_vs_non_gir_score_distribution(rounds: Iterable[Round]):
+    """
+    Stacked bar chart of score-type percentages for GIR vs non-GIR holes.
+    """
+    plt = _load_plt()
+    rows = gir_vs_non_gir_score_distribution(rounds)
+    x_labels = [row["bucket"] for row in rows]
+    x = list(range(len(x_labels)))
+
+    categories = [
+        ("eagle", "Eagle"),
+        ("birdie", "Birdie"),
+        ("par", "Par"),
+        ("bogey", "Bogey"),
+        ("double_bogey", "Double"),
+        ("triple_bogey", "Triple"),
+        ("quad_bogey", "Quad+"),
+    ]
+
+    fig, ax = plt.subplots(figsize=(9, 6))
+    bottom = [0.0] * len(rows)
+    for key, label in categories:
+        values = [row[key] for row in rows]
+        ax.bar(x, values, bottom=bottom, label=label)
+        bottom = [b + v for b, v in zip(bottom, values)]
+
+    ax.set_title("Score Type Distribution: GIR vs No GIR")
+    ax.set_xlabel("Bucket")
+    ax.set_ylabel("Percent Of Holes")
+    ax.set_xticks(x)
+    ax.set_xticklabels(x_labels)
     ax.set_ylim(0, 100)
-    _apply_sparse_xticks(ax, x_labels)
+    ax.legend(loc="upper right", ncols=4, fontsize=8)
     ax.grid(axis="y", alpha=0.2)
     fig.tight_layout()
     return fig, ax

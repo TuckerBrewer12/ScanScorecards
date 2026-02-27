@@ -19,6 +19,22 @@ def _valid_hole_scores(round_obj: Round):
     return [score for score in round_obj.hole_scores if score.hole_number is not None]
 
 
+def _score_type_from_to_par(to_par: int) -> str:
+    if to_par <= -2:
+        return "eagle"
+    if to_par == -1:
+        return "birdie"
+    if to_par == 0:
+        return "par"
+    if to_par == 1:
+        return "bogey"
+    if to_par == 2:
+        return "double_bogey"
+    if to_par == 3:
+        return "triple_bogey"
+    return "quad_bogey"
+
+
 def round_summary(round_obj: Round) -> Dict[str, Optional[float]]:
     """Compute summary metrics for a single round."""
     hole_scores = _valid_hole_scores(round_obj)
@@ -169,6 +185,86 @@ def gir_per_round(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
     return results
 
 
+def putts_per_gir(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
+    """
+    Return putts-per-GIR by round.
+
+    Formula:
+    - putts_on_gir: sum(putts on holes where GIR is True)
+    - putts_per_gir: putts_on_gir / GIR count
+    """
+    results: List[Dict[str, Any]] = []
+    for index, round_obj in enumerate(rounds, start=1):
+        gir_scores = [
+            score for score in _valid_hole_scores(round_obj)
+            if score.green_in_regulation is True
+        ]
+        gir_count = len(gir_scores)
+        putts_on_gir = sum(score.putts for score in gir_scores if score.putts is not None)
+        gir_with_putt_data = sum(1 for score in gir_scores if score.putts is not None)
+        metric = (putts_on_gir / gir_count) if gir_count else None
+
+        results.append(
+            {
+                "round_index": index,
+                "round_id": round_obj.id,
+                "putts_on_gir": putts_on_gir,
+                "gir_count": gir_count,
+                "gir_with_putt_data": gir_with_putt_data,
+                "putts_per_gir": metric,
+            }
+        )
+    return results
+
+
+def gir_vs_non_gir_score_distribution(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
+    """
+    Aggregate score-type percentages for GIR holes vs non-GIR holes.
+
+    Returns two rows:
+    - GIR
+    - No GIR
+    """
+    buckets = {
+        "GIR": {name: 0 for name in SCORE_TYPE_ORDER},
+        "No GIR": {name: 0 for name in SCORE_TYPE_ORDER},
+    }
+    totals = {"GIR": 0, "No GIR": 0}
+
+    for round_obj in rounds:
+        if not round_obj.course:
+            continue
+
+        for hole_score in _valid_hole_scores(round_obj):
+            if (
+                hole_score.hole_number is None
+                or hole_score.strokes is None
+                or hole_score.green_in_regulation is None
+            ):
+                continue
+
+            hole = round_obj.course.get_hole(hole_score.hole_number)
+            if not hole or hole.par is None:
+                continue
+
+            bucket = "GIR" if hole_score.green_in_regulation else "No GIR"
+            score_type = _score_type_from_to_par(hole_score.strokes - hole.par)
+            buckets[bucket][score_type] += 1
+            totals[bucket] += 1
+
+    results: List[Dict[str, Any]] = []
+    for bucket in ("GIR", "No GIR"):
+        row: Dict[str, Any] = {
+            "bucket": bucket,
+            "holes_counted": totals[bucket],
+        }
+        for name in SCORE_TYPE_ORDER:
+            row[name] = (buckets[bucket][name] / totals[bucket] * 100.0) if totals[bucket] else 0.0
+        results.append(row)
+
+    return results
+
+
 def scoring_vs_hole_handicap(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
     """
     Aggregate average score-to-par by hole handicap.
@@ -250,22 +346,6 @@ def scoring_by_par(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
             }
         )
     return results
-
-
-def _score_type_from_to_par(to_par: int) -> str:
-    if to_par <= -2:
-        return "eagle"
-    if to_par == -1:
-        return "birdie"
-    if to_par == 0:
-        return "par"
-    if to_par == 1:
-        return "bogey"
-    if to_par == 2:
-        return "double_bogey"
-    if to_par == 3:
-        return "triple_bogey"
-    return "quad_bogey"
 
 
 def score_type_distribution_per_round(rounds: Iterable[Round]) -> List[Dict[str, Any]]:

@@ -4,6 +4,8 @@ import pytest
 
 from analytics.stats import (
     gir_per_round,
+    gir_vs_non_gir_score_distribution,
+    putts_per_gir,
     putts_per_round,
     round_summary,
     scrambling_per_round,
@@ -80,6 +82,49 @@ def test_putts_and_gir_per_round():
     assert [row["total_gir"] for row in gir_rows] == [10, 9]
     assert gir_rows[0]["gir_percentage"] == pytest.approx(55.5555, rel=1e-3)
     assert gir_rows[1]["gir_percentage"] == 50.0
+
+
+def test_putts_per_gir():
+    rounds = _build_rounds()
+    rows = putts_per_gir(rounds)
+
+    assert rows[0]["gir_count"] == 10
+    assert rows[0]["putts_on_gir"] == 20
+    assert rows[0]["putts_per_gir"] == pytest.approx(2.0)
+
+    assert rows[1]["gir_count"] == 9
+    assert rows[1]["putts_on_gir"] == 9
+    assert rows[1]["putts_per_gir"] == pytest.approx(1.0)
+
+
+def test_gir_vs_non_gir_score_distribution():
+    rounds = _build_rounds()
+    rows = gir_vs_non_gir_score_distribution(rounds)
+    by_bucket = {row["bucket"]: row for row in rows}
+
+    assert by_bucket["GIR"]["holes_counted"] == 19
+    assert by_bucket["No GIR"]["holes_counted"] == 17
+
+    assert by_bucket["GIR"]["bogey"] == pytest.approx((6 / 19) * 100)
+    assert by_bucket["GIR"]["par"] == pytest.approx((11 / 19) * 100)
+    assert by_bucket["GIR"]["birdie"] == pytest.approx((2 / 19) * 100)
+
+    assert by_bucket["No GIR"]["double_bogey"] == pytest.approx((2 / 17) * 100)
+    assert by_bucket["No GIR"]["bogey"] == pytest.approx((5 / 17) * 100)
+    assert by_bucket["No GIR"]["par"] == pytest.approx((6 / 17) * 100)
+    assert by_bucket["No GIR"]["birdie"] == pytest.approx((4 / 17) * 100)
+
+    for row in rows:
+        total_pct = sum(row[name] for name in (
+            "eagle",
+            "birdie",
+            "par",
+            "bogey",
+            "double_bogey",
+            "triple_bogey",
+            "quad_bogey",
+        ))
+        assert total_pct == pytest.approx(100.0)
 
 
 def test_three_putts_per_round():
