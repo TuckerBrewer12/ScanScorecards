@@ -44,7 +44,7 @@ class Course(BaseGolfModel):
         """Calculate total par from holes."""
         if len(self.holes) != 18 or any(h.par is None for h in self.holes):
             return None
-        return sum(h.par for h in self.holes)
+        return sum(h.par for h in self.holes if h.par is not None)
 
     @property
     def front_nine_par(self) -> Optional[int]:
@@ -52,7 +52,7 @@ class Course(BaseGolfModel):
         front = self.holes[:9]
         if len(front) < 9 or any(h.par is None for h in front):
             return None
-        return sum(h.par for h in front)
+        return sum(h.par for h in front if h.par is not None)
 
     @property
     def back_nine_par(self) -> Optional[int]:
@@ -60,4 +60,4 @@ class Course(BaseGolfModel):
         back = self.holes[9:18]
         if len(back) < 9 or any(h.par is None for h in back):
             return None
-        return sum(h.par for h in back)
+        return sum(h.par for h in back if h.par is not None)
