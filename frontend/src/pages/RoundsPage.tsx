@@ -129,15 +129,15 @@ export function RoundsPage({ userId }: RoundsPageProps) {
           <tbody className="divide-y divide-gray-100">
             {filtered.map((r) => (
               <tr key={r.id} className="hover:bg-gray-50 transition-colors">
-                <td className="px-4 py-3 text-sm text-gray-600">
+                <td className="px-4 py-3 text-sm font-medium text-gray-600">
                   {r.date
                     ? new Date(r.date).toLocaleDateString()
                     : "-"}
                 </td>
-                <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                <td className="px-4 py-3 text-sm font-semibold text-gray-900">
                   <Link
                     to={`/rounds/${r.id}`}
-                    className="hover:text-primary"
+                    className="hover:text-primary transition-colors"
                   >
                     {r.course_name ?? "-"}
                   </Link>
@@ -155,9 +155,9 @@ export function RoundsPage({ userId }: RoundsPageProps) {
                   <span
                     className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold ${
                       r.to_par !== null && r.to_par < 0
-                        ? "bg-green-100 text-green-700"
+                        ? "bg-birdie/10 text-birdie"
                         : r.to_par !== null && r.to_par > 0
-                        ? "bg-red-100 text-red-600"
+                        ? "bg-bogey/10 text-bogey"
                         : "bg-gray-100 text-gray-600"
                     }`}
                   >

@@ -13,16 +13,25 @@ export function ScoreCell({ strokes, par }: ScoreCellProps) {
   const colorClass = getScoreColor(strokes, par);
   const diff = strokes - par;
 
+  const isOverPar = diff >= 1;
+  const shapeClass = isOverPar ? "rounded-sm" : "rounded-full";
+  const ringClass =
+    diff <= -2
+      ? "ring-2 ring-eagle/50"
+      : diff === -1
+      ? "ring-2 ring-birdie/50"
+      : diff === 1
+      ? "ring-1 ring-bogey/40"
+      : diff === 2
+      ? "ring-1 ring-double/40"
+      : diff >= 3
+      ? "ring-1 ring-triple/40"
+      : "";
+
   return (
-    <td className="px-1 py-1.5 text-center">
+    <td className="px-1 py-1 text-center">
       <span
-        className={`inline-flex items-center justify-center w-8 h-8 text-sm font-semibold rounded-full ${colorClass} ${
-          diff === -1
-            ? "ring-2 ring-birdie"
-            : diff >= 1
-            ? "ring-1 ring-current"
-            : ""
-        }`}
+        className={`inline-flex items-center justify-center w-7 h-7 text-sm font-semibold transition-all duration-150 ${shapeClass} ${colorClass} ${ringClass}`}
       >
         {strokes}
       </span>

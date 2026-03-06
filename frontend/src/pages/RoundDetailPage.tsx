@@ -225,33 +225,41 @@ export function RoundDetailPage() {
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
-          <div className="text-xs text-gray-500 mb-1">Score</div>
-          <div className="text-3xl font-bold text-gray-900">{totalScore || "-"}</div>
+        <div className="bg-white rounded-xl border border-gray-200 border-l-4 border-l-primary p-4 text-center shadow-sm">
+          <div className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">Score</div>
+          <div className="text-4xl font-bold text-gray-900">{totalScore || "-"}</div>
         </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
-          <div className="text-xs text-gray-500 mb-1">To Par</div>
+        <div
+          className={`bg-white rounded-xl border border-gray-200 border-l-4 p-4 text-center shadow-sm ${
+            toPar !== null && toPar < 0
+              ? "border-l-birdie"
+              : toPar !== null && toPar > 0
+              ? "border-l-bogey"
+              : "border-l-gray-300"
+          }`}
+        >
+          <div className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">To Par</div>
           <div
-            className={`text-3xl font-bold ${
+            className={`text-4xl font-bold ${
               toPar !== null && toPar < 0
-                ? "text-green-600"
+                ? "text-birdie"
                 : toPar !== null && toPar > 0
-                ? "text-red-500"
+                ? "text-bogey"
                 : "text-gray-900"
             }`}
           >
             {formatToPar(toPar)}
           </div>
         </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
-          <div className="text-xs text-gray-500 mb-1">Tee</div>
-          <div className="text-lg font-semibold text-gray-900">
+        <div className="bg-white rounded-xl border border-gray-200 p-4 text-center shadow-sm">
+          <div className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">Tee</div>
+          <div className="text-xl font-semibold text-gray-900">
             {(editMode ? editedTeeBox : round.tee_box) || "-"}
           </div>
         </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
-          <div className="text-xs text-gray-500 mb-1">Course Par</div>
-          <div className="text-lg font-semibold text-gray-900">{coursePar ?? "-"}</div>
+        <div className="bg-white rounded-xl border border-gray-200 p-4 text-center shadow-sm">
+          <div className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">Course Par</div>
+          <div className="text-xl font-semibold text-gray-900">{coursePar ?? "-"}</div>
         </div>
       </div>
 
