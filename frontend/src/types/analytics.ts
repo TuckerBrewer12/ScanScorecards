@@ -3,7 +3,23 @@ export interface AnalyticsKPIs {
   gir_percentage: number | null;
   putts_per_gir: number | null;
   scrambling_percentage: number | null;
+  handicap_index: number | null;
   total_rounds: number;
+}
+
+export interface HandicapTrendRow {
+  round_index: number;
+  round_id: string | null;
+  handicap_index: number | null;
+}
+
+export interface ScoreDifferentialRow {
+  round_index: number;
+  round_id: string | null;
+  score: number | null;
+  course_rating: number | null;
+  slope_rating: number | null;
+  differential: number | null;
 }
 
 export interface ScoreTrendRow {
@@ -92,6 +108,8 @@ export interface AnalyticsData {
   scoring_by_par: ScoringByParRow[];
   scoring_by_handicap: ScoringByHandicapRow[];
   gir_vs_non_gir: GIRvsNonGIRRow[];
+  handicap_trend: HandicapTrendRow[];
+  score_differentials: ScoreDifferentialRow[];
 }
 
 export interface ComparisonRow {

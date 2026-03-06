@@ -30,7 +30,7 @@ class DashboardResponse(BaseModel):
     best_round: Optional[int] = None
     best_round_id: Optional[str] = None
     best_round_course: Optional[str] = None
-    handicap: Optional[float] = None
+    handicap_index: Optional[float] = None
     recent_rounds: List[RoundSummaryResponse]
     average_putts: Optional[float] = None
     average_gir: Optional[float] = None

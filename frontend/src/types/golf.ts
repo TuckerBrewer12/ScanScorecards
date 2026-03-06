@@ -70,7 +70,7 @@ export interface DashboardData {
   best_round: number | null;
   best_round_id: string | null;
   best_round_course: string | null;
-  handicap: number | null;
+  handicap_index: number | null;
   recent_rounds: RoundSummary[];
   average_putts: number | null;
   average_gir: number | null;

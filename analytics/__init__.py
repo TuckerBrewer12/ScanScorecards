@@ -1,3 +1,8 @@
+from .handicap import (
+    score_differentials_per_round,
+    handicap_index,
+    handicap_trend,
+)
 from .stats import (
     gir_comparison,
     gir_per_round,
@@ -43,6 +48,9 @@ from .visualizations import (
 )
 
 __all__ = [
+    "score_differentials_per_round",
+    "handicap_index",
+    "handicap_trend",
     "round_summary",
     "score_comparison",
     "putts_per_round",
