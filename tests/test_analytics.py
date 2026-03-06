@@ -20,6 +20,7 @@ from analytics.stats import (
     score_comparison,
     scrambling_per_round,
     score_trend,
+    score_type_distribution_by_hole,
     score_type_distribution_per_round,
     scoring_by_par,
     scoring_vs_hole_handicap,
@@ -293,6 +294,34 @@ def test_average_putts_by_hole():
     # Hole 2: putts are 2 and 1 -> 1.5 avg
     assert by_hole[2]["sample_size"] == 2
     assert by_hole[2]["average_putts"] == pytest.approx(1.5)
+
+
+def test_score_type_distribution_by_hole():
+    rounds = _build_rounds()
+    rows = score_type_distribution_by_hole(rounds)
+    assert len(rows) == 18
+    by_hole = {row["hole_number"]: row for row in rows}
+
+    # Hole 1 (par 3): scores are 4 and 5 -> bogey 50%, double 50%
+    assert by_hole[1]["sample_size"] == 2
+    assert by_hole[1]["bogey"] == pytest.approx(50.0)
+    assert by_hole[1]["double_bogey"] == pytest.approx(50.0)
+    assert by_hole[1]["par"] == 0.0
+
+    # Hole 2 (par 3): scores are 4 and 4 -> bogey 100%
+    assert by_hole[2]["sample_size"] == 2
+    assert by_hole[2]["bogey"] == pytest.approx(100.0)
+
+    total_pct_hole_1 = (
+        by_hole[1]["eagle"]
+        + by_hole[1]["birdie"]
+        + by_hole[1]["par"]
+        + by_hole[1]["bogey"]
+        + by_hole[1]["double_bogey"]
+        + by_hole[1]["triple_bogey"]
+        + by_hole[1]["quad_bogey"]
+    )
+    assert total_pct_hole_1 == pytest.approx(100.0)
 
 
 def test_score_type_distribution_per_round():

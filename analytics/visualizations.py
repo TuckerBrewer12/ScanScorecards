@@ -22,6 +22,7 @@ from .stats import (
     scrambling_comparison,
     score_comparison,
     score_trend,
+    score_type_distribution_by_hole,
     score_type_distribution_per_round,
     scoring_by_par,
     scoring_vs_hole_handicap,
@@ -485,6 +486,45 @@ def plot_score_type_distribution_per_round(
     ax.set_ylabel("Percent Of Holes")
     ax.set_ylim(0, 100)
     _apply_sparse_xticks(ax, x_labels)
+    ax.legend(loc="upper right", ncols=4, fontsize=8)
+    ax.grid(axis="y", alpha=0.2)
+    fig.tight_layout()
+    return fig, ax
+
+
+def plot_score_type_distribution_by_hole(
+    rounds: Iterable[Round], course_label: Optional[str] = None
+):
+    """Stacked bar chart of score-type percentages by hole for a specific course."""
+    plt = _load_plt()
+    rows = score_type_distribution_by_hole(rounds)
+    x_labels = [str(row["hole_number"]) for row in rows]
+    x = list(range(len(x_labels)))
+
+    categories = [
+        ("eagle", "Eagle"),
+        ("birdie", "Birdie"),
+        ("par", "Par"),
+        ("bogey", "Bogey"),
+        ("double_bogey", "Double"),
+        ("triple_bogey", "Triple"),
+        ("quad_bogey", "Quad+"),
+    ]
+
+    fig, ax = plt.subplots(figsize=(12, 6))
+    bottom = [0.0] * len(rows)
+    for key, label in categories:
+        values = [row[key] for row in rows]
+        ax.bar(x, values, bottom=bottom, label=label)
+        bottom = [b + v for b, v in zip(bottom, values)]
+
+    title_prefix = f"{course_label}: " if course_label else ""
+    ax.set_title(f"{title_prefix}Score Type Distribution By Hole")
+    ax.set_xlabel("Hole")
+    ax.set_ylabel("Percent Of Scores")
+    ax.set_xticks(x)
+    ax.set_xticklabels(x_labels)
+    ax.set_ylim(0, 100)
     ax.legend(loc="upper right", ncols=4, fontsize=8)
     ax.grid(axis="y", alpha=0.2)
     fig.tight_layout()

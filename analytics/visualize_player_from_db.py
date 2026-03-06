@@ -20,6 +20,7 @@ from analytics.visualizations import (
     plot_putts_per_gir,
     plot_putts_per_round,
     plot_score_comparison,
+    plot_score_type_distribution_by_hole,
     plot_scrambling_comparison,
     plot_scrambling_per_round,
     plot_scoring_by_par,
@@ -317,6 +318,11 @@ async def main_async() -> None:
         course_putts_hole_path = course_player_dir / "average_putts_by_hole.png"
         fig.savefig(course_putts_hole_path, dpi=150)
         written.append(course_putts_hole_path)
+
+        fig, _ = plot_score_type_distribution_by_hole(course_rounds, course_label=course_label)
+        course_score_type_hole_path = course_player_dir / "score_type_distribution_by_hole.png"
+        fig.savefig(course_score_type_hole_path, dpi=150)
+        written.append(course_score_type_hole_path)
     else:
         print("Skipping course-hole chart: no rounds with course data.")
 

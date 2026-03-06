@@ -707,3 +707,49 @@ def score_type_distribution_per_round(rounds: Iterable[Round]) -> List[Dict[str,
         results.append(row)
 
     return results
+
+
+def score_type_distribution_by_hole(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
+    """Score-type percentage distribution by hole number for a specific course."""
+    by_hole: Dict[int, Dict[str, Any]] = {}
+
+    for round_obj in rounds:
+        if not round_obj.course:
+            continue
+
+        for hole_score in _valid_hole_scores(round_obj):
+            if hole_score.hole_number is None or hole_score.strokes is None:
+                continue
+            hole = round_obj.course.get_hole(hole_score.hole_number)
+            if not hole or hole.par is None:
+                continue
+
+            entry = by_hole.setdefault(
+                hole_score.hole_number,
+                {
+                    "hole_number": hole_score.hole_number,
+                    "par": hole.par,
+                    "counts": {name: 0 for name in SCORE_TYPE_ORDER},
+                    "sample_size": 0,
+                },
+            )
+
+            score_type = _score_type_from_to_par(hole_score.strokes - hole.par)
+            entry["counts"][score_type] += 1
+            entry["sample_size"] += 1
+
+    results: List[Dict[str, Any]] = []
+    for hole_number in sorted(by_hole):
+        entry = by_hole[hole_number]
+        sample_size = entry["sample_size"]
+        row: Dict[str, Any] = {
+            "hole_number": hole_number,
+            "par": entry["par"],
+            "sample_size": sample_size,
+        }
+        for name in SCORE_TYPE_ORDER:
+            count = entry["counts"][name]
+            row[name] = (count / sample_size) * 100.0 if sample_size else 0.0
+        results.append(row)
+
+    return results
