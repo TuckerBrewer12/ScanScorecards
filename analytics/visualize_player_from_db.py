@@ -25,6 +25,7 @@ from analytics.visualizations import (
     plot_score_type_distribution_by_hole,
     plot_scrambling_comparison,
     plot_scrambling_per_round,
+    plot_score_variance_by_hole,
     plot_scoring_by_par,
     plot_score_trend,
     plot_score_type_distribution_per_round,
@@ -335,6 +336,11 @@ async def main_async() -> None:
         course_gir_impact_path = course_player_dir / "average_score_when_gir_vs_missed.png"
         fig.savefig(course_gir_impact_path, dpi=150)
         written.append(course_gir_impact_path)
+
+        fig, _ = plot_score_variance_by_hole(course_rounds, course_label=course_label)
+        course_variance_path = course_player_dir / "score_variance_by_hole.png"
+        fig.savefig(course_variance_path, dpi=150)
+        written.append(course_variance_path)
     else:
         print("Skipping course-hole chart: no rounds with course data.")
 

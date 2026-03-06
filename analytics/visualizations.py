@@ -8,6 +8,7 @@ from models.round import Round
 from .stats import (
     average_score_when_gir_vs_missed,
     course_difficulty_profile_by_hole,
+    score_variance_by_hole,
     average_score_relative_to_par_by_hole,
     average_putts_by_hole,
     gir_percentage_by_hole,
@@ -334,6 +335,25 @@ def plot_average_score_when_gir_vs_missed(
                 fontsize=9,
             )
 
+    fig.tight_layout()
+    return fig, ax
+
+
+def plot_score_variance_by_hole(rounds: Iterable[Round], course_label: Optional[str] = None):
+    """Horizontal bar chart of hole score standard deviation."""
+    plt = _load_plt()
+    rows = score_variance_by_hole(rounds)
+    labels = [f"Hole {row['hole_number']}" for row in rows]
+    values = [row["score_std_dev"] or 0.0 for row in rows]
+
+    fig, ax = plt.subplots(figsize=(12, 6))
+    ax.barh(labels, values, color="#f59e0b", alpha=0.9)
+    ax.invert_yaxis()
+    title_prefix = f"{course_label}: " if course_label else ""
+    ax.set_title(f"{title_prefix}Score Variance By Hole (Std Dev)")
+    ax.set_xlabel("Score Standard Deviation")
+    ax.set_ylabel("Hole")
+    ax.grid(axis="x", alpha=0.2)
     fig.tight_layout()
     return fig, ax
 
