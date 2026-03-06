@@ -24,6 +24,7 @@ from .stats import (
     scrambling_per_round,
     scrambling_comparison,
     score_comparison,
+    score_trend_on_this_course,
     score_trend,
     score_type_distribution_by_hole,
     score_type_distribution_per_round,
@@ -354,6 +355,29 @@ def plot_score_variance_by_hole(rounds: Iterable[Round], course_label: Optional[
     ax.set_xlabel("Score Standard Deviation")
     ax.set_ylabel("Hole")
     ax.grid(axis="x", alpha=0.2)
+    fig.tight_layout()
+    return fig, ax
+
+
+def plot_score_trend_on_this_course(rounds: Sequence[Round], course_label: Optional[str] = None):
+    """Line chart of total score progression on a single course over time."""
+    plt = _load_plt()
+    rows = score_trend_on_this_course(rounds)
+    x_labels = [
+        row["date"].strftime("%Y-%m-%d") if isinstance(row["date"], datetime) else str(row["date"] or f"R{i + 1}")
+        for i, row in enumerate(rows)
+    ]
+    x = list(range(len(rows)))
+    scores = [row["total_score"] for row in rows]
+
+    fig, ax = plt.subplots(figsize=(11, 5))
+    ax.plot(x, scores, color="#0f172a", marker="o", linewidth=1.75)
+    title_prefix = f"{course_label}: " if course_label else ""
+    ax.set_title(f"{title_prefix}Score Trend On This Course")
+    ax.set_xlabel("Round Date")
+    ax.set_ylabel("Total Score")
+    _apply_sparse_xticks(ax, x_labels)
+    ax.grid(axis="y", alpha=0.2)
     fig.tight_layout()
     return fig, ax
 

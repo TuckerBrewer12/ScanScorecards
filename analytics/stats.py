@@ -277,6 +277,36 @@ def score_trend(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
     return results
 
 
+def score_trend_on_this_course(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
+    """
+    Score trend for rounds on a single course.
+
+    Rows are ordered by round date (oldest to newest) when date values are available.
+    """
+    indexed_rounds = list(enumerate(rounds))
+    ordered_rounds = sorted(
+        indexed_rounds,
+        key=lambda pair: (
+            pair[1].date is None,
+            pair[1].date if pair[1].date is not None else pair[0],
+            pair[0],
+        ),
+    )
+
+    results: List[Dict[str, Any]] = []
+    for index, (_, round_obj) in enumerate(ordered_rounds, start=1):
+        results.append(
+            {
+                "round_index": index,
+                "round_id": round_obj.id,
+                "date": round_obj.date,
+                "total_score": round_obj.calculate_total_score(),
+                "to_par": round_obj.total_to_par(),
+            }
+        )
+    return results
+
+
 def gir_per_round(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
     """Return GIR totals and percentage by round."""
     results: List[Dict[str, Any]] = []

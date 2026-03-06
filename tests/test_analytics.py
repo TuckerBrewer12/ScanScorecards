@@ -21,6 +21,7 @@ from analytics.stats import (
     scrambling_comparison,
     score_comparison,
     score_variance_by_hole,
+    score_trend_on_this_course,
     scrambling_per_round,
     score_trend,
     score_type_distribution_by_hole,
@@ -260,6 +261,15 @@ def test_score_trend():
 
     assert [row["total_score"] for row in rows] == [72, 81]
     assert [row["to_par"] for row in rows] == [0, 9]
+
+
+def test_score_trend_on_this_course_orders_by_date():
+    rounds = _build_rounds()
+    rows = score_trend_on_this_course([rounds[1], rounds[0]])
+
+    assert [row["total_score"] for row in rows] == [72, 81]
+    assert [row["to_par"] for row in rows] == [0, 9]
+    assert [row["round_index"] for row in rows] == [1, 2]
 
 
 def test_scoring_by_par():
