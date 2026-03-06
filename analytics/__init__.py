@@ -1,3 +1,8 @@
+from .handicap import (
+    score_differentials_per_round,
+    handicap_index,
+    handicap_trend,
+)
 from .stats import (
     average_putts_by_hole,
     average_score_relative_to_par_by_hole,
@@ -59,6 +64,9 @@ from .visualizations import (
 )
 
 __all__ = [
+    "score_differentials_per_round",
+    "handicap_index",
+    "handicap_trend",
     "round_summary",
     "average_putts_by_hole",
     "average_score_relative_to_par_by_hole",

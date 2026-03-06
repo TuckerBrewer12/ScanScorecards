@@ -19,38 +19,38 @@ export function RecentRoundsTable({ rounds }: RecentRoundsTableProps) {
             <th className="px-5 py-3">Course</th>
             <th className="px-5 py-3 text-center">Score</th>
             <th className="px-5 py-3 text-center">To Par</th>
-            <th className="px-5 py-3">Tournament</th>
+            <th className="px-5 py-3 text-center">Putts</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-100">
           {rounds.map((r) => (
             <tr key={r.id} className="hover:bg-gray-50 transition-colors">
-              <td className="px-5 py-3 text-sm text-gray-600">
-                {r.date ? new Date(r.date).toLocaleDateString() : "-"}
+              <td className="px-5 py-3 text-sm text-gray-500">
+                {r.date ? new Date(r.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "-"}
               </td>
               <td className="px-5 py-3 text-sm font-medium text-gray-900">
-                <Link to={`/rounds/${r.id}`} className="hover:text-primary">
+                <Link to={`/rounds/${r.id}`} className="hover:text-primary transition-colors">
                   {r.course_name ?? "-"}
                 </Link>
               </td>
-              <td className="px-5 py-3 text-sm text-center font-semibold">
+              <td className="px-5 py-3 text-sm text-center font-bold text-gray-900">
                 {r.total_score ?? "-"}
               </td>
               <td className="px-5 py-3 text-sm text-center">
                 <span
                   className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold ${
                     r.to_par !== null && r.to_par < 0
-                      ? "bg-green-100 text-green-700"
+                      ? "bg-birdie/10 text-birdie"
                       : r.to_par !== null && r.to_par > 0
-                      ? "bg-red-100 text-red-600"
+                      ? "bg-bogey/10 text-bogey"
                       : "bg-gray-100 text-gray-600"
                   }`}
                 >
                   {formatToPar(r.to_par)}
                 </span>
               </td>
-              <td className="px-5 py-3 text-sm text-gray-500">
-                {r.notes ?? "-"}
+              <td className="px-5 py-3 text-sm text-center text-gray-500">
+                {r.total_putts ?? "-"}
               </td>
             </tr>
           ))}
