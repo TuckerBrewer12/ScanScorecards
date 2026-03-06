@@ -6,6 +6,7 @@ from typing import Iterable, Optional, Sequence
 from models.round import Round
 
 from .stats import (
+    average_score_when_gir_vs_missed,
     course_difficulty_profile_by_hole,
     average_score_relative_to_par_by_hole,
     average_putts_by_hole,
@@ -298,6 +299,41 @@ def plot_gir_vs_non_gir_score_distribution(rounds: Iterable[Round]):
     ax.set_ylim(0, 100)
     ax.legend(loc="upper right", ncols=4, fontsize=8)
     ax.grid(axis="y", alpha=0.2)
+    fig.tight_layout()
+    return fig, ax
+
+
+def plot_average_score_when_gir_vs_missed(
+    rounds: Iterable[Round], course_label: Optional[str] = None
+):
+    """Two-bar chart of average score when GIR is hit vs missed."""
+    plt = _load_plt()
+    rows = average_score_when_gir_vs_missed(rounds)
+    labels = [row["bucket"] for row in rows]
+    values = [row["average_score"] or 0.0 for row in rows]
+    colors = ["#16a34a", "#ef4444"]
+
+    fig, ax = plt.subplots(figsize=(8, 5))
+    ax.bar(labels, values, color=colors, alpha=0.9)
+    title_prefix = f"{course_label}: " if course_label else ""
+    ax.set_title(f"{title_prefix}Average Score When GIR Is Hit vs Missed")
+    ax.set_xlabel("Bucket")
+    ax.set_ylabel("Average Score")
+    ax.grid(axis="y", alpha=0.2)
+
+    for idx, row in enumerate(rows):
+        avg_to_par = row["average_to_par"]
+        holes = row["holes_counted"]
+        if avg_to_par is not None:
+            ax.text(
+                idx,
+                values[idx] + 0.03,
+                f"to par: {avg_to_par:+.2f}\nN={holes}",
+                ha="center",
+                va="bottom",
+                fontsize=9,
+            )
+
     fig.tight_layout()
     return fig, ax
 

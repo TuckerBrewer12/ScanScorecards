@@ -452,6 +452,58 @@ def gir_vs_non_gir_score_distribution(rounds: Iterable[Round]) -> List[Dict[str,
     return results
 
 
+def average_score_when_gir_vs_missed(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
+    """
+    Aggregate average hole score for GIR-hit vs missed-GIR holes.
+
+    Returns two rows:
+    - GIR
+    - No GIR
+    """
+    buckets: Dict[str, Dict[str, float]] = {
+        "GIR": {"strokes_sum": 0.0, "to_par_sum": 0.0, "holes_counted": 0.0},
+        "No GIR": {"strokes_sum": 0.0, "to_par_sum": 0.0, "holes_counted": 0.0},
+    }
+
+    for round_obj in rounds:
+        if not round_obj.course:
+            continue
+
+        for hole_score in _valid_hole_scores(round_obj):
+            if (
+                hole_score.hole_number is None
+                or hole_score.strokes is None
+                or hole_score.green_in_regulation is None
+            ):
+                continue
+
+            hole = round_obj.course.get_hole(hole_score.hole_number)
+            if not hole or hole.par is None:
+                continue
+
+            bucket = "GIR" if hole_score.green_in_regulation else "No GIR"
+            entry = buckets[bucket]
+            entry["strokes_sum"] += hole_score.strokes
+            entry["to_par_sum"] += hole_score.strokes - hole.par
+            entry["holes_counted"] += 1
+
+    results: List[Dict[str, Any]] = []
+    for bucket in ("GIR", "No GIR"):
+        holes = int(buckets[bucket]["holes_counted"])
+        strokes_sum = buckets[bucket]["strokes_sum"]
+        to_par_sum = buckets[bucket]["to_par_sum"]
+        results.append(
+            {
+                "bucket": bucket,
+                "holes_counted": holes,
+                "average_score": (strokes_sum / holes) if holes else None,
+                "average_to_par": (to_par_sum / holes) if holes else None,
+            }
+        )
+
+    return results
+
+
 def scoring_vs_hole_handicap(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
     """
     Aggregate average score-to-par by hole handicap.

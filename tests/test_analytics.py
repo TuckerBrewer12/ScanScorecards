@@ -4,6 +4,7 @@ import pytest
 
 from analytics.stats import (
     average_score_relative_to_par_by_hole,
+    average_score_when_gir_vs_missed,
     average_putts_by_hole,
     course_difficulty_profile_by_hole,
     gir_comparison,
@@ -188,6 +189,20 @@ def test_gir_vs_non_gir_score_distribution():
             "quad_bogey",
         ))
         assert total_pct == pytest.approx(100.0)
+
+
+def test_average_score_when_gir_vs_missed():
+    rounds = _build_rounds()
+    rows = average_score_when_gir_vs_missed(rounds)
+    by_bucket = {row["bucket"]: row for row in rows}
+
+    assert by_bucket["GIR"]["holes_counted"] == 19
+    assert by_bucket["No GIR"]["holes_counted"] == 17
+
+    assert by_bucket["GIR"]["average_score"] == pytest.approx(4.0)
+    assert by_bucket["No GIR"]["average_score"] == pytest.approx(4.529411764705882)
+    assert by_bucket["GIR"]["average_to_par"] == pytest.approx(0.21052631578947367)
+    assert by_bucket["No GIR"]["average_to_par"] == pytest.approx(0.29411764705882354)
 
 
 def test_three_putts_per_round():

@@ -1,6 +1,7 @@
 from .stats import (
     average_putts_by_hole,
     average_score_relative_to_par_by_hole,
+    average_score_when_gir_vs_missed,
     course_difficulty_profile_by_hole,
     gir_percentage_by_hole,
     gir_comparison,
@@ -27,6 +28,7 @@ from .stats import (
 from .visualizations import (
     plot_average_putts_by_hole,
     plot_average_score_relative_to_par_by_hole,
+    plot_average_score_when_gir_vs_missed,
     plot_course_difficulty_profile_by_hole,
     plot_gir_percentage_by_hole,
     plot_gir_comparison,
@@ -56,6 +58,7 @@ __all__ = [
     "round_summary",
     "average_putts_by_hole",
     "average_score_relative_to_par_by_hole",
+    "average_score_when_gir_vs_missed",
     "course_difficulty_profile_by_hole",
     "gir_percentage_by_hole",
     "score_comparison",
@@ -81,6 +84,7 @@ __all__ = [
     "plot_score_type_distribution_by_hole",
     "plot_average_putts_by_hole",
     "plot_average_score_relative_to_par_by_hole",
+    "plot_average_score_when_gir_vs_missed",
     "plot_course_difficulty_profile_by_hole",
     "plot_gir_percentage_by_hole",
     "plot_putts_comparison",
