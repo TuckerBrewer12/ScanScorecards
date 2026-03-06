@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 from typing import Any, Dict, Iterable, List, Optional
 
 from models.round import Round
@@ -276,6 +277,36 @@ def score_trend(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
     return results
 
 
+def score_trend_on_this_course(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
+    """
+    Score trend for rounds on a single course.
+
+    Rows are ordered by round date (oldest to newest) when date values are available.
+    """
+    indexed_rounds = list(enumerate(rounds))
+    ordered_rounds = sorted(
+        indexed_rounds,
+        key=lambda pair: (
+            pair[1].date is None,
+            pair[1].date if pair[1].date is not None else pair[0],
+            pair[0],
+        ),
+    )
+
+    results: List[Dict[str, Any]] = []
+    for index, (_, round_obj) in enumerate(ordered_rounds, start=1):
+        results.append(
+            {
+                "round_index": index,
+                "round_id": round_obj.id,
+                "date": round_obj.date,
+                "total_score": round_obj.calculate_total_score(),
+                "to_par": round_obj.total_to_par(),
+            }
+        )
+    return results
+
+
 def gir_per_round(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
     """Return GIR totals and percentage by round."""
     results: List[Dict[str, Any]] = []
@@ -452,6 +483,111 @@ def gir_vs_non_gir_score_distribution(rounds: Iterable[Round]) -> List[Dict[str,
     return results
 
 
+def average_score_when_gir_vs_missed(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
+    """
+    Aggregate average hole score for GIR-hit vs missed-GIR holes.
+
+    Returns two rows:
+    - GIR
+    - No GIR
+    """
+    buckets: Dict[str, Dict[str, float]] = {
+        "GIR": {"strokes_sum": 0.0, "to_par_sum": 0.0, "holes_counted": 0.0},
+        "No GIR": {"strokes_sum": 0.0, "to_par_sum": 0.0, "holes_counted": 0.0},
+    }
+
+    for round_obj in rounds:
+        if not round_obj.course:
+            continue
+
+        for hole_score in _valid_hole_scores(round_obj):
+            if (
+                hole_score.hole_number is None
+                or hole_score.strokes is None
+                or hole_score.green_in_regulation is None
+            ):
+                continue
+
+            hole = round_obj.course.get_hole(hole_score.hole_number)
+            if not hole or hole.par is None:
+                continue
+
+            bucket = "GIR" if hole_score.green_in_regulation else "No GIR"
+            entry = buckets[bucket]
+            entry["strokes_sum"] += hole_score.strokes
+            entry["to_par_sum"] += hole_score.strokes - hole.par
+            entry["holes_counted"] += 1
+
+    results: List[Dict[str, Any]] = []
+    for bucket in ("GIR", "No GIR"):
+        holes = int(buckets[bucket]["holes_counted"])
+        strokes_sum = buckets[bucket]["strokes_sum"]
+        to_par_sum = buckets[bucket]["to_par_sum"]
+        results.append(
+            {
+                "bucket": bucket,
+                "holes_counted": holes,
+                "average_score": (strokes_sum / holes) if holes else None,
+                "average_to_par": (to_par_sum / holes) if holes else None,
+            }
+        )
+
+    return results
+
+
+def score_variance_by_hole(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
+    """
+    Aggregate scoring consistency by hole using score standard deviation.
+
+    Higher standard deviation indicates less consistent scoring on that hole.
+    """
+    by_hole: Dict[int, Dict[str, Any]] = {}
+
+    for round_obj in rounds:
+        if not round_obj.course:
+            continue
+
+        for hole_score in _valid_hole_scores(round_obj):
+            if hole_score.hole_number is None or hole_score.strokes is None:
+                continue
+
+            hole = round_obj.course.get_hole(hole_score.hole_number)
+            if not hole or hole.par is None:
+                continue
+
+            entry = by_hole.setdefault(
+                hole_score.hole_number,
+                {"hole_number": hole_score.hole_number, "par": hole.par, "strokes": []},
+            )
+            entry["strokes"].append(hole_score.strokes)
+
+    rows: List[Dict[str, Any]] = []
+    for hole_number in sorted(by_hole):
+        entry = by_hole[hole_number]
+        strokes: List[int] = entry["strokes"]
+        sample_size = len(strokes)
+        mean_score = sum(strokes) / sample_size if sample_size else 0.0
+        variance = (
+            sum((score - mean_score) ** 2 for score in strokes) / sample_size if sample_size else 0.0
+        )
+        rows.append(
+            {
+                "hole_number": hole_number,
+                "par": entry["par"],
+                "sample_size": sample_size,
+                "average_score": mean_score if sample_size else None,
+                "score_variance": variance if sample_size else None,
+                "score_std_dev": math.sqrt(variance) if sample_size else None,
+            }
+        )
+
+    rows.sort(key=lambda row: (-(row["score_std_dev"] or 0.0), row["hole_number"]))
+    for rank, row in enumerate(rows, start=1):
+        row["variance_rank"] = rank
+
+    return rows
+
+
 def scoring_vs_hole_handicap(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
     """
     Aggregate average score-to-par by hole handicap.
@@ -486,6 +622,153 @@ def scoring_vs_hole_handicap(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
                 "handicap": handicap,
                 "average_to_par": sum(values) / len(values),
                 "sample_size": len(values),
+            }
+        )
+
+    return results
+
+
+def average_score_relative_to_par_by_hole(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
+    """
+    Aggregate average score and average score-to-par by hole number.
+
+    Intended for rounds played on the same course.
+    """
+    by_hole: Dict[int, Dict[str, Any]] = {}
+
+    for round_obj in rounds:
+        if not round_obj.course:
+            continue
+
+        for hole_score in _valid_hole_scores(round_obj):
+            if hole_score.hole_number is None or hole_score.strokes is None:
+                continue
+            hole = round_obj.course.get_hole(hole_score.hole_number)
+            if not hole or hole.par is None:
+                continue
+
+            entry = by_hole.setdefault(
+                hole_score.hole_number,
+                {"hole_number": hole_score.hole_number, "par": hole.par, "strokes": [], "to_par": []},
+            )
+            entry["strokes"].append(hole_score.strokes)
+            entry["to_par"].append(hole_score.strokes - hole.par)
+
+    results: List[Dict[str, Any]] = []
+    for hole_number in sorted(by_hole):
+        entry = by_hole[hole_number]
+        strokes: List[int] = entry["strokes"]
+        to_par: List[int] = entry["to_par"]
+        results.append(
+            {
+                "hole_number": hole_number,
+                "par": entry["par"],
+                "average_score": sum(strokes) / len(strokes),
+                "average_to_par": sum(to_par) / len(to_par),
+                "sample_size": len(strokes),
+            }
+        )
+
+    return results
+
+
+def course_difficulty_profile_by_hole(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
+    """
+    Return hole difficulty sorted from hardest to easiest for a single course.
+
+    Hardest is defined as the highest average score-to-par.
+    """
+    rows = average_score_relative_to_par_by_hole(rounds)
+    rows.sort(key=lambda row: (-row["average_to_par"], row["hole_number"]))
+    for index, row in enumerate(rows, start=1):
+        row["difficulty_rank"] = index
+    return rows
+
+
+def gir_percentage_by_hole(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
+    """Aggregate GIR percentage by hole number for rounds on the same course."""
+    by_hole: Dict[int, Dict[str, Any]] = {}
+
+    for round_obj in rounds:
+        if not round_obj.course:
+            continue
+
+        for hole_score in _valid_hole_scores(round_obj):
+            if hole_score.hole_number is None or hole_score.green_in_regulation is None:
+                continue
+
+            hole = round_obj.course.get_hole(hole_score.hole_number)
+            if not hole or hole.par is None:
+                continue
+
+            entry = by_hole.setdefault(
+                hole_score.hole_number,
+                {
+                    "hole_number": hole_score.hole_number,
+                    "par": hole.par,
+                    "gir_hits": 0,
+                    "sample_size": 0,
+                },
+            )
+
+            entry["sample_size"] += 1
+            if hole_score.green_in_regulation:
+                entry["gir_hits"] += 1
+
+    results: List[Dict[str, Any]] = []
+    for hole_number in sorted(by_hole):
+        entry = by_hole[hole_number]
+        sample_size = entry["sample_size"]
+        gir_hits = entry["gir_hits"]
+        results.append(
+            {
+                "hole_number": hole_number,
+                "par": entry["par"],
+                "gir_hits": gir_hits,
+                "sample_size": sample_size,
+                "gir_percentage": (gir_hits / sample_size) * 100.0 if sample_size else 0.0,
+            }
+        )
+
+    return results
+
+
+def average_putts_by_hole(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
+    """Aggregate average putts by hole number for rounds on the same course."""
+    by_hole: Dict[int, Dict[str, Any]] = {}
+
+    for round_obj in rounds:
+        if not round_obj.course:
+            continue
+
+        for hole_score in _valid_hole_scores(round_obj):
+            if hole_score.hole_number is None or hole_score.putts is None:
+                continue
+
+            hole = round_obj.course.get_hole(hole_score.hole_number)
+            if not hole or hole.par is None:
+                continue
+
+            entry = by_hole.setdefault(
+                hole_score.hole_number,
+                {
+                    "hole_number": hole_score.hole_number,
+                    "par": hole.par,
+                    "putts": [],
+                },
+            )
+            entry["putts"].append(hole_score.putts)
+
+    results: List[Dict[str, Any]] = []
+    for hole_number in sorted(by_hole):
+        entry = by_hole[hole_number]
+        putts: List[int] = entry["putts"]
+        results.append(
+            {
+                "hole_number": hole_number,
+                "par": entry["par"],
+                "average_putts": sum(putts) / len(putts),
+                "sample_size": len(putts),
             }
         )
 
@@ -570,6 +853,52 @@ def score_type_distribution_per_round(rounds: Iterable[Round]) -> List[Dict[str,
         }
         for name in SCORE_TYPE_ORDER:
             row[name] = (counts[name] / total * 100.0) if total else 0.0
+        results.append(row)
+
+    return results
+
+
+def score_type_distribution_by_hole(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
+    """Score-type percentage distribution by hole number for a specific course."""
+    by_hole: Dict[int, Dict[str, Any]] = {}
+
+    for round_obj in rounds:
+        if not round_obj.course:
+            continue
+
+        for hole_score in _valid_hole_scores(round_obj):
+            if hole_score.hole_number is None or hole_score.strokes is None:
+                continue
+            hole = round_obj.course.get_hole(hole_score.hole_number)
+            if not hole or hole.par is None:
+                continue
+
+            entry = by_hole.setdefault(
+                hole_score.hole_number,
+                {
+                    "hole_number": hole_score.hole_number,
+                    "par": hole.par,
+                    "counts": {name: 0 for name in SCORE_TYPE_ORDER},
+                    "sample_size": 0,
+                },
+            )
+
+            score_type = _score_type_from_to_par(hole_score.strokes - hole.par)
+            entry["counts"][score_type] += 1
+            entry["sample_size"] += 1
+
+    results: List[Dict[str, Any]] = []
+    for hole_number in sorted(by_hole):
+        entry = by_hole[hole_number]
+        sample_size = entry["sample_size"]
+        row: Dict[str, Any] = {
+            "hole_number": hole_number,
+            "par": entry["par"],
+            "sample_size": sample_size,
+        }
+        for name in SCORE_TYPE_ORDER:
+            count = entry["counts"][name]
+            row[name] = (count / sample_size) * 100.0 if sample_size else 0.0
         results.append(row)
 
     return results
