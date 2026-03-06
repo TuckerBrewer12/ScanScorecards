@@ -30,6 +30,12 @@ const SCORE_TYPE_LABELS: Record<string, string> = {
   quad_bogey: "Quad+",
 };
 
+function formatHI(hi: number | null | undefined): string | null {
+  if (hi == null) return null;
+  if (hi < 0) return `+${Math.abs(hi)}`;
+  return String(hi);
+}
+
 function KPICard({
   label,
   value,
@@ -37,7 +43,7 @@ function KPICard({
   accentClass = "border-l-primary",
 }: {
   label: string;
-  value: number | null | undefined;
+  value: number | string | null | undefined;
   suffix?: string;
   accentClass?: string;
 }) {
@@ -101,7 +107,9 @@ export function AnalyticsPage({ userId }: { userId: string }) {
     );
   }
 
-  const { kpis, score_trend, gir_trend, putts_trend, score_type_distribution, scoring_by_par, scoring_by_handicap, gir_vs_non_gir } = data;
+  const { kpis, score_trend, gir_trend, putts_trend, scoring_by_par, scoring_by_handicap, gir_vs_non_gir } = data;
+  // Filter out rounds with no linked course — they have holes_counted=0 and create blank gaps
+  const score_type_distribution = data.score_type_distribution.filter((r) => r.holes_counted > 0);
 
   return (
     <div>
@@ -138,8 +146,9 @@ export function AnalyticsPage({ userId }: { userId: string }) {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <KPICard label="Scoring Average" value={kpis.scoring_average} accentClass="border-l-primary" />
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-8">
+        <KPICard label="Handicap Index" value={formatHI(kpis.handicap_index)} accentClass="border-l-primary" />
+        <KPICard label="Scoring Average" value={kpis.scoring_average} accentClass="border-l-gray-300" />
         <KPICard label="GIR %" value={kpis.gir_percentage} suffix="%" accentClass="border-l-birdie" />
         <KPICard label="Putts per GIR" value={kpis.putts_per_gir} accentClass="border-l-eagle" />
         <KPICard label="Scrambling %" value={kpis.scrambling_percentage} suffix="%" accentClass="border-l-birdie" />

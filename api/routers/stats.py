@@ -6,6 +6,7 @@ from api.dependencies import get_db
 from api.schemas import DashboardResponse
 from api.routers.rounds import summarize_round
 from analytics import stats as analytics
+from analytics import handicap as hcap
 
 router = APIRouter()
 
@@ -34,13 +35,17 @@ async def get_dashboard(user_id: str, db: DatabaseManager = Depends(get_db)):
 
     recent = all_rounds[:5]
 
+    # Use chronological order for handicap calc (DB returns newest-first)
+    rounds_chrono = list(reversed(all_rounds))
+    calculated_hi = hcap.handicap_index(rounds_chrono)
+
     return DashboardResponse(
         total_rounds=len(all_rounds),
         scoring_average=round(sum(scores) / len(scores), 1) if scores else None,
         best_round=best_score,
         best_round_id=best_round_id,
         best_round_course=best_course,
-        handicap=user.handicap,
+        handicap_index=calculated_hi,
         recent_rounds=[summarize_round(r) for r in recent],
         average_putts=round(sum(putts) / len(putts), 1) if putts else None,
         average_gir=round(sum(girs) / len(girs), 1) if girs else None,
@@ -68,6 +73,7 @@ async def get_analytics(
                 "gir_percentage": None,
                 "putts_per_gir": None,
                 "scrambling_percentage": None,
+                "handicap_index": None,
                 "total_rounds": 0,
             },
             "score_trend": [],
@@ -79,6 +85,8 @@ async def get_analytics(
             "scoring_by_par": [],
             "scoring_by_handicap": [],
             "gir_vs_non_gir": [],
+            "handicap_trend": [],
+            "score_differentials": [],
         }
 
     scores = [r.calculate_total_score() for r in rounds if r.calculate_total_score() is not None]
@@ -88,12 +96,15 @@ async def get_analytics(
     scrambling_vals = [r["scrambling_percentage"] for r in scrambling_rows if r["scrambling_percentage"] is not None]
     avg_scrambling = sum(scrambling_vals) / len(scrambling_vals) if scrambling_vals else None
 
+    current_hi = hcap.handicap_index(rounds)
+
     return {
         "kpis": {
             "scoring_average": round(sum(scores) / len(scores), 1) if scores else None,
             "gir_percentage": round(gir_data["gir_percentage"], 1) if gir_data["gir_percentage"] else None,
             "putts_per_gir": round(putts_gir_data["putts_per_gir"], 2) if putts_gir_data["putts_per_gir"] else None,
             "scrambling_percentage": round(avg_scrambling, 1) if avg_scrambling is not None else None,
+            "handicap_index": current_hi,
             "total_rounds": len(rounds),
         },
         "score_trend": analytics.score_trend(rounds),
@@ -105,6 +116,8 @@ async def get_analytics(
         "scoring_by_par": analytics.scoring_by_par(rounds),
         "scoring_by_handicap": analytics.scoring_vs_hole_handicap(rounds),
         "gir_vs_non_gir": analytics.gir_vs_non_gir_score_distribution(rounds),
+        "handicap_trend": hcap.handicap_trend(rounds),
+        "score_differentials": hcap.score_differentials_per_round(rounds),
     }
 
 
