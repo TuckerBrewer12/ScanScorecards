@@ -1,5 +1,7 @@
 """Round API endpoints."""
 
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from typing import List, Optional
@@ -8,6 +10,8 @@ from database.exceptions import NotFoundError
 from api.dependencies import get_db
 from api.schemas import RoundSummaryResponse
 from models import HoleScore
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -28,6 +32,7 @@ class UpdateRoundRequest(BaseModel):
     hole_scores: Optional[List[HoleScoreUpdate]] = None
     notes: Optional[str] = None
     weather_conditions: Optional[str] = None
+    tee_box: Optional[str] = None
 
 
 def summarize_round(r) -> RoundSummaryResponse:
@@ -107,6 +112,8 @@ async def update_round(
             meta_updates["notes"] = req.notes
         if req.weather_conditions is not None:
             meta_updates["weather_conditions"] = req.weather_conditions
+        if req.tee_box is not None:
+            meta_updates["tee_box_played"] = req.tee_box
 
         if meta_updates:
             updated = await db.rounds.update_round(round_id, **meta_updates)
@@ -116,8 +123,7 @@ async def update_round(
     except NotFoundError:
         raise HTTPException(404, "Round not found")
     except Exception as e:
-        import traceback
-        print(f"Update round error: {traceback.format_exc()}")
+        logger.exception("Update round error")
         raise HTTPException(500, f"Update failed: {type(e).__name__}: {str(e)}")
 
 

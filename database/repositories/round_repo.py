@@ -64,10 +64,10 @@ class RoundRepositoryDB:
         if round_row["course_id"]:
             course = await self._course_repo.get_course(str(round_row["course_id"]))
 
-        # Resolve tee color — prefer master tee lookup, fall back to stored string
-        tee_color = await self._resolve_tee_color(conn, round_row["tee_id"])
+        # Resolve tee color — prefer the stored text (editable), fall back to FK lookup
+        tee_color = round_row["tee_box_played"]
         if not tee_color:
-            tee_color = round_row["tee_box_played"]
+            tee_color = await self._resolve_tee_color(conn, round_row["tee_id"])
 
         # Load user_tee if present
         user_tee = None

@@ -6,6 +6,7 @@ import { RoundsPage } from "./pages/RoundsPage";
 import { RoundDetailPage } from "./pages/RoundDetailPage";
 import { CoursesPage } from "./pages/CoursesPage";
 import { ScanPage } from "./pages/ScanPage";
+import { AnalyticsPage } from "./pages/AnalyticsPage";
 import type { ScanState } from "./types/scan";
 import { initialScanState } from "./types/scan";
 import { api } from "./lib/api";
@@ -34,9 +35,10 @@ export default function App() {
         <Routes>
           <Route path="/" element={<DashboardPage userId={userId} />} />
           <Route path="/rounds" element={<RoundsPage userId={userId} />} />
-          <Route path="/rounds/:roundId" element={<RoundDetailPage />} />
-          <Route path="/courses" element={<CoursesPage />} />
+          <Route path="/rounds/:roundId" element={<RoundDetailPage userId={userId} />} />
+          <Route path="/courses" element={<CoursesPage userId={userId} />} />
           <Route path="/scan" element={<ScanPage userId={userId} scanState={scanState} setScanState={setScanState} />} />
+          <Route path="/analytics" element={<AnalyticsPage userId={userId} />} />
         </Routes>
       </AppLayout>
     </BrowserRouter>

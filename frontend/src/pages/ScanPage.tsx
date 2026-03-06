@@ -126,6 +126,14 @@ export function ScanPage({ userId, scanState, setScanState }: ScanPageProps) {
             hole_number: h.number,
             par: h.par,
           })),
+          all_tees: result.round.course?.tees
+            ?.filter((t) => t.color)
+            .map((t) => ({
+              color: t.color,
+              slope_rating: t.slope_rating,
+              course_rating: t.course_rating,
+              hole_yardages: t.hole_yardages ?? {},
+            })),
         }),
       });
 
