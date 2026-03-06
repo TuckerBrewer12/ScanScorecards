@@ -5,16 +5,19 @@
   --color-primary-foreground: #ffffff;
   --color-primary-light: #e8f5e9;
 
-  --color-eagle: #3b82f6;
-  --color-birdie: #22c55e;
-  --color-bogey: #f59e0b;
-  --color-double: #ef4444;
-  --color-triple: #991b1b;
+  /* Score colors — refined, premium palette */
+  --color-eagle: #b45309;      /* amber-700 / gold */
+  --color-birdie: #059669;     /* rich emerald */
+  --color-par: #6b7280;        /* neutral gray — no bg, just reference */
+  --color-bogey: #dc2626;      /* red-600 */
+  --color-double: #1d4ed8;     /* blue-700 */
+  --color-triple: #6b21a8;     /* purple-800 */
 
   --color-sidebar: #1a3a1f;
   --color-sidebar-foreground: #e8f5e9;
   --color-sidebar-hover: #2d5a35;
 
+  --radius-xl: 0.75rem;
   --radius-lg: 0.5rem;
   --radius-md: 0.375rem;
   --radius-sm: 0.25rem;
@@ -31,4 +34,12 @@ body {
 
 #root {
   min-height: 100vh;
+}
+
+.sidebar-gradient {
+  background: linear-gradient(180deg, #1e3d25 0%, #152d1b 100%);
+}
+
+.header-gradient {
+  background: linear-gradient(180deg, #3a6b44 0%, #2d5a35 100%);
 }
