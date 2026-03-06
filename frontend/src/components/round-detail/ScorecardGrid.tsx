@@ -1,4 +1,4 @@
-import type { Round, HoleScore } from "@/types/golf";
+import type { Round } from "@/types/golf";
 import { getScoreColor } from "@/types/golf";
 import { ScoreCell } from "./ScoreCell";
 
@@ -58,8 +58,8 @@ function formatToPar(diff: number | null): string {
 
 function toParColorClass(diff: number | null): string {
   if (diff === null) return "text-gray-400";
-  if (diff < 0) return "text-green-600 font-semibold";
-  if (diff > 0) return "text-red-500";
+  if (diff < 0) return "text-birdie font-semibold";
+  if (diff > 0) return "text-bogey";
   return "text-gray-600";
 }
 
@@ -101,6 +101,11 @@ function NineTable({
   const outPar = sumEffectivePars(data.map((d) => d.effectivePar));
   const outToPar = outScore !== null && outPar !== null ? outScore - outPar : null;
 
+  const outYards = data.reduce((s, d) => s + (d.yardage ?? 0), 0) || null;
+  const totalYards = showTotal
+    ? allHoles.reduce((s, n) => s + (getHoleData(round, n, activeTeeBox).yardage ?? 0), 0) || null
+    : null;
+
   const totalScore = showTotal
     ? sumValues(
         allHoles.map((n) => {
@@ -121,50 +126,55 @@ function NineTable({
   return (
     <table className="w-full border-collapse">
       <thead>
-        <tr className="bg-gray-50 text-xs font-medium text-gray-500 uppercase">
+        <tr className="bg-gray-50/80 text-xs font-bold text-gray-500 uppercase border-b border-gray-100">
           <th className="px-3 py-2 text-left w-20">Hole</th>
           {holes.map((n) => (
             <th key={n} className="px-2 py-2 text-center w-10">{n}</th>
           ))}
-          <th className="px-2 py-2 text-center w-12 bg-gray-100">{label}</th>
-          {showTotal && <th className="px-2 py-2 text-center w-12 bg-gray-200">TOT</th>}
+          <th className="px-2 py-2 text-center w-12 text-gray-600">{label}</th>
+          {showTotal && <th className="px-2 py-2 text-center w-12 text-gray-600">TOT</th>}
         </tr>
       </thead>
-      <tbody>
-        <tr className="border-b border-gray-100 text-xs text-gray-400">
-          <td className="px-3 py-1.5 font-medium">Yards</td>
+      <tbody className="divide-y divide-gray-100">
+        {/* Tee/yards row — secondary */}
+        <tr className="text-xs text-gray-400">
+          <td className="px-3 py-2 font-bold text-gray-500 capitalize">{activeTeeBox ?? "Yards"}</td>
           {data.map((d, i) => (
-            <td key={holes[i]} className="px-2 py-1.5 text-center">{d.yardage ?? "-"}</td>
+            <td key={holes[i]} className="px-2 py-2 text-center">{d.yardage ?? "-"}</td>
           ))}
-          <td className="px-2 py-1.5 text-center bg-gray-50">
-            {data.reduce((s, d) => s + (d.yardage ?? 0), 0) || "-"}
-          </td>
-          {showTotal && <td className="px-2 py-1.5 text-center bg-gray-100" />}
-        </tr>
-        <tr className="border-b border-gray-100 text-xs text-gray-400">
-          <td className="px-3 py-1.5 font-medium">Hcp</td>
-          {data.map((d, i) => (
-            <td key={holes[i]} className="px-2 py-1.5 text-center">
-              {d.hole?.handicap ?? d.score?.handicap_played ?? "-"}
-            </td>
-          ))}
-          <td className="px-2 py-1.5 bg-gray-50" />
-          {showTotal && <td className="px-2 py-1.5 bg-gray-100" />}
-        </tr>
-        <tr className="border-b border-gray-200 text-sm font-medium text-gray-700">
-          <td className="px-3 py-1.5">Par</td>
-          {data.map((d, i) => (
-            <td key={holes[i]} className="px-2 py-1.5 text-center">{d.effectivePar ?? "-"}</td>
-          ))}
-          <td className="px-2 py-1.5 text-center bg-gray-50 font-bold">{outPar ?? "-"}</td>
+          <td className="px-2 py-2 text-center text-gray-500 font-semibold">{outYards ?? "-"}</td>
           {showTotal && (
-            <td className="px-2 py-1.5 text-center bg-gray-100 font-bold">{totalPar ?? "-"}</td>
+            <td className="px-2 py-2 text-center font-bold text-gray-600">{totalYards ?? "-"}</td>
           )}
         </tr>
 
-        {/* Score row — colored circle inputs in edit mode */}
-        <tr className={`border-b border-gray-100 text-sm ${editRowClass}`}>
-          <td className="px-3 py-1.5 font-semibold text-gray-900">Score</td>
+        {/* Hcp row — secondary */}
+        <tr className="text-xs text-gray-400">
+          <td className="px-3 py-2 font-bold text-gray-500">Hcp</td>
+          {data.map((d, i) => (
+            <td key={holes[i]} className="px-2 py-2 text-center">
+              {d.hole?.handicap ?? d.score?.handicap_played ?? "-"}
+            </td>
+          ))}
+          <td className="px-2 py-2" />
+          {showTotal && <td className="px-2 py-2" />}
+        </tr>
+
+        {/* Par row — primary */}
+        <tr className="text-sm font-medium text-gray-700">
+          <td className="px-3 py-2 font-bold text-gray-600">Par</td>
+          {data.map((d, i) => (
+            <td key={holes[i]} className="px-2 py-2 text-center">{d.effectivePar ?? "-"}</td>
+          ))}
+          <td className="px-2 py-2 text-center font-bold text-gray-700">{outPar ?? "-"}</td>
+          {showTotal && (
+            <td className="px-2 py-2 text-center font-bold text-gray-700">{totalPar ?? "-"}</td>
+          )}
+        </tr>
+
+        {/* Score row — primary */}
+        <tr className={`text-sm ${editRowClass}`}>
+          <td className="px-3 py-2 font-bold text-gray-800">Score</td>
           {holes.map((n, i) => {
             if (!editMode) {
               return <ScoreCell key={n} strokes={data[i].score?.strokes ?? null} par={data[i].effectivePar} />;
@@ -176,10 +186,12 @@ function NineTable({
                 ? getScoreColor(strokes, par)
                 : "bg-white border-2 border-dashed border-gray-300 text-gray-400";
             const diff = strokes !== null && par !== null ? strokes - par : null;
+            const isOverPar = diff !== null && diff >= 1;
+            const shapeClass = isOverPar ? "rounded-sm" : "rounded-full";
             const ringClass =
-              diff === -1 ? "ring-2 ring-birdie" : diff !== null && diff >= 1 ? "ring-1 ring-current" : "";
+              diff === -1 ? "ring-2 ring-birdie/50" : diff !== null && diff >= 1 ? "ring-1 ring-bogey/40" : "";
             return (
-              <td key={n} className="px-1 py-1.5 text-center">
+              <td key={n} className="px-1 py-1 text-center">
                 <input
                   type="text"
                   inputMode="numeric"
@@ -192,50 +204,47 @@ function NineTable({
                     const num = parseInt(v, 10);
                     if (!isNaN(num)) onScoreChange?.(n, "strokes", num);
                   }}
-                  className={`w-8 h-8 text-center text-sm font-semibold rounded-full focus:outline-none focus:ring-2 focus:ring-primary/40 ${colorClass} ${ringClass}`}
+                  className={`w-7 h-7 text-center text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/40 ${shapeClass} ${colorClass} ${ringClass}`}
                 />
               </td>
             );
           })}
-          <td className="px-2 py-1.5 text-center bg-gray-50 font-bold text-gray-900">
-            {outScore ?? "-"}
-          </td>
+          <td className="px-2 py-1 text-center font-bold text-gray-900">{outScore ?? "-"}</td>
           {showTotal && (
-            <td className="px-2 py-1.5 text-center bg-gray-100 font-bold text-lg text-gray-900">
-              {totalScore ?? "-"}
-            </td>
+            <td className="px-2 py-1 text-center font-bold text-lg text-gray-900">{totalScore ?? "-"}</td>
           )}
         </tr>
 
-        <tr className="border-b border-gray-200 text-xs">
-          <td className="px-3 py-1.5 font-medium text-gray-500">To Par</td>
+        {/* To Par row */}
+        <tr className="text-xs">
+          <td className="px-3 py-2 font-bold text-gray-600">To Par</td>
           {holes.map((n, i) => {
             const diff =
               effectiveStrokes[i] != null && data[i].effectivePar != null
                 ? effectiveStrokes[i]! - data[i].effectivePar!
                 : null;
             return (
-              <td key={n} className={`px-2 py-1.5 text-center ${toParColorClass(diff)}`}>
+              <td key={n} className={`px-2 py-2 text-center ${toParColorClass(diff)}`}>
                 {formatToPar(diff)}
               </td>
             );
           })}
-          <td className={`px-2 py-1.5 text-center bg-gray-50 font-bold ${toParColorClass(outToPar)}`}>
+          <td className={`px-2 py-2 text-center font-bold ${toParColorClass(outToPar)}`}>
             {formatToPar(outToPar)}
           </td>
           {showTotal && (
-            <td className={`px-2 py-1.5 text-center bg-gray-100 font-bold text-sm ${toParColorClass(totalToPar)}`}>
+            <td className={`px-2 py-2 text-center font-bold text-sm ${toParColorClass(totalToPar)}`}>
               {formatToPar(totalToPar)}
             </td>
           )}
         </tr>
 
-        {/* Putts row — inputs in edit mode */}
-        <tr className={`border-b border-gray-100 text-xs text-gray-500 ${editRowClass}`}>
-          <td className="px-3 py-1.5 font-medium">Putts</td>
+        {/* Putts row — secondary */}
+        <tr className={`text-xs text-gray-400 ${editRowClass}`}>
+          <td className="px-3 py-2 font-bold text-gray-500">Putts</td>
           {holes.map((n, i) =>
             editMode ? (
-              <td key={n} className="px-1 py-1.5 text-center">
+              <td key={n} className="px-1 py-2 text-center">
                 <input
                   type="text"
                   inputMode="numeric"
@@ -252,19 +261,18 @@ function NineTable({
                 />
               </td>
             ) : (
-              <td key={n} className="px-2 py-1.5 text-center">{data[i].score?.putts ?? "-"}</td>
+              <td key={n} className="px-2 py-2 text-center">{data[i].score?.putts ?? "-"}</td>
             )
           )}
-          <td className="px-2 py-1.5 text-center bg-gray-50">
-            {sumValues(effectivePutts) ?? "-"}
-          </td>
-          {showTotal && <td className="px-2 py-1.5 bg-gray-100" />}
+          <td className="px-2 py-2 text-center text-gray-500 font-semibold">{sumValues(effectivePutts) ?? "-"}</td>
+          {showTotal && <td className="px-2 py-2" />}
         </tr>
 
-        <tr className="text-xs text-gray-500">
-          <td className="px-3 py-1.5 font-medium">GIR</td>
+        {/* GIR row — secondary */}
+        <tr className="text-xs text-gray-400">
+          <td className="px-3 py-2 font-bold text-gray-500">GIR</td>
           {data.map((d, i) => (
-            <td key={holes[i]} className="px-2 py-1.5 text-center">
+            <td key={holes[i]} className="px-2 py-2 text-center">
               {d.score?.green_in_regulation === true
                 ? "●"
                 : d.score?.green_in_regulation === false
@@ -272,10 +280,10 @@ function NineTable({
                 : "-"}
             </td>
           ))}
-          <td className="px-2 py-1.5 text-center bg-gray-50">
+          <td className="px-2 py-2 text-center text-gray-500 font-semibold">
             {data.filter((d) => d.score?.green_in_regulation === true).length || "-"}
           </td>
-          {showTotal && <td className="px-2 py-1.5 bg-gray-100" />}
+          {showTotal && <td className="px-2 py-2" />}
         </tr>
       </tbody>
     </table>
@@ -304,19 +312,19 @@ export function ScorecardGrid({
     <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-x-auto">
       <div className="min-w-[700px]">
         {/* Scorecard header */}
-        <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between">
+        <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between header-gradient rounded-t-xl">
           <div>
-            <div className="font-bold text-gray-900 text-base">
+            <div className="font-bold text-white text-base">
               {round.course?.name ?? round.course_name_played ?? "Unknown Course"}
             </div>
             {round.course?.location && (
-              <div className="text-xs text-gray-500">{round.course.location}</div>
+              <div className="text-xs text-white/50">{round.course.location}</div>
             )}
           </div>
-          <div className="text-right text-sm text-gray-600 space-y-0.5">
+          <div className="text-right text-sm text-white/80 space-y-0.5">
             {editMode ? (
               <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-500">Tee:</span>
+                <span className="text-xs text-white/60">Tee:</span>
                 {availableTees && availableTees.length > 0 ? (
                   <select
                     value={editedTeeBox ?? ""}
@@ -342,10 +350,10 @@ export function ScorecardGrid({
             ) : (
               <>
                 {round.tee_box && (
-                  <div><span className="font-medium">{round.tee_box} tees</span></div>
+                  <div><span className="font-medium text-white">{round.tee_box} tees</span></div>
                 )}
                 {tee && (
-                  <div className="text-xs text-gray-400">
+                  <div className="text-xs text-white/50">
                     {tee.course_rating != null && `Rating ${tee.course_rating}`}
                     {tee.slope_rating != null && ` / Slope ${tee.slope_rating}`}
                   </div>
@@ -364,7 +372,11 @@ export function ScorecardGrid({
           activeTeeBox={activeTeeBox}
           onScoreChange={onScoreChange}
         />
-        <div className="border-t-2 border-gray-300" />
+        <div className="flex items-center gap-3 px-4 py-1.5 bg-gray-50/60 border-y border-gray-100">
+          <div className="flex-1 h-px bg-gray-200" />
+          <span className="text-xs font-semibold text-gray-400 tracking-widest uppercase">Back Nine</span>
+          <div className="flex-1 h-px bg-gray-200" />
+        </div>
         <NineTable
           round={round}
           holes={back}

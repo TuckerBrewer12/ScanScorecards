@@ -115,12 +115,12 @@ export function getScoreType(strokes: number, par: number): ScoreType {
 
 export function getScoreColor(strokes: number, par: number): string {
   const diff = strokes - par;
-  if (diff <= -2) return "bg-eagle text-white";
+  if (diff <= -2) return "bg-eagle text-white ring-2 ring-yellow-300";
   if (diff === -1) return "bg-birdie text-white";
-  if (diff === 0) return "";
-  if (diff === 1) return "bg-amber-100 text-amber-800";
-  if (diff === 2) return "bg-red-100 text-red-700";
-  return "bg-red-300 text-red-900";
+  if (diff === 0) return "bg-gray-100 text-gray-700";
+  if (diff === 1) return "bg-red-400 text-white";
+  if (diff === 2) return "bg-blue-500 text-white";
+  return "bg-purple-600 text-white";
 }
 
 export function formatToPar(toPar: number | null): string {

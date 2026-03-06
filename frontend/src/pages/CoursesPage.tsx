@@ -3,11 +3,13 @@ import { MapPin } from "lucide-react";
 import { api } from "@/lib/api";
 import type { CourseSummary } from "@/types/golf";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { CourseDetailPanel } from "@/components/course-detail/CourseDetailPanel";
 
 export function CoursesPage({ userId }: { userId: string }) {
   const [courses, setCourses] = useState<CourseSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
 
   const loadCourses = useCallback(async () => {
     setLoading(true);
@@ -22,6 +24,15 @@ export function CoursesPage({ userId }: { userId: string }) {
     const timer = setTimeout(loadCourses, search ? 300 : 0);
     return () => clearTimeout(timer);
   }, [loadCourses, search]);
+
+  if (selectedCourseId) {
+    return (
+      <CourseDetailPanel
+        courseId={selectedCourseId}
+        onBack={() => setSelectedCourseId(null)}
+      />
+    );
+  }
 
   return (
     <div>
@@ -49,7 +60,8 @@ export function CoursesPage({ userId }: { userId: string }) {
           {courses.map((c) => (
             <div
               key={c.id}
-              className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm hover:shadow-md transition-shadow"
+              onClick={() => setSelectedCourseId(c.id)}
+              className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm hover:shadow-md hover:border-primary/40 transition-all cursor-pointer"
             >
               <h3 className="font-semibold text-gray-900 mb-1">
                 {c.name ?? "Unknown"}
