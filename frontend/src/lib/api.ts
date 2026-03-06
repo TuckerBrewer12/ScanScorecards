@@ -1,4 +1,5 @@
 import type { DashboardData, RoundSummary, Round, CourseSummary, Course, User } from "@/types/golf";
+import type { AnalyticsData, RoundComparison } from "@/types/analytics";
 
 const BASE_URL = "/api";
 
@@ -85,4 +86,10 @@ export const api = {
 
   getUserByEmail: (email: string) =>
     fetchJSON<User>(`/users/by-email/${encodeURIComponent(email)}`),
+
+  getAnalytics: (userId: string, limit = 50) =>
+    fetchJSON<AnalyticsData>(`/stats/analytics/${userId}?limit=${limit}`),
+
+  getRoundComparison: (userId: string, roundId: string) =>
+    fetchJSON<RoundComparison>(`/stats/compare/${userId}/${roundId}`),
 };

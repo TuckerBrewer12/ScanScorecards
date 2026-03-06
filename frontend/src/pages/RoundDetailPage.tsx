@@ -1,15 +1,16 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Pencil, Trash2 } from "lucide-react";
+import { ArrowLeft, Pencil, Trash2, ChevronDown, ChevronUp } from "lucide-react";
 import { api } from "@/lib/api";
 import type { Round } from "@/types/golf";
 import { formatToPar } from "@/types/golf";
+import type { RoundComparison } from "@/types/analytics";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { ScorecardGrid } from "@/components/round-detail/ScorecardGrid";
 
 type EditedScores = Record<number, { strokes: number | null; putts: number | null }>;
 
-export function RoundDetailPage() {
+export function RoundDetailPage({ userId }: { userId: string }) {
   const { roundId } = useParams<{ roundId: string }>();
   const navigate = useNavigate();
   const [round, setRound] = useState<Round | null>(null);
@@ -20,6 +21,8 @@ export function RoundDetailPage() {
   const [editedScores, setEditedScores] = useState<EditedScores>({});
   const [editedTeeBox, setEditedTeeBox] = useState("");
   const [availableTees, setAvailableTees] = useState<string[]>([]);
+  const [comparison, setComparison] = useState<RoundComparison | null>(null);
+  const [showComparison, setShowComparison] = useState(false);
 
   useEffect(() => {
     if (!roundId) return;
@@ -28,6 +31,7 @@ export function RoundDetailPage() {
       setLoading(false);
     });
   }, [roundId]);
+
 
   const enterEditMode = useCallback(async () => {
     if (!round) return;
@@ -272,6 +276,77 @@ export function RoundDetailPage() {
         onScoreChange={handleScoreChange}
         onTeeBoxChange={setEditedTeeBox}
       />
+
+      {/* Round comparison panel */}
+      <div className="mt-4 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <button
+          onClick={async () => {
+            if (!showComparison && !comparison && roundId) {
+              try {
+                const c = await api.getRoundComparison(userId, roundId);
+                setComparison(c);
+              } catch {
+                // silently skip if not enough history
+              }
+            }
+            setShowComparison((v) => !v);
+          }}
+          className="w-full flex items-center justify-between px-5 py-3 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition-colors"
+        >
+          <span>How did this round compare?</span>
+          {showComparison ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+        </button>
+
+        {showComparison && comparison && (
+          <div className="px-5 pb-5 border-t border-gray-100">
+            <table className="w-full text-sm mt-3">
+              <thead>
+                <tr className="text-xs font-bold text-gray-400 uppercase tracking-wide">
+                  <th className="text-left py-2 pr-4">Metric</th>
+                  {comparison.score.map((row) => (
+                    <th key={row.label} className="text-center py-2 px-3">{row.label}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {[
+                  { label: "Score", rows: comparison.score, key: "primary_value" as const },
+                  { label: "Putts", rows: comparison.putts, key: "primary_value" as const },
+                  { label: "GIR", rows: comparison.gir, key: "primary_value" as const },
+                ].map(({ label, rows }) => {
+                  const thisRound = rows[0]?.primary_value;
+                  return (
+                    <tr key={label}>
+                      <td className="py-2 pr-4 font-semibold text-gray-700">{label}</td>
+                      {rows.map((row, i) => {
+                        const val = row.primary_value;
+                        const avg = i > 0 ? row.primary_value : null;
+                        const better =
+                          avg !== null && thisRound !== null
+                            ? label === "Score" || label === "Putts"
+                              ? thisRound < avg
+                              : thisRound > avg
+                            : false;
+                        const colorClass =
+                          i === 0
+                            ? "text-gray-900 font-bold"
+                            : better
+                            ? "text-birdie font-medium"
+                            : "text-bogey font-medium";
+                        return (
+                          <td key={row.label} className={`text-center py-2 px-3 ${colorClass}`}>
+                            {val != null ? (Number.isInteger(val) ? val : val.toFixed(1)) : "—"}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
