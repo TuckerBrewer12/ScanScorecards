@@ -132,3 +132,31 @@ async def get_round_comparison(
         "putts_per_gir": analytics.putts_per_gir_comparison(rounds, round_index=round_index),
         "scrambling": analytics.scrambling_comparison(rounds, round_index=round_index),
     }
+
+
+@router.get("/course-analytics/{user_id}/{course_id}")
+async def get_course_analytics(
+    user_id: str,
+    course_id: str,
+    db: DatabaseManager = Depends(get_db),
+):
+    user = await db.users.get_user(user_id)
+    if not user:
+        raise HTTPException(404, "User not found")
+
+    rounds_desc = await db.rounds.get_rounds_for_user(user_id, limit=500, offset=0)
+    rounds = list(reversed(rounds_desc))  # chronological order
+    course_rounds = [r for r in rounds if r.course and str(r.course.id) == course_id]
+
+    return {
+        "course_id": course_id,
+        "rounds_played": len(course_rounds),
+        "score_trend_on_course": analytics.score_trend_on_this_course(course_rounds),
+        "average_score_relative_to_par_by_hole": analytics.average_score_relative_to_par_by_hole(course_rounds),
+        "gir_percentage_by_hole": analytics.gir_percentage_by_hole(course_rounds),
+        "average_putts_by_hole": analytics.average_putts_by_hole(course_rounds),
+        "score_type_distribution_by_hole": analytics.score_type_distribution_by_hole(course_rounds),
+        "course_difficulty_profile_by_hole": analytics.course_difficulty_profile_by_hole(course_rounds),
+        "average_score_when_gir_vs_missed": analytics.average_score_when_gir_vs_missed(course_rounds),
+        "score_variance_by_hole": analytics.score_variance_by_hole(course_rounds),
+    }

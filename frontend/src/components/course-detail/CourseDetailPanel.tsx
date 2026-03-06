@@ -1,10 +1,26 @@
 import { useEffect, useState } from "react";
 import { ArrowLeft, MapPin } from "lucide-react";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Legend,
+  Line,
+  LineChart,
+  ReferenceLine,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import { api } from "@/lib/api";
 import type { Course, Tee } from "@/types/golf";
+import type { CourseAnalyticsData } from "@/types/analytics";
 
 interface CourseDetailPanelProps {
   courseId: string;
+  userId: string;
   onBack: () => void;
 }
 
@@ -121,26 +137,45 @@ function NineTable({
   );
 }
 
-export function CourseDetailPanel({ courseId, onBack }: CourseDetailPanelProps) {
+function ChartCard({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+      <div className="text-sm font-semibold text-gray-700 mb-4">{title}</div>
+      {children}
+    </div>
+  );
+}
+
+export function CourseDetailPanel({ courseId, userId, onBack }: CourseDetailPanelProps) {
   const [course, setCourse] = useState<Course | null>(null);
+  const [analytics, setAnalytics] = useState<CourseAnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedTeeColor, setSelectedTeeColor] = useState<string | null>(null);
 
   useEffect(() => {
+    let isMounted = true;
     setLoading(true);
-    api.getCourse(courseId).then((c) => {
-      setCourse(c);
-      const longest = c.tees.reduce<Tee | null>((best, t) => {
-        const yards = t.total_yardage ?? Object.values(t.hole_yardages).reduce((s, y) => s + y, 0);
-        const bestYards = best
-          ? (best.total_yardage ?? Object.values(best.hole_yardages).reduce((s, y) => s + y, 0))
-          : -1;
-        return yards > bestYards ? t : best;
-      }, null);
-      setSelectedTeeColor(longest?.color ?? null);
-      setLoading(false);
-    });
-  }, [courseId]);
+    Promise.all([api.getCourse(courseId), api.getCourseAnalytics(userId, courseId)])
+      .then(([c, a]) => {
+        if (!isMounted) return;
+        setCourse(c);
+        setAnalytics(a);
+        const longest = c.tees.reduce<Tee | null>((best, t) => {
+          const yards = t.total_yardage ?? Object.values(t.hole_yardages).reduce((s, y) => s + y, 0);
+          const bestYards = best
+            ? (best.total_yardage ?? Object.values(best.hole_yardages).reduce((s, y) => s + y, 0))
+            : -1;
+          return yards > bestYards ? t : best;
+        }, null);
+        setSelectedTeeColor(longest?.color ?? null);
+      })
+      .finally(() => {
+        if (isMounted) setLoading(false);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, [courseId, userId]);
 
   if (loading) {
     return (
@@ -224,6 +259,148 @@ export function CourseDetailPanel({ courseId, onBack }: CourseDetailPanelProps) 
           <div className="border-t-2 border-gray-300" />
           <NineTable course={course} holes={back} label="IN" showTotal selectedTee={selectedTee} />
         </div>
+      </div>
+
+      <div className="mt-8">
+        <h3 className="text-lg font-semibold text-gray-900 mb-1">Course Performance Analytics</h3>
+        <div className="text-sm text-gray-500 mb-4">
+          {analytics?.rounds_played ?? 0} round{(analytics?.rounds_played ?? 0) === 1 ? "" : "s"} played on this course
+        </div>
+
+        {!analytics || analytics.rounds_played === 0 ? (
+          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 text-gray-500">
+            No rounds on this course yet for analytics.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+            <ChartCard title="Score Trend On This Course">
+              <ResponsiveContainer width="100%" height={240}>
+                <LineChart data={analytics.score_trend_on_course} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+                  <XAxis
+                    dataKey="date"
+                    tick={{ fontSize: 10, fill: "#9ca3af" }}
+                    tickLine={false}
+                    axisLine={false}
+                    tickFormatter={(v) => (typeof v === "string" ? v.slice(5, 10) : "")}
+                  />
+                  <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
+                  <Tooltip />
+                  <Line type="monotone" dataKey="total_score" stroke="#0f172a" strokeWidth={2} dot={false} />
+                </LineChart>
+              </ResponsiveContainer>
+            </ChartCard>
+
+            <ChartCard title="Average Score To Par By Hole">
+              <ResponsiveContainer width="100%" height={240}>
+                <BarChart data={analytics.average_score_relative_to_par_by_hole} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
+                  <XAxis dataKey="hole_number" tick={{ fontSize: 10, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
+                  <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
+                  <Tooltip formatter={(v: number | string | undefined) => [Number(v ?? 0).toFixed(2), "Avg to Par"]} />
+                  <ReferenceLine y={0} stroke="#d1d5db" />
+                  <Bar dataKey="average_to_par">
+                    {analytics.average_score_relative_to_par_by_hole.map((row) => (
+                      <Cell key={row.hole_number} fill={row.average_to_par <= 0 ? "#059669" : "#f87171"} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </ChartCard>
+
+            <ChartCard title="GIR Percentage By Hole">
+              <ResponsiveContainer width="100%" height={240}>
+                <BarChart data={analytics.gir_percentage_by_hole} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
+                  <XAxis dataKey="hole_number" tick={{ fontSize: 10, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
+                  <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
+                  <Tooltip formatter={(v: number | string | undefined) => [`${Number(v ?? 0).toFixed(1)}%`, "GIR %"]} />
+                  <Bar dataKey="gir_percentage" fill="#16a34a" />
+                </BarChart>
+              </ResponsiveContainer>
+            </ChartCard>
+
+            <ChartCard title="Average Putts By Hole">
+              <ResponsiveContainer width="100%" height={240}>
+                <BarChart data={analytics.average_putts_by_hole} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
+                  <XAxis dataKey="hole_number" tick={{ fontSize: 10, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
+                  <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
+                  <Tooltip formatter={(v: number | string | undefined) => [Number(v ?? 0).toFixed(2), "Avg putts"]} />
+                  <Bar dataKey="average_putts" fill="#6b7280" />
+                </BarChart>
+              </ResponsiveContainer>
+            </ChartCard>
+
+            <ChartCard title="Score Type Distribution By Hole">
+              <ResponsiveContainer width="100%" height={260}>
+                <BarChart data={analytics.score_type_distribution_by_hole} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
+                  <XAxis dataKey="hole_number" tick={{ fontSize: 10, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
+                  <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
+                  <Tooltip formatter={(v: number | string | undefined) => [`${Number(v ?? 0).toFixed(1)}%`, ""]} />
+                  <Legend wrapperStyle={{ fontSize: 11 }} />
+                  <Bar dataKey="birdie" stackId="a" fill="#059669" name="Birdie" />
+                  <Bar dataKey="par" stackId="a" fill="#9ca3af" name="Par" />
+                  <Bar dataKey="bogey" stackId="a" fill="#f87171" name="Bogey" />
+                  <Bar dataKey="double_bogey" stackId="a" fill="#60a5fa" name="Double" />
+                  <Bar dataKey="triple_bogey" stackId="a" fill="#a78bfa" name="Triple" />
+                  <Bar dataKey="quad_bogey" stackId="a" fill="#6d28d9" name="Quad+" />
+                </BarChart>
+              </ResponsiveContainer>
+            </ChartCard>
+
+            <ChartCard title="Course Difficulty Profile (Hardest To Easiest)">
+              <ResponsiveContainer width="100%" height={260}>
+                <BarChart
+                  data={analytics.course_difficulty_profile_by_hole.map((row) => ({ ...row, label: `H${row.hole_number}` }))}
+                  margin={{ top: 4, right: 8, left: -20, bottom: 0 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
+                  <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
+                  <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
+                  <Tooltip formatter={(v: number | string | undefined) => [Number(v ?? 0).toFixed(2), "Avg to Par"]} />
+                  <ReferenceLine y={0} stroke="#d1d5db" />
+                  <Bar dataKey="average_to_par">
+                    {analytics.course_difficulty_profile_by_hole.map((row) => (
+                      <Cell key={row.hole_number} fill={row.average_to_par <= 0 ? "#059669" : "#f87171"} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </ChartCard>
+
+            <ChartCard title="Average Score When GIR Is Hit vs Missed">
+              <ResponsiveContainer width="100%" height={240}>
+                <BarChart data={analytics.average_score_when_gir_vs_missed} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
+                  <XAxis dataKey="bucket" tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
+                  <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
+                  <Tooltip formatter={(v: number | string | undefined) => [Number(v ?? 0).toFixed(2), "Avg score"]} />
+                  <Bar dataKey="average_score">
+                    <Cell fill="#16a34a" />
+                    <Cell fill="#ef4444" />
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </ChartCard>
+
+            <ChartCard title="Score Variance By Hole (Std Dev)">
+              <ResponsiveContainer width="100%" height={260}>
+                <BarChart
+                  data={analytics.score_variance_by_hole.map((row) => ({ ...row, label: `H${row.hole_number}` }))}
+                  margin={{ top: 4, right: 8, left: -20, bottom: 0 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
+                  <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
+                  <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
+                  <Tooltip formatter={(v: number | string | undefined) => [Number(v ?? 0).toFixed(2), "Std dev"]} />
+                  <Bar dataKey="score_std_dev" fill="#f59e0b" />
+                </BarChart>
+              </ResponsiveContainer>
+            </ChartCard>
+          </div>
+        )}
       </div>
     </div>
   );
