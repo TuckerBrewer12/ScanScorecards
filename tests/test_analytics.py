@@ -4,6 +4,7 @@ import pytest
 
 from analytics.stats import (
     average_score_relative_to_par_by_hole,
+    average_putts_by_hole,
     gir_comparison,
     gir_per_round,
     gir_percentage_by_hole,
@@ -276,6 +277,22 @@ def test_gir_percentage_by_hole():
     assert by_hole[2]["sample_size"] == 2
     assert by_hole[2]["gir_hits"] == 2
     assert by_hole[2]["gir_percentage"] == pytest.approx(100.0)
+
+
+def test_average_putts_by_hole():
+    rounds = _build_rounds()
+    rows = average_putts_by_hole(rounds)
+
+    assert len(rows) == 18
+    by_hole = {row["hole_number"]: row for row in rows}
+
+    # Hole 1: putts are 2 and 2 -> 2.0 avg
+    assert by_hole[1]["sample_size"] == 2
+    assert by_hole[1]["average_putts"] == pytest.approx(2.0)
+
+    # Hole 2: putts are 2 and 1 -> 1.5 avg
+    assert by_hole[2]["sample_size"] == 2
+    assert by_hole[2]["average_putts"] == pytest.approx(1.5)
 
 
 def test_score_type_distribution_per_round():

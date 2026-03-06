@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import List
 
 from analytics.visualizations import (
+    plot_average_putts_by_hole,
     plot_average_score_relative_to_par_by_hole,
     plot_gir_percentage_by_hole,
     plot_gir_comparison,
@@ -311,6 +312,11 @@ async def main_async() -> None:
         course_gir_hole_path = course_player_dir / "gir_percentage_by_hole.png"
         fig.savefig(course_gir_hole_path, dpi=150)
         written.append(course_gir_hole_path)
+
+        fig, _ = plot_average_putts_by_hole(course_rounds, course_label=course_label)
+        course_putts_hole_path = course_player_dir / "average_putts_by_hole.png"
+        fig.savefig(course_putts_hole_path, dpi=150)
+        written.append(course_putts_hole_path)
     else:
         print("Skipping course-hole chart: no rounds with course data.")
 

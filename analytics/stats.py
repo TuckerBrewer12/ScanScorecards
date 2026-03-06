@@ -584,6 +584,48 @@ def gir_percentage_by_hole(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
     return results
 
 
+def average_putts_by_hole(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
+    """Aggregate average putts by hole number for rounds on the same course."""
+    by_hole: Dict[int, Dict[str, Any]] = {}
+
+    for round_obj in rounds:
+        if not round_obj.course:
+            continue
+
+        for hole_score in _valid_hole_scores(round_obj):
+            if hole_score.hole_number is None or hole_score.putts is None:
+                continue
+
+            hole = round_obj.course.get_hole(hole_score.hole_number)
+            if not hole or hole.par is None:
+                continue
+
+            entry = by_hole.setdefault(
+                hole_score.hole_number,
+                {
+                    "hole_number": hole_score.hole_number,
+                    "par": hole.par,
+                    "putts": [],
+                },
+            )
+            entry["putts"].append(hole_score.putts)
+
+    results: List[Dict[str, Any]] = []
+    for hole_number in sorted(by_hole):
+        entry = by_hole[hole_number]
+        putts: List[int] = entry["putts"]
+        results.append(
+            {
+                "hole_number": hole_number,
+                "par": entry["par"],
+                "average_putts": sum(putts) / len(putts),
+                "sample_size": len(putts),
+            }
+        )
+
+    return results
+
+
 def scoring_by_par(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
     """
     Aggregate scoring performance by hole par (3, 4, 5).
