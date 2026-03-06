@@ -106,4 +106,7 @@ export interface RoundComparison {
   score: ComparisonRow[];
   putts: ComparisonRow[];
   gir: ComparisonRow[];
+  three_putts: ComparisonRow[];
+  putts_per_gir: ComparisonRow[];
+  scrambling: ComparisonRow[];
 }

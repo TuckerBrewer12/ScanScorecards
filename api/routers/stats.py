@@ -124,18 +124,11 @@ async def get_round_comparison(
     if round_index is None:
         raise HTTPException(404, "Round not found in user history")
 
-    score_rows = analytics.score_trend(rounds)
-    putts_rows = analytics.putts_per_round(rounds)
-    gir_rows = analytics.gir_per_round(rounds)
-
     return {
-        "score": analytics.metric_comparison_snapshot(
-            score_rows, primary_key="total_score", secondary_key="to_par", round_index=round_index
-        ),
-        "putts": analytics.metric_comparison_snapshot(
-            putts_rows, primary_key="total_putts", round_index=round_index
-        ),
-        "gir": analytics.metric_comparison_snapshot(
-            gir_rows, primary_key="total_gir", secondary_key="gir_percentage", round_index=round_index
-        ),
+        "score": analytics.score_comparison(rounds, round_index=round_index),
+        "putts": analytics.putts_comparison(rounds, round_index=round_index),
+        "gir": analytics.gir_comparison(rounds, round_index=round_index),
+        "three_putts": analytics.three_putts_comparison(rounds, round_index=round_index),
+        "putts_per_gir": analytics.putts_per_gir_comparison(rounds, round_index=round_index),
+        "scrambling": analytics.scrambling_comparison(rounds, round_index=round_index),
     }
