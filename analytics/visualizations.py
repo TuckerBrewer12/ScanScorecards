@@ -6,6 +6,12 @@ from typing import Iterable, Optional, Sequence
 from models.round import Round
 
 from .stats import (
+    average_score_when_gir_vs_missed,
+    course_difficulty_profile_by_hole,
+    score_variance_by_hole,
+    average_score_relative_to_par_by_hole,
+    average_putts_by_hole,
+    gir_percentage_by_hole,
     gir_per_round,
     overall_gir_percentage,
     overall_putts_per_gir,
@@ -18,7 +24,9 @@ from .stats import (
     scrambling_per_round,
     scrambling_comparison,
     score_comparison,
+    score_trend_on_this_course,
     score_trend,
+    score_type_distribution_by_hole,
     score_type_distribution_per_round,
     scoring_by_par,
     scoring_vs_hole_handicap,
@@ -297,6 +305,83 @@ def plot_gir_vs_non_gir_score_distribution(rounds: Iterable[Round]):
     return fig, ax
 
 
+def plot_average_score_when_gir_vs_missed(
+    rounds: Iterable[Round], course_label: Optional[str] = None
+):
+    """Two-bar chart of average score when GIR is hit vs missed."""
+    plt = _load_plt()
+    rows = average_score_when_gir_vs_missed(rounds)
+    labels = [row["bucket"] for row in rows]
+    values = [row["average_score"] or 0.0 for row in rows]
+    colors = ["#16a34a", "#ef4444"]
+
+    fig, ax = plt.subplots(figsize=(8, 5))
+    ax.bar(labels, values, color=colors, alpha=0.9)
+    title_prefix = f"{course_label}: " if course_label else ""
+    ax.set_title(f"{title_prefix}Average Score When GIR Is Hit vs Missed")
+    ax.set_xlabel("Bucket")
+    ax.set_ylabel("Average Score")
+    ax.grid(axis="y", alpha=0.2)
+
+    for idx, row in enumerate(rows):
+        avg_to_par = row["average_to_par"]
+        holes = row["holes_counted"]
+        if avg_to_par is not None:
+            ax.text(
+                idx,
+                values[idx] + 0.03,
+                f"to par: {avg_to_par:+.2f}\nN={holes}",
+                ha="center",
+                va="bottom",
+                fontsize=9,
+            )
+
+    fig.tight_layout()
+    return fig, ax
+
+
+def plot_score_variance_by_hole(rounds: Iterable[Round], course_label: Optional[str] = None):
+    """Horizontal bar chart of hole score standard deviation."""
+    plt = _load_plt()
+    rows = score_variance_by_hole(rounds)
+    labels = [f"Hole {row['hole_number']}" for row in rows]
+    values = [row["score_std_dev"] or 0.0 for row in rows]
+
+    fig, ax = plt.subplots(figsize=(12, 6))
+    ax.barh(labels, values, color="#f59e0b", alpha=0.9)
+    ax.invert_yaxis()
+    title_prefix = f"{course_label}: " if course_label else ""
+    ax.set_title(f"{title_prefix}Score Variance By Hole (Std Dev)")
+    ax.set_xlabel("Score Standard Deviation")
+    ax.set_ylabel("Hole")
+    ax.grid(axis="x", alpha=0.2)
+    fig.tight_layout()
+    return fig, ax
+
+
+def plot_score_trend_on_this_course(rounds: Sequence[Round], course_label: Optional[str] = None):
+    """Line chart of total score progression on a single course over time."""
+    plt = _load_plt()
+    rows = score_trend_on_this_course(rounds)
+    x_labels = [
+        row["date"].strftime("%Y-%m-%d") if isinstance(row["date"], datetime) else str(row["date"] or f"R{i + 1}")
+        for i, row in enumerate(rows)
+    ]
+    x = list(range(len(rows)))
+    scores = [row["total_score"] for row in rows]
+
+    fig, ax = plt.subplots(figsize=(11, 5))
+    ax.plot(x, scores, color="#0f172a", marker="o", linewidth=1.75)
+    title_prefix = f"{course_label}: " if course_label else ""
+    ax.set_title(f"{title_prefix}Score Trend On This Course")
+    ax.set_xlabel("Round Date")
+    ax.set_ylabel("Total Score")
+    _apply_sparse_xticks(ax, x_labels)
+    ax.grid(axis="y", alpha=0.2)
+    fig.tight_layout()
+    return fig, ax
+
+
 def plot_overall_putts_per_gir(rounds: Iterable[Round]):
     """Single-bar chart for aggregate putts per GIR across all rounds."""
     plt = _load_plt()
@@ -389,6 +474,87 @@ def plot_scoring_by_par(rounds: Iterable[Round]):
     return fig, ax
 
 
+def plot_average_score_relative_to_par_by_hole(
+    rounds: Iterable[Round], course_label: Optional[str] = None
+):
+    """Bar chart: average score-to-par by hole for a specific course."""
+    plt = _load_plt()
+    rows = average_score_relative_to_par_by_hole(rounds)
+    hole_numbers = [str(row["hole_number"]) for row in rows]
+    avg_to_par = [row["average_to_par"] for row in rows]
+    colors = ["#059669" if value <= 0 else "#f87171" for value in avg_to_par]
+
+    fig, ax = plt.subplots(figsize=(12, 5))
+    ax.bar(hole_numbers, avg_to_par, color=colors)
+    title_prefix = f"{course_label}: " if course_label else ""
+    ax.set_title(f"{title_prefix}Average Score To Par By Hole")
+    ax.set_xlabel("Hole")
+    ax.set_ylabel("Average To Par")
+    ax.axhline(0, color="black", linewidth=1, alpha=0.6)
+    ax.grid(axis="y", alpha=0.2)
+    fig.tight_layout()
+    return fig, ax
+
+
+def plot_course_difficulty_profile_by_hole(rounds: Iterable[Round], course_label: Optional[str] = None):
+    """Horizontal bar chart of hole difficulty ranked hardest to easiest."""
+    plt = _load_plt()
+    rows = course_difficulty_profile_by_hole(rounds)
+    hole_numbers = [f"Hole {row['hole_number']}" for row in rows]
+    avg_to_par = [row["average_to_par"] for row in rows]
+    colors = ["#f87171" if value > 0 else "#059669" for value in avg_to_par]
+
+    fig, ax = plt.subplots(figsize=(12, 6))
+    ax.barh(hole_numbers, avg_to_par, color=colors)
+    ax.invert_yaxis()
+    title_prefix = f"{course_label}: " if course_label else ""
+    ax.set_title(f"{title_prefix}Course Difficulty Profile (Hardest To Easiest)")
+    ax.set_xlabel("Average To Par")
+    ax.set_ylabel("Hole")
+    ax.axvline(0, color="black", linewidth=1, alpha=0.6)
+    ax.grid(axis="x", alpha=0.2)
+    fig.tight_layout()
+    return fig, ax
+
+
+def plot_gir_percentage_by_hole(rounds: Iterable[Round], course_label: Optional[str] = None):
+    """Bar chart: GIR percentage by hole for a specific course."""
+    plt = _load_plt()
+    rows = gir_percentage_by_hole(rounds)
+    hole_numbers = [str(row["hole_number"]) for row in rows]
+    values = [row["gir_percentage"] for row in rows]
+
+    fig, ax = plt.subplots(figsize=(12, 5))
+    ax.bar(hole_numbers, values, color="#059669", alpha=0.9)
+    title_prefix = f"{course_label}: " if course_label else ""
+    ax.set_title(f"{title_prefix}GIR Percentage By Hole")
+    ax.set_xlabel("Hole")
+    ax.set_ylabel("GIR %")
+    ax.set_ylim(0, 100)
+    ax.grid(axis="y", alpha=0.2)
+    fig.tight_layout()
+    return fig, ax
+
+
+def plot_average_putts_by_hole(rounds: Iterable[Round], course_label: Optional[str] = None):
+    """Bar chart: average putts by hole for a specific course."""
+    plt = _load_plt()
+    rows = average_putts_by_hole(rounds)
+    hole_numbers = [str(row["hole_number"]) for row in rows]
+    values = [row["average_putts"] for row in rows]
+
+    fig, ax = plt.subplots(figsize=(12, 5))
+    ax.bar(hole_numbers, values, color="#6b7280", alpha=0.9)
+    title_prefix = f"{course_label}: " if course_label else ""
+    ax.set_title(f"{title_prefix}Average Putts By Hole")
+    ax.set_xlabel("Hole")
+    ax.set_ylabel("Average Putts")
+    ax.set_ylim(0, max(3.0, max(values, default=0) + 0.25))
+    ax.grid(axis="y", alpha=0.2)
+    fig.tight_layout()
+    return fig, ax
+
+
 def plot_score_type_distribution_per_round(
     rounds: Sequence[Round], labels: Optional[Sequence[str]] = None
 ):
@@ -422,6 +588,45 @@ def plot_score_type_distribution_per_round(
     ax.set_ylabel("Percent Of Holes")
     ax.set_ylim(0, 100)
     _apply_sparse_xticks(ax, x_labels)
+    ax.legend(loc="upper right", ncols=4, fontsize=8)
+    ax.grid(axis="y", alpha=0.2)
+    fig.tight_layout()
+    return fig, ax
+
+
+def plot_score_type_distribution_by_hole(
+    rounds: Iterable[Round], course_label: Optional[str] = None
+):
+    """Stacked bar chart of score-type percentages by hole for a specific course."""
+    plt = _load_plt()
+    rows = score_type_distribution_by_hole(rounds)
+    x_labels = [str(row["hole_number"]) for row in rows]
+    x = list(range(len(x_labels)))
+
+    categories = [
+        ("eagle", "Eagle"),
+        ("birdie", "Birdie"),
+        ("par", "Par"),
+        ("bogey", "Bogey"),
+        ("double_bogey", "Double"),
+        ("triple_bogey", "Triple"),
+        ("quad_bogey", "Quad+"),
+    ]
+
+    fig, ax = plt.subplots(figsize=(12, 6))
+    bottom = [0.0] * len(rows)
+    for key, label in categories:
+        values = [row[key] for row in rows]
+        ax.bar(x, values, bottom=bottom, label=label)
+        bottom = [b + v for b, v in zip(bottom, values)]
+
+    title_prefix = f"{course_label}: " if course_label else ""
+    ax.set_title(f"{title_prefix}Score Type Distribution By Hole")
+    ax.set_xlabel("Hole")
+    ax.set_ylabel("Percent Of Scores")
+    ax.set_xticks(x)
+    ax.set_xticklabels(x_labels)
+    ax.set_ylim(0, 100)
     ax.legend(loc="upper right", ncols=4, fontsize=8)
     ax.grid(axis="y", alpha=0.2)
     fig.tight_layout()

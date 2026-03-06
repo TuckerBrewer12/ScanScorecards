@@ -1,14 +1,67 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, Pencil, Trash2, ChevronDown, ChevronUp } from "lucide-react";
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Cell } from "recharts";
 import { api } from "@/lib/api";
 import type { Round } from "@/types/golf";
 import { formatToPar } from "@/types/golf";
-import type { RoundComparison } from "@/types/analytics";
+import type { RoundComparison, ComparisonRow } from "@/types/analytics";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { ScorecardGrid } from "@/components/round-detail/ScorecardGrid";
 
 type EditedScores = Record<number, { strokes: number | null; putts: number | null }>;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type Fmt = (v: any, name: any, props: any) => any;
+
+function formatNumber(value: number | null): string {
+  if (value == null) return "—";
+  return Number.isInteger(value) ? `${value}` : value.toFixed(1);
+}
+
+function ComparisonChartCard({
+  title,
+  rows,
+  primaryLabel,
+}: {
+  title: string;
+  rows: ComparisonRow[];
+  primaryLabel: string;
+}) {
+  const chartData = rows.map((row, i) => ({
+    label: row.label,
+    value: row.primary_value ?? 0,
+    sampleSize: row.sample_size,
+    isSelected: i === 0,
+  }));
+
+  return (
+    <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
+      <div className="text-sm font-semibold text-gray-700 mb-1">{title}</div>
+      <div className="text-xs text-gray-500 mb-3">
+        Selected: {formatNumber(rows[0]?.primary_value ?? null)} {primaryLabel}
+      </div>
+      <ResponsiveContainer width="100%" height={180}>
+        <BarChart data={chartData} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
+          <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#6b7280" }} tickLine={false} axisLine={false} />
+          <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
+          <Tooltip
+            formatter={((v: number, _name: string, props: { payload: { sampleSize: number } }) => [
+              formatNumber(v),
+              `${primaryLabel} (${props.payload.sampleSize} round${props.payload.sampleSize === 1 ? "" : "s"})`,
+            ]) as Fmt}
+            contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #e5e7eb" }}
+          />
+          <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+            {chartData.map((d) => (
+              <Cell key={d.label} fill={d.isSelected ? "#2d7a3a" : "#9ca3af"} />
+            ))}
+          </Bar>
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
 
 export function RoundDetailPage({ userId }: { userId: string }) {
   const { roundId } = useParams<{ roundId: string }>();
@@ -299,51 +352,14 @@ export function RoundDetailPage({ userId }: { userId: string }) {
 
         {showComparison && comparison && (
           <div className="px-5 pb-5 border-t border-gray-100">
-            <table className="w-full text-sm mt-3">
-              <thead>
-                <tr className="text-xs font-bold text-gray-400 uppercase tracking-wide">
-                  <th className="text-left py-2 pr-4">Metric</th>
-                  {comparison.score.map((row) => (
-                    <th key={row.label} className="text-center py-2 px-3">{row.label}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {[
-                  { label: "Score", rows: comparison.score, key: "primary_value" as const },
-                  { label: "Putts", rows: comparison.putts, key: "primary_value" as const },
-                  { label: "GIR", rows: comparison.gir, key: "primary_value" as const },
-                ].map(({ label, rows }) => {
-                  const thisRound = rows[0]?.primary_value;
-                  return (
-                    <tr key={label}>
-                      <td className="py-2 pr-4 font-semibold text-gray-700">{label}</td>
-                      {rows.map((row, i) => {
-                        const val = row.primary_value;
-                        const avg = i > 0 ? row.primary_value : null;
-                        const better =
-                          avg !== null && thisRound !== null
-                            ? label === "Score" || label === "Putts"
-                              ? thisRound < avg
-                              : thisRound > avg
-                            : false;
-                        const colorClass =
-                          i === 0
-                            ? "text-gray-900 font-bold"
-                            : better
-                            ? "text-birdie font-medium"
-                            : "text-bogey font-medium";
-                        return (
-                          <td key={row.label} className={`text-center py-2 px-3 ${colorClass}`}>
-                            {val != null ? (Number.isInteger(val) ? val : val.toFixed(1)) : "—"}
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
+              <ComparisonChartCard title="Score Comparison" rows={comparison.score} primaryLabel="score" />
+              <ComparisonChartCard title="Putts Comparison" rows={comparison.putts} primaryLabel="putts" />
+              <ComparisonChartCard title="GIR Comparison" rows={comparison.gir} primaryLabel="GIR" />
+              <ComparisonChartCard title="3-Putts Comparison" rows={comparison.three_putts} primaryLabel="3-putts" />
+              <ComparisonChartCard title="Putts per GIR Comparison" rows={comparison.putts_per_gir} primaryLabel="putts/GIR" />
+              <ComparisonChartCard title="Scrambling Comparison" rows={comparison.scrambling} primaryLabel="scramble successes" />
+            </div>
           </div>
         )}
       </div>

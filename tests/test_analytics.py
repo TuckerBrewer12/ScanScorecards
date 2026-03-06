@@ -3,8 +3,13 @@ from datetime import datetime
 import pytest
 
 from analytics.stats import (
+    average_score_relative_to_par_by_hole,
+    average_score_when_gir_vs_missed,
+    average_putts_by_hole,
+    course_difficulty_profile_by_hole,
     gir_comparison,
     gir_per_round,
+    gir_percentage_by_hole,
     gir_vs_non_gir_score_distribution,
     overall_gir_percentage,
     overall_putts_per_gir,
@@ -15,8 +20,11 @@ from analytics.stats import (
     round_summary,
     scrambling_comparison,
     score_comparison,
+    score_variance_by_hole,
+    score_trend_on_this_course,
     scrambling_per_round,
     score_trend,
+    score_type_distribution_by_hole,
     score_type_distribution_per_round,
     scoring_by_par,
     scoring_vs_hole_handicap,
@@ -185,6 +193,36 @@ def test_gir_vs_non_gir_score_distribution():
         assert total_pct == pytest.approx(100.0)
 
 
+def test_average_score_when_gir_vs_missed():
+    rounds = _build_rounds()
+    rows = average_score_when_gir_vs_missed(rounds)
+    by_bucket = {row["bucket"]: row for row in rows}
+
+    assert by_bucket["GIR"]["holes_counted"] == 19
+    assert by_bucket["No GIR"]["holes_counted"] == 17
+
+    assert by_bucket["GIR"]["average_score"] == pytest.approx(4.0)
+    assert by_bucket["No GIR"]["average_score"] == pytest.approx(4.529411764705882)
+    assert by_bucket["GIR"]["average_to_par"] == pytest.approx(0.21052631578947367)
+    assert by_bucket["No GIR"]["average_to_par"] == pytest.approx(0.29411764705882354)
+
+
+def test_score_variance_by_hole():
+    rounds = _build_rounds()
+    rows = score_variance_by_hole(rounds)
+
+    assert len(rows) == 18
+    assert rows[0]["score_std_dev"] >= rows[1]["score_std_dev"]
+    assert rows[0]["variance_rank"] == 1
+    assert rows[1]["variance_rank"] == 2
+
+    by_hole = {row["hole_number"]: row for row in rows}
+    # Hole 2 scores are 4 and 4 in synthetic data: zero variance.
+    assert by_hole[2]["score_variance"] == pytest.approx(0.0)
+    assert by_hole[2]["score_std_dev"] == pytest.approx(0.0)
+    assert by_hole[2]["sample_size"] == 2
+
+
 def test_three_putts_per_round():
     rounds = _build_rounds()
     rows = three_putts_per_round(rounds)
@@ -225,6 +263,15 @@ def test_score_trend():
     assert [row["to_par"] for row in rows] == [0, 9]
 
 
+def test_score_trend_on_this_course_orders_by_date():
+    rounds = _build_rounds()
+    rows = score_trend_on_this_course([rounds[1], rounds[0]])
+
+    assert [row["total_score"] for row in rows] == [72, 81]
+    assert [row["to_par"] for row in rows] == [0, 9]
+    assert [row["round_index"] for row in rows] == [1, 2]
+
+
 def test_scoring_by_par():
     rounds = _build_rounds()
     rows = scoring_by_par(rounds)
@@ -238,6 +285,103 @@ def test_scoring_by_par():
     assert by_par[3]["average_to_par"] == pytest.approx(1.25)
     assert by_par[4]["average_to_par"] == pytest.approx(0.25)
     assert by_par[5]["average_to_par"] == pytest.approx(-0.75)
+
+
+def test_average_score_relative_to_par_by_hole():
+    rounds = _build_rounds()
+    rows = average_score_relative_to_par_by_hole(rounds)
+
+    assert len(rows) == 18
+    by_hole = {row["hole_number"]: row for row in rows}
+
+    assert by_hole[1]["par"] == 3
+    assert by_hole[1]["average_score"] == pytest.approx(4.5)
+    assert by_hole[1]["average_to_par"] == pytest.approx(1.5)
+    assert by_hole[1]["sample_size"] == 2
+
+    assert by_hole[2]["par"] == 3
+    assert by_hole[2]["average_score"] == pytest.approx(4.0)
+    assert by_hole[2]["average_to_par"] == pytest.approx(1.0)
+    assert by_hole[2]["sample_size"] == 2
+
+
+def test_course_difficulty_profile_by_hole():
+    rounds = _build_rounds()
+    rows = course_difficulty_profile_by_hole(rounds)
+
+    assert len(rows) == 18
+    assert rows[0]["average_to_par"] >= rows[1]["average_to_par"]
+    assert rows[0]["difficulty_rank"] == 1
+    assert rows[1]["difficulty_rank"] == 2
+
+    # Synthetic data: hole 1 is hardest at +1.5
+    assert rows[0]["hole_number"] == 1
+    assert rows[0]["average_to_par"] == pytest.approx(1.5)
+
+    # Lowest-difficulty hole should be under par on this dataset.
+    assert rows[-1]["average_to_par"] == pytest.approx(-1.0)
+
+
+def test_gir_percentage_by_hole():
+    rounds = _build_rounds()
+    rows = gir_percentage_by_hole(rounds)
+
+    assert len(rows) == 18
+    by_hole = {row["hole_number"]: row for row in rows}
+
+    # Hole 1: GIR true in round 1, false in round 2 -> 50%
+    assert by_hole[1]["sample_size"] == 2
+    assert by_hole[1]["gir_hits"] == 1
+    assert by_hole[1]["gir_percentage"] == pytest.approx(50.0)
+
+    # Hole 2: GIR true in both rounds -> 100%
+    assert by_hole[2]["sample_size"] == 2
+    assert by_hole[2]["gir_hits"] == 2
+    assert by_hole[2]["gir_percentage"] == pytest.approx(100.0)
+
+
+def test_average_putts_by_hole():
+    rounds = _build_rounds()
+    rows = average_putts_by_hole(rounds)
+
+    assert len(rows) == 18
+    by_hole = {row["hole_number"]: row for row in rows}
+
+    # Hole 1: putts are 2 and 2 -> 2.0 avg
+    assert by_hole[1]["sample_size"] == 2
+    assert by_hole[1]["average_putts"] == pytest.approx(2.0)
+
+    # Hole 2: putts are 2 and 1 -> 1.5 avg
+    assert by_hole[2]["sample_size"] == 2
+    assert by_hole[2]["average_putts"] == pytest.approx(1.5)
+
+
+def test_score_type_distribution_by_hole():
+    rounds = _build_rounds()
+    rows = score_type_distribution_by_hole(rounds)
+    assert len(rows) == 18
+    by_hole = {row["hole_number"]: row for row in rows}
+
+    # Hole 1 (par 3): scores are 4 and 5 -> bogey 50%, double 50%
+    assert by_hole[1]["sample_size"] == 2
+    assert by_hole[1]["bogey"] == pytest.approx(50.0)
+    assert by_hole[1]["double_bogey"] == pytest.approx(50.0)
+    assert by_hole[1]["par"] == 0.0
+
+    # Hole 2 (par 3): scores are 4 and 4 -> bogey 100%
+    assert by_hole[2]["sample_size"] == 2
+    assert by_hole[2]["bogey"] == pytest.approx(100.0)
+
+    total_pct_hole_1 = (
+        by_hole[1]["eagle"]
+        + by_hole[1]["birdie"]
+        + by_hole[1]["par"]
+        + by_hole[1]["bogey"]
+        + by_hole[1]["double_bogey"]
+        + by_hole[1]["triple_bogey"]
+        + by_hole[1]["quad_bogey"]
+    )
+    assert total_pct_hole_1 == pytest.approx(100.0)
 
 
 def test_score_type_distribution_per_round():

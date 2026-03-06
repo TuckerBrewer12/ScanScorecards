@@ -29,6 +29,7 @@ export function CoursesPage({ userId }: { userId: string }) {
     return (
       <CourseDetailPanel
         courseId={selectedCourseId}
+        userId={userId}
         onBack={() => setSelectedCourseId(null)}
       />
     );

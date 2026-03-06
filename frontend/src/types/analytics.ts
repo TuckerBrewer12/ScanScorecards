@@ -124,4 +124,89 @@ export interface RoundComparison {
   score: ComparisonRow[];
   putts: ComparisonRow[];
   gir: ComparisonRow[];
+  three_putts: ComparisonRow[];
+  putts_per_gir: ComparisonRow[];
+  scrambling: ComparisonRow[];
+}
+
+export interface CourseScoreTrendRow {
+  round_index: number;
+  round_id: string | null;
+  date: string | null;
+  total_score: number | null;
+  to_par: number | null;
+}
+
+export interface CourseAverageToParByHoleRow {
+  hole_number: number;
+  par: number;
+  average_score: number;
+  average_to_par: number;
+  sample_size: number;
+}
+
+export interface CourseGIRByHoleRow {
+  hole_number: number;
+  par: number;
+  gir_hits: number;
+  sample_size: number;
+  gir_percentage: number;
+}
+
+export interface CoursePuttsByHoleRow {
+  hole_number: number;
+  par: number;
+  average_putts: number;
+  sample_size: number;
+}
+
+export interface CourseScoreTypeByHoleRow {
+  hole_number: number;
+  sample_size: number;
+  eagle: number;
+  birdie: number;
+  par: number;
+  bogey: number;
+  double_bogey: number;
+  triple_bogey: number;
+  quad_bogey: number;
+}
+
+export interface CourseDifficultyProfileRow {
+  hole_number: number;
+  par: number;
+  average_score: number;
+  average_to_par: number;
+  sample_size: number;
+  difficulty_rank: number;
+}
+
+export interface CourseGIRImpactRow {
+  bucket: "GIR" | "No GIR";
+  holes_counted: number;
+  average_score: number | null;
+  average_to_par: number | null;
+}
+
+export interface CourseScoreVarianceRow {
+  hole_number: number;
+  par: number;
+  sample_size: number;
+  average_score: number | null;
+  score_variance: number | null;
+  score_std_dev: number | null;
+  variance_rank: number;
+}
+
+export interface CourseAnalyticsData {
+  course_id: string;
+  rounds_played: number;
+  score_trend_on_course: CourseScoreTrendRow[];
+  average_score_relative_to_par_by_hole: CourseAverageToParByHoleRow[];
+  gir_percentage_by_hole: CourseGIRByHoleRow[];
+  average_putts_by_hole: CoursePuttsByHoleRow[];
+  score_type_distribution_by_hole: CourseScoreTypeByHoleRow[];
+  course_difficulty_profile_by_hole: CourseDifficultyProfileRow[];
+  average_score_when_gir_vs_missed: CourseGIRImpactRow[];
+  score_variance_by_hole: CourseScoreVarianceRow[];
 }

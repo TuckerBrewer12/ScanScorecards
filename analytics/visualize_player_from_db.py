@@ -6,6 +6,11 @@ from pathlib import Path
 from typing import List
 
 from analytics.visualizations import (
+    plot_average_putts_by_hole,
+    plot_average_score_relative_to_par_by_hole,
+    plot_average_score_when_gir_vs_missed,
+    plot_course_difficulty_profile_by_hole,
+    plot_gir_percentage_by_hole,
     plot_gir_comparison,
     plot_gir_per_round,
     plot_gir_vs_non_gir_score_distribution,
@@ -17,8 +22,11 @@ from analytics.visualizations import (
     plot_putts_per_gir,
     plot_putts_per_round,
     plot_score_comparison,
+    plot_score_type_distribution_by_hole,
+    plot_score_trend_on_this_course,
     plot_scrambling_comparison,
     plot_scrambling_per_round,
+    plot_score_variance_by_hole,
     plot_scoring_by_par,
     plot_score_trend,
     plot_score_type_distribution_per_round,
@@ -30,6 +38,25 @@ from analytics.visualizations import (
 from database.connection import DatabasePool
 from database.db_manager import DatabaseManager
 from models.round import Round
+
+
+def _primary_course_rounds(rounds: List[Round]) -> tuple[str, List[Round]] | None:
+    grouped: dict[str, tuple[str, List[Round]]] = {}
+    for round_obj in rounds:
+        if not round_obj.course:
+            continue
+        key = round_obj.course.id or round_obj.course.name
+        if not key:
+            continue
+        if key not in grouped:
+            grouped[key] = (round_obj.course.name or "Course", [])
+        grouped[key][1].append(round_obj)
+
+    if not grouped:
+        return None
+
+    _, (course_label, course_rounds) = max(grouped.items(), key=lambda item: len(item[1][1]))
+    return course_label, course_rounds
 
 
 def _parse_args() -> argparse.Namespace:
@@ -149,9 +176,11 @@ async def main_async() -> None:
     round_comparison_dir = outdir / "round_comparison"
     round_trends_dir = outdir / "round_trends"
     overall_player_dir = outdir / "overall_player"
+    course_player_dir = outdir / "course_player"
     round_comparison_dir.mkdir(parents=True, exist_ok=True)
     round_trends_dir.mkdir(parents=True, exist_ok=True)
     overall_player_dir.mkdir(parents=True, exist_ok=True)
+    course_player_dir.mkdir(parents=True, exist_ok=True)
 
     written: list[Path] = []
 
@@ -275,6 +304,51 @@ async def main_async() -> None:
         written.append(scrambling_compare_path)
     else:
         print("Skipping scrambling chart: missing GIR/par/strokes data.")
+
+    primary_course = _primary_course_rounds(rounds)
+    if primary_course:
+        course_label, course_rounds = primary_course
+        fig, _ = plot_average_score_relative_to_par_by_hole(course_rounds, course_label=course_label)
+        course_hole_path = course_player_dir / "average_score_relative_to_par_by_hole.png"
+        fig.savefig(course_hole_path, dpi=150)
+        written.append(course_hole_path)
+
+        fig, _ = plot_gir_percentage_by_hole(course_rounds, course_label=course_label)
+        course_gir_hole_path = course_player_dir / "gir_percentage_by_hole.png"
+        fig.savefig(course_gir_hole_path, dpi=150)
+        written.append(course_gir_hole_path)
+
+        fig, _ = plot_average_putts_by_hole(course_rounds, course_label=course_label)
+        course_putts_hole_path = course_player_dir / "average_putts_by_hole.png"
+        fig.savefig(course_putts_hole_path, dpi=150)
+        written.append(course_putts_hole_path)
+
+        fig, _ = plot_score_type_distribution_by_hole(course_rounds, course_label=course_label)
+        course_score_type_hole_path = course_player_dir / "score_type_distribution_by_hole.png"
+        fig.savefig(course_score_type_hole_path, dpi=150)
+        written.append(course_score_type_hole_path)
+
+        fig, _ = plot_course_difficulty_profile_by_hole(course_rounds, course_label=course_label)
+        course_difficulty_path = course_player_dir / "course_difficulty_profile_by_hole.png"
+        fig.savefig(course_difficulty_path, dpi=150)
+        written.append(course_difficulty_path)
+
+        fig, _ = plot_average_score_when_gir_vs_missed(course_rounds, course_label=course_label)
+        course_gir_impact_path = course_player_dir / "average_score_when_gir_vs_missed.png"
+        fig.savefig(course_gir_impact_path, dpi=150)
+        written.append(course_gir_impact_path)
+
+        fig, _ = plot_score_variance_by_hole(course_rounds, course_label=course_label)
+        course_variance_path = course_player_dir / "score_variance_by_hole.png"
+        fig.savefig(course_variance_path, dpi=150)
+        written.append(course_variance_path)
+
+        fig, _ = plot_score_trend_on_this_course(course_rounds, course_label=course_label)
+        course_trend_path = course_player_dir / "score_trend_on_this_course.png"
+        fig.savefig(course_trend_path, dpi=150)
+        written.append(course_trend_path)
+    else:
+        print("Skipping course-hole chart: no rounds with course data.")
 
     print(f"Generated {len(written)} chart(s) for {player_label}:")
     for path in written:

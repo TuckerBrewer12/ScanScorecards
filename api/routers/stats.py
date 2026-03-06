@@ -137,18 +137,39 @@ async def get_round_comparison(
     if round_index is None:
         raise HTTPException(404, "Round not found in user history")
 
-    score_rows = analytics.score_trend(rounds)
-    putts_rows = analytics.putts_per_round(rounds)
-    gir_rows = analytics.gir_per_round(rounds)
+    return {
+        "score": analytics.score_comparison(rounds, round_index=round_index),
+        "putts": analytics.putts_comparison(rounds, round_index=round_index),
+        "gir": analytics.gir_comparison(rounds, round_index=round_index),
+        "three_putts": analytics.three_putts_comparison(rounds, round_index=round_index),
+        "putts_per_gir": analytics.putts_per_gir_comparison(rounds, round_index=round_index),
+        "scrambling": analytics.scrambling_comparison(rounds, round_index=round_index),
+    }
+
+
+@router.get("/course-analytics/{user_id}/{course_id}")
+async def get_course_analytics(
+    user_id: str,
+    course_id: str,
+    db: DatabaseManager = Depends(get_db),
+):
+    user = await db.users.get_user(user_id)
+    if not user:
+        raise HTTPException(404, "User not found")
+
+    rounds_desc = await db.rounds.get_rounds_for_user(user_id, limit=500, offset=0)
+    rounds = list(reversed(rounds_desc))  # chronological order
+    course_rounds = [r for r in rounds if r.course and str(r.course.id) == course_id]
 
     return {
-        "score": analytics.metric_comparison_snapshot(
-            score_rows, primary_key="total_score", secondary_key="to_par", round_index=round_index
-        ),
-        "putts": analytics.metric_comparison_snapshot(
-            putts_rows, primary_key="total_putts", round_index=round_index
-        ),
-        "gir": analytics.metric_comparison_snapshot(
-            gir_rows, primary_key="total_gir", secondary_key="gir_percentage", round_index=round_index
-        ),
+        "course_id": course_id,
+        "rounds_played": len(course_rounds),
+        "score_trend_on_course": analytics.score_trend_on_this_course(course_rounds),
+        "average_score_relative_to_par_by_hole": analytics.average_score_relative_to_par_by_hole(course_rounds),
+        "gir_percentage_by_hole": analytics.gir_percentage_by_hole(course_rounds),
+        "average_putts_by_hole": analytics.average_putts_by_hole(course_rounds),
+        "score_type_distribution_by_hole": analytics.score_type_distribution_by_hole(course_rounds),
+        "course_difficulty_profile_by_hole": analytics.course_difficulty_profile_by_hole(course_rounds),
+        "average_score_when_gir_vs_missed": analytics.average_score_when_gir_vs_missed(course_rounds),
+        "score_variance_by_hole": analytics.score_variance_by_hole(course_rounds),
     }
