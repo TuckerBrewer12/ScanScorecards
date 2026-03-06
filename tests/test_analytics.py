@@ -20,6 +20,7 @@ from analytics.stats import (
     round_summary,
     scrambling_comparison,
     score_comparison,
+    score_variance_by_hole,
     scrambling_per_round,
     score_trend,
     score_type_distribution_by_hole,
@@ -203,6 +204,22 @@ def test_average_score_when_gir_vs_missed():
     assert by_bucket["No GIR"]["average_score"] == pytest.approx(4.529411764705882)
     assert by_bucket["GIR"]["average_to_par"] == pytest.approx(0.21052631578947367)
     assert by_bucket["No GIR"]["average_to_par"] == pytest.approx(0.29411764705882354)
+
+
+def test_score_variance_by_hole():
+    rounds = _build_rounds()
+    rows = score_variance_by_hole(rounds)
+
+    assert len(rows) == 18
+    assert rows[0]["score_std_dev"] >= rows[1]["score_std_dev"]
+    assert rows[0]["variance_rank"] == 1
+    assert rows[1]["variance_rank"] == 2
+
+    by_hole = {row["hole_number"]: row for row in rows}
+    # Hole 2 scores are 4 and 4 in synthetic data: zero variance.
+    assert by_hole[2]["score_variance"] == pytest.approx(0.0)
+    assert by_hole[2]["score_std_dev"] == pytest.approx(0.0)
+    assert by_hole[2]["sample_size"] == 2
 
 
 def test_three_putts_per_round():

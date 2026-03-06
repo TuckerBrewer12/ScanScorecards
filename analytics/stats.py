@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 from typing import Any, Dict, Iterable, List, Optional
 
 from models.round import Round
@@ -502,6 +503,59 @@ def average_score_when_gir_vs_missed(rounds: Iterable[Round]) -> List[Dict[str, 
         )
 
     return results
+
+
+def score_variance_by_hole(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
+    """
+    Aggregate scoring consistency by hole using score standard deviation.
+
+    Higher standard deviation indicates less consistent scoring on that hole.
+    """
+    by_hole: Dict[int, Dict[str, Any]] = {}
+
+    for round_obj in rounds:
+        if not round_obj.course:
+            continue
+
+        for hole_score in _valid_hole_scores(round_obj):
+            if hole_score.hole_number is None or hole_score.strokes is None:
+                continue
+
+            hole = round_obj.course.get_hole(hole_score.hole_number)
+            if not hole or hole.par is None:
+                continue
+
+            entry = by_hole.setdefault(
+                hole_score.hole_number,
+                {"hole_number": hole_score.hole_number, "par": hole.par, "strokes": []},
+            )
+            entry["strokes"].append(hole_score.strokes)
+
+    rows: List[Dict[str, Any]] = []
+    for hole_number in sorted(by_hole):
+        entry = by_hole[hole_number]
+        strokes: List[int] = entry["strokes"]
+        sample_size = len(strokes)
+        mean_score = sum(strokes) / sample_size if sample_size else 0.0
+        variance = (
+            sum((score - mean_score) ** 2 for score in strokes) / sample_size if sample_size else 0.0
+        )
+        rows.append(
+            {
+                "hole_number": hole_number,
+                "par": entry["par"],
+                "sample_size": sample_size,
+                "average_score": mean_score if sample_size else None,
+                "score_variance": variance if sample_size else None,
+                "score_std_dev": math.sqrt(variance) if sample_size else None,
+            }
+        )
+
+    rows.sort(key=lambda row: (-(row["score_std_dev"] or 0.0), row["hole_number"]))
+    for rank, row in enumerate(rows, start=1):
+        row["variance_rank"] = rank
+
+    return rows
 
 
 def scoring_vs_hole_handicap(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
