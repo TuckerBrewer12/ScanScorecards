@@ -57,7 +57,7 @@ export function NotableAchievementsPage({ userId }: { userId: string }) {
     return <div className="text-gray-500">Unable to load achievements.</div>;
   }
 
-  const { scoring_records, career_totals, window_days } = data.notable_achievements;
+  const { scoring_records, career_totals, best_performance_streaks, window_days } = data.notable_achievements;
 
   return (
     <div>
@@ -109,6 +109,24 @@ export function NotableAchievementsPage({ userId }: { userId: string }) {
               <Card title="GIR" value={career_totals.one_year.gir} />
               <Card title="Triple Bogeys" value={career_totals.one_year.triple_bogeys} />
               <Card title="3-Putts" value={career_totals.one_year.three_putts} />
+            </Group>
+          </div>
+        </div>
+
+        <div>
+          <h2 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-4">3. Best Performance Streaks</h2>
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
+            <Group title="Lifetime">
+              <Card title="Longest Birdie Streak" value={best_performance_streaks.lifetime.longest_birdie_streak} />
+              <Card title="Longest Par Streak" value={best_performance_streaks.lifetime.longest_par_streak} />
+              <Card title="Most GIR in a Row" value={best_performance_streaks.lifetime.most_gir_in_a_row} />
+              <Card title="Longest 2-Putt or Less Streak" value={best_performance_streaks.lifetime.longest_2_putt_or_less_streak} />
+            </Group>
+            <Group title={`Last ${window_days} Days`}>
+              <Card title="Longest Birdie Streak" value={best_performance_streaks.one_year.longest_birdie_streak} />
+              <Card title="Longest Par Streak" value={best_performance_streaks.one_year.longest_par_streak} />
+              <Card title="Most GIR in a Row" value={best_performance_streaks.one_year.most_gir_in_a_row} />
+              <Card title="Longest 2-Putt or Less Streak" value={best_performance_streaks.one_year.longest_2_putt_or_less_streak} />
             </Group>
           </div>
         </div>
