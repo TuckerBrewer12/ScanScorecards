@@ -87,6 +87,43 @@ async def get_analytics(
             "gir_vs_non_gir": [],
             "handicap_trend": [],
             "score_differentials": [],
+            "notable_achievements": {
+                "scoring_records": {
+                    "lifetime": {},
+                    "one_year": {},
+                },
+                "career_totals": {
+                    "lifetime": {},
+                    "one_year": {},
+                },
+                "best_performance_streaks": {
+                    "lifetime": {},
+                    "one_year": {},
+                },
+                "home_course_records": {
+                    "lifetime": {
+                        "home_course_name": None,
+                        "lowest_score_on_home_course": None,
+                        "most_rounds_played_at_home_course": 0,
+                    },
+                    "one_year": {
+                        "home_course_name": None,
+                        "lowest_score_on_home_course": None,
+                    },
+                },
+                "putting_milestones": {
+                    "lifetime": {},
+                    "one_year": {},
+                },
+                "round_milestones": {
+                    "lifetime": {},
+                    "one_year": {
+                        "new_personal_records_achieved_count": 0,
+                        "new_personal_records_achieved": [],
+                    },
+                },
+                "window_days": 365,
+            },
         }
 
     scores = [r.calculate_total_score() for r in rounds if r.calculate_total_score() is not None]
@@ -118,6 +155,10 @@ async def get_analytics(
         "gir_vs_non_gir": analytics.gir_vs_non_gir_score_distribution(rounds),
         "handicap_trend": hcap.handicap_trend(rounds),
         "score_differentials": hcap.score_differentials_per_round(rounds),
+        "notable_achievements": analytics.notable_achievements(
+            rounds,
+            home_course_id=user.home_course_id,
+        ),
     }
 
 

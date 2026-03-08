@@ -13,6 +13,7 @@ from analytics.stats import (
     gir_vs_non_gir_score_distribution,
     overall_gir_percentage,
     overall_putts_per_gir,
+    notable_achievements,
     putts_comparison,
     putts_per_gir,
     putts_per_gir_comparison,
@@ -426,3 +427,35 @@ def test_scoring_vs_hole_handicap():
     assert rows[1]["handicap"] == 2
     assert rows[1]["average_to_par"] == pytest.approx(1.0)
     assert rows[1]["sample_size"] == 2
+
+
+def test_notable_achievements_lifetime_and_one_year():
+    rounds = _build_rounds()
+    summary = notable_achievements(rounds, reference_date=datetime(2026, 2, 15), days=365)
+
+    assert summary["window_days"] == 365
+    assert summary["scoring_records"]["lifetime"]["lowest_round"] == 72
+    assert summary["scoring_records"]["lifetime"]["highest_round"] == 81
+    assert summary["scoring_records"]["one_year"]["lowest_round"] == 72
+
+    lifetime_totals = summary["career_totals"]["lifetime"]
+    assert lifetime_totals["total_rounds_played"] == 2
+    assert lifetime_totals["total_holes_played"] == 36
+    assert lifetime_totals["total_birdies"] == 6
+    assert lifetime_totals["total_eagles"] == 0
+    assert lifetime_totals["total_hole_in_ones"] == 0
+    assert lifetime_totals["total_pars"] == 17
+    assert lifetime_totals["total_bogeys"] == 11
+    assert lifetime_totals["total_double_bogeys_plus"] == 2
+    assert lifetime_totals["total_triple_bogeys"] == 0
+    assert lifetime_totals["total_gir"] == 19
+    assert lifetime_totals["total_3_putts"] == 0
+
+    year_totals = summary["career_totals"]["one_year"]
+    assert year_totals["rounds_played"] == 2
+    assert year_totals["birdies"] == 6
+    assert year_totals["triple_bogeys"] == 0
+
+    assert summary["home_course_records"]["lifetime"]["home_course_name"] is None
+    assert summary["home_course_records"]["lifetime"]["lowest_score_on_home_course"] is None
+    assert summary["home_course_records"]["lifetime"]["most_rounds_played_at_home_course"] == 0

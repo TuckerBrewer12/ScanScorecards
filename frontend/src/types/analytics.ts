@@ -97,6 +97,37 @@ export interface GIRvsNonGIRRow {
   quad_bogey: number;
 }
 
+export interface NotableAchievements {
+  scoring_records: {
+    lifetime: Record<string, number | null>;
+    one_year: Record<string, number | null>;
+  };
+  career_totals: {
+    lifetime: Record<string, number>;
+    one_year: Record<string, number>;
+  };
+  best_performance_streaks: {
+    lifetime: Record<string, number>;
+    one_year: Record<string, number>;
+  };
+  home_course_records: {
+    lifetime: { home_course_name: string | null; lowest_score_on_home_course: number | null; most_rounds_played_at_home_course: number };
+    one_year: { home_course_name: string | null; lowest_score_on_home_course: number | null };
+  };
+  putting_milestones: {
+    lifetime: Record<string, number | null>;
+    one_year: Record<string, number | null>;
+  };
+  round_milestones: {
+    lifetime: Record<string, string | null>;
+    one_year: {
+      new_personal_records_achieved_count: number;
+      new_personal_records_achieved: string[];
+    };
+  };
+  window_days: number;
+}
+
 export interface AnalyticsData {
   kpis: AnalyticsKPIs;
   score_trend: ScoreTrendRow[];
@@ -110,6 +141,7 @@ export interface AnalyticsData {
   gir_vs_non_gir: GIRvsNonGIRRow[];
   handicap_trend: HandicapTrendRow[];
   score_differentials: ScoreDifferentialRow[];
+  notable_achievements: NotableAchievements;
 }
 
 export interface ComparisonRow {
