@@ -221,9 +221,18 @@ export interface NotableAchievements {
   window_days: number;
 }
 
+export interface NetScoreTrendRow {
+  round_index: number;
+  round_id: string | null;
+  gross_score: number | null;
+  course_handicap: number | null;
+  net_score: number | null;
+}
+
 export interface AnalyticsData {
   kpis: AnalyticsKPIs;
   score_trend: ScoreTrendRow[];
+  net_score_trend: NetScoreTrendRow[];
   gir_trend: GIRTrendRow[];
   putts_trend: PuttsTrendRow[];
   three_putts_trend: ThreePuttRow[];

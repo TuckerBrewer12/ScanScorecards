@@ -821,6 +821,51 @@ def score_trend(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
     return results
 
 
+def net_score_trend(
+    rounds: Iterable[Round],
+    current_handicap_index: Optional[float],
+) -> List[Dict[str, Any]]:
+    """Return net score trend data by round.
+
+    Net score = gross score - course handicap, where course handicap uses the
+    player's current HI applied to each round's tee data. Rounds without tee
+    rating data still appear but with net_score = None.
+    """
+    results: List[Dict[str, Any]] = []
+    for index, round_obj in enumerate(rounds, start=1):
+        gross = round_obj.calculate_total_score()
+        course_par = round_obj.get_par()
+        tee = round_obj.get_tee()
+
+        course_handicap: Optional[int] = None
+        net_score: Optional[int] = None
+
+        if (
+            gross is not None
+            and current_handicap_index is not None
+            and tee is not None
+            and tee.slope_rating is not None
+            and tee.course_rating is not None
+            and course_par is not None
+        ):
+            course_handicap = round(
+                (current_handicap_index * tee.slope_rating) / 113
+                + (tee.course_rating - course_par)
+            )
+            net_score = gross - course_handicap
+
+        results.append(
+            {
+                "round_index": index,
+                "round_id": round_obj.id,
+                "gross_score": gross,
+                "course_handicap": course_handicap,
+                "net_score": net_score,
+            }
+        )
+    return results
+
+
 def score_trend_on_this_course(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
     """
     Score trend for rounds on a single course.
