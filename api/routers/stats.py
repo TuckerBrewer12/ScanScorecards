@@ -208,6 +208,7 @@ async def get_analytics(
                             {"threshold": 65, "achievement": None},
                             {"threshold": 60, "achievement": None},
                         ],
+                        "first_round_under_par": None,
                         "first_eagle": None,
                         "first_hole_in_one": None,
                     },

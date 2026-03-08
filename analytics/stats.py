@@ -147,10 +147,12 @@ def notable_achievements(
             "course": _course_label(round_obj) or "Unknown Course",
         }
 
-    def _first_round_below(round_set: List[Round], threshold: int) -> Optional[Dict[str, str]]:
+    def _first_round_below(round_set: List[Round], threshold: int, *, inclusive: bool = False) -> Optional[Dict[str, str]]:
         for round_obj in sorted(round_set, key=lambda r: r.date or datetime.max):
             total = round_obj.calculate_total_score()
-            if total is not None and total < threshold:
+            if total is None:
+                continue
+            if (inclusive and total <= threshold) or (not inclusive and total < threshold):
                 return _milestone_event(round_obj)
         return None
 
@@ -159,6 +161,37 @@ def notable_achievements(
             for row in hole_rows([round_obj]):
                 if predicate(row):
                     return _milestone_event(round_obj)
+        return None
+
+    def _round_total_par(round_obj: Round) -> Optional[int]:
+        if round_obj.course and round_obj.course.par is not None:
+            return round_obj.course.par
+        pars: List[int] = []
+        for hole_score in _valid_hole_scores(round_obj):
+            if hole_score.hole_number is None:
+                continue
+            par = round_obj.get_hole_par(hole_score.hole_number)
+            if par is not None:
+                pars.append(par)
+        if not pars:
+            return None
+        return sum(pars)
+
+    def _first_round_under_par(round_set: List[Round]) -> Optional[Dict[str, Any]]:
+        for round_obj in sorted(round_set, key=lambda r: r.date or datetime.max):
+            total = round_obj.calculate_total_score()
+            round_par = _round_total_par(round_obj)
+            if total is None or round_par is None:
+                continue
+            if total < round_par:
+                event = _milestone_event(round_obj)
+                if event is None:
+                    continue
+                return {
+                    "score": total,
+                    "date": event["date"],
+                    "course": event["course"],
+                }
         return None
 
     def _streak_with_event(rows: List[Dict[str, Any]], predicate) -> tuple[int, Optional[Dict[str, str]]]:
@@ -512,7 +545,7 @@ def notable_achievements(
         },
     }
 
-    break_thresholds = [120, 110, 100, 95, 90] + list(range(85, 55, -5))
+    break_thresholds = [120, 110, 100, 95, 90, 85, 80, 75, 70, 65, 60]
     score_breaks: List[Dict[str, Any]] = []
     for threshold in break_thresholds:
         score_breaks.append(
@@ -522,8 +555,10 @@ def notable_achievements(
             }
         )
 
+    first_round_under_par = _first_round_under_par(rounds_list)
     round_milestones_lifetime = {
         "score_breaks": score_breaks,
+        "first_round_under_par": first_round_under_par,
         "first_eagle": _first_event(rounds_list, lambda row: row["score_type"] == "eagle"),
         "first_hole_in_one": _first_event(rounds_list, lambda row: row["is_hio"]),
     }
@@ -534,6 +569,10 @@ def notable_achievements(
             dt = datetime.strptime(achieved["date"], "%Y/%m/%d")
             if dt >= cutoff:
                 new_records.append(f"break_{row['threshold']}")
+    if first_round_under_par and first_round_under_par.get("date"):
+        dt = datetime.strptime(first_round_under_par["date"], "%Y/%m/%d")
+        if dt >= cutoff:
+            new_records.append("first_round_under_par")
     for key in ("first_eagle", "first_hole_in_one"):
         achieved = round_milestones_lifetime[key]
         if achieved and achieved.get("date"):

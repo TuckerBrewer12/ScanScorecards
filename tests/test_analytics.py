@@ -476,6 +476,7 @@ def test_notable_achievements_lifetime_and_one_year():
     assert breaks[120]["course"] == "Demo Course"
     assert breaks[75]["date"] == "2026/2/1"
     assert breaks[70] is None
+    assert summary["round_milestones"]["lifetime"]["first_round_under_par"] is None
     assert summary["round_milestones"]["lifetime"]["first_eagle"] is None
     assert summary["round_milestones"]["lifetime"]["first_hole_in_one"] is None
 

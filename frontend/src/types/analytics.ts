@@ -199,6 +199,11 @@ export interface NotableAchievements {
           course: string;
         } | null;
       }>;
+      first_round_under_par: {
+        score: number;
+        date: string;
+        course: string;
+      } | null;
       first_eagle: {
         date: string;
         course: string;
