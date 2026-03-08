@@ -92,11 +92,19 @@ async def get_analytics(
                     "lifetime": {},
                     "one_year": {},
                 },
+                "scoring_records_events": {
+                    "lifetime": {},
+                    "one_year": {},
+                },
                 "career_totals": {
                     "lifetime": {},
                     "one_year": {},
                 },
                 "best_performance_streaks": {
+                    "lifetime": {},
+                    "one_year": {},
+                },
+                "best_performance_streaks_events": {
                     "lifetime": {},
                     "one_year": {},
                 },
@@ -108,6 +116,14 @@ async def get_analytics(
                     },
                     "one_year": {
                         "home_course_name": None,
+                        "lowest_score_on_home_course": None,
+                    },
+                },
+                "home_course_records_events": {
+                    "lifetime": {
+                        "lowest_score_on_home_course": None,
+                    },
+                    "one_year": {
                         "lowest_score_on_home_course": None,
                     },
                 },
@@ -135,6 +151,18 @@ async def get_analytics(
                         "putting_milestones_achieved_from_lifetime_set": 0,
                     },
                 },
+                "putting_milestones_events": {
+                    "lifetime": {
+                        "fewest_putts_in_round": None,
+                        "most_1_putts_in_round": None,
+                        "most_3_putts_in_round": None,
+                    },
+                    "one_year": {
+                        "fewest_putts_in_round": None,
+                        "most_1_putts_in_round": None,
+                        "most_3_putts_in_round": None,
+                    },
+                },
                 "gir_milestones": {
                     "lifetime": {
                         "gir_breaks": [
@@ -150,8 +178,19 @@ async def get_analytics(
                     },
                     "one_year": {
                         "best_gir_round": None,
+                        "best_gir_in_round": None,
                         "highest_gir_percentage": None,
                         "gir_milestones_achieved_from_lifetime_set": 0,
+                    },
+                },
+                "gir_milestones_events": {
+                    "lifetime": {
+                        "highest_gir_percentage_in_round": None,
+                        "most_gir_in_round": None,
+                    },
+                    "one_year": {
+                        "best_gir_round": None,
+                        "highest_gir_percentage": None,
                     },
                 },
                 "round_milestones": {
