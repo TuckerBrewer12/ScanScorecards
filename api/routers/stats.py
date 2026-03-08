@@ -116,7 +116,23 @@ async def get_analytics(
                     "one_year": {},
                 },
                 "round_milestones": {
-                    "lifetime": {},
+                    "lifetime": {
+                        "score_breaks": [
+                            {"threshold": 120, "achievement": None},
+                            {"threshold": 110, "achievement": None},
+                            {"threshold": 100, "achievement": None},
+                            {"threshold": 95, "achievement": None},
+                            {"threshold": 90, "achievement": None},
+                            {"threshold": 85, "achievement": None},
+                            {"threshold": 80, "achievement": None},
+                            {"threshold": 75, "achievement": None},
+                            {"threshold": 70, "achievement": None},
+                            {"threshold": 65, "achievement": None},
+                            {"threshold": 60, "achievement": None},
+                        ],
+                        "first_eagle": None,
+                        "first_hole_in_one": None,
+                    },
                     "one_year": {
                         "new_personal_records_achieved_count": 0,
                         "new_personal_records_achieved": [],

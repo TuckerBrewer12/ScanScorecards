@@ -126,20 +126,34 @@ def notable_achievements(
         vals = [value for value in vals if value is not None]
         return max(vals) if vals else None
 
-    def _first_round_below(round_set: List[Round], threshold: int) -> Optional[str]:
+    def _format_date_short(dt: datetime) -> str:
+        return f"{dt.year}/{dt.month}/{dt.day}"
+
+    def _course_label(round_obj: Round) -> Optional[str]:
+        if round_obj.course and round_obj.course.name:
+            return round_obj.course.name
+        return round_obj.course_name_played
+
+    def _milestone_event(round_obj: Round) -> Optional[Dict[str, str]]:
+        if round_obj.date is None:
+            return None
+        return {
+            "date": _format_date_short(round_obj.date),
+            "course": _course_label(round_obj) or "Unknown Course",
+        }
+
+    def _first_round_below(round_set: List[Round], threshold: int) -> Optional[Dict[str, str]]:
         for round_obj in sorted(round_set, key=lambda r: r.date or datetime.max):
             total = round_obj.calculate_total_score()
             if total is not None and total < threshold:
-                if round_obj.date is not None:
-                    return round_obj.date.isoformat()
+                return _milestone_event(round_obj)
         return None
 
-    def _first_event(round_set: List[Round], predicate) -> Optional[str]:
+    def _first_event(round_set: List[Round], predicate) -> Optional[Dict[str, str]]:
         for round_obj in sorted(round_set, key=lambda r: r.date or datetime.max):
             for row in hole_rows([round_obj]):
                 if predicate(row):
-                    if round_obj.date is not None:
-                        return round_obj.date.isoformat()
+                    return _milestone_event(round_obj)
         return None
 
     def _streak(rows: List[Dict[str, Any]], predicate) -> int:
@@ -275,19 +289,34 @@ def notable_achievements(
         },
     }
 
+    break_thresholds = [120, 110, 100, 95, 90] + list(range(85, 55, -5))
+    score_breaks: List[Dict[str, Any]] = []
+    for threshold in break_thresholds:
+        score_breaks.append(
+            {
+                "threshold": threshold,
+                "achievement": _first_round_below(rounds_list, threshold),
+            }
+        )
+
     round_milestones_lifetime = {
-        "first_round_under_100": _first_round_below(rounds_list, 100),
-        "first_round_under_90": _first_round_below(rounds_list, 90),
-        "first_round_under_80": _first_round_below(rounds_list, 80),
-        "first_round_under_70": _first_round_below(rounds_list, 70),
+        "score_breaks": score_breaks,
         "first_eagle": _first_event(rounds_list, lambda row: row["score_type"] == "eagle"),
         "first_hole_in_one": _first_event(rounds_list, lambda row: row["is_hio"]),
     }
-    new_records = [
-        key
-        for key, value in round_milestones_lifetime.items()
-        if value is not None and datetime.fromisoformat(value) >= cutoff
-    ]
+    new_records: List[str] = []
+    for row in score_breaks:
+        achieved = row["achievement"]
+        if achieved and achieved.get("date"):
+            dt = datetime.strptime(achieved["date"], "%Y/%m/%d")
+            if dt >= cutoff:
+                new_records.append(f"break_{row['threshold']}")
+    for key in ("first_eagle", "first_hole_in_one"):
+        achieved = round_milestones_lifetime[key]
+        if achieved and achieved.get("date"):
+            dt = datetime.strptime(achieved["date"], "%Y/%m/%d")
+            if dt >= cutoff:
+                new_records.append(key)
 
     return {
         "scoring_records": scoring_records,

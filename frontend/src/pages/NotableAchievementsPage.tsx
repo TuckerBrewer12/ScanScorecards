@@ -18,6 +18,17 @@ function Card({
   );
 }
 
+function EventCard({
+  title,
+  event,
+}: {
+  title: string;
+  event: { date: string; course: string } | null | undefined;
+}) {
+  const value = event ? `${event.date} — ${event.course}` : "—";
+  return <Card title={title} value={value} />;
+}
+
 function Group({
   title,
   children,
@@ -181,12 +192,15 @@ export function NotableAchievementsPage({ userId }: { userId: string }) {
           <h2 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-4">6. Round Milestones</h2>
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
             <Group title="Lifetime">
-              <Card title="First Round Under 100" value={round_milestones.lifetime.first_round_under_100} />
-              <Card title="First Round Under 90" value={round_milestones.lifetime.first_round_under_90} />
-              <Card title="First Round Under 80" value={round_milestones.lifetime.first_round_under_80} />
-              <Card title="First Round Under 70" value={round_milestones.lifetime.first_round_under_70} />
-              <Card title="First Eagle" value={round_milestones.lifetime.first_eagle} />
-              <Card title="First Hole-in-One" value={round_milestones.lifetime.first_hole_in_one} />
+              {round_milestones.lifetime.score_breaks.map((row) => (
+                <EventCard
+                  key={row.threshold}
+                  title={`First Round Under ${row.threshold}`}
+                  event={row.achievement}
+                />
+              ))}
+              <EventCard title="First Eagle" event={round_milestones.lifetime.first_eagle} />
+              <EventCard title="First Hole-in-One" event={round_milestones.lifetime.first_hole_in_one} />
             </Group>
             <Group title={`Last ${window_days} Days`}>
               <Card title="New Personal Records Achieved" value={round_milestones.one_year.new_personal_records_achieved_count} />
