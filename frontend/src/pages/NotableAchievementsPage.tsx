@@ -57,7 +57,8 @@ export function NotableAchievementsPage({ userId }: { userId: string }) {
     return <div className="text-gray-500">Unable to load achievements.</div>;
   }
 
-  const { scoring_records, career_totals, best_performance_streaks, window_days } = data.notable_achievements;
+  const { scoring_records, career_totals, best_performance_streaks, home_course_records, window_days } = data.notable_achievements;
+  const showHomeCourseRecords = home_course_records.lifetime.home_course_name != null;
 
   return (
     <div>
@@ -129,6 +130,27 @@ export function NotableAchievementsPage({ userId }: { userId: string }) {
               <Card title="Longest 2-Putt or Less Streak" value={best_performance_streaks.one_year.longest_2_putt_or_less_streak} />
             </Group>
           </div>
+        </div>
+
+        <div>
+          <h2 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-4">4. Home Course Records</h2>
+          {showHomeCourseRecords ? (
+            <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
+              <Group title="Lifetime">
+                <Card title="Home Course" value={home_course_records.lifetime.home_course_name} />
+                <Card title="Lowest Score on Home Course" value={home_course_records.lifetime.lowest_score_on_home_course} />
+                <Card title="Most Rounds Played at Home Course" value={home_course_records.lifetime.most_rounds_played_at_home_course} />
+              </Group>
+              <Group title={`Last ${window_days} Days`}>
+                <Card title="Home Course" value={home_course_records.one_year.home_course_name} />
+                <Card title="Lowest Score on Home Course" value={home_course_records.one_year.lowest_score_on_home_course} />
+              </Group>
+            </div>
+          ) : (
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 text-sm text-gray-600">
+              No home course set.
+            </div>
+          )}
         </div>
       </div>
     </div>
