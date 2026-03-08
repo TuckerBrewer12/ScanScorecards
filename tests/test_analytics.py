@@ -467,3 +467,14 @@ def test_notable_achievements_lifetime_and_one_year():
     assert breaks[70] is None
     assert summary["round_milestones"]["lifetime"]["first_eagle"] is None
     assert summary["round_milestones"]["lifetime"]["first_hole_in_one"] is None
+
+    gir_breaks = {row["threshold"]: row["achievement"] for row in summary["gir_milestones"]["lifetime"]["gir_breaks"]}
+    assert gir_breaks[3]["date"] == "2026/2/1"
+    assert gir_breaks[6]["date"] == "2026/2/1"
+    assert gir_breaks[9]["date"] == "2026/2/1"
+    assert gir_breaks[12] is None
+    assert summary["gir_milestones"]["lifetime"]["most_gir_in_round"] == 10
+    assert summary["gir_milestones"]["lifetime"]["highest_gir_percentage_in_round"] == pytest.approx((10 / 18) * 100)
+    assert summary["gir_milestones"]["one_year"]["best_gir_round"] == {"date": "2026/2/1", "course": "Demo Course"}
+    assert summary["gir_milestones"]["one_year"]["highest_gir_percentage"] == pytest.approx((10 / 18) * 100)
+    assert summary["gir_milestones"]["one_year"]["gir_milestones_achieved_from_lifetime_set"] == 3
