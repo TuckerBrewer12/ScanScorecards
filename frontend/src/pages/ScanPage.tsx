@@ -181,6 +181,7 @@ export function ScanPage({ userId, scanState, setScanState }: ScanPageProps) {
       }
 
       const saved = await res.json();
+      setScanState(initialScanState);
       navigate(`/rounds/${saved.id}`);
     } catch (err) {
       update({ error: err instanceof Error ? err.message : "Save failed" });
