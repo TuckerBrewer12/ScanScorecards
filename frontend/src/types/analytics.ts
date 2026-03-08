@@ -119,7 +119,23 @@ export interface NotableAchievements {
     one_year: Record<string, number | null>;
   };
   round_milestones: {
-    lifetime: Record<string, string | null>;
+    lifetime: {
+      score_breaks: Array<{
+        threshold: number;
+        achievement: {
+          date: string;
+          course: string;
+        } | null;
+      }>;
+      first_eagle: {
+        date: string;
+        course: string;
+      } | null;
+      first_hole_in_one: {
+        date: string;
+        course: string;
+      } | null;
+    };
     one_year: {
       new_personal_records_achieved_count: number;
       new_personal_records_achieved: string[];
