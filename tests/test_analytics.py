@@ -13,6 +13,7 @@ from analytics.stats import (
     gir_vs_non_gir_score_distribution,
     overall_gir_percentage,
     overall_putts_per_gir,
+    notable_achievements,
     putts_comparison,
     putts_per_gir,
     putts_per_gir_comparison,
@@ -426,3 +427,68 @@ def test_scoring_vs_hole_handicap():
     assert rows[1]["handicap"] == 2
     assert rows[1]["average_to_par"] == pytest.approx(1.0)
     assert rows[1]["sample_size"] == 2
+
+
+def test_notable_achievements_lifetime_and_one_year():
+    rounds = _build_rounds()
+    summary = notable_achievements(rounds, reference_date=datetime(2026, 2, 15), days=365)
+
+    assert summary["window_days"] == 365
+    assert summary["scoring_records"]["lifetime"]["lowest_round"] == 72
+    assert summary["scoring_records"]["lifetime"]["highest_round"] == 81
+    assert summary["scoring_records"]["one_year"]["lowest_round"] == 72
+    assert summary["scoring_records_events"]["lifetime"]["lowest_round"] == {"date": "2026/2/1", "course": "Demo Course"}
+    assert summary["scoring_records_events"]["lifetime"]["highest_round"] == {"date": "2026/2/2", "course": "Demo Course"}
+
+    lifetime_totals = summary["career_totals"]["lifetime"]
+    assert lifetime_totals["total_rounds_played"] == 2
+    assert lifetime_totals["total_holes_played"] == 36
+    assert lifetime_totals["total_birdies"] == 6
+    assert lifetime_totals["total_eagles"] == 0
+    assert lifetime_totals["total_hole_in_ones"] == 0
+    assert lifetime_totals["total_pars"] == 17
+    assert lifetime_totals["total_bogeys"] == 11
+    assert lifetime_totals["total_double_bogeys_plus"] == 2
+    assert lifetime_totals["total_triple_bogeys"] == 0
+    assert lifetime_totals["total_gir"] == 19
+    assert lifetime_totals["total_3_putts"] == 0
+
+    year_totals = summary["career_totals"]["one_year"]
+    assert year_totals["rounds_played"] == 2
+    assert year_totals["birdies"] == 6
+    assert year_totals["triple_bogeys"] == 0
+
+    assert summary["home_course_records"]["lifetime"]["home_course_name"] is None
+    assert summary["home_course_records"]["lifetime"]["lowest_score_on_home_course"] is None
+    assert summary["home_course_records"]["lifetime"]["most_rounds_played_at_home_course"] == 0
+
+    putt_breaks = {row["threshold"]: row["achievement"] for row in summary["putting_milestones"]["lifetime"]["putt_breaks"]}
+    assert putt_breaks[45]["date"] == "2026/2/1"
+    assert putt_breaks[42]["date"] == "2026/2/1"
+    assert putt_breaks[39]["date"] == "2026/2/1"
+    assert putt_breaks[30]["date"] == "2026/2/2"
+    assert putt_breaks[27] is None
+    assert summary["putting_milestones"]["one_year"]["putting_milestones_achieved_from_lifetime_set"] == 6
+    assert summary["putting_milestones_events"]["lifetime"]["fewest_putts_in_round"] == {"date": "2026/2/2", "course": "Demo Course"}
+
+    breaks = {row["threshold"]: row["achievement"] for row in summary["round_milestones"]["lifetime"]["score_breaks"]}
+    assert breaks[120]["date"] == "2026/2/1"
+    assert breaks[120]["course"] == "Demo Course"
+    assert breaks[75]["date"] == "2026/2/1"
+    assert breaks[70] is None
+    assert summary["round_milestones"]["lifetime"]["first_round_under_par"] is None
+    assert summary["round_milestones"]["lifetime"]["first_eagle"] is None
+    assert summary["round_milestones"]["lifetime"]["first_hole_in_one"] is None
+
+    gir_breaks = {row["threshold"]: row["achievement"] for row in summary["gir_milestones"]["lifetime"]["gir_breaks"]}
+    assert gir_breaks[3]["date"] == "2026/2/1"
+    assert gir_breaks[6]["date"] == "2026/2/1"
+    assert gir_breaks[9]["date"] == "2026/2/1"
+    assert gir_breaks[12] is None
+    assert summary["gir_milestones"]["lifetime"]["most_gir_in_round"] == 10
+    assert summary["gir_milestones"]["lifetime"]["highest_gir_percentage_in_round"] == pytest.approx((10 / 18) * 100)
+    assert summary["gir_milestones"]["one_year"]["best_gir_round"] == {"date": "2026/2/1", "course": "Demo Course"}
+    assert summary["gir_milestones"]["one_year"]["best_gir_in_round"] == 10
+    assert summary["gir_milestones"]["one_year"]["highest_gir_percentage"] == pytest.approx((10 / 18) * 100)
+    assert summary["gir_milestones"]["one_year"]["gir_milestones_achieved_from_lifetime_set"] == 3
+    assert summary["gir_milestones_events"]["lifetime"]["most_gir_in_round"] == {"date": "2026/2/1", "course": "Demo Course"}

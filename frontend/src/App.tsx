@@ -7,6 +7,7 @@ import { RoundDetailPage } from "./pages/RoundDetailPage";
 import { CoursesPage } from "./pages/CoursesPage";
 import { ScanPage } from "./pages/ScanPage";
 import { AnalyticsPage } from "./pages/AnalyticsPage";
+import { NotableAchievementsPage } from "./pages/NotableAchievementsPage";
 import type { ScanState } from "./types/scan";
 import { initialScanState } from "./types/scan";
 import { api } from "./lib/api";
@@ -39,6 +40,7 @@ export default function App() {
           <Route path="/courses" element={<CoursesPage userId={userId} />} />
           <Route path="/scan" element={<ScanPage userId={userId} scanState={scanState} setScanState={setScanState} />} />
           <Route path="/analytics" element={<AnalyticsPage userId={userId} />} />
+          <Route path="/notable-achievements" element={<NotableAchievementsPage userId={userId} />} />
         </Routes>
       </AppLayout>
     </BrowserRouter>

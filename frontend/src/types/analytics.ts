@@ -97,6 +97,130 @@ export interface GIRvsNonGIRRow {
   quad_bogey: number;
 }
 
+export interface NotableAchievements {
+  scoring_records: {
+    lifetime: Record<string, number | null>;
+    one_year: Record<string, number | null>;
+  };
+  scoring_records_events: {
+    lifetime: Record<string, { date: string; course: string } | null>;
+    one_year: Record<string, { date: string; course: string } | null>;
+  };
+  career_totals: {
+    lifetime: Record<string, number>;
+    one_year: Record<string, number>;
+  };
+  best_performance_streaks: {
+    lifetime: Record<string, number>;
+    one_year: Record<string, number>;
+  };
+  best_performance_streaks_events: {
+    lifetime: Record<string, { date: string; course: string } | null>;
+    one_year: Record<string, { date: string; course: string } | null>;
+  };
+  home_course_records: {
+    lifetime: { home_course_name: string | null; lowest_score_on_home_course: number | null; most_rounds_played_at_home_course: number };
+    one_year: { home_course_name: string | null; lowest_score_on_home_course: number | null };
+  };
+  home_course_records_events: {
+    lifetime: { lowest_score_on_home_course: { date: string; course: string } | null };
+    one_year: { lowest_score_on_home_course: { date: string; course: string } | null };
+  };
+  putting_milestones: {
+    lifetime: {
+      fewest_putts_in_round: number | null;
+      most_1_putts_in_round: number | null;
+      most_3_putts_in_round: number | null;
+      putt_breaks: Array<{
+        threshold: number;
+        achievement: {
+          date: string;
+          course: string;
+        } | null;
+      }>;
+    };
+    one_year: {
+      fewest_putts_in_round: number | null;
+      most_1_putts_in_round: number | null;
+      most_3_putts_in_round: number | null;
+      putting_milestones_achieved_from_lifetime_set: number;
+    };
+  };
+  putting_milestones_events: {
+    lifetime: {
+      fewest_putts_in_round: { date: string; course: string } | null;
+      most_1_putts_in_round: { date: string; course: string } | null;
+      most_3_putts_in_round: { date: string; course: string } | null;
+    };
+    one_year: {
+      fewest_putts_in_round: { date: string; course: string } | null;
+      most_1_putts_in_round: { date: string; course: string } | null;
+      most_3_putts_in_round: { date: string; course: string } | null;
+    };
+  };
+  gir_milestones: {
+    lifetime: {
+      gir_breaks: Array<{
+        threshold: number;
+        achievement: {
+          date: string;
+          course: string;
+        } | null;
+      }>;
+      highest_gir_percentage_in_round: number | null;
+      most_gir_in_round: number | null;
+    };
+    one_year: {
+      best_gir_round: {
+        date: string;
+        course: string;
+      } | null;
+      best_gir_in_round: number | null;
+      highest_gir_percentage: number | null;
+      gir_milestones_achieved_from_lifetime_set: number;
+    };
+  };
+  gir_milestones_events: {
+    lifetime: {
+      highest_gir_percentage_in_round: { date: string; course: string } | null;
+      most_gir_in_round: { date: string; course: string } | null;
+    };
+    one_year: {
+      best_gir_round: { date: string; course: string } | null;
+      highest_gir_percentage: { date: string; course: string } | null;
+    };
+  };
+  round_milestones: {
+    lifetime: {
+      score_breaks: Array<{
+        threshold: number;
+        achievement: {
+          date: string;
+          course: string;
+        } | null;
+      }>;
+      first_round_under_par: {
+        score: number;
+        date: string;
+        course: string;
+      } | null;
+      first_eagle: {
+        date: string;
+        course: string;
+      } | null;
+      first_hole_in_one: {
+        date: string;
+        course: string;
+      } | null;
+    };
+    one_year: {
+      new_personal_records_achieved_count: number;
+      new_personal_records_achieved: string[];
+    };
+  };
+  window_days: number;
+}
+
 export interface AnalyticsData {
   kpis: AnalyticsKPIs;
   score_trend: ScoreTrendRow[];
@@ -110,6 +234,7 @@ export interface AnalyticsData {
   gir_vs_non_gir: GIRvsNonGIRRow[];
   handicap_trend: HandicapTrendRow[];
   score_differentials: ScoreDifferentialRow[];
+  notable_achievements: NotableAchievements;
 }
 
 export interface ComparisonRow {

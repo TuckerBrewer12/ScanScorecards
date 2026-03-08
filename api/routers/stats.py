@@ -87,6 +87,138 @@ async def get_analytics(
             "gir_vs_non_gir": [],
             "handicap_trend": [],
             "score_differentials": [],
+            "notable_achievements": {
+                "scoring_records": {
+                    "lifetime": {},
+                    "one_year": {},
+                },
+                "scoring_records_events": {
+                    "lifetime": {},
+                    "one_year": {},
+                },
+                "career_totals": {
+                    "lifetime": {},
+                    "one_year": {},
+                },
+                "best_performance_streaks": {
+                    "lifetime": {},
+                    "one_year": {},
+                },
+                "best_performance_streaks_events": {
+                    "lifetime": {},
+                    "one_year": {},
+                },
+                "home_course_records": {
+                    "lifetime": {
+                        "home_course_name": None,
+                        "lowest_score_on_home_course": None,
+                        "most_rounds_played_at_home_course": 0,
+                    },
+                    "one_year": {
+                        "home_course_name": None,
+                        "lowest_score_on_home_course": None,
+                    },
+                },
+                "home_course_records_events": {
+                    "lifetime": {
+                        "lowest_score_on_home_course": None,
+                    },
+                    "one_year": {
+                        "lowest_score_on_home_course": None,
+                    },
+                },
+                "putting_milestones": {
+                    "lifetime": {
+                        "fewest_putts_in_round": None,
+                        "most_1_putts_in_round": None,
+                        "most_3_putts_in_round": None,
+                        "putt_breaks": [
+                            {"threshold": 45, "achievement": None},
+                            {"threshold": 42, "achievement": None},
+                            {"threshold": 39, "achievement": None},
+                            {"threshold": 36, "achievement": None},
+                            {"threshold": 33, "achievement": None},
+                            {"threshold": 30, "achievement": None},
+                            {"threshold": 27, "achievement": None},
+                            {"threshold": 24, "achievement": None},
+                            {"threshold": 21, "achievement": None},
+                        ],
+                    },
+                    "one_year": {
+                        "fewest_putts_in_round": None,
+                        "most_1_putts_in_round": None,
+                        "most_3_putts_in_round": None,
+                        "putting_milestones_achieved_from_lifetime_set": 0,
+                    },
+                },
+                "putting_milestones_events": {
+                    "lifetime": {
+                        "fewest_putts_in_round": None,
+                        "most_1_putts_in_round": None,
+                        "most_3_putts_in_round": None,
+                    },
+                    "one_year": {
+                        "fewest_putts_in_round": None,
+                        "most_1_putts_in_round": None,
+                        "most_3_putts_in_round": None,
+                    },
+                },
+                "gir_milestones": {
+                    "lifetime": {
+                        "gir_breaks": [
+                            {"threshold": 3, "achievement": None},
+                            {"threshold": 6, "achievement": None},
+                            {"threshold": 9, "achievement": None},
+                            {"threshold": 12, "achievement": None},
+                            {"threshold": 15, "achievement": None},
+                            {"threshold": 18, "achievement": None},
+                        ],
+                        "highest_gir_percentage_in_round": None,
+                        "most_gir_in_round": None,
+                    },
+                    "one_year": {
+                        "best_gir_round": None,
+                        "best_gir_in_round": None,
+                        "highest_gir_percentage": None,
+                        "gir_milestones_achieved_from_lifetime_set": 0,
+                    },
+                },
+                "gir_milestones_events": {
+                    "lifetime": {
+                        "highest_gir_percentage_in_round": None,
+                        "most_gir_in_round": None,
+                    },
+                    "one_year": {
+                        "best_gir_round": None,
+                        "highest_gir_percentage": None,
+                    },
+                },
+                "round_milestones": {
+                    "lifetime": {
+                        "score_breaks": [
+                            {"threshold": 120, "achievement": None},
+                            {"threshold": 110, "achievement": None},
+                            {"threshold": 100, "achievement": None},
+                            {"threshold": 95, "achievement": None},
+                            {"threshold": 90, "achievement": None},
+                            {"threshold": 85, "achievement": None},
+                            {"threshold": 80, "achievement": None},
+                            {"threshold": 75, "achievement": None},
+                            {"threshold": 70, "achievement": None},
+                            {"threshold": 65, "achievement": None},
+                            {"threshold": 60, "achievement": None},
+                        ],
+                        "first_round_under_par": None,
+                        "first_eagle": None,
+                        "first_hole_in_one": None,
+                    },
+                    "one_year": {
+                        "new_personal_records_achieved_count": 0,
+                        "new_personal_records_achieved": [],
+                    },
+                },
+                "window_days": 365,
+            },
         }
 
     scores = [r.calculate_total_score() for r in rounds if r.calculate_total_score() is not None]
@@ -118,6 +250,10 @@ async def get_analytics(
         "gir_vs_non_gir": analytics.gir_vs_non_gir_score_distribution(rounds),
         "handicap_trend": hcap.handicap_trend(rounds),
         "score_differentials": hcap.score_differentials_per_round(rounds),
+        "notable_achievements": analytics.notable_achievements(
+            rounds,
+            home_course_id=user.home_course_id,
+        ),
     }
 
 
