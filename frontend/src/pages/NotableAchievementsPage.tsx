@@ -63,6 +63,7 @@ export function NotableAchievementsPage({ userId }: { userId: string }) {
     best_performance_streaks,
     home_course_records,
     putting_milestones,
+    round_milestones,
     window_days,
   } = data.notable_achievements;
   const showHomeCourseRecords = home_course_records.lifetime.home_course_name != null;
@@ -172,6 +173,24 @@ export function NotableAchievementsPage({ userId }: { userId: string }) {
               <Card title="Fewest Putts in a Round" value={putting_milestones.one_year.fewest_putts_in_round} />
               <Card title="Most 1-Putts in a Round" value={putting_milestones.one_year.most_1_putts_in_round} />
               <Card title="Most 3-Putts in a Round" value={putting_milestones.one_year.most_3_putts_in_round} />
+            </Group>
+          </div>
+        </div>
+
+        <div>
+          <h2 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-4">6. Round Milestones</h2>
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
+            <Group title="Lifetime">
+              <Card title="First Round Under 100" value={round_milestones.lifetime.first_round_under_100} />
+              <Card title="First Round Under 90" value={round_milestones.lifetime.first_round_under_90} />
+              <Card title="First Round Under 80" value={round_milestones.lifetime.first_round_under_80} />
+              <Card title="First Round Under 70" value={round_milestones.lifetime.first_round_under_70} />
+              <Card title="First Eagle" value={round_milestones.lifetime.first_eagle} />
+              <Card title="First Hole-in-One" value={round_milestones.lifetime.first_hole_in_one} />
+            </Group>
+            <Group title={`Last ${window_days} Days`}>
+              <Card title="New Personal Records Achieved" value={round_milestones.one_year.new_personal_records_achieved_count} />
+              <Card title="Records" value={round_milestones.one_year.new_personal_records_achieved.join(", ") || "—"} />
             </Group>
           </div>
         </div>
