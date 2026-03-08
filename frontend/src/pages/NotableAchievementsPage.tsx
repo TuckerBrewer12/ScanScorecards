@@ -177,6 +177,13 @@ export function NotableAchievementsPage({ userId }: { userId: string }) {
           <h2 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-4">5. Putting Milestones</h2>
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
             <Group title="Lifetime">
+              {putting_milestones.lifetime.putt_breaks.map((row) => (
+                <EventCard
+                  key={row.threshold}
+                  title={`First Round Under ${row.threshold} Putts`}
+                  event={row.achievement}
+                />
+              ))}
               <Card title="Fewest Putts in a Round" value={putting_milestones.lifetime.fewest_putts_in_round} />
               <Card title="Most 1-Putts in a Round" value={putting_milestones.lifetime.most_1_putts_in_round} />
               <Card title="Most 3-Putts in a Round" value={putting_milestones.lifetime.most_3_putts_in_round} />
@@ -185,6 +192,10 @@ export function NotableAchievementsPage({ userId }: { userId: string }) {
               <Card title="Fewest Putts in a Round" value={putting_milestones.one_year.fewest_putts_in_round} />
               <Card title="Most 1-Putts in a Round" value={putting_milestones.one_year.most_1_putts_in_round} />
               <Card title="Most 3-Putts in a Round" value={putting_milestones.one_year.most_3_putts_in_round} />
+              <Card
+                title="Lifetime Putting Milestones Achieved"
+                value={putting_milestones.one_year.putting_milestones_achieved_from_lifetime_set}
+              />
             </Group>
           </div>
         </div>

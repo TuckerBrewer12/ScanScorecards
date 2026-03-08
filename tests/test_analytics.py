@@ -460,6 +460,14 @@ def test_notable_achievements_lifetime_and_one_year():
     assert summary["home_course_records"]["lifetime"]["lowest_score_on_home_course"] is None
     assert summary["home_course_records"]["lifetime"]["most_rounds_played_at_home_course"] == 0
 
+    putt_breaks = {row["threshold"]: row["achievement"] for row in summary["putting_milestones"]["lifetime"]["putt_breaks"]}
+    assert putt_breaks[45]["date"] == "2026/2/1"
+    assert putt_breaks[42]["date"] == "2026/2/1"
+    assert putt_breaks[39]["date"] == "2026/2/1"
+    assert putt_breaks[30]["date"] == "2026/2/2"
+    assert putt_breaks[27] is None
+    assert summary["putting_milestones"]["one_year"]["putting_milestones_achieved_from_lifetime_set"] == 6
+
     breaks = {row["threshold"]: row["achievement"] for row in summary["round_milestones"]["lifetime"]["score_breaks"]}
     assert breaks[120]["date"] == "2026/2/1"
     assert breaks[120]["course"] == "Demo Course"

@@ -112,8 +112,28 @@ async def get_analytics(
                     },
                 },
                 "putting_milestones": {
-                    "lifetime": {},
-                    "one_year": {},
+                    "lifetime": {
+                        "fewest_putts_in_round": None,
+                        "most_1_putts_in_round": None,
+                        "most_3_putts_in_round": None,
+                        "putt_breaks": [
+                            {"threshold": 45, "achievement": None},
+                            {"threshold": 42, "achievement": None},
+                            {"threshold": 39, "achievement": None},
+                            {"threshold": 36, "achievement": None},
+                            {"threshold": 33, "achievement": None},
+                            {"threshold": 30, "achievement": None},
+                            {"threshold": 27, "achievement": None},
+                            {"threshold": 24, "achievement": None},
+                            {"threshold": 21, "achievement": None},
+                        ],
+                    },
+                    "one_year": {
+                        "fewest_putts_in_round": None,
+                        "most_1_putts_in_round": None,
+                        "most_3_putts_in_round": None,
+                        "putting_milestones_achieved_from_lifetime_set": 0,
+                    },
                 },
                 "gir_milestones": {
                     "lifetime": {

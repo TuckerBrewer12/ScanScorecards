@@ -115,8 +115,24 @@ export interface NotableAchievements {
     one_year: { home_course_name: string | null; lowest_score_on_home_course: number | null };
   };
   putting_milestones: {
-    lifetime: Record<string, number | null>;
-    one_year: Record<string, number | null>;
+    lifetime: {
+      fewest_putts_in_round: number | null;
+      most_1_putts_in_round: number | null;
+      most_3_putts_in_round: number | null;
+      putt_breaks: Array<{
+        threshold: number;
+        achievement: {
+          date: string;
+          course: string;
+        } | null;
+      }>;
+    };
+    one_year: {
+      fewest_putts_in_round: number | null;
+      most_1_putts_in_round: number | null;
+      most_3_putts_in_round: number | null;
+      putting_milestones_achieved_from_lifetime_set: number;
+    };
   };
   gir_milestones: {
     lifetime: {
