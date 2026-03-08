@@ -289,6 +289,34 @@ def notable_achievements(
         },
     }
 
+    def _first_round_with_putts_below(round_set: List[Round], threshold: int) -> Optional[Dict[str, str]]:
+        for round_obj in sorted(round_set, key=lambda r: r.date or datetime.max):
+            total_putts = round_obj.get_total_putts()
+            if total_putts is not None and total_putts < threshold:
+                return _milestone_event(round_obj)
+        return None
+
+    putting_thresholds = list(range(45, 20, -3))
+    putting_breaks: List[Dict[str, Any]] = []
+    for threshold in putting_thresholds:
+        putting_breaks.append(
+            {
+                "threshold": threshold,
+                "achievement": _first_round_with_putts_below(rounds_list, threshold),
+            }
+        )
+
+    putting_milestones_in_window = 0
+    for row in putting_breaks:
+        achieved = row["achievement"]
+        if achieved and achieved.get("date"):
+            dt = datetime.strptime(achieved["date"], "%Y/%m/%d")
+            if dt >= cutoff:
+                putting_milestones_in_window += 1
+
+    putting_milestones["lifetime"]["putt_breaks"] = putting_breaks
+    putting_milestones["one_year"]["putting_milestones_achieved_from_lifetime_set"] = putting_milestones_in_window
+
     def _first_round_reaching_gir(round_set: List[Round], threshold: int) -> Optional[Dict[str, str]]:
         for round_obj in sorted(round_set, key=lambda r: r.date or datetime.max):
             total_gir = round_obj.get_total_gir()
