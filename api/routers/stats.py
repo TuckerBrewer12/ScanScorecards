@@ -115,6 +115,25 @@ async def get_analytics(
                     "lifetime": {},
                     "one_year": {},
                 },
+                "gir_milestones": {
+                    "lifetime": {
+                        "gir_breaks": [
+                            {"threshold": 3, "achievement": None},
+                            {"threshold": 6, "achievement": None},
+                            {"threshold": 9, "achievement": None},
+                            {"threshold": 12, "achievement": None},
+                            {"threshold": 15, "achievement": None},
+                            {"threshold": 18, "achievement": None},
+                        ],
+                        "highest_gir_percentage_in_round": None,
+                        "most_gir_in_round": None,
+                    },
+                    "one_year": {
+                        "best_gir_round": None,
+                        "highest_gir_percentage": None,
+                        "gir_milestones_achieved_from_lifetime_set": 0,
+                    },
+                },
                 "round_milestones": {
                     "lifetime": {
                         "score_breaks": [

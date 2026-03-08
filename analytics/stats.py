@@ -289,6 +289,72 @@ def notable_achievements(
         },
     }
 
+    def _first_round_reaching_gir(round_set: List[Round], threshold: int) -> Optional[Dict[str, str]]:
+        for round_obj in sorted(round_set, key=lambda r: r.date or datetime.max):
+            total_gir = round_obj.get_total_gir()
+            if total_gir is not None and total_gir >= threshold:
+                return _milestone_event(round_obj)
+        return None
+
+    def _round_gir_percentage(round_obj: Round) -> Optional[float]:
+        holes = len(_valid_hole_scores(round_obj))
+        gir = round_obj.get_total_gir()
+        if not holes or gir is None:
+            return None
+        return (gir / holes) * 100
+
+    gir_thresholds = list(range(3, 19, 3))
+    gir_breaks: List[Dict[str, Any]] = []
+    for threshold in gir_thresholds:
+        gir_breaks.append(
+            {
+                "threshold": threshold,
+                "achievement": _first_round_reaching_gir(rounds_list, threshold),
+            }
+        )
+
+    lifetime_gir_counts = [r.get_total_gir() for r in rounds_list if r.get_total_gir() is not None]
+    lifetime_gir_pct = [_round_gir_percentage(r) for r in rounds_list]
+    lifetime_gir_pct = [value for value in lifetime_gir_pct if value is not None]
+
+    one_year_gir_candidates = []
+    for round_obj in rounds_year:
+        gir = round_obj.get_total_gir()
+        gir_pct = _round_gir_percentage(round_obj)
+        if gir is not None and gir_pct is not None and round_obj.date is not None:
+            one_year_gir_candidates.append((round_obj, gir, gir_pct))
+
+    best_gir_round_event: Optional[Dict[str, str]] = None
+    if one_year_gir_candidates:
+        best_round, _, _ = sorted(
+            one_year_gir_candidates,
+            key=lambda item: (-item[1], item[0].date or datetime.max),
+        )[0]
+        best_gir_round_event = _milestone_event(best_round)
+
+    highest_gir_pct_one_year = max((item[2] for item in one_year_gir_candidates), default=None)
+
+    gir_milestones_in_window = 0
+    for row in gir_breaks:
+        achieved = row["achievement"]
+        if achieved and achieved.get("date"):
+            dt = datetime.strptime(achieved["date"], "%Y/%m/%d")
+            if dt >= cutoff:
+                gir_milestones_in_window += 1
+
+    gir_milestones = {
+        "lifetime": {
+            "gir_breaks": gir_breaks,
+            "highest_gir_percentage_in_round": max(lifetime_gir_pct) if lifetime_gir_pct else None,
+            "most_gir_in_round": max(lifetime_gir_counts) if lifetime_gir_counts else None,
+        },
+        "one_year": {
+            "best_gir_round": best_gir_round_event,
+            "highest_gir_percentage": highest_gir_pct_one_year,
+            "gir_milestones_achieved_from_lifetime_set": gir_milestones_in_window,
+        },
+    }
+
     break_thresholds = [120, 110, 100, 95, 90] + list(range(85, 55, -5))
     score_breaks: List[Dict[str, Any]] = []
     for threshold in break_thresholds:
@@ -324,6 +390,7 @@ def notable_achievements(
         "best_performance_streaks": streaks,
         "home_course_records": home_course_records,
         "putting_milestones": putting_milestones,
+        "gir_milestones": gir_milestones,
         "round_milestones": {
             "lifetime": round_milestones_lifetime,
             "one_year": {

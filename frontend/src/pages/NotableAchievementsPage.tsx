@@ -74,6 +74,7 @@ export function NotableAchievementsPage({ userId }: { userId: string }) {
     best_performance_streaks,
     home_course_records,
     putting_milestones,
+    gir_milestones,
     round_milestones,
     window_days,
   } = data.notable_achievements;
@@ -85,7 +86,7 @@ export function NotableAchievementsPage({ userId }: { userId: string }) {
 
       <div className="space-y-8">
         <div>
-          <h2 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-4">1. Scoring Records</h2>
+          <h2 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-4">1. Round Records</h2>
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
             <Group title="Lifetime">
               <Card title="Lowest Round" value={scoring_records.lifetime.lowest_round} />
@@ -189,7 +190,46 @@ export function NotableAchievementsPage({ userId }: { userId: string }) {
         </div>
 
         <div>
-          <h2 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-4">6. Round Milestones</h2>
+          <h2 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-4">6. GIR Milestones</h2>
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
+            <Group title="Lifetime">
+              {gir_milestones.lifetime.gir_breaks.map((row) => (
+                <EventCard
+                  key={row.threshold}
+                  title={`First Round with ${row.threshold}/18 GIR`}
+                  event={row.achievement}
+                />
+              ))}
+              <Card
+                title="Highest GIR % in a Round"
+                value={
+                  gir_milestones.lifetime.highest_gir_percentage_in_round != null
+                    ? `${gir_milestones.lifetime.highest_gir_percentage_in_round.toFixed(1)}%`
+                    : "—"
+                }
+              />
+              <Card title="Most GIR in a Round" value={gir_milestones.lifetime.most_gir_in_round} />
+            </Group>
+            <Group title={`Last ${window_days} Days`}>
+              <EventCard title="Best GIR Round" event={gir_milestones.one_year.best_gir_round} />
+              <Card
+                title="Highest GIR %"
+                value={
+                  gir_milestones.one_year.highest_gir_percentage != null
+                    ? `${gir_milestones.one_year.highest_gir_percentage.toFixed(1)}%`
+                    : "—"
+                }
+              />
+              <Card
+                title="Lifetime GIR Milestones Achieved"
+                value={gir_milestones.one_year.gir_milestones_achieved_from_lifetime_set}
+              />
+            </Group>
+          </div>
+        </div>
+
+        <div>
+          <h2 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-4">7. Scoring Milestones</h2>
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
             <Group title="Lifetime">
               {round_milestones.lifetime.score_breaks.map((row) => (

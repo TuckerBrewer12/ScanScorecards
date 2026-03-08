@@ -118,6 +118,27 @@ export interface NotableAchievements {
     lifetime: Record<string, number | null>;
     one_year: Record<string, number | null>;
   };
+  gir_milestones: {
+    lifetime: {
+      gir_breaks: Array<{
+        threshold: number;
+        achievement: {
+          date: string;
+          course: string;
+        } | null;
+      }>;
+      highest_gir_percentage_in_round: number | null;
+      most_gir_in_round: number | null;
+    };
+    one_year: {
+      best_gir_round: {
+        date: string;
+        course: string;
+      } | null;
+      highest_gir_percentage: number | null;
+      gir_milestones_achieved_from_lifetime_set: number;
+    };
+  };
   round_milestones: {
     lifetime: {
       score_breaks: Array<{
