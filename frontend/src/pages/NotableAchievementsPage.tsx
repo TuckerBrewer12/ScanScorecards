@@ -57,7 +57,14 @@ export function NotableAchievementsPage({ userId }: { userId: string }) {
     return <div className="text-gray-500">Unable to load achievements.</div>;
   }
 
-  const { scoring_records, career_totals, best_performance_streaks, home_course_records, window_days } = data.notable_achievements;
+  const {
+    scoring_records,
+    career_totals,
+    best_performance_streaks,
+    home_course_records,
+    putting_milestones,
+    window_days,
+  } = data.notable_achievements;
   const showHomeCourseRecords = home_course_records.lifetime.home_course_name != null;
 
   return (
@@ -151,6 +158,22 @@ export function NotableAchievementsPage({ userId }: { userId: string }) {
               No home course set.
             </div>
           )}
+        </div>
+
+        <div>
+          <h2 className="text-sm font-bold text-gray-500 uppercase tracking-widest mb-4">5. Putting Milestones</h2>
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
+            <Group title="Lifetime">
+              <Card title="Fewest Putts in a Round" value={putting_milestones.lifetime.fewest_putts_in_round} />
+              <Card title="Most 1-Putts in a Round" value={putting_milestones.lifetime.most_1_putts_in_round} />
+              <Card title="Most 3-Putts in a Round" value={putting_milestones.lifetime.most_3_putts_in_round} />
+            </Group>
+            <Group title={`Last ${window_days} Days`}>
+              <Card title="Fewest Putts in a Round" value={putting_milestones.one_year.fewest_putts_in_round} />
+              <Card title="Most 1-Putts in a Round" value={putting_milestones.one_year.most_1_putts_in_round} />
+              <Card title="Most 3-Putts in a Round" value={putting_milestones.one_year.most_3_putts_in_round} />
+            </Group>
+          </div>
         </div>
       </div>
     </div>
