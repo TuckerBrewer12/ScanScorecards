@@ -5,8 +5,8 @@ from pydantic import BaseModel
 from typing import List, Optional
 from database.db_manager import DatabaseManager
 from database.exceptions import DuplicateError, NotFoundError
-from api.dependencies import get_db
-from models import UserTee
+from api.dependencies import get_current_user, get_db
+from models import User, UserTee
 from analytics import handicap as hcap
 
 router = APIRouter()
@@ -44,7 +44,11 @@ async def get_user(user_id: str, db: DatabaseManager = Depends(get_db)):
 
 
 @router.get("/{user_id}/handicap")
-async def get_user_handicap(user_id: str, db: DatabaseManager = Depends(get_db)):
+async def get_user_handicap(
+    user_id: str,
+    db: DatabaseManager = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     """Return the user's current WHS Handicap Index."""
     rounds = await db.rounds.get_rounds_for_user(user_id)
     rounds_chrono = list(reversed(rounds))
@@ -61,6 +65,7 @@ async def get_user_tees(
     user_id: str,
     course_id: Optional[str] = Query(None),
     db: DatabaseManager = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """List a user's custom tee configurations."""
     return await db.user_tees.get_user_tees(user_id, course_id=course_id)
@@ -71,6 +76,7 @@ async def create_user_tee(
     user_id: str,
     req: CreateUserTeeRequest,
     db: DatabaseManager = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """Create a user tee configuration."""
     tee = UserTee(
@@ -93,6 +99,7 @@ async def update_user_tee(
     tee_id: str,
     req: UpdateUserTeeRequest,
     db: DatabaseManager = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """Update a user tee configuration."""
     updates = req.model_dump(exclude_none=True)
@@ -109,6 +116,7 @@ async def delete_user_tee(
     user_id: str,
     tee_id: str,
     db: DatabaseManager = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """Delete a user tee configuration."""
     deleted = await db.user_tees.delete_user_tee(tee_id)

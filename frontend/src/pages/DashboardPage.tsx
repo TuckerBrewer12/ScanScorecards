@@ -122,7 +122,7 @@ export function DashboardPage({ userId }: DashboardPageProps) {
                         Avg {props.value}
                       </text>
                     );
-                  }) as Fmt}
+                  }) as any}
                 />
               </ComposedChart>
             </ResponsiveContainer>

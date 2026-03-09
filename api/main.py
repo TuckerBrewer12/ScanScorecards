@@ -3,7 +3,10 @@
 import os
 from contextlib import asynccontextmanager
 
+from dotenv import load_dotenv
 from fastapi import FastAPI
+
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), "..", ".env"))
 from fastapi.middleware.cors import CORSMiddleware
 
 from models import Round, User  # noqa: F401 — Round must be imported for User.model_rebuild()
@@ -39,7 +42,8 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
-    from api.routers import courses, users, rounds, stats, scan
+    from api.routers import auth, courses, users, rounds, stats, scan
+    app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
     app.include_router(courses.router, prefix="/api/courses", tags=["courses"])
     app.include_router(users.router, prefix="/api/users", tags=["users"])
     app.include_router(rounds.router, prefix="/api/rounds", tags=["rounds"])

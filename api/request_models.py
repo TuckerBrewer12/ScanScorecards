@@ -32,7 +32,7 @@ class CourseHoleInput(BaseModel):
 
 class SaveRoundRequest(BaseModel):
     """Request to save a reviewed/edited round."""
-    user_id: str
+    user_id: str = ""  # populated from JWT by the endpoint; ignored if sent by client
     course_name: Optional[str] = None
     course_location: Optional[str] = None
     tee_box: Optional[str] = None
