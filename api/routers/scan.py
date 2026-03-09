@@ -14,8 +14,9 @@ logger = logging.getLogger(__name__)
 
 from database.db_manager import DatabaseManager
 from database.sync_adapter import SyncCourseRepositoryAdapter
-from api.dependencies import get_db
+from api.dependencies import get_current_user, get_db
 from api.request_models import SaveRoundRequest
+from models import User
 from llm.scorecard_extractor import extract_scorecard, ExtractionResult
 from llm.strategies import ExtractionStrategy
 from services.scan_service import ScanService
@@ -38,6 +39,7 @@ async def extract_scan(
     course_id: Optional[str] = Form(None),
     scoring_format: Optional[str] = Form(None),  # "to_par" | "strokes" | None (auto-detect)
     db: DatabaseManager = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """Upload a scorecard image, run LLM extraction, return results for review."""
     # Validate file type
@@ -114,9 +116,11 @@ async def extract_scan(
 async def save_round(
     req: SaveRoundRequest,
     db: DatabaseManager = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """Save a reviewed/edited round to the database."""
     try:
+        req.user_id = str(current_user.id)
         service = ScanService(db)
         saved = await service.save_reviewed_scan(req)
         return {"id": saved.id, "total_score": saved.calculate_total_score()}

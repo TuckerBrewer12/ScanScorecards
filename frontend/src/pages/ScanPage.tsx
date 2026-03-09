@@ -7,6 +7,7 @@ import type { CourseSummary } from "@/types/golf";
 import type { ScanState, ScanResult, ExtractedHoleScore, FieldConfidence } from "@/types/scan";
 import { initialScanState } from "@/types/scan";
 import { api } from "@/lib/api";
+import { getToken } from "@/context/AuthContext";
 
 interface ScanPageProps {
   userId: string;
@@ -87,11 +88,14 @@ export function ScanPage({ userId, scanState, setScanState }: ScanPageProps) {
     }
 
     try {
+      const token = getToken();
       const res = await fetch("/api/scan/extract", {
         method: "POST",
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: formData,
       });
-
       if (!res.ok) {
         const errText = await res.text();
         let message = `Error ${res.status}`;
@@ -135,9 +139,10 @@ export function ScanPage({ userId, scanState, setScanState }: ScanPageProps) {
     update({ error: null });
 
     try {
+      const saveToken = getToken();
       const res = await fetch("/api/scan/save", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...(saveToken ? { Authorization: `Bearer ${saveToken}` } : {}) },
         body: JSON.stringify({
           user_id: userId,
           course_name: result.round.course?.name,

@@ -1,10 +1,18 @@
-import type { DashboardData, RoundSummary, Round, CourseSummary, Course, User } from "@/types/golf";
+import type { DashboardData, RoundSummary, Round, CourseSummary, Course } from "@/types/golf";
 import type { AnalyticsData, CourseAnalyticsData, RoundComparison } from "@/types/analytics";
+import { getToken } from "@/context/AuthContext";
 
 const BASE_URL = "/api";
 
+function authHeaders(): Record<string, string> {
+  const token = getToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 async function fetchJSON<T>(path: string): Promise<T> {
-  const res = await fetch(`${BASE_URL}${path}`);
+  const res = await fetch(`${BASE_URL}${path}`, {
+    headers: authHeaders(),
+  });
   if (!res.ok) {
     throw new Error(`API error: ${res.status} ${res.statusText}`);
   }
@@ -14,7 +22,7 @@ async function fetchJSON<T>(path: string): Promise<T> {
 async function postJSON<T>(path: string, body: unknown): Promise<T> {
   const res = await fetch(`${BASE_URL}${path}`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify(body),
   });
   if (!res.ok) {
@@ -29,7 +37,7 @@ async function postJSON<T>(path: string, body: unknown): Promise<T> {
 async function putJSON<T>(path: string, body: unknown): Promise<T> {
   const res = await fetch(`${BASE_URL}${path}`, {
     method: "PUT",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify(body),
   });
   if (!res.ok) {
@@ -62,7 +70,10 @@ export const api = {
   ) => putJSON<Round>(`/rounds/${roundId}`, body),
 
   deleteRound: (roundId: string) =>
-    fetch(`${BASE_URL}/rounds/${roundId}`, { method: "DELETE" }).then((res) => {
+    fetch(`${BASE_URL}/rounds/${roundId}`, {
+      method: "DELETE",
+      headers: authHeaders(),
+    }).then((res) => {
       if (!res.ok) throw new Error(`Delete failed: ${res.status}`);
     }),
 
@@ -83,9 +94,6 @@ export const api = {
 
   cloneCourse: (courseId: string, userId: string) =>
     postJSON<CourseSummary>(`/courses/${courseId}/clone?user_id=${encodeURIComponent(userId)}`, {}),
-
-  getUserByEmail: (email: string) =>
-    fetchJSON<User>(`/users/by-email/${encodeURIComponent(email)}`),
 
   getUserHandicap: (userId: string) =>
     fetchJSON<{ handicap_index: number | null }>(`/users/${userId}/handicap`),

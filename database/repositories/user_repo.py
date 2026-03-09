@@ -39,16 +39,25 @@ class UserRepositoryDB:
     # Create
     # ================================================================
 
-    async def create_user(self, user: User) -> User:
+    async def get_password_hash(self, email: str) -> Optional[str]:
+        """Return only the password_hash for the given email (for auth use only)."""
+        async with self._pool.acquire() as conn:
+            row = await conn.fetchrow(
+                "SELECT password_hash FROM users.users WHERE email = $1", email
+            )
+            return row["password_hash"] if row else None
+
+    async def create_user(self, user: User, *, password_hash: Optional[str] = None) -> User:
         """Create a new user. Returns User with DB-generated id."""
         data = user_to_row(user)
         try:
             async with self._pool.acquire() as conn:
                 row = await conn.fetchrow(
-                    """INSERT INTO users.users (name, email, handicap_index, home_course_id)
-                       VALUES ($1, $2, $3, $4) RETURNING *""",
+                    """INSERT INTO users.users (name, email, handicap_index, home_course_id, password_hash)
+                       VALUES ($1, $2, $3, $4, $5) RETURNING *""",
                     data["name"], data["email"],
                     data["handicap_index"], data["home_course_id"],
+                    password_hash,
                 )
                 return user_from_row(row)
         except asyncpg.UniqueViolationError as e:
