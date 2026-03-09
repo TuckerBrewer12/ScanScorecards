@@ -7,7 +7,7 @@ const navItems = [
   { to: "/rounds", label: "Rounds", icon: ListOrdered },
   { to: "/courses", label: "Courses", icon: MapPin },
   { to: "/analytics", label: "Analytics", icon: BarChart2 },
-  { to: "/notable-achievements", label: "Notable Achievements", icon: Trophy },
+  { to: "/career", label: "Career", icon: Trophy },
 ];
 
 export function Sidebar() {

@@ -448,8 +448,9 @@ def test_notable_achievements_lifetime_and_one_year():
     assert lifetime_totals["total_hole_in_ones"] == 0
     assert lifetime_totals["total_pars"] == 17
     assert lifetime_totals["total_bogeys"] == 11
-    assert lifetime_totals["total_double_bogeys_plus"] == 2
+    assert lifetime_totals["total_double_bogeys"] == 2
     assert lifetime_totals["total_triple_bogeys"] == 0
+    assert lifetime_totals["total_quad_bogeys_plus"] == 0
     assert lifetime_totals["total_gir"] == 19
     assert lifetime_totals["total_3_putts"] == 0
 

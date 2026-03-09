@@ -2,8 +2,8 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { Trophy, TrendingDown, Hash, Target, Gauge } from "lucide-react";
 import {
-  AreaChart, Area, LineChart, Line,
-  XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine,
+  ComposedChart, Area, LineChart, Line,
+  XAxis, YAxis, Tooltip, ResponsiveContainer,
 } from "recharts";
 import { api } from "@/lib/api";
 import type { DashboardData } from "@/types/golf";
@@ -53,7 +53,14 @@ export function DashboardPage({ userId }: DashboardPageProps) {
 
   if (!data) return null;
 
-  const scoringAvg = data.scoring_average;
+  const scoreTrendWithAvg = trends
+    ? trends.score_trend.map((row, i) => {
+        const scores = trends.score_trend.slice(0, i + 1).map((r) => r.total_score).filter((s): s is number => s != null);
+        const runningAvg = scores.length > 0 ? Math.round((scores.reduce((a, b) => a + b, 0) / scores.length) * 10) / 10 : null;
+        return { ...row, running_avg: runningAvg };
+      })
+    : [];
+
 
   return (
     <div>
@@ -80,7 +87,7 @@ export function DashboardPage({ userId }: DashboardPageProps) {
           <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
             <div className="text-sm font-semibold text-gray-700 mb-4">Score Trend</div>
             <ResponsiveContainer width="100%" height={180}>
-              <AreaChart data={trends.score_trend} margin={{ top: 4, right: 8, left: -24, bottom: 0 }}>
+              <ComposedChart data={scoreTrendWithAvg} margin={{ top: 4, right: 56, left: -24, bottom: 0 }}>
                 <defs>
                   <linearGradient id="scoreGrad" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#2d7a3a" stopOpacity={0.15} />
@@ -91,17 +98,33 @@ export function DashboardPage({ userId }: DashboardPageProps) {
                 <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} domain={["auto", "auto"]} />
                 <Tooltip
                   contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #e5e7eb", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}
-                  formatter={((v: number, _: unknown, props: { payload: { to_par: number | null } }) => {
+                  formatter={((v: number, name: string, props: { payload: { to_par: number | null } }) => {
+                    if (name === "running_avg") return [v, "Running Avg"];
                     const tp = props.payload.to_par;
                     const tpStr = tp != null ? ` (${formatToPar(tp)})` : "";
                     return [`${v}${tpStr}`, "Score"];
                   }) as Fmt}
                 />
-                {scoringAvg != null && (
-                  <ReferenceLine y={scoringAvg} stroke="#e5e7eb" strokeDasharray="4 2" label={{ value: `Avg ${scoringAvg}`, fontSize: 10, fill: "#9ca3af", position: "insideTopRight" }} />
-                )}
                 <Area type="monotone" dataKey="total_score" stroke="#2d7a3a" strokeWidth={2} fill="url(#scoreGrad)" dot={false} activeDot={{ r: 4 }} />
-              </AreaChart>
+                <Line
+                  type="monotone"
+                  dataKey="running_avg"
+                  stroke="#9ca3af"
+                  strokeWidth={1.5}
+                  strokeDasharray="4 2"
+                  dot={false}
+                  activeDot={false}
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  label={((props: any) => {
+                    if (props.index !== scoreTrendWithAvg.length - 1 || props.value == null) return <g />;
+                    return (
+                      <text x={props.x + 5} y={props.y} dy={4} fontSize={10} fill="#9ca3af" textAnchor="start">
+                        Avg {props.value}
+                      </text>
+                    );
+                  }) as any}
+                />
+              </ComposedChart>
             </ResponsiveContainer>
           </div>
 

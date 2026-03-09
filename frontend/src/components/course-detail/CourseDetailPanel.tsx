@@ -1,4 +1,6 @@
 import { useEffect, useState } from "react";
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type Fmt = (v: any, name: any, props: any) => any;
 import { ArrowLeft, MapPin } from "lucide-react";
 import {
   Bar,
@@ -297,7 +299,7 @@ export function CourseDetailPanel({ courseId, userId, onBack }: CourseDetailPane
                   <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
                   <XAxis dataKey="hole_number" tick={{ fontSize: 10, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
                   <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
-                  <Tooltip formatter={(v: number | string | undefined) => [Number(v ?? 0).toFixed(2), "Avg to Par"]} />
+                  <Tooltip formatter={((v: number) => [Number(v ?? 0).toFixed(2), "Avg to Par"]) as Fmt} />
                   <ReferenceLine y={0} stroke="#d1d5db" />
                   <Bar dataKey="average_to_par">
                     {analytics.average_score_relative_to_par_by_hole.map((row) => (
@@ -314,7 +316,7 @@ export function CourseDetailPanel({ courseId, userId, onBack }: CourseDetailPane
                   <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
                   <XAxis dataKey="hole_number" tick={{ fontSize: 10, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
                   <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
-                  <Tooltip formatter={(v: number | string | undefined) => [`${Number(v ?? 0).toFixed(1)}%`, "GIR %"]} />
+                  <Tooltip formatter={((v: number) => [`${Number(v ?? 0).toFixed(1)}%`, "GIR %"]) as Fmt} />
                   <Bar dataKey="gir_percentage" fill="#16a34a" />
                 </BarChart>
               </ResponsiveContainer>
@@ -326,7 +328,7 @@ export function CourseDetailPanel({ courseId, userId, onBack }: CourseDetailPane
                   <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
                   <XAxis dataKey="hole_number" tick={{ fontSize: 10, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
                   <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
-                  <Tooltip formatter={(v: number | string | undefined) => [Number(v ?? 0).toFixed(2), "Avg putts"]} />
+                  <Tooltip formatter={((v: number) => [Number(v ?? 0).toFixed(2), "Avg putts"]) as Fmt} />
                   <Bar dataKey="average_putts" fill="#6b7280" />
                 </BarChart>
               </ResponsiveContainer>
@@ -338,8 +340,12 @@ export function CourseDetailPanel({ courseId, userId, onBack }: CourseDetailPane
                   <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
                   <XAxis dataKey="hole_number" tick={{ fontSize: 10, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
                   <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
-                  <Tooltip formatter={(v: number | string | undefined) => [`${Number(v ?? 0).toFixed(1)}%`, ""]} />
+                  <Tooltip
+                    labelFormatter={(_label, payload) => payload?.[0]?.payload?.sample_size != null ? `${payload[0].payload.sample_size} rounds` : ""}
+                    formatter={((v: number) => [`${Number(v ?? 0).toFixed(1)}%`, ""]) as Fmt}
+                  />
                   <Legend wrapperStyle={{ fontSize: 11 }} />
+                  <Bar dataKey="eagle" stackId="a" fill="#b45309" name="Eagle+" />
                   <Bar dataKey="birdie" stackId="a" fill="#059669" name="Birdie" />
                   <Bar dataKey="par" stackId="a" fill="#9ca3af" name="Par" />
                   <Bar dataKey="bogey" stackId="a" fill="#f87171" name="Bogey" />
@@ -359,7 +365,7 @@ export function CourseDetailPanel({ courseId, userId, onBack }: CourseDetailPane
                   <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
                   <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
                   <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
-                  <Tooltip formatter={(v: number | string | undefined) => [Number(v ?? 0).toFixed(2), "Avg to Par"]} />
+                  <Tooltip formatter={((v: number) => [Number(v ?? 0).toFixed(2), "Avg to Par"]) as Fmt} />
                   <ReferenceLine y={0} stroke="#d1d5db" />
                   <Bar dataKey="average_to_par">
                     {analytics.course_difficulty_profile_by_hole.map((row) => (
@@ -376,7 +382,7 @@ export function CourseDetailPanel({ courseId, userId, onBack }: CourseDetailPane
                   <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
                   <XAxis dataKey="bucket" tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
                   <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
-                  <Tooltip formatter={(v: number | string | undefined) => [Number(v ?? 0).toFixed(2), "Avg score"]} />
+                  <Tooltip formatter={((v: number) => [Number(v ?? 0).toFixed(2), "Avg score"]) as Fmt} />
                   <Bar dataKey="average_score">
                     <Cell fill="#16a34a" />
                     <Cell fill="#ef4444" />
@@ -394,7 +400,7 @@ export function CourseDetailPanel({ courseId, userId, onBack }: CourseDetailPane
                   <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
                   <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
                   <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
-                  <Tooltip formatter={(v: number | string | undefined) => [Number(v ?? 0).toFixed(2), "Std dev"]} />
+                  <Tooltip formatter={((v: number) => [Number(v ?? 0).toFixed(2), "Std dev"]) as Fmt} />
                   <Bar dataKey="score_std_dev" fill="#f59e0b" />
                 </BarChart>
               </ResponsiveContainer>

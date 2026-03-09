@@ -29,8 +29,9 @@ class Course(BaseGolfModel):
 
     def get_hole(self, number: int) -> Optional[Hole]:
         """Get a hole by its number (1-18)."""
-        if 1 <= number <= len(self.holes):
-            return self.holes[number - 1]
+        for hole in self.holes:
+            if hole.number == number:
+                return hole
         return None
 
     def get_par(self) -> Optional[int]:

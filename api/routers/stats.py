@@ -2,7 +2,8 @@
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from database.db_manager import DatabaseManager
-from api.dependencies import get_db
+from api.dependencies import get_current_user, get_db
+from models import User
 from api.schemas import DashboardResponse
 from api.routers.rounds import summarize_round
 from analytics import stats as analytics
@@ -12,7 +13,11 @@ router = APIRouter()
 
 
 @router.get("/dashboard/{user_id}", response_model=DashboardResponse)
-async def get_dashboard(user_id: str, db: DatabaseManager = Depends(get_db)):
+async def get_dashboard(
+    user_id: str,
+    db: DatabaseManager = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     user = await db.users.get_user(user_id)
     if not user:
         raise HTTPException(404, "User not found")
@@ -57,6 +62,7 @@ async def get_analytics(
     user_id: str,
     limit: int = Query(default=50, ge=1, le=200),
     db: DatabaseManager = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     user = await db.users.get_user(user_id)
     if not user:
@@ -77,6 +83,7 @@ async def get_analytics(
                 "total_rounds": 0,
             },
             "score_trend": [],
+            "net_score_trend": [],
             "gir_trend": [],
             "putts_trend": [],
             "three_putts_trend": [],
@@ -240,6 +247,7 @@ async def get_analytics(
             "total_rounds": len(rounds),
         },
         "score_trend": analytics.score_trend(rounds),
+        "net_score_trend": analytics.net_score_trend(rounds, current_hi),
         "gir_trend": analytics.gir_per_round(rounds),
         "putts_trend": analytics.putts_per_round(rounds),
         "three_putts_trend": analytics.three_putts_per_round(rounds),
@@ -262,6 +270,7 @@ async def get_round_comparison(
     user_id: str,
     round_id: str,
     db: DatabaseManager = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     rounds_desc = await db.rounds.get_rounds_for_user(user_id, limit=200, offset=0)
     rounds = list(reversed(rounds_desc))  # chronological order
@@ -288,6 +297,7 @@ async def get_course_analytics(
     user_id: str,
     course_id: str,
     db: DatabaseManager = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     user = await db.users.get_user(user_id)
     if not user:

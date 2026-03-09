@@ -114,13 +114,6 @@ def notable_achievements(
     def _count_score_type(rows: List[Dict[str, Any]], score_type: str) -> int:
         return sum(1 for row in rows if row["score_type"] == score_type)
 
-    def _count_double_plus(rows: List[Dict[str, Any]]) -> int:
-        return sum(
-            1
-            for row in rows
-            if row["score_type"] in ("double_bogey", "triple_bogey", "quad_bogey")
-        )
-
     def _count_three_putts(rows: List[Dict[str, Any]]) -> int:
         return sum(1 for row in rows if row["putts"] is not None and row["putts"] >= 3)
 
@@ -330,8 +323,9 @@ def notable_achievements(
             "total_hole_in_ones": sum(1 for row in lifetime_holes if row["is_hio"]),
             "total_pars": _count_score_type(lifetime_holes, "par"),
             "total_bogeys": _count_score_type(lifetime_holes, "bogey"),
-            "total_double_bogeys_plus": _count_double_plus(lifetime_holes),
+            "total_double_bogeys": _count_score_type(lifetime_holes, "double_bogey"),
             "total_triple_bogeys": _count_score_type(lifetime_holes, "triple_bogey"),
+            "total_quad_bogeys_plus": _count_score_type(lifetime_holes, "quad_bogey"),
             "total_gir": sum(1 for row in lifetime_holes if row["gir"]),
             "total_3_putts": _count_three_putts(lifetime_holes),
         },
@@ -341,7 +335,9 @@ def notable_achievements(
             "eagles": _count_score_type(year_holes, "eagle"),
             "hole_in_ones": sum(1 for row in year_holes if row["is_hio"]),
             "gir": sum(1 for row in year_holes if row["gir"]),
+            "double_bogeys": _count_score_type(year_holes, "double_bogey"),
             "triple_bogeys": _count_score_type(year_holes, "triple_bogey"),
+            "quad_bogeys_plus": _count_score_type(year_holes, "quad_bogey"),
             "three_putts": _count_three_putts(year_holes),
         },
     }
@@ -820,6 +816,51 @@ def score_trend(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
                 "round_id": round_obj.id,
                 "total_score": total_score,
                 "to_par": total_to_par,
+            }
+        )
+    return results
+
+
+def net_score_trend(
+    rounds: Iterable[Round],
+    current_handicap_index: Optional[float],
+) -> List[Dict[str, Any]]:
+    """Return net score trend data by round.
+
+    Net score = gross score - course handicap, where course handicap uses the
+    player's current HI applied to each round's tee data. Rounds without tee
+    rating data still appear but with net_score = None.
+    """
+    results: List[Dict[str, Any]] = []
+    for index, round_obj in enumerate(rounds, start=1):
+        gross = round_obj.calculate_total_score()
+        course_par = round_obj.get_par()
+        tee = round_obj.get_tee()
+
+        course_handicap: Optional[int] = None
+        net_score: Optional[int] = None
+
+        if (
+            gross is not None
+            and current_handicap_index is not None
+            and tee is not None
+            and tee.slope_rating is not None
+            and tee.course_rating is not None
+            and course_par is not None
+        ):
+            course_handicap = round(
+                (current_handicap_index * tee.slope_rating) / 113
+                + (tee.course_rating - course_par)
+            )
+            net_score = gross - course_handicap
+
+        results.append(
+            {
+                "round_index": index,
+                "round_id": round_obj.id,
+                "gross_score": gross,
+                "course_handicap": course_handicap,
+                "net_score": net_score,
             }
         )
     return results

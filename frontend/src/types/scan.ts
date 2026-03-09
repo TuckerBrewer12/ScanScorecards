@@ -47,6 +47,10 @@ type Step = "upload" | "processing" | "review";
 
 export interface ScanState {
   step: Step;
+  scanMode: "full" | "fast";
+  selectedCourseId: string | null;
+  selectedCourseName: string | null;
+  scoringFormat: "strokes" | "to_par" | null;
   file: File | null;
   preview: string | null;
   result: ScanResult | null;
@@ -60,6 +64,10 @@ export interface ScanState {
 
 export const initialScanState: ScanState = {
   step: "upload",
+  scanMode: "full",
+  selectedCourseId: null,
+  selectedCourseName: null,
+  scoringFormat: null,
   file: null,
   preview: null,
   result: null,

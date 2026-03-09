@@ -14,8 +14,9 @@ logger = logging.getLogger(__name__)
 
 from database.db_manager import DatabaseManager
 from database.sync_adapter import SyncCourseRepositoryAdapter
-from api.dependencies import get_db
+from api.dependencies import get_current_user, get_db
 from api.request_models import SaveRoundRequest
+from models import User
 from llm.scorecard_extractor import extract_scorecard, ExtractionResult
 from llm.strategies import ExtractionStrategy
 from services.scan_service import ScanService
@@ -35,7 +36,10 @@ async def extract_scan(
     file: UploadFile = File(...),
     user_context: Optional[str] = Form(None),
     strategy: str = Form("smart"),
+    course_id: Optional[str] = Form(None),
+    scoring_format: Optional[str] = Form(None),  # "to_par" | "strokes" | None (auto-detect)
     db: DatabaseManager = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """Upload a scorecard image, run LLM extraction, return results for review."""
     # Validate file type
@@ -50,8 +54,22 @@ async def extract_scan(
         tmp_path = tmp.name
 
     try:
-        # Map strategy string to enum
-        strat = ExtractionStrategy(strategy) if strategy in ("full", "scores_only", "smart") else ExtractionStrategy.FULL
+        # Resolve scoring format flag: "to_par" → True, "strokes" → False, else None
+        to_par_scoring: Optional[bool] = None
+        if scoring_format == "to_par":
+            to_par_scoring = True
+        elif scoring_format == "strokes":
+            to_par_scoring = False
+
+        # Fast scan: course pre-selected by user — use SCORES_ONLY with Flash
+        course_model = None
+        if course_id:
+            course_model = await db.courses.get_course(course_id)
+            if course_model is None:
+                raise HTTPException(404, f"Course {course_id} not found")
+            strat = ExtractionStrategy.SCORES_ONLY
+        else:
+            strat = ExtractionStrategy(strategy) if strategy in ("full", "scores_only", "smart") else ExtractionStrategy.FULL
 
         # Run sync extraction in thread pool to avoid blocking
         loop = asyncio.get_event_loop()
@@ -66,7 +84,10 @@ async def extract_scan(
                 user_context=user_context,
                 include_raw_response=False,
                 strategy=strat,
+                course=course_model,
                 course_repo=course_repo,
+                to_par_scoring=to_par_scoring,
+                player_name=user_context or None,
             ),
         )
 
@@ -95,9 +116,11 @@ async def extract_scan(
 async def save_round(
     req: SaveRoundRequest,
     db: DatabaseManager = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """Save a reviewed/edited round to the database."""
     try:
+        req.user_id = str(current_user.id)
         service = ScanService(db)
         saved = await service.save_reviewed_scan(req)
         return {"id": saved.id, "total_score": saved.calculate_total_score()}

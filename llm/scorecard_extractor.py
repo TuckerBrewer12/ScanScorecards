@@ -23,8 +23,10 @@ from llm.confidence import (
 from llm.prompts import (
     build_full_extraction_prompt,
     build_scores_only_prompt,
+    build_fast_scan_prompt,
     build_course_identification_prompt,
     RawCourseIdentification,
+    RawFastScanExtraction,
     RawHoleData,
     RawScoreOnlyHoleData,
     RawScorecardExtraction,
@@ -194,16 +196,18 @@ def _convert_score_to_strokes(
 
 
 def _build_round_from_scores(
-    raw: RawScoresOnlyExtraction, course: Course,
+    raw: RawScoresOnlyExtraction,
+    course: Course,
+    to_par_scoring: Optional[bool] = None,
 ) -> Round:
     """Build a Round from scores-only extraction + known course data.
 
     The LLM returns raw numbers as written on the card. This function:
-    1. Detects scoring format (to-par vs total strokes)
+    1. Uses user-confirmed scoring format, or falls back to LLM detection
     2. Converts to total strokes using known par values
     3. Calculates totals in Python (no LLM needed)
     """
-    to_par = (raw.to_par_scoring.value is True)
+    to_par = to_par_scoring if to_par_scoring is not None else (raw.to_par_scoring.value is True)
 
     hole_scores = []
     for raw_hole in raw.holes:
@@ -710,10 +714,12 @@ def _build_extraction_confidence(raw: RawScorecardExtraction) -> ExtractionConfi
 
 
 def _build_scores_only_confidence(
-    raw: RawScoresOnlyExtraction, course: Course,
+    raw: RawScoresOnlyExtraction,
+    course: Course,
+    to_par_scoring: Optional[bool] = None,
 ) -> ExtractionConfidence:
     """Build confidence report when course came from DB."""
-    to_par = (raw.to_par_scoring.value is True)
+    to_par = to_par_scoring if to_par_scoring is not None else (raw.to_par_scoring.value is True)
 
     hole_confidences = []
     for i, raw_hole in enumerate(raw.holes):
@@ -735,9 +741,15 @@ def _build_scores_only_confidence(
     round_fields: Dict[str, FieldConfidence] = {}
     round_fields["date"] = _build_field_confidence("date", raw.date.confidence, 1.0, [])
     round_fields["player_name"] = _build_field_confidence("player_name", raw.player_name.confidence, 1.0, [])
-    round_fields["to_par_scoring"] = _build_field_confidence(
-        "to_par_scoring", raw.to_par_scoring.confidence, 1.0, [],
-    )
+    if to_par_scoring is not None:
+        # Format was user-confirmed — perfect confidence, sourced from user input
+        round_fields["to_par_scoring"] = _build_field_confidence(
+            "to_par_scoring", 1.0, 1.0, [], source="user",
+        )
+    else:
+        round_fields["to_par_scoring"] = _build_field_confidence(
+            "to_par_scoring", raw.to_par_scoring.confidence, 1.0, [],
+        )
 
     return _assemble_extraction_confidence(hole_confidences, course_confidence, round_fields)
 
@@ -801,12 +813,104 @@ def _extract_scores_only(
     course: Course,
     user_context: Optional[str],
     include_raw_response: bool,
+    to_par_scoring: Optional[bool] = None,
 ) -> ExtractionResult:
-    """Strategy 2: Scores-only extraction with known course."""
-    prompt = build_scores_only_prompt(course, user_context)
-    raw = _call_gemini(client, file_part, prompt, RawScoresOnlyExtraction)
-    round_data = _build_round_from_scores(raw, course)
-    confidence = _build_scores_only_confidence(raw, course)
+    """Strategy 2: Scores-only extraction with known course.
+
+    Args:
+        to_par_scoring: If True/False, scoring format is pre-confirmed by the user
+            and passed directly to the prompt + conversion logic. If None, the LLM
+            auto-detects the format.
+    """
+    prompt = build_scores_only_prompt(course, user_context, to_par_scoring=to_par_scoring)
+    raw = _call_gemini(client, file_part, prompt, RawScoresOnlyExtraction, model=GEMINI_MODEL_FAST)
+    round_data = _build_round_from_scores(raw, course, to_par_scoring=to_par_scoring)
+    confidence = _build_scores_only_confidence(raw, course, to_par_scoring=to_par_scoring)
+    return ExtractionResult(
+        round=round_data,
+        confidence=confidence,
+        raw_response=raw.model_dump() if include_raw_response else None,
+    )
+
+
+def _extract_fast_scan(
+    client: genai.Client,
+    file_part: types.Part,
+    course: Course,
+    to_par_scoring: bool,
+    player_name: Optional[str],
+    include_raw_response: bool,
+) -> ExtractionResult:
+    """Fast scan: Flash reads 18 raw numbers only. Backend does all conversion."""
+    prompt = build_fast_scan_prompt(player_name)
+    raw = _call_gemini(client, file_part, prompt, RawFastScanExtraction, model=GEMINI_MODEL_FAST)
+
+    hole_scores: List[HoleScore] = []
+    hole_confidences: List[HoleConfidence] = []
+
+    for i, entry in enumerate(raw.scores[:18]):
+        hole_num = i + 1
+        known_hole = course.get_hole(hole_num)
+        known_par = known_hole.par if known_hole else None
+
+        raw_score = entry.score
+        if raw_score is not None and to_par_scoring and known_par is not None:
+            strokes = known_par + raw_score
+        else:
+            strokes = raw_score
+
+        hole_scores.append(HoleScore(
+            hole_number=hole_num,
+            strokes=strokes,
+            putts=None,
+        ))
+
+        # Validation: flag strokes outside plausible range
+        val_flags: List[str] = []
+        val_conf = 1.0
+        if strokes is not None:
+            if strokes < 1 or strokes > 15:
+                val_flags.append(f"Strokes {strokes} outside valid range 1-15")
+                val_conf = 0.0
+            elif strokes > 10:
+                val_flags.append(f"Strokes {strokes} is unusually high")
+                val_conf = 0.7
+
+        fc = _build_field_confidence("strokes", entry.confidence, val_conf, val_flags)
+        hole_confidences.append(HoleConfidence(
+            hole_number=hole_num,
+            fields={"strokes": fc},
+            overall=fc.final_confidence,
+            level=fc.level,
+        ))
+
+    all_finals = [hc.overall for hc in hole_confidences]
+    overall = min(all_finals) if all_finals else 0.0
+
+    fields_needing_review = _collect_fields_needing_review(hole_confidences, {}, {})
+
+    confidence = ExtractionConfidence(
+        hole_scores=hole_confidences,
+        course=CourseConfidence(
+            fields={"source": _build_field_confidence("source", 1.0, 1.0, [], source="database")},
+            overall=1.0,
+            level=ConfidenceLevel.HIGH,
+        ),
+        round_fields={},
+        overall=overall,
+        level=FieldConfidence.to_level(overall),
+        total_fields_extracted=len(hole_scores),
+        fields_needing_review=fields_needing_review,
+    )
+
+    round_data = Round(
+        course=course,
+        tee_box=None,
+        date=None,
+        hole_scores=hole_scores,
+        total_putts=None,
+    )
+
     return ExtractionResult(
         round=round_data,
         confidence=confidence,
@@ -838,6 +942,7 @@ def _extract_smart(
 
     # Step 3: Dispatch to appropriate strategy
     if found_course is not None:
+        # SMART auto-detect: no user-confirmed format, LLM will determine
         return _extract_scores_only(
             client, file_part, found_course, user_context, include_raw_response,
         )
@@ -857,6 +962,8 @@ def extract_scorecard(
     strategy: ExtractionStrategy = ExtractionStrategy.FULL,
     course: Optional[Course] = None,
     course_repo: Optional[CourseRepository] = None,
+    to_par_scoring: Optional[bool] = None,
+    player_name: Optional[str] = None,
 ) -> ExtractionResult:
     """Extract scorecard data from an image or PDF file.
 
@@ -899,8 +1006,15 @@ def extract_scorecard(
                 "SCORES_ONLY strategy requires the `course` parameter. "
                 "Pass the known Course model from your database."
             )
+        # Fast path: scoring format confirmed by user → minimal prompt, Flash only
+        if to_par_scoring is not None:
+            return _extract_fast_scan(
+                client, file_part, course, to_par_scoring, player_name, include_raw_response,
+            )
+        # Fallback: auto-detect format via existing scores-only flow
         return _extract_scores_only(
             client, file_part, course, user_context, include_raw_response,
+            to_par_scoring=to_par_scoring,
         )
 
     elif strategy == ExtractionStrategy.SMART:

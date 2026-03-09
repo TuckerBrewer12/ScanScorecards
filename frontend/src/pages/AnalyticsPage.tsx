@@ -107,7 +107,7 @@ export function AnalyticsPage({ userId }: { userId: string }) {
     );
   }
 
-  const { kpis, score_trend, gir_trend, putts_trend, scoring_by_par, scoring_by_handicap, gir_vs_non_gir } = data;
+  const { kpis, score_trend, net_score_trend, gir_trend, putts_trend, scoring_by_par, scoring_by_handicap, gir_vs_non_gir } = data;
   // Filter out rounds with no linked course — they have holes_counted=0 and create blank gaps
   const score_type_distribution = data.score_type_distribution.filter((r) => r.holes_counted > 0);
 
@@ -123,7 +123,7 @@ export function AnalyticsPage({ userId }: { userId: string }) {
             aria-label="Analytics section"
           >
             <option value="round_trends">Round Trends</option>
-            <option value="overall_player">Overall Player</option>
+            <option value="overall_player">Player Stats</option>
           </select>
           <div className="flex items-center gap-2">
             <span className="text-xs text-gray-500">Last</span>
@@ -171,6 +171,33 @@ export function AnalyticsPage({ userId }: { userId: string }) {
                   <ReferenceLine y={72} stroke="#d1fae5" strokeDasharray="4 2" label={{ value: "Par 72", fontSize: 10, fill: "#059669" }} />
                   <Line type="monotone" dataKey="total_score" stroke="#2d7a3a" strokeWidth={2} dot={false} activeDot={{ r: 4 }} />
                 </LineChart>
+              </ResponsiveContainer>
+            </ChartCard>
+
+            <ChartCard title="Net Score Trend">
+              <ResponsiveContainer width="100%" height={220}>
+                <AreaChart data={net_score_trend} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="netScoreGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#2d7a3a" stopOpacity={0.15} />
+                      <stop offset="95%" stopColor="#2d7a3a" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+                  <XAxis dataKey="round_index" tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
+                  <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} domain={["auto", "auto"]} />
+                  <Tooltip
+                    contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #e5e7eb", boxShadow: "0 2px 8px rgba(0,0,0,0.08)" }}
+                    formatter={((v: number, _name: string, props: { payload: { course_handicap: number | null; gross_score: number | null } }) => {
+                      const hcp = props.payload.course_handicap;
+                      const gross = props.payload.gross_score;
+                      const detail = hcp != null && gross != null ? ` (gross ${gross}, HCP ${hcp < 0 ? `+${Math.abs(hcp)}` : hcp})` : "";
+                      return [`${v}${detail}`, "Net Score"];
+                    }) as Fmt}
+                  />
+                  <ReferenceLine y={72} stroke="#d1fae5" strokeDasharray="4 2" label={{ value: "Par 72", fontSize: 10, fill: "#059669" }} />
+                  <Area type="monotone" dataKey="net_score" stroke="#2d7a3a" strokeWidth={2} fill="url(#netScoreGrad)" dot={false} activeDot={{ r: 4 }} />
+                </AreaChart>
               </ResponsiveContainer>
             </ChartCard>
 
@@ -235,7 +262,7 @@ export function AnalyticsPage({ userId }: { userId: string }) {
 
       {view === "overall_player" && (
         <>
-          <SectionTitle>Overall Player</SectionTitle>
+          <SectionTitle>Player Stats</SectionTitle>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-8">
             <ChartCard title="Avg Score to Par by Hole Par">
               <ResponsiveContainer width="100%" height={220}>

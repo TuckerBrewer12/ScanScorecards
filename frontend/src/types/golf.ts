@@ -129,3 +129,18 @@ export function formatToPar(toPar: number | null): string {
   if (toPar > 0) return `+${toPar}`;
   return `${toPar}`;
 }
+
+/** WHS course handicap: (HI × Slope / 113) + (Course Rating - Par), rounded. */
+export function calcCourseHandicap(
+  hi: number,
+  slope: number,
+  courseRating: number,
+  par: number,
+): number {
+  return Math.round((hi * slope) / 113 + (courseRating - par));
+}
+
+/** Net score = gross score - course handicap. */
+export function calcNetScore(grossScore: number, courseHandicap: number): number {
+  return grossScore - courseHandicap;
+}

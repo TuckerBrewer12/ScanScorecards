@@ -1,10 +1,13 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Upload, Camera, Loader2, CheckCircle, AlertTriangle, X } from "lucide-react";
+import { Upload, Camera, Loader2, CheckCircle, AlertTriangle, X, Zap, Search, ScanLine, MapPin } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
-import { formatToPar } from "@/types/golf";
+import { formatToPar, calcCourseHandicap, calcNetScore } from "@/types/golf";
+import type { CourseSummary } from "@/types/golf";
 import type { ScanState, ScanResult, ExtractedHoleScore, FieldConfidence } from "@/types/scan";
 import { initialScanState } from "@/types/scan";
+import { api } from "@/lib/api";
+import { getToken } from "@/context/AuthContext";
 
 interface ScanPageProps {
   userId: string;
@@ -14,12 +17,45 @@ interface ScanPageProps {
 
 export function ScanPage({ userId, scanState, setScanState }: ScanPageProps) {
   const navigate = useNavigate();
-  const { step, file, preview, result, editedScores, editedNotes, editedDate, editedTeeBox, error, userContext } = scanState;
+  const { step, scanMode, selectedCourseId, selectedCourseName, scoringFormat, file, preview, result, editedScores, editedNotes, editedDate, editedTeeBox, error, userContext } = scanState;
   const update = (patch: Partial<ScanState>) => setScanState(prev => ({ ...prev, ...patch }));
 
   // Transient UI state — fine to reset on navigation
   const [saving, setSaving] = useState(false);
   const [dragOver, setDragOver] = useState(false);
+  const [handicapIndex, setHandicapIndex] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (step === "review") {
+      api.getUserHandicap(userId).then((r) => setHandicapIndex(r.handicap_index)).catch(() => {});
+    }
+  }, [step, userId]);
+
+  // Course search state (fast scan)
+  const [courseQuery, setCourseQuery] = useState("");
+  const [courseResults, setCourseResults] = useState<CourseSummary[]>([]);
+  const [searching, setSearching] = useState(false);
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const handleCourseQuery = useCallback((q: string) => {
+    setCourseQuery(q);
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    if (q.trim().length < 2) { setCourseResults([]); return; }
+    searchTimer.current = setTimeout(async () => {
+      setSearching(true);
+      try {
+        const results = await api.searchCourses(q.trim(), userId);
+        setCourseResults(results);
+      } catch { setCourseResults([]); }
+      finally { setSearching(false); }
+    }, 300);
+  }, [userId]);
+
+  const selectCourse = useCallback((course: CourseSummary) => {
+    update({ selectedCourseId: course.id, selectedCourseName: course.name ?? course.id });
+    setCourseQuery("");
+    setCourseResults([]);
+  }, []);
 
   const handleFile = useCallback((f: File) => {
     update({ file: f, preview: URL.createObjectURL(f), error: null });
@@ -41,17 +77,25 @@ export function ScanPage({ userId, scanState, setScanState }: ScanPageProps) {
 
     const formData = new FormData();
     formData.append("file", file);
-    formData.append("strategy", "smart");
+    if (scanMode === "fast" && selectedCourseId) {
+      formData.append("course_id", selectedCourseId);
+      if (scoringFormat) formData.append("scoring_format", scoringFormat);
+    } else {
+      formData.append("strategy", "smart");
+    }
     if (userContext.trim()) {
       formData.append("user_context", userContext.trim());
     }
 
     try {
+      const token = getToken();
       const res = await fetch("/api/scan/extract", {
         method: "POST",
+        headers: {
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: formData,
       });
-
       if (!res.ok) {
         const errText = await res.text();
         let message = `Error ${res.status}`;
@@ -95,9 +139,10 @@ export function ScanPage({ userId, scanState, setScanState }: ScanPageProps) {
     update({ error: null });
 
     try {
+      const saveToken = getToken();
       const res = await fetch("/api/scan/save", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...(saveToken ? { Authorization: `Bearer ${saveToken}` } : {}) },
         body: JSON.stringify({
           user_id: userId,
           course_name: result.round.course?.name,
@@ -148,6 +193,7 @@ export function ScanPage({ userId, scanState, setScanState }: ScanPageProps) {
       }
 
       const saved = await res.json();
+      setScanState(initialScanState);
       navigate(`/rounds/${saved.id}`);
     } catch (err) {
       update({ error: err instanceof Error ? err.message : "Save failed" });
@@ -157,9 +203,11 @@ export function ScanPage({ userId, scanState, setScanState }: ScanPageProps) {
 
   // -- Upload Step --
   if (step === "upload") {
+    const showUploadArea = scanMode === "full" || (scanMode === "fast" && !!selectedCourseId && !!scoringFormat);
+
     return (
       <div>
-        <PageHeader title="Scan Scorecard" subtitle="Upload a photo of your scorecard" />
+        <PageHeader title="Scan Scorecard" subtitle="Choose how to process your scorecard" />
 
         {error && (
           <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700 flex items-center gap-2">
@@ -168,39 +216,168 @@ export function ScanPage({ userId, scanState, setScanState }: ScanPageProps) {
           </div>
         )}
 
-        <div
-          className={`border-2 border-dashed rounded-xl p-16 text-center transition-colors ${
-            dragOver
-              ? "border-primary bg-primary-light"
-              : "border-gray-300 hover:border-primary"
-          }`}
-          onDragOver={(e) => {
-            e.preventDefault();
-            setDragOver(true);
-          }}
-          onDragLeave={() => setDragOver(false)}
-          onDrop={handleDrop}
-        >
-          <Upload size={48} className="mx-auto text-gray-400 mb-4" />
-          <p className="text-gray-600 mb-2">Drag and drop your scorecard image here</p>
-          <p className="text-sm text-gray-400 mb-4">or</p>
-          <label className="inline-block px-5 py-2.5 bg-primary text-white rounded-lg text-sm font-medium cursor-pointer hover:opacity-90 transition-opacity">
-            <Camera size={16} className="inline mr-2" />
-            Choose File
-            <input
-              type="file"
-              accept="image/*,.pdf"
-              className="hidden"
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) handleFile(f);
-              }}
-            />
-          </label>
-          <p className="text-xs text-gray-400 mt-4">
-            Supports JPG, PNG, WEBP, HEIC, PDF
-          </p>
+        {/* Mode selector */}
+        <div className="grid grid-cols-2 gap-4 mb-6">
+          <button
+            onClick={() => update({ scanMode: "full", selectedCourseId: null, selectedCourseName: null, scoringFormat: null, file: null, preview: null })}
+            className={`flex flex-col items-center justify-center gap-3 p-6 rounded-xl border-2 text-center transition-all ${
+              scanMode === "full"
+                ? "border-primary bg-primary/5 shadow-sm"
+                : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50"
+            }`}
+          >
+            <ScanLine size={32} className={scanMode === "full" ? "text-primary" : "text-gray-400"} />
+            <div>
+              <div className={`font-semibold text-sm ${scanMode === "full" ? "text-primary" : "text-gray-700"}`}>
+                Capture Entire Card
+              </div>
+              <div className="text-xs text-gray-500 mt-1">Extracts course, tees, pars &amp; scores</div>
+              <div className="text-xs text-gray-400 mt-0.5">~1–2 minutes</div>
+            </div>
+          </button>
+
+          <button
+            onClick={() => update({ scanMode: "fast", selectedCourseId: null, selectedCourseName: null, scoringFormat: null, file: null, preview: null })}
+            className={`flex flex-col items-center justify-center gap-3 p-6 rounded-xl border-2 text-center transition-all ${
+              scanMode === "fast"
+                ? "border-primary bg-primary/5 shadow-sm"
+                : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50"
+            }`}
+          >
+            <Zap size={32} className={scanMode === "fast" ? "text-primary" : "text-gray-400"} />
+            <div>
+              <div className={`font-semibold text-sm ${scanMode === "fast" ? "text-primary" : "text-gray-700"}`}>
+                Fast Scan
+              </div>
+              <div className="text-xs text-gray-500 mt-1">Select a saved course, scores only</div>
+              <div className="text-xs text-gray-400 mt-0.5">~10 seconds</div>
+            </div>
+          </button>
         </div>
+
+        {/* Fast scan: course search */}
+        {scanMode === "fast" && !selectedCourseId && (
+          <div className="mb-6">
+            <div className="relative">
+              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+              <input
+                type="text"
+                value={courseQuery}
+                onChange={(e) => handleCourseQuery(e.target.value)}
+                placeholder="Search for a course by name..."
+                className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                autoFocus
+              />
+              {searching && (
+                <Loader2 size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 animate-spin" />
+              )}
+            </div>
+            {courseResults.length > 0 && (
+              <ul className="mt-1 bg-white border border-gray-200 rounded-lg shadow-md overflow-hidden divide-y divide-gray-100">
+                {courseResults.map((c) => (
+                  <li key={c.id}>
+                    <button
+                      onClick={() => selectCourse(c)}
+                      className="w-full flex items-start gap-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors"
+                    >
+                      <MapPin size={14} className="text-gray-400 mt-0.5 shrink-0" />
+                      <div>
+                        <div className="text-sm font-medium text-gray-800">{c.name}</div>
+                        {c.location && <div className="text-xs text-gray-500">{c.location}</div>}
+                      </div>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {courseQuery.trim().length >= 2 && !searching && courseResults.length === 0 && (
+              <p className="mt-2 text-sm text-gray-400 text-center">No courses found — try a different name</p>
+            )}
+          </div>
+        )}
+
+        {/* Selected course chip */}
+        {scanMode === "fast" && selectedCourseId && (
+          <div className="mb-4 flex items-center gap-2 px-4 py-3 bg-green-50 border border-green-200 rounded-lg">
+            <CheckCircle size={16} className="text-green-600 shrink-0" />
+            <span className="text-sm font-semibold text-green-800 flex-1">{selectedCourseName}</span>
+            <button
+              onClick={() => update({ selectedCourseId: null, selectedCourseName: null, scoringFormat: null, file: null, preview: null })}
+              className="text-green-600 hover:text-green-800"
+            >
+              <X size={14} />
+            </button>
+          </div>
+        )}
+
+        {/* Scoring format toggle — fast scan only, after course selected */}
+        {scanMode === "fast" && selectedCourseId && (
+          <div className="mb-5">
+            <p className="text-sm font-medium text-gray-700 mb-2">How are scores written on this card?</p>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => update({ scoringFormat: "strokes" })}
+                className={`px-4 py-3 rounded-xl border-2 text-left transition-all ${
+                  scoringFormat === "strokes"
+                    ? "border-primary bg-primary/5"
+                    : "border-gray-200 bg-white hover:border-gray-300"
+                }`}
+              >
+                <div className={`text-sm font-semibold ${scoringFormat === "strokes" ? "text-primary" : "text-gray-700"}`}>
+                  Total Strokes
+                </div>
+                <div className="text-xs text-gray-400 mt-0.5">e.g. 4, 5, 6</div>
+              </button>
+              <button
+                onClick={() => update({ scoringFormat: "to_par" })}
+                className={`px-4 py-3 rounded-xl border-2 text-left transition-all ${
+                  scoringFormat === "to_par"
+                    ? "border-primary bg-primary/5"
+                    : "border-gray-200 bg-white hover:border-gray-300"
+                }`}
+              >
+                <div className={`text-sm font-semibold ${scoringFormat === "to_par" ? "text-primary" : "text-gray-700"}`}>
+                  Score to Par
+                </div>
+                <div className="text-xs text-gray-400 mt-0.5">e.g. +1, −1, E</div>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* File upload drop zone */}
+        {showUploadArea && (
+          <div
+            className={`border-2 border-dashed rounded-xl p-16 text-center transition-colors ${
+              dragOver
+                ? "border-primary bg-primary/5"
+                : "border-gray-300 hover:border-primary"
+            }`}
+            onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+            onDragLeave={() => setDragOver(false)}
+            onDrop={handleDrop}
+          >
+            <Upload size={48} className="mx-auto text-gray-400 mb-4" />
+            <p className="text-gray-600 mb-2">Drag and drop your scorecard image here</p>
+            <p className="text-sm text-gray-400 mb-4">or</p>
+            <label className="inline-block px-5 py-2.5 bg-primary text-white rounded-lg text-sm font-medium cursor-pointer hover:opacity-90 transition-opacity">
+              <Camera size={16} className="inline mr-2" />
+              Choose File
+              <input
+                type="file"
+                accept="image/*,.pdf"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) handleFile(f);
+                }}
+              />
+            </label>
+            <p className="text-xs text-gray-400 mt-4">
+              Supports JPG, PNG, WEBP, HEIC, PDF
+            </p>
+          </div>
+        )}
 
         {preview && file && (
           <div className="mt-6">
@@ -220,23 +397,41 @@ export function ScanPage({ userId, scanState, setScanState }: ScanPageProps) {
                 className="max-h-64 rounded-lg mx-auto"
               />
               <div className="mt-4">
-                <label className="text-sm font-medium text-gray-700">
-                  Context for AI
-                  <span className="font-normal text-gray-400 ml-1">(optional)</span>
-                </label>
-                <textarea
-                  value={userContext}
-                  onChange={(e) => update({ userContext: e.target.value })}
-                  placeholder='e.g. "My name is Tucker", "I write scores as +1/-1/E (to par)", "No putts recorded", "Only front 9"'
-                  className="w-full mt-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary resize-none"
-                  rows={2}
-                />
+                {scanMode === "fast" ? (
+                  <>
+                    <label className="text-sm font-medium text-gray-700">
+                      Your name on the card
+                      <span className="font-normal text-gray-400 ml-1">(optional — helps pick the right row)</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={userContext}
+                      onChange={(e) => update({ userContext: e.target.value })}
+                      placeholder='e.g. "Tucker"'
+                      className="w-full mt-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                    />
+                  </>
+                ) : (
+                  <>
+                    <label className="text-sm font-medium text-gray-700">
+                      Context for AI
+                      <span className="font-normal text-gray-400 ml-1">(optional)</span>
+                    </label>
+                    <textarea
+                      value={userContext}
+                      onChange={(e) => update({ userContext: e.target.value })}
+                      placeholder='e.g. "My name is Tucker", "I write scores as +1/-1/E (to par)", "No putts recorded", "Only front 9"'
+                      className="w-full mt-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary resize-none"
+                      rows={2}
+                    />
+                  </>
+                )}
               </div>
               <button
                 onClick={handleExtract}
                 className="mt-3 w-full px-5 py-3 bg-primary text-white rounded-lg font-medium hover:opacity-90 transition-opacity"
               >
-                Extract Scorecard
+                {scanMode === "fast" ? "Fast Scan" : "Extract Scorecard"}
               </button>
             </div>
           </div>
@@ -253,7 +448,9 @@ export function ScanPage({ userId, scanState, setScanState }: ScanPageProps) {
         <div className="flex flex-col items-center justify-center h-64">
           <Loader2 size={48} className="text-primary animate-spin mb-4" />
           <p className="text-gray-600 font-medium">Analyzing your scorecard...</p>
-          <p className="text-sm text-gray-400 mt-1">This may take 10-20 seconds</p>
+          <p className="text-sm text-gray-400 mt-1">
+            {scanMode === "fast" ? "Fast scan — usually under 10 seconds" : "This may take 1–2 minutes"}
+          </p>
         </div>
       </div>
     );
@@ -501,27 +698,52 @@ export function ScanPage({ userId, scanState, setScanState }: ScanPageProps) {
         </div>
       </div>
 
-      {/* Stat cards — same layout as rounds page */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
-          <div className="text-xs text-gray-500 mb-1">Front 9</div>
-          <div className="text-3xl font-bold text-gray-900">{frontNine ?? "-"}</div>
-        </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
-          <div className="text-xs text-gray-500 mb-1">Back 9</div>
-          <div className="text-3xl font-bold text-gray-900">{backNine ?? "-"}</div>
-        </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
-          <div className="text-xs text-gray-500 mb-1">Total</div>
-          <div className="text-3xl font-bold text-gray-900">{totalStrokes || "-"}</div>
-        </div>
-        <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
-          <div className="text-xs text-gray-500 mb-1">To Par</div>
-          <div className={`text-3xl font-bold ${toPar !== null && toPar < 0 ? "text-green-600" : toPar !== null && toPar > 0 ? "text-red-500" : "text-gray-900"}`}>
-            {formatToPar(toPar)}
+      {/* Stat cards */}
+      {(() => {
+        const selectedTee = editedTeeBox
+          ? rd.course?.tees?.find((t) => t.color?.toLowerCase() === editedTeeBox.toLowerCase()) ?? null
+          : null;
+        const courseHandicap =
+          handicapIndex != null &&
+          selectedTee?.slope_rating != null &&
+          selectedTee?.course_rating != null &&
+          coursePar != null
+            ? calcCourseHandicap(handicapIndex, selectedTee.slope_rating, selectedTee.course_rating, coursePar)
+            : null;
+        const netScore = courseHandicap != null && totalStrokes > 0
+          ? calcNetScore(totalStrokes, courseHandicap)
+          : null;
+
+        return (
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-6">
+            <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
+              <div className="text-xs text-gray-500 mb-1">Front 9</div>
+              <div className="text-3xl font-bold text-gray-900">{frontNine ?? "-"}</div>
+            </div>
+            <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
+              <div className="text-xs text-gray-500 mb-1">Back 9</div>
+              <div className="text-3xl font-bold text-gray-900">{backNine ?? "-"}</div>
+            </div>
+            <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
+              <div className="text-xs text-gray-500 mb-1">Total</div>
+              <div className="text-3xl font-bold text-gray-900">{totalStrokes || "-"}</div>
+            </div>
+            <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
+              <div className="text-xs text-gray-500 mb-1">To Par</div>
+              <div className={`text-3xl font-bold ${toPar !== null && toPar < 0 ? "text-green-600" : toPar !== null && toPar > 0 ? "text-red-500" : "text-gray-900"}`}>
+                {formatToPar(toPar)}
+              </div>
+            </div>
+            <div className={`bg-white rounded-xl border border-gray-200 border-l-4 p-4 text-center ${netScore != null && coursePar != null ? netScore <= coursePar ? "border-l-birdie" : "border-l-bogey" : "border-l-gray-300"}`}>
+              <div className="text-xs text-gray-500 mb-1">Net Score</div>
+              <div className={`text-3xl font-bold ${netScore != null && coursePar != null ? netScore <= coursePar ? "text-birdie" : "text-bogey" : "text-gray-900"}`}>{netScore ?? "-"}</div>
+              {courseHandicap != null && (
+                <div className="text-xs text-gray-400 mt-0.5">HCP {courseHandicap < 0 ? `+${Math.abs(courseHandicap)}` : courseHandicap}</div>
+              )}
+            </div>
           </div>
-        </div>
-      </div>
+        );
+      })()}
 
       {/* Top: image + metadata side by side */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">

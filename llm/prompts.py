@@ -189,24 +189,50 @@ def _build_scores_only_json_schema() -> str:
 
 
 def build_scores_only_prompt(
-    course: Course, user_context: Optional[str] = None
+    course: Course,
+    user_context: Optional[str] = None,
+    to_par_scoring: Optional[bool] = None,
 ) -> str:
     """Build prompt for Strategy 2: extract only player scores.
 
     The LLM reads raw numbers from the card. Python handles all calculations.
+
+    Args:
+        to_par_scoring: If True/False, tells the LLM the format upfront so it
+            doesn't have to detect it. If None, the LLM auto-detects.
     """
     course_context = _format_course_context(course)
+
+    if to_par_scoring is True:
+        scoring_instructions = (
+            "\n\nSCORING FORMAT (pre-confirmed by user): Scores are written TO PAR "
+            "(e.g., +1, -1, 0, E meaning even). "
+            "Report the score as a signed integer: +1 → 1, -1 → -1, E or 0 → 0. "
+            "Do NOT output the '+' sign — just the integer value. "
+            "Do NOT convert to total strokes. Set to_par_scoring to true."
+        )
+    elif to_par_scoring is False:
+        scoring_instructions = (
+            "\n\nSCORING FORMAT (pre-confirmed by user): Scores are TOTAL STROKES "
+            "(e.g., 4, 5, 6 written directly on the card). "
+            "Report the exact integer you see. Do NOT adjust or convert. "
+            "Set to_par_scoring to false."
+        )
+    else:
+        scoring_instructions = (
+            "\n\nYOUR JOB: Read the raw numbers written on the scorecard for each hole."
+            "\n- Set to_par_scoring to TRUE if scores are written as relative to par "
+            "(e.g., +1, -1, 0, E). Set to FALSE if scores are total strokes (e.g., 4, 5, 6)."
+            "\n- Report the score EXACTLY as written. Do NOT convert between formats. "
+            "If they wrote +1, report 1. If they wrote -1, report -1. If they wrote 5, report 5."
+        )
 
     prompt = (
         _PREAMBLE
         + " Read ONLY the player's scores from this golf scorecard image/document.\n\n"
         + course_context + "\n"
         + "\nThe course data above is authoritative. Do NOT read course info from the card."
-        + "\n\nYOUR JOB: Read the raw numbers written on the scorecard for each hole."
-        + "\n- Set to_par_scoring to TRUE if scores are written as relative to par "
-        + "(e.g., +1, -1, 0, E). Set to FALSE if scores are total strokes (e.g., 4, 5, 6)."
-        + "\n- Report the score EXACTLY as written. Do NOT convert between formats. "
-        + "If they wrote +1, report 1. If they wrote -1, report -1. If they wrote 5, report 5."
+        + scoring_instructions
         + "\n- Report putts if visible, otherwise null."
         + "\n- Do NOT calculate totals. Just read hole-by-hole."
         + _PLAYER_INSTRUCTIONS
@@ -220,6 +246,29 @@ def build_scores_only_prompt(
         + "\n4. Report the score EXACTLY as you see it on the card. We will handle conversion."
     )
     return _append_user_context(prompt, user_context)
+
+
+# ================================================================
+# Fast scan prompt (ultra-minimal: 18 raw numbers only)
+# ================================================================
+
+def build_fast_scan_prompt(player_name: Optional[str] = None) -> str:
+    """Build the minimal prompt for fast scan extraction.
+
+    The LLM's only job: read 18 numbers off the card in hole order.
+    No course info, no format detection, no date, no putts.
+    Everything else is handled by the backend using known course data.
+    """
+    player = f'for "{player_name}"' if player_name else "for the first player listed"
+    return (
+        f'Read this golf scorecard. Return the 18 hole scores {player} as a JSON object.\n\n'
+        '{"scores": [{"score": <int or null>, "confidence": <0.0-1.0>}, ...]}\n\n'
+        "Rules:\n"
+        "- score: the exact number written on the card. E or even = 0. null if unreadable.\n"
+        "- confidence: 1.0 if clearly printed/written, lower if hard to read.\n"
+        "- Return exactly 18 entries in order from hole 1 to hole 18.\n"
+        "- Do nothing else. No totals, no course info, no other fields."
+    )
 
 
 # ================================================================
@@ -335,6 +384,19 @@ class RawScoresOnlyExtraction(BaseModel):
     date: AnnotatedStringField = AnnotatedStringField()
     player_name: AnnotatedStringField = AnnotatedStringField()
     holes: List[RawScoreOnlyHoleData] = Field(default_factory=list)
+
+
+# --- Fast scan models (minimal flat list) ---
+
+class RawFastScanHole(BaseModel):
+    """Single hole result from fast scan: just the raw number as written."""
+    score: Optional[int] = None
+    confidence: float = Field(0.0, ge=0.0, le=1.0)
+
+
+class RawFastScanExtraction(BaseModel):
+    """Ultra-minimal extraction: 18 raw numbers, nothing else."""
+    scores: List[RawFastScanHole] = Field(default_factory=list)
 
 
 # --- Course identification model (Strategy 3 first call) ---

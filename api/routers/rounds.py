@@ -7,9 +7,9 @@ from pydantic import BaseModel
 from typing import List, Optional
 from database.db_manager import DatabaseManager
 from database.exceptions import NotFoundError
-from api.dependencies import get_db
+from api.dependencies import get_current_user, get_db
 from api.schemas import RoundSummaryResponse
-from models import HoleScore
+from models import HoleScore, User
 
 logger = logging.getLogger(__name__)
 
@@ -62,13 +62,20 @@ async def get_rounds_for_user(
     limit: int = Query(100, ge=1, le=500),
     offset: int = Query(0, ge=0),
     db: DatabaseManager = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
+    if str(current_user.id) != user_id:
+        raise HTTPException(403, "Forbidden")
     rounds = await db.rounds.get_rounds_for_user(user_id, limit=limit, offset=offset)
     return [summarize_round(r) for r in rounds]
 
 
 @router.get("/{round_id}")
-async def get_round(round_id: str, db: DatabaseManager = Depends(get_db)):
+async def get_round(
+    round_id: str,
+    db: DatabaseManager = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     round_ = await db.rounds.get_round(round_id)
     if not round_:
         raise HTTPException(404, "Round not found")
@@ -80,6 +87,7 @@ async def update_round(
     round_id: str,
     req: UpdateRoundRequest,
     db: DatabaseManager = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """Edit an existing round's scores and/or metadata."""
     try:
@@ -128,7 +136,11 @@ async def update_round(
 
 
 @router.delete("/{round_id}", status_code=204)
-async def delete_round(round_id: str, db: DatabaseManager = Depends(get_db)):
+async def delete_round(
+    round_id: str,
+    db: DatabaseManager = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     deleted = await db.rounds.delete_round(round_id)
     if not deleted:
         raise HTTPException(404, "Round not found")
