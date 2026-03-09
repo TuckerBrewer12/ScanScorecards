@@ -97,6 +97,7 @@ export interface User {
   id: string | null;
   name: string | null;
   email: string | null;
+  home_course_id: string | null;
   handicap: number | null;
   created_at: string | null;
 }
