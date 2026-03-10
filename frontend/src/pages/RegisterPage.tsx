@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
+import { api } from "@/lib/api";
+import type { CourseSummary } from "@/types/golf";
 
 export function RegisterPage() {
   const { register } = useAuth();
@@ -9,8 +11,33 @@ export function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
+  const [handicap, setHandicap] = useState("");
+  const [homeCourseQuery, setHomeCourseQuery] = useState("");
+  const [homeCourseId, setHomeCourseId] = useState<string>("");
+  const [courseResults, setCourseResults] = useState<CourseSummary[]>([]);
+  const [showCourseResults, setShowCourseResults] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const q = homeCourseQuery.trim();
+    if (q.length < 2) {
+      setCourseResults([]);
+      return;
+    }
+    const handle = window.setTimeout(() => {
+      api.searchCourses(q)
+        .then((rows) => setCourseResults(rows))
+        .catch(() => setCourseResults([]));
+    }, 250);
+    return () => window.clearTimeout(handle);
+  }, [homeCourseQuery]);
+
+  const selectCourse = (course: CourseSummary) => {
+    setHomeCourseId(course.id);
+    setHomeCourseQuery(course.name ?? "");
+    setShowCourseResults(false);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,9 +50,27 @@ export function RegisterPage() {
       setError("Password must be at least 8 characters");
       return;
     }
+    const trimmedCourse = homeCourseQuery.trim();
+    if (trimmedCourse.length > 0 && !homeCourseId) {
+      setError("Select a home course from the list, or leave it blank.");
+      return;
+    }
+
+    let parsedHandicap: number | null = null;
+    if (handicap.trim() !== "") {
+      parsedHandicap = Number(handicap);
+      if (Number.isNaN(parsedHandicap) || parsedHandicap < -10 || parsedHandicap > 54) {
+        setError("Handicap must be between -10 and 54.");
+        return;
+      }
+    }
+
     setLoading(true);
     try {
-      await register(name, email, password);
+      await register(name, email, password, {
+        handicap: parsedHandicap,
+        home_course_id: homeCourseId || null,
+      });
       navigate("/");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registration failed");
@@ -99,6 +144,54 @@ export function RegisterPage() {
               className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
               placeholder="••••••••"
             />
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Handicap (optional)</label>
+            <input
+              type="number"
+              value={handicap}
+              onChange={(e) => setHandicap(e.target.value)}
+              min={-10}
+              max={54}
+              step="0.1"
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+              placeholder="e.g. 14.2"
+            />
+          </div>
+
+          <div className="relative">
+            <label className="block text-xs font-medium text-gray-600 mb-1">Home Course (optional)</label>
+            <input
+              type="text"
+              value={homeCourseQuery}
+              onChange={(e) => {
+                setHomeCourseQuery(e.target.value);
+                setHomeCourseId("");
+                setShowCourseResults(true);
+              }}
+              onFocus={() => setShowCourseResults(true)}
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+              placeholder="Type course name..."
+            />
+            {showCourseResults && courseResults.length > 0 ? (
+              <div className="absolute z-10 mt-1 w-full rounded-lg border border-gray-200 bg-white shadow-lg max-h-56 overflow-auto">
+                {courseResults.map((course) => (
+                  <button
+                    key={course.id}
+                    type="button"
+                    onMouseDown={() => selectCourse(course)}
+                    className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50"
+                  >
+                    <div className="text-gray-900">{course.name ?? "Unnamed Course"}</div>
+                    {course.location ? <div className="text-xs text-gray-500">{course.location}</div> : null}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+            <p className="mt-1 text-xs text-gray-500">
+              Must be selected from existing courses. If it is not in the DB yet, set it later in Settings.
+            </p>
           </div>
 
           <button

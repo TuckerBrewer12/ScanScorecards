@@ -143,9 +143,15 @@ def _build_course(raw: RawScorecardExtraction) -> Course:
 def _build_hole_scores(raw: RawScorecardExtraction) -> List[HoleScore]:
     scores = []
     for raw_hole in raw.holes:
+        strokes = raw_hole.strokes.value
+        # OCR sometimes returns 0 for blank/unclear score cells.
+        # HoleScore requires strokes >= 1, so treat non-positive values as missing.
+        if strokes is not None and strokes <= 0:
+            strokes = None
+
         score = HoleScore(
             hole_number=raw_hole.hole_number.value,
-            strokes=raw_hole.strokes.value,
+            strokes=strokes,
             putts=raw_hole.putts.value,
             fairway_hit=raw_hole.fairway_hit.value,
             green_in_regulation=raw_hole.green_in_regulation.value,

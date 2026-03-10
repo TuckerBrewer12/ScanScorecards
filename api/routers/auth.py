@@ -18,10 +18,20 @@ async def register(req: RegisterRequest, db: DatabaseManager = Depends(get_db)):
     if existing:
         raise HTTPException(409, "An account with this email already exists")
 
+    if req.home_course_id:
+        course = await db.courses.get_course(req.home_course_id)
+        if not course:
+            raise HTTPException(400, "Selected home course was not found")
+
     password_hash = hash_password(req.password)
     try:
         user = await db.users.create_user(
-            User(name=req.name, email=req.email),
+            User(
+                name=req.name,
+                email=req.email,
+                handicap=req.handicap,
+                home_course_id=req.home_course_id,
+            ),
             password_hash=password_hash,
         )
     except DuplicateError:

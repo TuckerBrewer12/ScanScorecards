@@ -10,7 +10,12 @@ interface AuthState {
 
 interface AuthContextValue extends AuthState {
   login: (email: string, password: string) => Promise<void>;
-  register: (name: string, email: string, password: string) => Promise<void>;
+  register: (
+    name: string,
+    email: string,
+    password: string,
+    options?: { handicap?: number | null; home_course_id?: string | null },
+  ) => Promise<void>;
   logout: () => void;
   loading: boolean;
 }
@@ -65,8 +70,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setState({ userId: data.user_id, name: data.name, email: data.email });
   };
 
-  const register = async (name: string, email: string, password: string) => {
-    const data = await callAuth("/register", { name, email, password });
+  const register = async (
+    name: string,
+    email: string,
+    password: string,
+    options?: { handicap?: number | null; home_course_id?: string | null },
+  ) => {
+    const data = await callAuth("/register", {
+      name,
+      email,
+      password,
+      handicap: options?.handicap ?? null,
+      home_course_id: options?.home_course_id ?? null,
+    });
     localStorage.setItem(TOKEN_KEY, data.access_token);
     setState({ userId: data.user_id, name: data.name, email: data.email });
   };
