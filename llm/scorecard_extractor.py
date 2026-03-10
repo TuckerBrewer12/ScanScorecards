@@ -190,9 +190,13 @@ def _convert_score_to_strokes(
     """
     if raw_score is None:
         return None
-    if to_par_scoring and par is not None:
-        return par + raw_score
-    return raw_score
+    if to_par_scoring:
+        if par is None:
+            return None
+        converted = par + raw_score
+        return converted if converted >= 1 else None
+    # In total-strokes mode, 0/negative is invalid; treat as unreadable.
+    return raw_score if raw_score >= 1 else None
 
 
 def _build_round_from_scores(
@@ -854,10 +858,7 @@ def _extract_fast_scan(
         known_par = known_hole.par if known_hole else None
 
         raw_score = entry.score
-        if raw_score is not None and to_par_scoring and known_par is not None:
-            strokes = known_par + raw_score
-        else:
-            strokes = raw_score
+        strokes = _convert_score_to_strokes(raw_score, known_par, to_par_scoring)
 
         hole_scores.append(HoleScore(
             hole_number=hole_num,
