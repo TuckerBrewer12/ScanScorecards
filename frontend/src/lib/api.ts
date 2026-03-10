@@ -1,4 +1,4 @@
-import type { DashboardData, RoundSummary, Round, CourseSummary, Course } from "@/types/golf";
+import type { DashboardData, RoundSummary, Round, CourseSummary, Course, User } from "@/types/golf";
 import type { AnalyticsData, CourseAnalyticsData, RoundComparison } from "@/types/analytics";
 import { getToken } from "@/context/AuthContext";
 
@@ -49,6 +49,21 @@ async function putJSON<T>(path: string, body: unknown): Promise<T> {
   return res.json();
 }
 
+async function patchJSON<T>(path: string, body: unknown): Promise<T> {
+  const res = await fetch(`${BASE_URL}${path}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...authHeaders() },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    let msg = `API error: ${res.status}`;
+    try { msg = JSON.parse(text).detail ?? msg; } catch { if (text) msg = text; }
+    throw new Error(msg);
+  }
+  return res.json();
+}
+
 export const api = {
   getDashboard: (userId: string) =>
     fetchJSON<DashboardData>(`/stats/dashboard/${userId}`),
@@ -68,6 +83,9 @@ export const api = {
       weather_conditions?: string;
     }
   ) => putJSON<Round>(`/rounds/${roundId}`, body),
+
+  linkCourse: (roundId: string, courseId: string) =>
+    postJSON<RoundSummary>(`/rounds/${roundId}/link-course`, { course_id: courseId }),
 
   deleteRound: (roundId: string) =>
     fetch(`${BASE_URL}/rounds/${roundId}`, {
@@ -91,6 +109,12 @@ export const api = {
 
   getCourse: (courseId: string) =>
     fetchJSON<Course>(`/courses/${courseId}`),
+
+  getUser: (userId: string) =>
+    fetchJSON<User>(`/users/${userId}`),
+
+  updateUser: (userId: string, body: { home_course_id?: string | null }) =>
+    patchJSON<User>(`/users/${userId}`, body),
 
   cloneCourse: (courseId: string, userId: string) =>
     postJSON<CourseSummary>(`/courses/${courseId}/clone?user_id=${encodeURIComponent(userId)}`, {}),

@@ -774,7 +774,7 @@ def scrambling_per_round(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
                 if not hole or hole.par is None:
                     continue
 
-                if score.green_in_regulation is False:
+                if score.green_in_regulation is False and score.putts is not None:
                     opportunities += 1
                     if score.strokes == hole.par:
                         successes += 1

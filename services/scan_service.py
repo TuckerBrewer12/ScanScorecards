@@ -42,12 +42,19 @@ class ScanService:
     async def _resolve_course(
         self, req: SaveRoundRequest
     ) -> Tuple[Optional[Course], Optional[str]]:
-        """4-tier course resolution. Returns (course, course_id_str)."""
-        if not req.course_name:
-            return None, None
-
+        """5-tier course resolution. Returns (course, course_id_str)."""
         tees = self._build_tees(req)
         scan_holes = req.course_holes or []
+
+        # Tier 0: explicit course_id (user selected from DB — skip fuzzy match)
+        if req.course_id:
+            course = await self._db.courses.get_course(req.course_id)
+            if course:
+                await self._fill_gaps(str(course.id), scan_holes, tees)
+                return course, str(course.id)
+
+        if not req.course_name:
+            return None, None
 
         # Tier 1: master exists
         course = await self._db.courses.find_course_by_name(req.course_name, req.course_location)

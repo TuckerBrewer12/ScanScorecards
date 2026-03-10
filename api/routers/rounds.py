@@ -35,11 +35,16 @@ class UpdateRoundRequest(BaseModel):
     tee_box: Optional[str] = None
 
 
+class LinkCourseRequest(BaseModel):
+    course_id: str
+
+
 def summarize_round(r) -> RoundSummaryResponse:
     """Project a full Round model into a lightweight summary."""
     fairways = [s.fairway_hit for s in r.hole_scores if s.fairway_hit is not None]
     return RoundSummaryResponse(
         id=r.id,
+        course_id=str(r.course.id) if r.course and r.course.id else None,
         course_name=r.course.name if r.course else r.course_name_played,
         course_location=r.course.location if r.course else None,
         course_par=r.get_par(),
@@ -133,6 +138,48 @@ async def update_round(
     except Exception as e:
         logger.exception("Update round error")
         raise HTTPException(500, f"Update failed: {type(e).__name__}: {str(e)}")
+
+
+@router.post("/{round_id}/link-course", response_model=RoundSummaryResponse)
+async def link_course_to_round(
+    round_id: str,
+    req: LinkCourseRequest,
+    db: DatabaseManager = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Link an unlinked round to an existing course.
+
+    Backfills par_played/handicap_played on hole_scores from the course,
+    and fills course holes from any par_played already on the round.
+    """
+    try:
+        # Verify course exists
+        course = await db.courses.get_course(req.course_id)
+        if not course:
+            raise HTTPException(404, "Course not found")
+
+        # Fill course gaps from the round's par_played values
+        round_ = await db.rounds.get_round(round_id)
+        if not round_:
+            raise HTTPException(404, "Round not found")
+
+        scan_holes = [
+            {"hole_number": hs.hole_number, "par": hs.par_played, "handicap": hs.handicap_played}
+            for hs in round_.hole_scores
+            if hs.hole_number is not None and hs.par_played is not None
+        ]
+        if scan_holes:
+            await db.courses.fill_course_gaps(req.course_id, scan_holes)
+
+        updated = await db.rounds.link_course_to_round(round_id, req.course_id)
+        if not updated:
+            raise HTTPException(404, "Round not found")
+        return summarize_round(updated)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("Link course error")
+        raise HTTPException(500, f"Link failed: {type(e).__name__}: {str(e)}")
 
 
 @router.delete("/{round_id}", status_code=204)

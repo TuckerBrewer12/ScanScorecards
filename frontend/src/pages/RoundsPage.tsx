@@ -1,7 +1,9 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { Link } from "react-router-dom";
+import { Link2 } from "lucide-react";
+import { CourseLinkSearch } from "@/components/CourseLinkSearch";
 import { api } from "@/lib/api";
-import type { RoundSummary } from "@/types/golf";
+import type { RoundSummary, CourseSummary } from "@/types/golf";
 import { formatToPar } from "@/types/golf";
 import { PageHeader } from "@/components/layout/PageHeader";
 
@@ -18,12 +20,61 @@ export function RoundsPage({ userId }: RoundsPageProps) {
   const [sortKey, setSortKey] = useState<SortKey>("date");
   const [sortAsc, setSortAsc] = useState(false);
 
+  // Link-course state
+  const [linkingRoundId, setLinkingRoundId] = useState<string | null>(null);
+  const [linkQuery, setLinkQuery] = useState("");
+  const [linkResults, setLinkResults] = useState<CourseSummary[]>([]);
+  const [linkSearching, setLinkSearching] = useState(false);
+  const [linking, setLinking] = useState(false);
+  const linkTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   useEffect(() => {
     api.getRoundsForUser(userId, 200).then((r) => {
       setRounds(r);
       setLoading(false);
     });
   }, [userId]);
+
+  const handleLinkQuery = useCallback((q: string) => {
+    setLinkQuery(q);
+    if (linkTimer.current) clearTimeout(linkTimer.current);
+    if (q.trim().length < 2) { setLinkResults([]); return; }
+    linkTimer.current = setTimeout(async () => {
+      setLinkSearching(true);
+      try {
+        const results = await api.searchCourses(q.trim(), userId);
+        setLinkResults(results);
+      } catch { setLinkResults([]); }
+      finally { setLinkSearching(false); }
+    }, 300);
+  }, [userId]);
+
+  const handleSelectCourse = useCallback(async (roundId: string, course: CourseSummary) => {
+    setLinking(true);
+    try {
+      const updated = await api.linkCourse(roundId, course.id);
+      setRounds((prev) => prev.map((r) => r.id === roundId ? updated : r));
+      setLinkingRoundId(null);
+      setLinkQuery("");
+      setLinkResults([]);
+    } catch (err) {
+      console.error("Link failed:", err);
+    } finally {
+      setLinking(false);
+    }
+  }, []);
+
+  const openLink = useCallback((roundId: string) => {
+    setLinkingRoundId(roundId);
+    setLinkQuery("");
+    setLinkResults([]);
+  }, []);
+
+  const closeLink = useCallback(() => {
+    setLinkingRoundId(null);
+    setLinkQuery("");
+    setLinkResults([]);
+  }, []);
 
   const filtered = useMemo(() => {
     let result = rounds;
@@ -128,49 +179,80 @@ export function RoundsPage({ userId }: RoundsPageProps) {
           </thead>
           <tbody className="divide-y divide-gray-100">
             {filtered.map((r) => (
-              <tr key={r.id} className="hover:bg-gray-50 transition-colors">
-                <td className="px-4 py-3 text-sm font-medium text-gray-600">
-                  {r.date
-                    ? new Date(r.date).toLocaleDateString()
-                    : "-"}
-                </td>
-                <td className="px-4 py-3 text-sm font-semibold text-gray-900">
-                  <Link
-                    to={`/rounds/${r.id}`}
-                    className="hover:text-primary transition-colors"
-                  >
-                    {r.course_name ?? "-"}
-                  </Link>
-                </td>
-                <td className="px-4 py-3 text-sm text-center text-gray-600">
-                  {r.front_nine ?? "-"}
-                </td>
-                <td className="px-4 py-3 text-sm text-center text-gray-600">
-                  {r.back_nine ?? "-"}
-                </td>
-                <td className="px-4 py-3 text-sm text-center font-semibold">
-                  {r.total_score ?? "-"}
-                </td>
-                <td className="px-4 py-3 text-sm text-center">
-                  <span
-                    className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold ${
-                      r.to_par !== null && r.to_par < 0
-                        ? "bg-birdie/10 text-birdie"
-                        : r.to_par !== null && r.to_par > 0
-                        ? "bg-bogey/10 text-bogey"
-                        : "bg-gray-100 text-gray-600"
-                    }`}
-                  >
-                    {formatToPar(r.to_par)}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-sm text-center text-gray-600">
-                  {r.total_putts ?? "-"}
-                </td>
-                <td className="px-4 py-3 text-sm text-gray-500">
-                  {r.notes ?? "-"}
-                </td>
-              </tr>
+              <>
+                <tr key={r.id} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-4 py-3 text-sm font-medium text-gray-600">
+                    {r.date
+                      ? new Date(r.date).toLocaleDateString()
+                      : "-"}
+                  </td>
+                  <td className="px-4 py-3 text-sm font-semibold text-gray-900">
+                    <div className="flex items-center gap-2">
+                      <Link
+                        to={`/rounds/${r.id}`}
+                        className="hover:text-primary transition-colors"
+                      >
+                        {r.course_name ?? "-"}
+                      </Link>
+                      {!r.course_id && (
+                        <button
+                          onClick={() => linkingRoundId === r.id ? closeLink() : openLink(r.id)}
+                          title="Link to a saved course"
+                          className="text-gray-400 hover:text-primary transition-colors shrink-0"
+                        >
+                          <Link2 size={14} />
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-sm text-center text-gray-600">
+                    {r.front_nine ?? "-"}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-center text-gray-600">
+                    {r.back_nine ?? "-"}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-center font-semibold">
+                    {r.total_score ?? "-"}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-center">
+                    <span
+                      className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold ${
+                        r.to_par !== null && r.to_par < 0
+                          ? "bg-birdie/10 text-birdie"
+                          : r.to_par !== null && r.to_par > 0
+                          ? "bg-bogey/10 text-bogey"
+                          : "bg-gray-100 text-gray-600"
+                      }`}
+                    >
+                      {formatToPar(r.to_par)}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-sm text-center text-gray-600">
+                    {r.total_putts ?? "-"}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-gray-500">
+                    {r.notes ?? "-"}
+                  </td>
+                </tr>
+
+                {/* Inline link-course panel */}
+                {linkingRoundId === r.id && (
+                  <tr key={`${r.id}-link`}>
+                    <td colSpan={8} className="px-4 py-3 bg-blue-50 border-b border-blue-100">
+                      <CourseLinkSearch
+                        title={`Link "${r.course_name ?? "this round"}" to a saved course`}
+                        query={linkQuery}
+                        results={linkResults}
+                        searching={linkSearching}
+                        linking={linking}
+                        onQueryChange={handleLinkQuery}
+                        onSelectCourse={(c) => handleSelectCourse(r.id, c)}
+                        onClose={closeLink}
+                      />
+                    </td>
+                  </tr>
+                )}
+              </>
             ))}
           </tbody>
         </table>

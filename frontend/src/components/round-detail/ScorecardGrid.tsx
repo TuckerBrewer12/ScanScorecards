@@ -2,7 +2,7 @@ import type { Round } from "@/types/golf";
 import { getScoreColor } from "@/types/golf";
 import { ScoreCell } from "./ScoreCell";
 
-type EditedScores = Record<number, { strokes: number | null; putts: number | null }>;
+type EditedScores = Record<number, { strokes: number | null; putts: number | null; gir?: boolean | null }>;
 
 interface ScorecardGridProps {
   round: Round;
@@ -12,6 +12,7 @@ interface ScorecardGridProps {
   availableTees?: string[];
   onScoreChange?: (holeNumber: number, field: "strokes" | "putts", value: number | null) => void;
   onTeeBoxChange?: (teeBox: string) => void;
+  onGirChange?: (holeNumber: number, value: boolean | null) => void;
 }
 
 function getHoleData(round: Round, holeNum: number, activeTeeBox?: string | null) {
@@ -34,6 +35,17 @@ function resolveEdited(
   fallback: number | null | undefined
 ): number | null {
   if (editedScores && holeNum in editedScores) return editedScores[holeNum][field];
+  return fallback ?? null;
+}
+
+function resolveGir(
+  holeNum: number,
+  editedScores: EditedScores | undefined,
+  fallback: boolean | null | undefined
+): boolean | null {
+  if (editedScores && holeNum in editedScores && editedScores[holeNum].gir !== undefined) {
+    return editedScores[holeNum].gir ?? null;
+  }
   return fallback ?? null;
 }
 
@@ -72,6 +84,7 @@ function NineTable({
   editedScores,
   activeTeeBox,
   onScoreChange,
+  onGirChange,
 }: {
   round: Round;
   holes: number[];
@@ -81,6 +94,7 @@ function NineTable({
   editedScores?: EditedScores;
   activeTeeBox?: string | null;
   onScoreChange?: (holeNumber: number, field: "strokes" | "putts", value: number | null) => void;
+  onGirChange?: (holeNumber: number, value: boolean | null) => void;
 }) {
   const data = holes.map((n) => getHoleData(round, n, activeTeeBox));
   const allHoles = showTotal ? Array.from({ length: 18 }, (_, i) => i + 1) : [];
@@ -120,6 +134,18 @@ function NineTable({
     ? sumEffectivePars(allHoles.map((n) => getHoleData(round, n).effectivePar))
     : null;
   const totalToPar = totalScore !== null && totalPar !== null ? totalScore - totalPar : null;
+
+  const girCount = editMode
+    ? holes.filter((n, i) => resolveGir(n, editedScores, data[i].score?.green_in_regulation) === true).length
+    : data.filter((d) => d.score?.green_in_regulation === true).length;
+  const totalGirCount = showTotal
+    ? allHoles.filter((n) => {
+        const d = getHoleData(round, n);
+        return editMode
+          ? resolveGir(n, editedScores, d.score?.green_in_regulation) === true
+          : d.score?.green_in_regulation === true;
+      }).length
+    : null;
 
   const editRowClass = editMode ? "bg-amber-50/40" : "";
 
@@ -261,29 +287,72 @@ function NineTable({
                 />
               </td>
             ) : (
-              <td key={n} className="px-2 py-2 text-center">{data[i].score?.putts ?? "-"}</td>
+              <td
+                key={n}
+                className={`px-2 py-2 text-center ${
+                  (data[i].score?.putts ?? 0) >= 3 ? "text-red-500 font-bold" : ""
+                }`}
+              >
+                {data[i].score?.putts ?? "-"}
+              </td>
             )
           )}
           <td className="px-2 py-2 text-center text-gray-500 font-semibold">{sumValues(effectivePutts) ?? "-"}</td>
-          {showTotal && <td className="px-2 py-2" />}
+          {showTotal && (
+            <td className="px-2 py-2 text-center font-bold text-gray-600">
+              {sumValues(
+                allHoles.map((n) => {
+                  const d = getHoleData(round, n);
+                  return editMode
+                    ? resolveEdited(n, "putts", editedScores, d.score?.putts)
+                    : (d.score?.putts ?? null);
+                })
+              ) ?? "-"}
+            </td>
+          )}
         </tr>
 
-        {/* GIR row — secondary */}
-        <tr className="text-xs text-gray-400">
-          <td className="px-3 py-2 font-bold text-gray-500">GIR</td>
-          {data.map((d, i) => (
-            <td key={holes[i]} className="px-2 py-2 text-center">
-              {d.score?.green_in_regulation === true
-                ? "●"
-                : d.score?.green_in_regulation === false
-                ? "○"
-                : "-"}
-            </td>
-          ))}
-          <td className="px-2 py-2 text-center text-gray-500 font-semibold">
-            {data.filter((d) => d.score?.green_in_regulation === true).length || "-"}
+        {/* GIR row */}
+        <tr className="text-xs">
+          <td className="px-3 py-2 font-bold text-green-700">GIR</td>
+          {holes.map((n, i) => {
+            const gir = editMode
+              ? resolveGir(n, editedScores, data[i].score?.green_in_regulation)
+              : (data[i].score?.green_in_regulation ?? null);
+            if (editMode) {
+              return (
+                <td key={n} className="px-1 py-1 text-center">
+                  <button
+                    onClick={() => {
+                      const next = gir === null ? true : gir === true ? false : null;
+                      onGirChange?.(n, next);
+                    }}
+                    className="w-7 h-7 flex items-center justify-center mx-auto rounded-full hover:bg-gray-100 focus:outline-none"
+                    title={gir === true ? "GIR hit — click to mark missed" : gir === false ? "GIR missed — click to clear" : "GIR unknown — click to mark hit"}
+                  >
+                    <span className={gir === true ? "text-green-600" : "text-gray-400"}>
+                      {gir === true ? "●" : gir === false ? "○" : "–"}
+                    </span>
+                  </button>
+                </td>
+              );
+            }
+            return (
+              <td key={n} className="px-2 py-2 text-center">
+                <span className={gir === true ? "text-green-600" : "text-gray-400"}>
+                  {gir === true ? "●" : gir === false ? "○" : "-"}
+                </span>
+              </td>
+            );
+          })}
+          <td className="px-2 py-2 text-center text-green-700 font-semibold">
+            {girCount || "-"}
           </td>
-          {showTotal && <td className="px-2 py-2" />}
+          {showTotal && (
+            <td className="px-2 py-2 text-center text-green-700 font-semibold">
+              {totalGirCount || "-"}
+            </td>
+          )}
         </tr>
       </tbody>
     </table>
@@ -298,6 +367,7 @@ export function ScorecardGrid({
   availableTees,
   onScoreChange,
   onTeeBoxChange,
+  onGirChange,
 }: ScorecardGridProps) {
   const front = [1, 2, 3, 4, 5, 6, 7, 8, 9];
   const back = [10, 11, 12, 13, 14, 15, 16, 17, 18];
@@ -329,7 +399,7 @@ export function ScorecardGrid({
                   <select
                     value={editedTeeBox ?? ""}
                     onChange={(e) => onTeeBoxChange?.(e.target.value)}
-                    className="text-sm bg-amber-50 border border-amber-200 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-primary/50"
+                    className="text-sm text-gray-800 bg-amber-50 border border-amber-200 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-primary/50"
                   >
                     <option value="">Select tee…</option>
                     {availableTees.map((color) => (
@@ -343,7 +413,7 @@ export function ScorecardGrid({
                     value={editedTeeBox ?? ""}
                     onChange={(e) => onTeeBoxChange?.(e.target.value)}
                     placeholder="e.g. White"
-                    className="text-sm bg-amber-50 border border-amber-200 rounded px-2 py-1 w-28 focus:outline-none focus:ring-1 focus:ring-primary/50"
+                    className="text-sm text-gray-800 bg-amber-50 border border-amber-200 rounded px-2 py-1 w-28 focus:outline-none focus:ring-1 focus:ring-primary/50"
                   />
                 )}
               </div>
@@ -371,6 +441,7 @@ export function ScorecardGrid({
           editedScores={editedScores}
           activeTeeBox={activeTeeBox}
           onScoreChange={onScoreChange}
+          onGirChange={onGirChange}
         />
         <div className="flex items-center gap-3 px-4 py-1.5 bg-gray-50/60 border-y border-gray-100">
           <div className="flex-1 h-px bg-gray-200" />
@@ -386,6 +457,7 @@ export function ScorecardGrid({
           editedScores={editedScores}
           activeTeeBox={activeTeeBox}
           onScoreChange={onScoreChange}
+          onGirChange={onGirChange}
         />
       </div>
     </div>
