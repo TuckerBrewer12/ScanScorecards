@@ -287,11 +287,29 @@ function NineTable({
                 />
               </td>
             ) : (
-              <td key={n} className="px-2 py-2 text-center">{data[i].score?.putts ?? "-"}</td>
+              <td
+                key={n}
+                className={`px-2 py-2 text-center ${
+                  (data[i].score?.putts ?? 0) >= 3 ? "text-red-500 font-bold" : ""
+                }`}
+              >
+                {data[i].score?.putts ?? "-"}
+              </td>
             )
           )}
           <td className="px-2 py-2 text-center text-gray-500 font-semibold">{sumValues(effectivePutts) ?? "-"}</td>
-          {showTotal && <td className="px-2 py-2" />}
+          {showTotal && (
+            <td className="px-2 py-2 text-center font-bold text-gray-600">
+              {sumValues(
+                allHoles.map((n) => {
+                  const d = getHoleData(round, n);
+                  return editMode
+                    ? resolveEdited(n, "putts", editedScores, d.score?.putts)
+                    : (d.score?.putts ?? null);
+                })
+              ) ?? "-"}
+            </td>
+          )}
         </tr>
 
         {/* GIR row */}

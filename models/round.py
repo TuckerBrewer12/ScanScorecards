@@ -32,11 +32,14 @@ class Round(BaseGolfModel):
         return None
 
     def get_total_putts(self) -> Optional[int]:
-        """Get total putts - uses provided value or calculates from holes."""
+        """Get total putts - uses provided value or calculates from holes.
+        Returns None if any scored hole is missing putts (partial sums are misleading)."""
         if self.total_putts is not None:
             return self.total_putts
-        putts = [s.putts for s in self.hole_scores if s.putts is not None]
-        return sum(putts) if putts else None
+        scored = [s for s in self.hole_scores if s.strokes is not None]
+        if not scored or any(s.putts is None for s in scored):
+            return None
+        return sum(s.putts for s in scored)  # type: ignore[misc]
 
     def get_total_gir(self) -> Optional[int]:
         """Get total GIR - uses provided value or calculates from holes."""

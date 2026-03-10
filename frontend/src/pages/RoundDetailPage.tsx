@@ -157,6 +157,7 @@ export function RoundDetailPage({ userId }: { userId: string }) {
       });
       setRound(updated);
       setEditMode(false);
+      api.getRoundComparison(userId, roundId).then(setComparison).catch(() => {});
     } catch (err) {
       console.error("Save failed:", err);
     } finally {
