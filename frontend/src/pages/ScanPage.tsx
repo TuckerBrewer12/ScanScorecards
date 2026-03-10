@@ -1,10 +1,10 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { Upload, Camera, Loader2, CheckCircle, AlertTriangle, X, Zap, Search, ScanLine, MapPin } from "lucide-react";
+import { Upload, Camera, Loader2, CheckCircle, AlertTriangle, X, Zap, Search, ScanLine, MapPin, PenLine } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { formatToPar, calcCourseHandicap, calcNetScore } from "@/types/golf";
 import type { CourseSummary } from "@/types/golf";
-import type { ScanState, ScanResult, ExtractedHoleScore, FieldConfidence } from "@/types/scan";
+import type { ScanState, ScanResult, ExtractedHoleScore, FieldConfidence, ManualTee } from "@/types/scan";
 import { initialScanState } from "@/types/scan";
 import { api } from "@/lib/api";
 import { getToken } from "@/context/AuthContext";
@@ -17,13 +17,17 @@ interface ScanPageProps {
 
 export function ScanPage({ userId, scanState, setScanState }: ScanPageProps) {
   const navigate = useNavigate();
-  const { step, scanMode, selectedCourseId, selectedCourseName, scoringFormat, file, preview, result, editedScores, editedNotes, editedDate, editedTeeBox, error, userContext, reviewCourseId, reviewCourseName } = scanState;
+  const { step, scanMode, selectedCourseId, selectedCourseName, scoringFormat, file, preview, result, editedScores, editedNotes, editedDate, editedTeeBox, error, userContext, reviewCourseId, reviewCourseName, manualCourseHoles, manualCourseTees } = scanState;
   const update = (patch: Partial<ScanState>) => setScanState(prev => ({ ...prev, ...patch }));
 
   // Transient UI state — fine to reset on navigation
   const [saving, setSaving] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [handicapIndex, setHandicapIndex] = useState<number | null>(null);
+  // Manual entry transient state
+  const [manualDate, setManualDate] = useState(new Date().toISOString().substring(0, 10));
+  const [manualTeeBox, setManualTeeBox] = useState("");
+  const [loadingCourse, setLoadingCourse] = useState(false);
 
   useEffect(() => {
     if (step === "review") {
@@ -163,6 +167,78 @@ export function ScanPage({ userId, scanState, setScanState }: ScanPageProps) {
     update({ editedScores: next });
   };
 
+  const handleGirChange = (index: number, value: boolean | null) => {
+    const next = [...editedScores];
+    next[index] = { ...next[index], green_in_regulation: value };
+    update({ editedScores: next });
+  };
+
+  const selectCourseManual = useCallback(async (course: CourseSummary) => {
+    update({ selectedCourseId: course.id, selectedCourseName: course.name ?? course.id });
+    setCourseQuery("");
+    setCourseResults([]);
+    setLoadingCourse(true);
+    try {
+      const full = await api.getCourse(course.id);
+      const tees: ManualTee[] = full.tees.map((t) => ({
+        color: t.color,
+        slope_rating: t.slope_rating,
+        course_rating: t.course_rating,
+        hole_yardages: Object.fromEntries(
+          Object.entries(t.hole_yardages).map(([k, v]) => [String(k), v as number])
+        ),
+      }));
+      update({
+        manualCourseHoles: full.holes.map((h) => ({ number: h.number, par: h.par })),
+        manualCourseTees: tees,
+      });
+    } catch { /* holes/tees stay empty — user can still enter scores */ }
+    finally { setLoadingCourse(false); }
+  }, []);
+
+  const handleStartEntry = () => {
+    const holes18 = manualCourseHoles.length > 0
+      ? manualCourseHoles
+      : Array.from({ length: 18 }, (_, i) => ({ number: i + 1, par: null }));
+
+    const emptyScores: ExtractedHoleScore[] = holes18.map((h) => ({
+      hole_number: h.number,
+      strokes: null,
+      putts: null,
+      fairway_hit: null,
+      green_in_regulation: null,
+    }));
+
+    const syntheticResult: ScanResult = {
+      round: {
+        course: selectedCourseId || selectedCourseName ? {
+          name: selectedCourseName,
+          location: null,
+          par: holes18.reduce((s, h) => s + (h.par ?? 0), 0) || null,
+          holes: holes18,
+          tees: manualCourseTees,
+        } : null,
+        tee_box: manualTeeBox || null,
+        date: manualDate,
+        hole_scores: emptyScores,
+        notes: null,
+      },
+      confidence: { overall: 1, level: "high", hole_scores: [] },
+      fields_needing_review: [],
+    };
+
+    update({
+      result: syntheticResult,
+      editedScores: emptyScores,
+      editedNotes: "",
+      editedDate: manualDate,
+      editedTeeBox: manualTeeBox || null,
+      reviewCourseId: selectedCourseId,
+      reviewCourseName: selectedCourseName,
+      step: "review",
+    });
+  };
+
   const handleSave = async () => {
     if (!result) return;
     setSaving(true);
@@ -249,34 +325,34 @@ export function ScanPage({ userId, scanState, setScanState }: ScanPageProps) {
         )}
 
         {/* Mode selector */}
-        <div className="grid grid-cols-2 gap-4 mb-6">
+        <div className="grid grid-cols-3 gap-3 mb-6">
           <button
-            onClick={() => update({ scanMode: "full", selectedCourseId: null, selectedCourseName: null, scoringFormat: null, file: null, preview: null })}
-            className={`flex flex-col items-center justify-center gap-3 p-6 rounded-xl border-2 text-center transition-all ${
+            onClick={() => update({ scanMode: "full", selectedCourseId: null, selectedCourseName: null, scoringFormat: null, file: null, preview: null, manualCourseHoles: [], manualCourseTees: [] })}
+            className={`flex flex-col items-center justify-center gap-3 p-4 rounded-xl border-2 text-center transition-all ${
               scanMode === "full"
                 ? "border-primary bg-primary/5 shadow-sm"
                 : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50"
             }`}
           >
-            <ScanLine size={32} className={scanMode === "full" ? "text-primary" : "text-gray-400"} />
+            <ScanLine size={28} className={scanMode === "full" ? "text-primary" : "text-gray-400"} />
             <div>
               <div className={`font-semibold text-sm ${scanMode === "full" ? "text-primary" : "text-gray-700"}`}>
-                Capture Entire Card
+                Capture Card
               </div>
-              <div className="text-xs text-gray-500 mt-1">Extracts course, tees, pars &amp; scores</div>
+              <div className="text-xs text-gray-500 mt-1">Extracts course, tees &amp; scores</div>
               <div className="text-xs text-gray-400 mt-0.5">~1–2 minutes</div>
             </div>
           </button>
 
           <button
-            onClick={() => update({ scanMode: "fast", selectedCourseId: null, selectedCourseName: null, scoringFormat: null, file: null, preview: null })}
-            className={`flex flex-col items-center justify-center gap-3 p-6 rounded-xl border-2 text-center transition-all ${
+            onClick={() => update({ scanMode: "fast", selectedCourseId: null, selectedCourseName: null, scoringFormat: null, file: null, preview: null, manualCourseHoles: [], manualCourseTees: [] })}
+            className={`flex flex-col items-center justify-center gap-3 p-4 rounded-xl border-2 text-center transition-all ${
               scanMode === "fast"
                 ? "border-primary bg-primary/5 shadow-sm"
                 : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50"
             }`}
           >
-            <Zap size={32} className={scanMode === "fast" ? "text-primary" : "text-gray-400"} />
+            <Zap size={28} className={scanMode === "fast" ? "text-primary" : "text-gray-400"} />
             <div>
               <div className={`font-semibold text-sm ${scanMode === "fast" ? "text-primary" : "text-gray-700"}`}>
                 Fast Scan
@@ -285,7 +361,132 @@ export function ScanPage({ userId, scanState, setScanState }: ScanPageProps) {
               <div className="text-xs text-gray-400 mt-0.5">~10 seconds</div>
             </div>
           </button>
+
+          <button
+            onClick={() => update({ scanMode: "manual", selectedCourseId: null, selectedCourseName: null, scoringFormat: null, file: null, preview: null, manualCourseHoles: [], manualCourseTees: [] })}
+            className={`flex flex-col items-center justify-center gap-3 p-4 rounded-xl border-2 text-center transition-all ${
+              scanMode === "manual"
+                ? "border-primary bg-primary/5 shadow-sm"
+                : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50"
+            }`}
+          >
+            <PenLine size={28} className={scanMode === "manual" ? "text-primary" : "text-gray-400"} />
+            <div>
+              <div className={`font-semibold text-sm ${scanMode === "manual" ? "text-primary" : "text-gray-700"}`}>
+                Manual Entry
+              </div>
+              <div className="text-xs text-gray-500 mt-1">Enter scores by hand</div>
+              <div className="text-xs text-gray-400 mt-0.5">No image needed</div>
+            </div>
+          </button>
         </div>
+
+        {/* Manual entry setup */}
+        {scanMode === "manual" && (
+          <div className="space-y-4">
+            {/* Course search */}
+            {!selectedCourseId ? (
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-2 block">
+                  Course <span className="font-normal text-gray-400">(optional)</span>
+                </label>
+                <div className="relative">
+                  <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={courseQuery}
+                    onChange={(e) => handleCourseQuery(e.target.value)}
+                    placeholder="Search for a course by name..."
+                    className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                    autoFocus
+                  />
+                  {(searching || loadingCourse) && (
+                    <Loader2 size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 animate-spin" />
+                  )}
+                </div>
+                {courseResults.length > 0 && (
+                  <ul className="mt-1 bg-white border border-gray-200 rounded-lg shadow-md overflow-hidden divide-y divide-gray-100">
+                    {courseResults.map((c) => (
+                      <li key={c.id}>
+                        <button
+                          onClick={() => selectCourseManual(c)}
+                          className="w-full flex items-start gap-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors"
+                        >
+                          <MapPin size={14} className="text-gray-400 mt-0.5 shrink-0" />
+                          <div>
+                            <div className="text-sm font-medium text-gray-800">{c.name}</div>
+                            {c.location && <div className="text-xs text-gray-500">{c.location}</div>}
+                          </div>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {courseQuery.trim().length >= 2 && !searching && courseResults.length === 0 && (
+                  <div className="mt-2 flex items-center justify-between px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg">
+                    <span className="text-sm text-gray-400">No courses found</span>
+                    <button
+                      onClick={() => {
+                        update({ selectedCourseName: courseQuery.trim() });
+                        setCourseQuery("");
+                        setCourseResults([]);
+                      }}
+                      className="text-xs font-medium text-primary hover:underline"
+                    >
+                      Use "{courseQuery.trim()}"
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 px-4 py-3 bg-green-50 border border-green-200 rounded-lg">
+                <CheckCircle size={16} className="text-green-600 shrink-0" />
+                <span className="text-sm font-semibold text-green-800 flex-1">{selectedCourseName}</span>
+                <button
+                  onClick={() => update({ selectedCourseId: null, selectedCourseName: null, manualCourseHoles: [], manualCourseTees: [] })}
+                  className="text-green-600 hover:text-green-800"
+                >
+                  <X size={14} />
+                </button>
+              </div>
+            )}
+
+            {/* Tee selector — only when course selected and has tees */}
+            {manualCourseTees.length > 0 && (
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-2 block">Tee Box</label>
+                <select
+                  value={manualTeeBox}
+                  onChange={(e) => setManualTeeBox(e.target.value)}
+                  className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                >
+                  <option value="">— select tee —</option>
+                  {manualCourseTees.map((t, i) => (
+                    <option key={i} value={t.color ?? ""}>{t.color ?? "Unknown"}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* Date */}
+            <div>
+              <label className="text-sm font-medium text-gray-700 mb-2 block">Date Played</label>
+              <input
+                type="date"
+                value={manualDate}
+                onChange={(e) => setManualDate(e.target.value)}
+                className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+              />
+            </div>
+
+            <button
+              onClick={handleStartEntry}
+              className="w-full px-5 py-3 bg-primary text-white rounded-lg font-medium hover:opacity-90 transition-opacity"
+            >
+              Start Entering Scores
+            </button>
+          </div>
+        )}
 
         {/* Fast scan: course search */}
         {scanMode === "fast" && !selectedCourseId && (
@@ -541,7 +742,7 @@ export function ScanPage({ userId, scanState, setScanState }: ScanPageProps) {
     return "text-gray-600";
   }
 
-  function renderNine(startIdx: number, label: string, showGrandTotal = false) {
+  function renderNine(startIdx: number, label: string, showGrandTotal = false, isManual = false) {
     const slice = editedScores.slice(startIdx, startIdx + 9);
     const ninePar = slice.reduce((s, hs, si) => {
       const holeNum = hs.hole_number ?? startIdx + si + 1;
@@ -663,8 +864,8 @@ export function ScanPage({ userId, scanState, setScanState }: ScanPageProps) {
             )}
           </tr>
 
-          {/* Putts — only if recorded on card */}
-          {!puttsNotRecorded && (
+          {/* Putts — always in manual mode, otherwise only if recorded on card */}
+          {(!puttsNotRecorded || isManual) && (
             <tr className="text-xs text-gray-500">
               <td className="px-3 py-1.5 font-medium">Putts</td>
               {slice.map((hs, si) => {
@@ -696,6 +897,41 @@ export function ScanPage({ userId, scanState, setScanState }: ScanPageProps) {
               )}
             </tr>
           )}
+
+          {/* GIR — manual entry only */}
+          {isManual && (
+            <tr className="text-xs">
+              <td className="px-3 py-1.5 font-bold text-green-700">GIR</td>
+              {slice.map((hs, si) => {
+                const origIdx = startIdx + si;
+                const gir = hs.green_in_regulation;
+                return (
+                  <td key={si} className="px-1 py-1 text-center">
+                    <button
+                      onClick={() => handleGirChange(origIdx, gir === true ? false : gir === false ? null : true)}
+                      className={`w-9 h-7 rounded border text-xs font-medium transition-colors ${
+                        gir === true
+                          ? "border-green-400 bg-green-50 text-green-700"
+                          : gir === false
+                          ? "border-red-200 bg-red-50 text-red-500"
+                          : "border-gray-200 bg-white text-gray-400"
+                      }`}
+                    >
+                      {gir === true ? "Y" : gir === false ? "N" : "–"}
+                    </button>
+                  </td>
+                );
+              })}
+              <td className="px-2 py-1.5 text-center text-green-700 font-semibold bg-gray-50">
+                {slice.filter((hs) => hs.green_in_regulation === true).length || "-"}
+              </td>
+              {showGrandTotal && (
+                <td className="px-2 py-1.5 text-center text-green-700 font-semibold bg-gray-100">
+                  {editedScores.filter((hs) => hs.green_in_regulation === true).length || "-"}
+                </td>
+              )}
+            </tr>
+          )}
         </tbody>
       </table>
     );
@@ -722,7 +958,9 @@ export function ScanPage({ userId, scanState, setScanState }: ScanPageProps) {
         {confidenceIsOk ? <CheckCircle size={16} className="mt-0.5 shrink-0" /> : <AlertTriangle size={16} className="mt-0.5 shrink-0" />}
         <div>
           {confidenceIsOk
-            ? "Extraction looks good — verify scores below"
+            ? scanMode === "manual"
+              ? "Enter your scores hole by hole below"
+              : "Extraction looks good — verify scores below"
             : `${strokesReviewFields.length} score(s) may need review — verify highlighted holes`}
           {puttsNotRecorded && !confidenceIsOk && (
             <div className="font-normal text-xs mt-0.5 opacity-75">Putts not recorded on this scorecard</div>
@@ -778,11 +1016,13 @@ export function ScanPage({ userId, scanState, setScanState }: ScanPageProps) {
       })()}
 
       {/* Top: image + metadata side by side */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
-          <h3 className="text-sm font-semibold text-gray-700 mb-3">Original Image</h3>
-          {preview && <img src={preview} alt="Scorecard" className="w-full rounded-lg" />}
-        </div>
+      <div className={`grid grid-cols-1 gap-6 mb-6 ${scanMode !== "manual" ? "lg:grid-cols-2" : ""}`}>
+        {scanMode !== "manual" && (
+          <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
+            <h3 className="text-sm font-semibold text-gray-700 mb-3">Original Image</h3>
+            {preview && <img src={preview} alt="Scorecard" className="w-full rounded-lg" />}
+          </div>
+        )}
 
         <div className="space-y-4">
           {/* Course info */}
@@ -934,9 +1174,9 @@ export function ScanPage({ userId, scanState, setScanState }: ScanPageProps) {
       {/* Horizontal scorecard */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-x-auto">
         <div className="min-w-[680px]">
-          {renderNine(0, "OUT")}
+          {renderNine(0, "OUT", false, scanMode === "manual")}
           <div className="border-t-2 border-gray-300" />
-          {renderNine(9, "IN", true)}
+          {renderNine(9, "IN", true, scanMode === "manual")}
         </div>
       </div>
     </div>

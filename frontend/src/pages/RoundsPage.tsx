@@ -1,7 +1,8 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { Link } from "react-router-dom";
+import { Link2, Loader2, Search, MapPin, X } from "lucide-react";
 import { api } from "@/lib/api";
-import type { RoundSummary } from "@/types/golf";
+import type { RoundSummary, CourseSummary } from "@/types/golf";
 import { formatToPar } from "@/types/golf";
 import { PageHeader } from "@/components/layout/PageHeader";
 
@@ -18,12 +19,61 @@ export function RoundsPage({ userId }: RoundsPageProps) {
   const [sortKey, setSortKey] = useState<SortKey>("date");
   const [sortAsc, setSortAsc] = useState(false);
 
+  // Link-course state
+  const [linkingRoundId, setLinkingRoundId] = useState<string | null>(null);
+  const [linkQuery, setLinkQuery] = useState("");
+  const [linkResults, setLinkResults] = useState<CourseSummary[]>([]);
+  const [linkSearching, setLinkSearching] = useState(false);
+  const [linking, setLinking] = useState(false);
+  const linkTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   useEffect(() => {
     api.getRoundsForUser(userId, 200).then((r) => {
       setRounds(r);
       setLoading(false);
     });
   }, [userId]);
+
+  const handleLinkQuery = useCallback((q: string) => {
+    setLinkQuery(q);
+    if (linkTimer.current) clearTimeout(linkTimer.current);
+    if (q.trim().length < 2) { setLinkResults([]); return; }
+    linkTimer.current = setTimeout(async () => {
+      setLinkSearching(true);
+      try {
+        const results = await api.searchCourses(q.trim(), userId);
+        setLinkResults(results);
+      } catch { setLinkResults([]); }
+      finally { setLinkSearching(false); }
+    }, 300);
+  }, [userId]);
+
+  const handleSelectCourse = useCallback(async (roundId: string, course: CourseSummary) => {
+    setLinking(true);
+    try {
+      const updated = await api.linkCourse(roundId, course.id);
+      setRounds((prev) => prev.map((r) => r.id === roundId ? updated : r));
+      setLinkingRoundId(null);
+      setLinkQuery("");
+      setLinkResults([]);
+    } catch (err) {
+      console.error("Link failed:", err);
+    } finally {
+      setLinking(false);
+    }
+  }, []);
+
+  const openLink = useCallback((roundId: string) => {
+    setLinkingRoundId(roundId);
+    setLinkQuery("");
+    setLinkResults([]);
+  }, []);
+
+  const closeLink = useCallback(() => {
+    setLinkingRoundId(null);
+    setLinkQuery("");
+    setLinkResults([]);
+  }, []);
 
   const filtered = useMemo(() => {
     let result = rounds;
@@ -128,49 +178,117 @@ export function RoundsPage({ userId }: RoundsPageProps) {
           </thead>
           <tbody className="divide-y divide-gray-100">
             {filtered.map((r) => (
-              <tr key={r.id} className="hover:bg-gray-50 transition-colors">
-                <td className="px-4 py-3 text-sm font-medium text-gray-600">
-                  {r.date
-                    ? new Date(r.date).toLocaleDateString()
-                    : "-"}
-                </td>
-                <td className="px-4 py-3 text-sm font-semibold text-gray-900">
-                  <Link
-                    to={`/rounds/${r.id}`}
-                    className="hover:text-primary transition-colors"
-                  >
-                    {r.course_name ?? "-"}
-                  </Link>
-                </td>
-                <td className="px-4 py-3 text-sm text-center text-gray-600">
-                  {r.front_nine ?? "-"}
-                </td>
-                <td className="px-4 py-3 text-sm text-center text-gray-600">
-                  {r.back_nine ?? "-"}
-                </td>
-                <td className="px-4 py-3 text-sm text-center font-semibold">
-                  {r.total_score ?? "-"}
-                </td>
-                <td className="px-4 py-3 text-sm text-center">
-                  <span
-                    className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold ${
-                      r.to_par !== null && r.to_par < 0
-                        ? "bg-birdie/10 text-birdie"
-                        : r.to_par !== null && r.to_par > 0
-                        ? "bg-bogey/10 text-bogey"
-                        : "bg-gray-100 text-gray-600"
-                    }`}
-                  >
-                    {formatToPar(r.to_par)}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-sm text-center text-gray-600">
-                  {r.total_putts ?? "-"}
-                </td>
-                <td className="px-4 py-3 text-sm text-gray-500">
-                  {r.notes ?? "-"}
-                </td>
-              </tr>
+              <>
+                <tr key={r.id} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-4 py-3 text-sm font-medium text-gray-600">
+                    {r.date
+                      ? new Date(r.date).toLocaleDateString()
+                      : "-"}
+                  </td>
+                  <td className="px-4 py-3 text-sm font-semibold text-gray-900">
+                    <div className="flex items-center gap-2">
+                      <Link
+                        to={`/rounds/${r.id}`}
+                        className="hover:text-primary transition-colors"
+                      >
+                        {r.course_name ?? "-"}
+                      </Link>
+                      {!r.course_id && (
+                        <button
+                          onClick={() => linkingRoundId === r.id ? closeLink() : openLink(r.id)}
+                          title="Link to a saved course"
+                          className="text-gray-400 hover:text-primary transition-colors shrink-0"
+                        >
+                          <Link2 size={14} />
+                        </button>
+                      )}
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-sm text-center text-gray-600">
+                    {r.front_nine ?? "-"}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-center text-gray-600">
+                    {r.back_nine ?? "-"}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-center font-semibold">
+                    {r.total_score ?? "-"}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-center">
+                    <span
+                      className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold ${
+                        r.to_par !== null && r.to_par < 0
+                          ? "bg-birdie/10 text-birdie"
+                          : r.to_par !== null && r.to_par > 0
+                          ? "bg-bogey/10 text-bogey"
+                          : "bg-gray-100 text-gray-600"
+                      }`}
+                    >
+                      {formatToPar(r.to_par)}
+                    </span>
+                  </td>
+                  <td className="px-4 py-3 text-sm text-center text-gray-600">
+                    {r.total_putts ?? "-"}
+                  </td>
+                  <td className="px-4 py-3 text-sm text-gray-500">
+                    {r.notes ?? "-"}
+                  </td>
+                </tr>
+
+                {/* Inline link-course panel */}
+                {linkingRoundId === r.id && (
+                  <tr key={`${r.id}-link`}>
+                    <td colSpan={8} className="px-4 py-3 bg-blue-50 border-b border-blue-100">
+                      <div className="flex items-start gap-3">
+                        <div className="flex-1">
+                          <p className="text-xs font-medium text-blue-700 mb-2">
+                            Link "{r.course_name ?? "this round"}" to a saved course
+                          </p>
+                          <div className="relative max-w-sm">
+                            <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                            <input
+                              type="text"
+                              autoFocus
+                              value={linkQuery}
+                              onChange={(e) => handleLinkQuery(e.target.value)}
+                              placeholder="Search courses…"
+                              className="w-full pl-8 pr-3 py-1.5 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                            />
+                            {linkSearching && (
+                              <Loader2 size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 animate-spin" />
+                            )}
+                          </div>
+                          {linkResults.length > 0 && (
+                            <ul className="mt-1 max-w-sm bg-white border border-gray-200 rounded-lg shadow-md overflow-hidden divide-y divide-gray-100">
+                              {linkResults.map((c) => (
+                                <li key={c.id}>
+                                  <button
+                                    disabled={linking}
+                                    onClick={() => handleSelectCourse(r.id, c)}
+                                    className="w-full flex items-start gap-2 px-3 py-2 text-left hover:bg-gray-50 transition-colors disabled:opacity-50"
+                                  >
+                                    <MapPin size={13} className="text-gray-400 mt-0.5 shrink-0" />
+                                    <div>
+                                      <div className="text-sm font-medium text-gray-800">{c.name}</div>
+                                      {c.location && <div className="text-xs text-gray-500">{c.location}</div>}
+                                    </div>
+                                    {linking && <Loader2 size={12} className="ml-auto mt-1 animate-spin text-gray-400" />}
+                                  </button>
+                                </li>
+                              ))}
+                            </ul>
+                          )}
+                          {linkQuery.trim().length >= 2 && !linkSearching && linkResults.length === 0 && (
+                            <p className="mt-1.5 text-xs text-gray-400">No courses found</p>
+                          )}
+                        </div>
+                        <button onClick={closeLink} className="text-gray-400 hover:text-gray-600 mt-0.5">
+                          <X size={16} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </>
             ))}
           </tbody>
         </table>

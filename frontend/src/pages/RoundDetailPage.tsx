@@ -1,6 +1,7 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Pencil, Trash2 } from "lucide-react";
+import { ArrowLeft, Pencil, Trash2, Link2, Search, Loader2, MapPin, X } from "lucide-react";
+import type { CourseSummary } from "@/types/golf";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Cell } from "recharts";
 import { api } from "@/lib/api";
 import type { Round } from "@/types/golf";
@@ -76,6 +77,12 @@ export function RoundDetailPage({ userId }: { userId: string }) {
   const [availableTees, setAvailableTees] = useState<string[]>([]);
   const [comparison, setComparison] = useState<RoundComparison | null>(null);
   const [handicapIndex, setHandicapIndex] = useState<number | null>(null);
+  const [showLinkCourse, setShowLinkCourse] = useState(false);
+  const [linkQuery, setLinkQuery] = useState("");
+  const [linkResults, setLinkResults] = useState<CourseSummary[]>([]);
+  const [linkSearching, setLinkSearching] = useState(false);
+  const [linking, setLinking] = useState(false);
+  const linkTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (!roundId) return;
@@ -181,6 +188,38 @@ export function RoundDetailPage({ userId }: { userId: string }) {
     },
     []
   );
+
+  const handleLinkQuery = useCallback((q: string) => {
+    setLinkQuery(q);
+    if (linkTimer.current) clearTimeout(linkTimer.current);
+    if (q.trim().length < 2) { setLinkResults([]); return; }
+    linkTimer.current = setTimeout(async () => {
+      setLinkSearching(true);
+      try {
+        const results = await api.searchCourses(q.trim(), userId);
+        setLinkResults(results);
+      } catch { setLinkResults([]); }
+      finally { setLinkSearching(false); }
+    }, 300);
+  }, [userId]);
+
+  const handleSelectCourse = useCallback(async (course: CourseSummary) => {
+    if (!roundId) return;
+    setLinking(true);
+    try {
+      await api.linkCourse(roundId, course.id);
+      // Reload the full round to get updated course/par data
+      const updated = await api.getRound(roundId);
+      setRound(updated);
+      setShowLinkCourse(false);
+      setLinkQuery("");
+      setLinkResults([]);
+    } catch (err) {
+      console.error("Link failed:", err);
+    } finally {
+      setLinking(false);
+    }
+  }, [roundId]);
 
   if (loading) {
     return (
@@ -344,6 +383,67 @@ export function RoundDetailPage({ userId }: { userId: string }) {
           </div>
         );
       })()}
+
+      {/* Link-course banner — only for rounds with no linked course */}
+      {!round.course && (
+        <div className="mb-4">
+          {!showLinkCourse ? (
+            <button
+              onClick={() => setShowLinkCourse(true)}
+              className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-primary transition-colors"
+            >
+              <Link2 size={14} />
+              Link to a saved course
+            </button>
+          ) : (
+            <div className="bg-blue-50 border border-blue-100 rounded-xl p-4">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-sm font-medium text-blue-700">Link to a saved course</p>
+                <button onClick={() => { setShowLinkCourse(false); setLinkQuery(""); setLinkResults([]); }} className="text-gray-400 hover:text-gray-600">
+                  <X size={16} />
+                </button>
+              </div>
+              <div className="relative max-w-sm">
+                <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                <input
+                  type="text"
+                  autoFocus
+                  value={linkQuery}
+                  onChange={(e) => handleLinkQuery(e.target.value)}
+                  placeholder="Search courses…"
+                  className="w-full pl-8 pr-3 py-1.5 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                />
+                {linkSearching && (
+                  <Loader2 size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 animate-spin" />
+                )}
+              </div>
+              {linkResults.length > 0 && (
+                <ul className="mt-1 max-w-sm bg-white border border-gray-200 rounded-lg shadow-md overflow-hidden divide-y divide-gray-100">
+                  {linkResults.map((c) => (
+                    <li key={c.id}>
+                      <button
+                        disabled={linking}
+                        onClick={() => handleSelectCourse(c)}
+                        className="w-full flex items-start gap-2 px-3 py-2 text-left hover:bg-gray-50 transition-colors disabled:opacity-50"
+                      >
+                        <MapPin size={13} className="text-gray-400 mt-0.5 shrink-0" />
+                        <div>
+                          <div className="text-sm font-medium text-gray-800">{c.name}</div>
+                          {c.location && <div className="text-xs text-gray-500">{c.location}</div>}
+                        </div>
+                        {linking && <Loader2 size={12} className="ml-auto mt-1 animate-spin text-gray-400" />}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {linkQuery.trim().length >= 2 && !linkSearching && linkResults.length === 0 && (
+                <p className="mt-1.5 text-xs text-gray-400">No courses found</p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       <ScorecardGrid
         round={round}

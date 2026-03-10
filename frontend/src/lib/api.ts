@@ -84,6 +84,9 @@ export const api = {
     }
   ) => putJSON<Round>(`/rounds/${roundId}`, body),
 
+  linkCourse: (roundId: string, courseId: string) =>
+    postJSON<RoundSummary>(`/rounds/${roundId}/link-course`, { course_id: courseId }),
+
   deleteRound: (roundId: string) =>
     fetch(`${BASE_URL}/rounds/${roundId}`, {
       method: "DELETE",
