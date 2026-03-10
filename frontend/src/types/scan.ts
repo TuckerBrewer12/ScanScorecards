@@ -45,9 +45,16 @@ export interface ScanResult {
 
 type Step = "upload" | "processing" | "review";
 
+export interface ManualTee {
+  color: string | null;
+  slope_rating: number | null;
+  course_rating: number | null;
+  hole_yardages: Record<string, number>;
+}
+
 export interface ScanState {
   step: Step;
-  scanMode: "full" | "fast";
+  scanMode: "full" | "fast" | "manual";
   selectedCourseId: string | null;
   selectedCourseName: string | null;
   scoringFormat: "strokes" | "to_par" | null;
@@ -60,6 +67,12 @@ export interface ScanState {
   editedTeeBox: string | null;
   error: string | null;
   userContext: string;
+  // Review step: user-selected course override
+  reviewCourseId: string | null;
+  reviewCourseName: string | null;
+  // Manual entry: fetched course data
+  manualCourseHoles: { number: number | null; par: number | null }[];
+  manualCourseTees: ManualTee[];
 }
 
 export const initialScanState: ScanState = {
@@ -77,4 +90,8 @@ export const initialScanState: ScanState = {
   editedTeeBox: null,
   error: null,
   userContext: "",
+  reviewCourseId: null,
+  reviewCourseName: null,
+  manualCourseHoles: [],
+  manualCourseTees: [],
 };

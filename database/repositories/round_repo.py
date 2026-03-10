@@ -348,6 +348,50 @@ class RoundRepositoryDB:
 
         return await self.get_round(round_id)
 
+    async def link_course_to_round(self, round_id: str, course_id: str) -> Optional[Round]:
+        """Link an unlinked round to an existing course.
+
+        - Sets course_id / tee_id on the round, clears course_name_played
+        - Backfills hole_id, par_played, handicap_played on each hole_score (fill-only, no overwrites)
+        """
+        async with self._pool.acquire() as conn:
+            course_hole_rows = await conn.fetch(
+                "SELECT id, hole_number, par, handicap FROM courses.holes WHERE course_id = $1",
+                UUID(course_id),
+            )
+            hole_id_map = {r["hole_number"]: r["id"] for r in course_hole_rows}
+            par_by_hole = {r["hole_number"]: r["par"] for r in course_hole_rows if r["par"] is not None}
+            hcp_by_hole = {r["hole_number"]: r["handicap"] for r in course_hole_rows if r["handicap"] is not None}
+
+            # Resolve tee_id from stored tee_box_played
+            round_row = await conn.fetchrow(
+                "SELECT tee_box_played FROM users.rounds WHERE id = $1", UUID(round_id)
+            )
+            tee_color = round_row["tee_box_played"] if round_row else None
+            tee_id = None
+            if tee_color:
+                tee_id = await self._resolve_tee_id(conn, UUID(course_id), tee_color)
+
+            async with conn.transaction():
+                await conn.execute(
+                    """UPDATE users.rounds
+                       SET course_id = $2, tee_id = $3, course_name_played = NULL
+                       WHERE id = $1""",
+                    UUID(round_id), UUID(course_id), tee_id,
+                )
+                for hole_num, hole_id in hole_id_map.items():
+                    await conn.execute(
+                        """UPDATE users.hole_scores
+                           SET hole_id = $3,
+                               par_played = COALESCE(par_played, $4),
+                               handicap_played = COALESCE(handicap_played, $5)
+                           WHERE round_id = $1 AND hole_number = $2""",
+                        UUID(round_id), hole_num, hole_id,
+                        par_by_hole.get(hole_num), hcp_by_hole.get(hole_num),
+                    )
+
+        return await self.get_round(round_id)
+
     # ================================================================
     # Delete
     # ================================================================

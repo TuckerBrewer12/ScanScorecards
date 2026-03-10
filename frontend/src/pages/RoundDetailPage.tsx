@@ -1,6 +1,8 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Pencil, Trash2 } from "lucide-react";
+import { ArrowLeft, Pencil, Trash2, Link2 } from "lucide-react";
+import type { CourseSummary } from "@/types/golf";
+import { CourseLinkSearch } from "@/components/CourseLinkSearch";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Cell } from "recharts";
 import { api } from "@/lib/api";
 import type { Round } from "@/types/golf";
@@ -9,7 +11,7 @@ import type { RoundComparison, ComparisonRow } from "@/types/analytics";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { ScorecardGrid } from "@/components/round-detail/ScorecardGrid";
 
-type EditedScores = Record<number, { strokes: number | null; putts: number | null }>;
+type EditedScores = Record<number, { strokes: number | null; putts: number | null; gir?: boolean | null }>;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Fmt = (v: any, name: any, props: any) => any;
 
@@ -76,6 +78,12 @@ export function RoundDetailPage({ userId }: { userId: string }) {
   const [availableTees, setAvailableTees] = useState<string[]>([]);
   const [comparison, setComparison] = useState<RoundComparison | null>(null);
   const [handicapIndex, setHandicapIndex] = useState<number | null>(null);
+  const [showLinkCourse, setShowLinkCourse] = useState(false);
+  const [linkQuery, setLinkQuery] = useState("");
+  const [linkResults, setLinkResults] = useState<CourseSummary[]>([]);
+  const [linkSearching, setLinkSearching] = useState(false);
+  const [linking, setLinking] = useState(false);
+  const linkTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     if (!roundId) return;
@@ -134,12 +142,13 @@ export function RoundDetailPage({ userId }: { userId: string }) {
         .filter((s) => s.hole_number != null)
         .map((s) => {
           const edited = editedScores[s.hole_number!];
+          const girValue = edited?.gir !== undefined ? edited.gir : s.green_in_regulation;
           return {
             hole_number: s.hole_number!,
             strokes: edited?.strokes ?? s.strokes,
             putts: edited?.putts ?? s.putts,
             fairway_hit: s.fairway_hit,
-            green_in_regulation: s.green_in_regulation,
+            green_in_regulation: girValue,
           };
         });
       const updated = await api.updateRound(roundId, {
@@ -148,6 +157,7 @@ export function RoundDetailPage({ userId }: { userId: string }) {
       });
       setRound(updated);
       setEditMode(false);
+      api.getRoundComparison(userId, roundId).then(setComparison).catch(() => {});
     } catch (err) {
       console.error("Save failed:", err);
     } finally {
@@ -170,6 +180,48 @@ export function RoundDetailPage({ userId }: { userId: string }) {
     },
     []
   );
+
+  const handleGirChange = useCallback(
+    (holeNumber: number, value: boolean | null) => {
+      setEditedScores((prev) => ({
+        ...prev,
+        [holeNumber]: { ...prev[holeNumber], gir: value },
+      }));
+    },
+    []
+  );
+
+  const handleLinkQuery = useCallback((q: string) => {
+    setLinkQuery(q);
+    if (linkTimer.current) clearTimeout(linkTimer.current);
+    if (q.trim().length < 2) { setLinkResults([]); return; }
+    linkTimer.current = setTimeout(async () => {
+      setLinkSearching(true);
+      try {
+        const results = await api.searchCourses(q.trim(), userId);
+        setLinkResults(results);
+      } catch { setLinkResults([]); }
+      finally { setLinkSearching(false); }
+    }, 300);
+  }, [userId]);
+
+  const handleSelectCourse = useCallback(async (course: CourseSummary) => {
+    if (!roundId) return;
+    setLinking(true);
+    try {
+      await api.linkCourse(roundId, course.id);
+      // Reload the full round to get updated course/par data
+      const updated = await api.getRound(roundId);
+      setRound(updated);
+      setShowLinkCourse(false);
+      setLinkQuery("");
+      setLinkResults([]);
+    } catch (err) {
+      console.error("Link failed:", err);
+    } finally {
+      setLinking(false);
+    }
+  }, [roundId]);
 
   if (loading) {
     return (
@@ -334,6 +386,32 @@ export function RoundDetailPage({ userId }: { userId: string }) {
         );
       })()}
 
+      {/* Link-course banner — only for rounds with no linked course */}
+      {!round.course && (
+        <div className="mb-4">
+          {!showLinkCourse ? (
+            <button
+              onClick={() => setShowLinkCourse(true)}
+              className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-primary transition-colors"
+            >
+              <Link2 size={14} />
+              Link to a saved course
+            </button>
+          ) : (
+            <CourseLinkSearch
+              title="Link to a saved course"
+              query={linkQuery}
+              results={linkResults}
+              searching={linkSearching}
+              linking={linking}
+              onQueryChange={handleLinkQuery}
+              onSelectCourse={handleSelectCourse}
+              onClose={() => { setShowLinkCourse(false); setLinkQuery(""); setLinkResults([]); }}
+            />
+          )}
+        </div>
+      )}
+
       <ScorecardGrid
         round={round}
         editMode={editMode}
@@ -342,6 +420,7 @@ export function RoundDetailPage({ userId }: { userId: string }) {
         availableTees={availableTees}
         onScoreChange={handleScoreChange}
         onTeeBoxChange={setEditedTeeBox}
+        onGirChange={handleGirChange}
       />
 
       {/* Round comparison */}

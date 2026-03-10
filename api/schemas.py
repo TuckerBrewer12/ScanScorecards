@@ -8,6 +8,7 @@ from typing import List, Optional
 class RoundSummaryResponse(BaseModel):
     """Lightweight round for list views."""
     id: str
+    course_id: Optional[str] = None
     course_name: Optional[str] = None
     course_location: Optional[str] = None
     course_par: Optional[int] = None

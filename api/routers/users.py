@@ -27,6 +27,10 @@ class UpdateUserTeeRequest(BaseModel):
     hole_yardages: Optional[dict] = None
 
 
+class UpdateUserRequest(BaseModel):
+    home_course_id: Optional[str] = None
+
+
 @router.get("/by-email/{email}")
 async def get_user_by_email(email: str, db: DatabaseManager = Depends(get_db)):
     user = await db.users.get_user_by_email(email)
@@ -38,6 +42,23 @@ async def get_user_by_email(email: str, db: DatabaseManager = Depends(get_db)):
 @router.get("/{user_id}")
 async def get_user(user_id: str, db: DatabaseManager = Depends(get_db)):
     user = await db.users.get_user(user_id)
+    if not user:
+        raise HTTPException(404, "User not found")
+    return user
+
+
+@router.patch("/{user_id}")
+async def update_user(
+    user_id: str,
+    req: UpdateUserRequest,
+    db: DatabaseManager = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    if str(current_user.id) != str(user_id):
+        raise HTTPException(403, "Forbidden")
+
+    updates = req.model_dump(exclude_unset=True)
+    user = await db.users.update_user(user_id, **updates)
     if not user:
         raise HTTPException(404, "User not found")
     return user

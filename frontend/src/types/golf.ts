@@ -49,6 +49,7 @@ export interface Round {
 
 export interface RoundSummary {
   id: string;
+  course_id: string | null;
   course_name: string | null;
   course_location: string | null;
   course_par: number | null;
@@ -97,6 +98,7 @@ export interface User {
   id: string | null;
   name: string | null;
   email: string | null;
+  home_course_id: string | null;
   handicap: number | null;
   created_at: string | null;
 }
