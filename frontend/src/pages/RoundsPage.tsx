@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { Link } from "react-router-dom";
-import { Link2, Loader2, Search, MapPin, X } from "lucide-react";
+import { Link2 } from "lucide-react";
+import { CourseLinkSearch } from "@/components/CourseLinkSearch";
 import { api } from "@/lib/api";
 import type { RoundSummary, CourseSummary } from "@/types/golf";
 import { formatToPar } from "@/types/golf";
@@ -238,53 +239,16 @@ export function RoundsPage({ userId }: RoundsPageProps) {
                 {linkingRoundId === r.id && (
                   <tr key={`${r.id}-link`}>
                     <td colSpan={8} className="px-4 py-3 bg-blue-50 border-b border-blue-100">
-                      <div className="flex items-start gap-3">
-                        <div className="flex-1">
-                          <p className="text-xs font-medium text-blue-700 mb-2">
-                            Link "{r.course_name ?? "this round"}" to a saved course
-                          </p>
-                          <div className="relative max-w-sm">
-                            <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                            <input
-                              type="text"
-                              autoFocus
-                              value={linkQuery}
-                              onChange={(e) => handleLinkQuery(e.target.value)}
-                              placeholder="Search courses…"
-                              className="w-full pl-8 pr-3 py-1.5 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-                            />
-                            {linkSearching && (
-                              <Loader2 size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 animate-spin" />
-                            )}
-                          </div>
-                          {linkResults.length > 0 && (
-                            <ul className="mt-1 max-w-sm bg-white border border-gray-200 rounded-lg shadow-md overflow-hidden divide-y divide-gray-100">
-                              {linkResults.map((c) => (
-                                <li key={c.id}>
-                                  <button
-                                    disabled={linking}
-                                    onClick={() => handleSelectCourse(r.id, c)}
-                                    className="w-full flex items-start gap-2 px-3 py-2 text-left hover:bg-gray-50 transition-colors disabled:opacity-50"
-                                  >
-                                    <MapPin size={13} className="text-gray-400 mt-0.5 shrink-0" />
-                                    <div>
-                                      <div className="text-sm font-medium text-gray-800">{c.name}</div>
-                                      {c.location && <div className="text-xs text-gray-500">{c.location}</div>}
-                                    </div>
-                                    {linking && <Loader2 size={12} className="ml-auto mt-1 animate-spin text-gray-400" />}
-                                  </button>
-                                </li>
-                              ))}
-                            </ul>
-                          )}
-                          {linkQuery.trim().length >= 2 && !linkSearching && linkResults.length === 0 && (
-                            <p className="mt-1.5 text-xs text-gray-400">No courses found</p>
-                          )}
-                        </div>
-                        <button onClick={closeLink} className="text-gray-400 hover:text-gray-600 mt-0.5">
-                          <X size={16} />
-                        </button>
-                      </div>
+                      <CourseLinkSearch
+                        title={`Link "${r.course_name ?? "this round"}" to a saved course`}
+                        query={linkQuery}
+                        results={linkResults}
+                        searching={linkSearching}
+                        linking={linking}
+                        onQueryChange={handleLinkQuery}
+                        onSelectCourse={(c) => handleSelectCourse(r.id, c)}
+                        onClose={closeLink}
+                      />
                     </td>
                   </tr>
                 )}

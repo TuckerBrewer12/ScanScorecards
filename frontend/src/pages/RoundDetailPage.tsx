@@ -1,7 +1,8 @@
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Pencil, Trash2, Link2, Search, Loader2, MapPin, X } from "lucide-react";
+import { ArrowLeft, Pencil, Trash2, Link2 } from "lucide-react";
 import type { CourseSummary } from "@/types/golf";
+import { CourseLinkSearch } from "@/components/CourseLinkSearch";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Cell } from "recharts";
 import { api } from "@/lib/api";
 import type { Round } from "@/types/golf";
@@ -396,51 +397,16 @@ export function RoundDetailPage({ userId }: { userId: string }) {
               Link to a saved course
             </button>
           ) : (
-            <div className="bg-blue-50 border border-blue-100 rounded-xl p-4">
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-sm font-medium text-blue-700">Link to a saved course</p>
-                <button onClick={() => { setShowLinkCourse(false); setLinkQuery(""); setLinkResults([]); }} className="text-gray-400 hover:text-gray-600">
-                  <X size={16} />
-                </button>
-              </div>
-              <div className="relative max-w-sm">
-                <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                <input
-                  type="text"
-                  autoFocus
-                  value={linkQuery}
-                  onChange={(e) => handleLinkQuery(e.target.value)}
-                  placeholder="Search courses…"
-                  className="w-full pl-8 pr-3 py-1.5 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-                />
-                {linkSearching && (
-                  <Loader2 size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 animate-spin" />
-                )}
-              </div>
-              {linkResults.length > 0 && (
-                <ul className="mt-1 max-w-sm bg-white border border-gray-200 rounded-lg shadow-md overflow-hidden divide-y divide-gray-100">
-                  {linkResults.map((c) => (
-                    <li key={c.id}>
-                      <button
-                        disabled={linking}
-                        onClick={() => handleSelectCourse(c)}
-                        className="w-full flex items-start gap-2 px-3 py-2 text-left hover:bg-gray-50 transition-colors disabled:opacity-50"
-                      >
-                        <MapPin size={13} className="text-gray-400 mt-0.5 shrink-0" />
-                        <div>
-                          <div className="text-sm font-medium text-gray-800">{c.name}</div>
-                          {c.location && <div className="text-xs text-gray-500">{c.location}</div>}
-                        </div>
-                        {linking && <Loader2 size={12} className="ml-auto mt-1 animate-spin text-gray-400" />}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-              {linkQuery.trim().length >= 2 && !linkSearching && linkResults.length === 0 && (
-                <p className="mt-1.5 text-xs text-gray-400">No courses found</p>
-              )}
-            </div>
+            <CourseLinkSearch
+              title="Link to a saved course"
+              query={linkQuery}
+              results={linkResults}
+              searching={linkSearching}
+              linking={linking}
+              onQueryChange={handleLinkQuery}
+              onSelectCourse={handleSelectCourse}
+              onClose={() => { setShowLinkCourse(false); setLinkQuery(""); setLinkResults([]); }}
+            />
           )}
         </div>
       )}
