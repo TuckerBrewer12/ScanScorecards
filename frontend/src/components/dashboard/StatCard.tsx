@@ -1,3 +1,4 @@
+import { motion } from "framer-motion";
 import type { LucideIcon } from "lucide-react";
 
 interface StatCardProps {
@@ -10,17 +11,34 @@ interface StatCardProps {
 
 export function StatCard({ label, value, icon: Icon, subtitle, highlight }: StatCardProps) {
   return (
-    <div className={`rounded-xl border p-5 shadow-sm ${highlight ? "bg-primary border-primary text-white" : "bg-white border-gray-200"}`}>
-      <div className="flex items-center justify-between mb-2">
-        <span className={`text-sm font-medium ${highlight ? "text-white/70" : "text-gray-500"}`}>{label}</span>
-        <Icon size={18} className={highlight ? "text-white/70" : "text-primary"} />
+    <motion.div
+      whileHover={{ scale: 1.025, boxShadow: "0 10px 32px rgba(0,0,0,0.10)" }}
+      transition={{ type: "spring", stiffness: 380, damping: 28 }}
+      className={`relative overflow-hidden rounded-2xl border p-5 shadow-sm ${
+        highlight
+          ? "bg-primary border-primary text-white"
+          : "bg-white/80 backdrop-blur-sm border-gray-100"
+      }`}
+    >
+      {highlight && (
+        <div className="absolute -top-6 -right-6 w-24 h-24 rounded-full bg-white/5 blur-2xl pointer-events-none" />
+      )}
+      <div className="relative flex items-center justify-between mb-2">
+        <span className={`text-xs font-semibold uppercase tracking-widest ${highlight ? "text-white/50" : "text-gray-400"}`}>
+          {label}
+        </span>
+        <div className={`p-1.5 rounded-lg ${highlight ? "bg-white/10" : "bg-primary/8"}`}>
+          <Icon size={15} className={highlight ? "text-white/70" : "text-primary"} />
+        </div>
       </div>
       <div className={`text-2xl font-bold ${highlight ? "text-white" : "text-gray-900"}`}>
-        {value ?? "-"}
+        {value ?? "—"}
       </div>
       {subtitle && (
-        <p className={`text-xs mt-1 ${highlight ? "text-white/60" : "text-gray-400"}`}>{subtitle}</p>
+        <p className={`text-xs mt-1 truncate ${highlight ? "text-white/50" : "text-gray-400"}`}>
+          {subtitle}
+        </p>
       )}
-    </div>
+    </motion.div>
   );
 }
