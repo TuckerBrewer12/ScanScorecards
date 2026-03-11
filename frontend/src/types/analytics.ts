@@ -3,6 +3,7 @@ export interface AnalyticsKPIs {
   gir_percentage: number | null;
   putts_per_gir: number | null;
   scrambling_percentage: number | null;
+  up_and_down_percentage: number | null;
   handicap_index: number | null;
   total_rounds: number;
 }
@@ -59,6 +60,14 @@ export interface ScramblingRow {
   scrambling_percentage: number;
 }
 
+export interface UpAndDownRow {
+  round_index: number;
+  round_id: string | null;
+  opportunities: number;
+  successes: number;
+  percentage: number;
+}
+
 export interface ScoreTypeRow {
   round_index: number;
   round_id: string | null;
@@ -82,6 +91,15 @@ export interface ScoringByParRow {
 export interface ScoringByHandicapRow {
   handicap: number;
   average_to_par: number;
+  sample_size: number;
+}
+
+export interface ScoringByYardageRow {
+  par: number;
+  bucket_label: string;
+  bucket_order: number;
+  average_to_par: number;
+  gir_percentage: number | null;
   sample_size: number;
 }
 
@@ -237,8 +255,10 @@ export interface AnalyticsData {
   putts_trend: PuttsTrendRow[];
   three_putts_trend: ThreePuttRow[];
   scrambling_trend: ScramblingRow[];
+  up_and_down_trend: UpAndDownRow[];
   score_type_distribution: ScoreTypeRow[];
   scoring_by_par: ScoringByParRow[];
+  scoring_by_yardage: ScoringByYardageRow[];
   scoring_by_handicap: ScoringByHandicapRow[];
   gir_vs_non_gir: GIRvsNonGIRRow[];
   handicap_trend: HandicapTrendRow[];

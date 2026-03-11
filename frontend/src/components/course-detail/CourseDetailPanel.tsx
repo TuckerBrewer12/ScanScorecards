@@ -8,7 +8,6 @@ import {
   BarChart,
   Cell,
   ComposedChart,
-  Defs,
   Legend,
   Line,
   ReferenceLine,
@@ -221,6 +220,12 @@ export function CourseDetailPanel({ courseId, userId, onBack }: CourseDetailPane
   const front = [1, 2, 3, 4, 5, 6, 7, 8, 9];
   const back = [10, 11, 12, 13, 14, 15, 16, 17, 18];
 
+  const scoreTrendDomain: [number | "auto", number | "auto"] = (() => {
+    if (!analytics) return ["auto", "auto"];
+    const scores = analytics.score_trend_on_course.map((r) => r.total_score).filter((s): s is number => s != null);
+    return scores.length ? [Math.min(...scores) - 5, Math.max(...scores) + 5] : ["auto", "auto"];
+  })();
+
   const selectedTee = course.tees.find(
     (t) => t.color?.toLowerCase() === selectedTeeColor?.toLowerCase()
   ) ?? null;
@@ -316,12 +321,12 @@ export function CourseDetailPanel({ courseId, userId, onBack }: CourseDetailPane
             <ChartCard title="Score Trend On This Course">
               <ResponsiveContainer width="100%" height={240}>
                 <ComposedChart data={analytics.score_trend_on_course} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
-                  <Defs>
+                  <defs>
                     <linearGradient id="scoreTrendGrad" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%"  stopColor="#2d7a3a" stopOpacity={0.13} />
                       <stop offset="95%" stopColor="#2d7a3a" stopOpacity={0} />
                     </linearGradient>
-                  </Defs>
+                  </defs>
                   <XAxis
                     dataKey="date"
                     tick={{ fontSize: 10, fill: "#9ca3af" }}
@@ -329,7 +334,7 @@ export function CourseDetailPanel({ courseId, userId, onBack }: CourseDetailPane
                     axisLine={false}
                     tickFormatter={(v) => (typeof v === "string" ? v.slice(5, 10) : "")}
                   />
-                  <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
+                  <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} domain={scoreTrendDomain} />
                   <Tooltip contentStyle={tooltipStyle} />
                   <Area type="monotone" dataKey="total_score" stroke="none" fill="url(#scoreTrendGrad)" />
                   <Line type="monotone" dataKey="total_score" stroke="#2d7a3a" strokeWidth={2.5} dot={false} />
@@ -356,12 +361,12 @@ export function CourseDetailPanel({ courseId, userId, onBack }: CourseDetailPane
             <ChartCard title="GIR Percentage By Hole">
               <ResponsiveContainer width="100%" height={240}>
                 <BarChart data={analytics.gir_percentage_by_hole} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
-                  <Defs>
+                  <defs>
                     <linearGradient id="girBarGrad" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%"   stopColor="#4ade80" stopOpacity={1} />
                       <stop offset="100%" stopColor="#16a34a" stopOpacity={1} />
                     </linearGradient>
-                  </Defs>
+                  </defs>
                   <XAxis dataKey="hole_number" tick={{ fontSize: 10, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
                   <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
                   <Tooltip contentStyle={tooltipStyle} formatter={((v: number) => [`${Number(v ?? 0).toFixed(1)}%`, "GIR %"]) as Fmt} />
@@ -373,12 +378,12 @@ export function CourseDetailPanel({ courseId, userId, onBack }: CourseDetailPane
             <ChartCard title="Average Putts By Hole">
               <ResponsiveContainer width="100%" height={240}>
                 <BarChart data={analytics.average_putts_by_hole} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
-                  <Defs>
+                  <defs>
                     <linearGradient id="puttsBarGrad" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%"   stopColor="#d1d5db" stopOpacity={1} />
                       <stop offset="100%" stopColor="#6b7280" stopOpacity={1} />
                     </linearGradient>
-                  </Defs>
+                  </defs>
                   <XAxis dataKey="hole_number" tick={{ fontSize: 10, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
                   <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
                   <Tooltip contentStyle={tooltipStyle} formatter={((v: number) => [Number(v ?? 0).toFixed(2), "Avg putts"]) as Fmt} />
@@ -449,12 +454,12 @@ export function CourseDetailPanel({ courseId, userId, onBack }: CourseDetailPane
                   data={analytics.score_variance_by_hole.map((row) => ({ ...row, label: `H${row.hole_number}` }))}
                   margin={{ top: 4, right: 8, left: -20, bottom: 0 }}
                 >
-                  <Defs>
+                  <defs>
                     <linearGradient id="varianceBarGrad" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%"   stopColor="#fcd34d" stopOpacity={1} />
                       <stop offset="100%" stopColor="#d97706" stopOpacity={1} />
                     </linearGradient>
-                  </Defs>
+                  </defs>
                   <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
                   <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
                   <Tooltip contentStyle={tooltipStyle} formatter={((v: number) => [Number(v ?? 0).toFixed(2), "Std dev"]) as Fmt} />

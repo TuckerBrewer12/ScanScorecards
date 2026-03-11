@@ -105,6 +105,7 @@ async def get_analytics(
                 "gir_percentage": None,
                 "putts_per_gir": None,
                 "scrambling_percentage": None,
+                "up_and_down_percentage": None,
                 "handicap_index": None,
                 "total_rounds": 0,
             },
@@ -114,6 +115,7 @@ async def get_analytics(
             "putts_trend": [],
             "three_putts_trend": [],
             "scrambling_trend": [],
+            "up_and_down_trend": [],
             "score_type_distribution": [],
             "scoring_by_par": [],
             "scoring_by_handicap": [],
@@ -260,6 +262,9 @@ async def get_analytics(
     scrambling_rows = analytics.scrambling_per_round(rounds)
     scrambling_vals = [r["scrambling_percentage"] for r in scrambling_rows if r["scrambling_percentage"] is not None]
     avg_scrambling = sum(scrambling_vals) / len(scrambling_vals) if scrambling_vals else None
+    ud_rows = analytics.up_and_down_trend(rounds)
+    ud_vals = [r["percentage"] for r in ud_rows if r["opportunities"] > 0]
+    avg_up_and_down = sum(ud_vals) / len(ud_vals) if ud_vals else None
 
     current_hi = hcap.handicap_index(rounds)
 
@@ -269,6 +274,7 @@ async def get_analytics(
             "gir_percentage": round(gir_data["gir_percentage"], 1) if gir_data["gir_percentage"] else None,
             "putts_per_gir": round(putts_gir_data["putts_per_gir"], 2) if putts_gir_data["putts_per_gir"] else None,
             "scrambling_percentage": round(avg_scrambling, 1) if avg_scrambling is not None else None,
+            "up_and_down_percentage": round(avg_up_and_down, 1) if avg_up_and_down is not None else None,
             "handicap_index": current_hi,
             "total_rounds": len(rounds),
         },
@@ -277,9 +283,11 @@ async def get_analytics(
         "gir_trend": analytics.gir_per_round(rounds),
         "putts_trend": analytics.putts_per_round(rounds),
         "three_putts_trend": analytics.three_putts_per_round(rounds),
-        "scrambling_trend": analytics.scrambling_per_round(rounds),
+        "scrambling_trend": scrambling_rows,
+        "up_and_down_trend": ud_rows,
         "score_type_distribution": analytics.score_type_distribution_per_round(rounds),
         "scoring_by_par": analytics.scoring_by_par(rounds),
+        "scoring_by_yardage": analytics.scoring_by_yardage_buckets(rounds),
         "scoring_by_handicap": analytics.scoring_vs_hole_handicap(rounds),
         "gir_vs_non_gir": analytics.gir_vs_non_gir_score_distribution(rounds),
         "handicap_trend": hcap.handicap_trend(rounds),

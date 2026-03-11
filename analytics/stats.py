@@ -793,6 +793,34 @@ def scrambling_per_round(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
     return results
 
 
+def up_and_down_trend(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
+    """
+    Up & Down: hole where GIR is missed and player finishes with <= 1 putt.
+    Unlike scrambling, requires no course/par — works on any round.
+    Success: green_in_regulation is False AND putts <= 1 (includes holed out from off green).
+    """
+    results: List[Dict[str, Any]] = []
+    for index, round_obj in enumerate(rounds, start=1):
+        opportunities = 0
+        successes = 0
+        for score in _valid_hole_scores(round_obj):
+            if score.green_in_regulation is None or score.putts is None:
+                continue
+            if score.green_in_regulation is False:
+                opportunities += 1
+                if score.putts <= 1:
+                    successes += 1
+        percentage = (successes / opportunities * 100.0) if opportunities else 0.0
+        results.append({
+            "round_index": index,
+            "round_id": round_obj.id,
+            "opportunities": opportunities,
+            "successes": successes,
+            "percentage": round(percentage, 1),
+        })
+    return results
+
+
 def scrambling_comparison(rounds: Iterable[Round], round_index: Optional[int] = None) -> List[Dict[str, Any]]:
     """Selected round scrambling vs trailing averages."""
     return metric_comparison_snapshot(
@@ -1330,7 +1358,12 @@ def average_putts_by_hole(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
         if not round_obj.course:
             continue
 
-        for hole_score in _valid_hole_scores(round_obj):
+        valid_scores = list(_valid_hole_scores(round_obj))
+        # Skip rounds where any scored hole is missing putts (incomplete putt data)
+        if any(hs.putts is None for hs in valid_scores):
+            continue
+
+        for hole_score in valid_scores:
             if hole_score.hole_number is None or hole_score.putts is None:
                 continue
 
@@ -1404,6 +1437,85 @@ def scoring_by_par(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
                 "sample_size": len(strokes),
             }
         )
+    return results
+
+
+def scoring_by_yardage_buckets(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
+    """
+    Aggregate avg score-to-par and GIR% by yardage bucket within each par.
+
+    Buckets:
+      Par 3: <150, 150-199, 200+
+      Par 4: <350, 350-399, 400-449, 450+
+      Par 5: <500, 500-549, 550+
+
+    Requires round to have a course + tee with hole_yardages populated.
+    Returns rows sorted by par then bucket_order.
+    """
+    BUCKETS = {
+        3: [
+            (0,   149,  0, "< 150"),
+            (150, 199,  1, "150–199"),
+            (200, 9999, 2, "200+"),
+        ],
+        4: [
+            (0,   349,  0, "< 350"),
+            (350, 399,  1, "350–399"),
+            (400, 449,  2, "400–449"),
+            (450, 9999, 3, "450+"),
+        ],
+        5: [
+            (0,   499,  0, "< 500"),
+            (500, 549,  1, "500–549"),
+            (550, 9999, 2, "550+"),
+        ],
+    }
+
+    # key: (par, bucket_order) → {"to_par": [...], "gir": [...], "label": str}
+    by_bucket: Dict[tuple, Dict[str, Any]] = {}
+
+    for round_obj in rounds:
+        if not round_obj.course:
+            continue
+        tee = round_obj.course.get_tee(round_obj.tee_box)
+        if not tee:
+            continue
+
+        for hole_score in _valid_hole_scores(round_obj):
+            if hole_score.hole_number is None or hole_score.strokes is None:
+                continue
+
+            hole = round_obj.course.get_hole(hole_score.hole_number)
+            if not hole or hole.par not in (3, 4, 5):
+                continue
+
+            yardage = tee.hole_yardages.get(hole_score.hole_number)
+            if yardage is None:
+                continue
+
+            for (lo, hi, order, label) in BUCKETS[hole.par]:
+                if lo <= yardage <= hi:
+                    key = (hole.par, order)
+                    if key not in by_bucket:
+                        by_bucket[key] = {"par": hole.par, "order": order, "label": label, "to_par": [], "gir": []}
+                    by_bucket[key]["to_par"].append(hole_score.strokes - hole.par)
+                    if hole_score.green_in_regulation is not None:
+                        by_bucket[key]["gir"].append(1 if hole_score.green_in_regulation else 0)
+                    break
+
+    results: List[Dict[str, Any]] = []
+    for key in sorted(by_bucket):
+        entry = by_bucket[key]
+        to_par_vals = entry["to_par"]
+        gir_vals = entry["gir"]
+        results.append({
+            "par": entry["par"],
+            "bucket_label": entry["label"],
+            "bucket_order": entry["order"],
+            "average_to_par": sum(to_par_vals) / len(to_par_vals),
+            "gir_percentage": (sum(gir_vals) / len(gir_vals) * 100.0) if gir_vals else None,
+            "sample_size": len(to_par_vals),
+        })
     return results
 
 

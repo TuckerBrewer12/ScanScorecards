@@ -5,6 +5,7 @@ import { useEffect, useState, useMemo } from "react";
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Cell, Legend,
+  ComposedChart, ReferenceArea, Line,
 } from "recharts";
 import { Gauge, Hash, TrendingDown, Trophy, Target } from "lucide-react";
 import { api } from "@/lib/api";
@@ -312,8 +313,8 @@ export function AnalyticsPage({ userId }: { userId: string }) {
 
   const {
     kpis, net_score_trend, putts_trend,
-    scoring_by_par, scoring_by_handicap, gir_vs_non_gir,
-    notable_achievements,
+    scoring_by_par, scoring_by_yardage, scoring_by_handicap, gir_vs_non_gir,
+    notable_achievements, scrambling_trend, up_and_down_trend,
   } = data;
 
   return (
@@ -621,6 +622,48 @@ export function AnalyticsPage({ userId }: { userId: string }) {
       </div>
 
       {/* ╔══════════════════════════════════════════════════════════════════╗ */}
+      {/* ║  SHORT GAME                                                     ║ */}
+      {/* ╚══════════════════════════════════════════════════════════════════╝ */}
+      {(scrambling_trend.length > 0 || up_and_down_trend.length > 0) && (
+        <div className="-mx-8 px-8 py-10 bg-gradient-to-b from-[#fdf4ff]/50 to-[#f8faf8]">
+          <ScrollSection delay={0.1}>
+            <SectionLabel>Short Game</SectionLabel>
+            <ChartCard
+              title="Short Game"
+              subtitle="Scrambling % vs Up & Down % · rounds with GIR misses recorded"
+            >
+              <ResponsiveContainer width="100%" height={240}>
+                <ComposedChart
+                  data={scrambling_trend.map((r, i) => ({
+                    ...r,
+                    up_and_down_pct: up_and_down_trend[i]?.percentage ?? null,
+                  }))}
+                  margin={{ top: 8, right: 16, left: -16, bottom: 0 }}
+                >
+                  <CartesianGrid stroke="#f1f5f1" vertical={false} />
+                  <XAxis dataKey="round_index" tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
+                  <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false}
+                    tickFormatter={(v) => `${v}%`} />
+                  <Tooltip
+                    contentStyle={tooltipStyle}
+                    formatter={((v: number, name: string) => {
+                      if (name === "scrambling_percentage") return [`${v.toFixed(1)}%`, "Scrambling"];
+                      if (name === "up_and_down_pct") return [`${v.toFixed(1)}%`, "Up & Down"];
+                      return [v, name];
+                    }) as Fmt}
+                  />
+                  <Line type="monotone" dataKey="scrambling_percentage" stroke="#f97316"
+                    strokeWidth={2} dot={{ r: 3, fill: "#f97316", strokeWidth: 0 }} connectNulls />
+                  <Line type="monotone" dataKey="up_and_down_pct" stroke="#a855f7"
+                    strokeWidth={2} dot={{ r: 3, fill: "#a855f7", strokeWidth: 0 }} connectNulls={false} />
+                </ComposedChart>
+              </ResponsiveContainer>
+            </ChartCard>
+          </ScrollSection>
+        </div>
+      )}
+
+      {/* ╔══════════════════════════════════════════════════════════════════╗ */}
       {/* ║  PERFORMANCE PROFILE                                            ║ */}
       {/* ╚══════════════════════════════════════════════════════════════════╝ */}
       <div className="-mx-8 px-8 py-10">
@@ -675,6 +718,97 @@ export function AnalyticsPage({ userId }: { userId: string }) {
               </ResponsiveContainer>
             </ChartCard>
           </div>
+
+          {scoring_by_yardage.length > 0 && (() => {
+            const yardageData = scoring_by_yardage.map(r => ({
+              ...r,
+              label: `P${r.par} ${r.bucket_label}`,
+            }));
+            const par3 = scoring_by_yardage.filter(r => r.par === 3);
+            const par4 = scoring_by_yardage.filter(r => r.par === 4);
+            const par5 = scoring_by_yardage.filter(r => r.par === 5);
+            const makeArea = (par: number, x1: string, x2: string) => (
+              <ReferenceArea key={par} x1={x1} x2={x2}
+                fill={par === 3 ? "#f0fdf4" : par === 4 ? "#eff6ff" : "#faf5ff"}
+                fillOpacity={1}
+                label={{ value: `Par ${par}`, position: "insideTop", fontSize: 11, fill: "#9ca3af", dy: -10 }}
+              />
+            );
+            const referenceAreas = [
+              par3.length > 0 && makeArea(3, `P3 ${par3[0].bucket_label}`, `P3 ${par3[par3.length - 1].bucket_label}`),
+              par4.length > 0 && makeArea(4, `P4 ${par4[0].bucket_label}`, `P4 ${par4[par4.length - 1].bucket_label}`),
+              par5.length > 0 && makeArea(5, `P5 ${par5[0].bucket_label}`, `P5 ${par5[par5.length - 1].bucket_label}`),
+            ];
+            const sharedXAxis = (
+              <XAxis
+                dataKey="label"
+                tick={{ fontSize: 10, fill: "#6b7280" }}
+                tickLine={false}
+                axisLine={false}
+                angle={-35}
+                textAnchor="end"
+                interval={0}
+                height={55}
+              />
+            );
+            return (
+              <div className="flex flex-col gap-5 mb-5">
+                <ChartCard title="Avg Score to Par by Yardage" subtitle="Shaded by par group">
+                  <ResponsiveContainer width="100%" height={260}>
+                    <ComposedChart data={yardageData} margin={{ top: 16, right: 16, left: -16, bottom: 40 }}>
+                      {referenceAreas}
+                      <CartesianGrid stroke="#f1f5f1" vertical={false} />
+                      {sharedXAxis}
+                      <YAxis
+                        tick={{ fontSize: 11, fill: "#9ca3af" }}
+                        tickLine={false}
+                        axisLine={false}
+                        tickFormatter={(v) => (v > 0 ? `+${v}` : String(v))}
+                      />
+                      <Tooltip
+                        contentStyle={tooltipStyle}
+                        formatter={((v: number, _name: string, props: { payload: { sample_size: number } }) => [
+                          `${v > 0 ? "+" : ""}${v.toFixed(2)} (n=${props.payload.sample_size})`,
+                          "Avg to Par",
+                        ]) as Fmt}
+                      />
+                      <ReferenceLine y={0} stroke="#e5e7eb" />
+                      <Bar dataKey="average_to_par" radius={[5, 5, 0, 0]} maxBarSize={36}>
+                        {scoring_by_yardage.map((row, i) => (
+                          <Cell key={i} fill={row.average_to_par <= 0 ? "#059669" : "#f87171"} />
+                        ))}
+                      </Bar>
+                    </ComposedChart>
+                  </ResponsiveContainer>
+                </ChartCard>
+
+                <ChartCard title="GIR % by Yardage" subtitle="Green in regulation rate · shaded by par group">
+                  <ResponsiveContainer width="100%" height={260}>
+                    <ComposedChart data={yardageData} margin={{ top: 16, right: 16, left: -16, bottom: 40 }}>
+                      {referenceAreas}
+                      <CartesianGrid stroke="#f1f5f1" vertical={false} />
+                      {sharedXAxis}
+                      <YAxis
+                        domain={[0, 100]}
+                        tick={{ fontSize: 11, fill: "#9ca3af" }}
+                        tickLine={false}
+                        axisLine={false}
+                        tickFormatter={(v) => `${v}%`}
+                      />
+                      <Tooltip
+                        contentStyle={tooltipStyle}
+                        formatter={((v: number, _name: string, props: { payload: { sample_size: number } }) => [
+                          `${v.toFixed(1)}% (n=${props.payload.sample_size})`,
+                          "GIR %",
+                        ]) as Fmt}
+                      />
+                      <Bar dataKey="gir_percentage" radius={[5, 5, 0, 0]} maxBarSize={36} fill="#60a5fa" />
+                    </ComposedChart>
+                  </ResponsiveContainer>
+                </ChartCard>
+              </div>
+            );
+          })()}
 
           {gir_vs_non_gir.length > 0 && (
             <ScrollSection delay={0.1}>
