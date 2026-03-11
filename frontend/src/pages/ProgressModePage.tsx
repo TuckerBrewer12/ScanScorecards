@@ -11,6 +11,13 @@ type Challenge = {
   icon: React.ComponentType<{ size?: number; className?: string }>;
   achieved: number;
   targets: number[];
+  levelDescriptions: string[];
+};
+
+type ChallengeLevels = {
+  gir: number;
+  putting: number;
+  scoring: number;
 };
 
 function LevelDots({
@@ -54,6 +61,8 @@ function ChallengeRow({
   const progress = Math.min(challenge.achieved, target);
   const percent = target > 0 ? Math.round((progress / target) * 100) : 0;
   const Icon = challenge.icon;
+  const selectedGoal = challenge.levelDescriptions[level - 1] ?? "";
+  const isCompletedLevel = challenge.achieved >= target;
 
   return (
     <div className="rounded-2xl border border-emerald-300 bg-emerald-400/15 shadow-sm p-6 md:p-8">
@@ -70,6 +79,10 @@ function ChallengeRow({
         <div className="flex-1 min-w-0">
           <div className="text-2xl font-extrabold tracking-wide text-emerald-900 uppercase">{challenge.title}</div>
           <div className="mt-1 text-lg text-emerald-900/80">{challenge.subtitle}</div>
+          <div className="mt-2 text-sm font-semibold text-emerald-900/90">
+            {isCompletedLevel ? "Completed: " : "Current goal: "}
+            <span className="font-bold">{selectedGoal}</span>
+          </div>
           <div className="mt-5 h-3 rounded-full bg-white/80 border border-emerald-200 overflow-hidden">
             <div
               className="h-full bg-gradient-to-r from-amber-400 to-orange-500"
@@ -89,7 +102,7 @@ function ChallengeRow({
 export function ProgressModePage({ userId }: { userId: string }) {
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [levels, setLevels] = useState({ gir: 1, putting: 1, scoring: 1 });
+  const [levels, setLevels] = useState<ChallengeLevels>({ gir: 1, putting: 1, scoring: 1 });
 
   useEffect(() => {
     setLoading(true);
@@ -102,10 +115,13 @@ export function ProgressModePage({ userId }: { userId: string }) {
   const challenges = useMemo<Challenge[]>(() => {
     if (!data) return [];
     const a = data.notable_achievements;
+    const girBreaks = a.gir_milestones.lifetime.gir_breaks;
+    const puttBreaks = a.putting_milestones.lifetime.putt_breaks;
+    const scoreBreaks = a.round_milestones.lifetime.score_breaks;
 
-    const girAchieved = a.gir_milestones.lifetime.gir_breaks.filter((row) => row.achievement).length;
-    const puttingAchieved = a.putting_milestones.lifetime.putt_breaks.filter((row) => row.achievement).length;
-    const scoringAchieved = a.round_milestones.lifetime.score_breaks.filter((row) => row.achievement).length;
+    const girAchieved = girBreaks.filter((row) => row.achievement).length;
+    const puttingAchieved = puttBreaks.filter((row) => row.achievement).length;
+    const scoringAchieved = scoreBreaks.filter((row) => row.achievement).length;
 
     return [
       {
@@ -115,6 +131,7 @@ export function ProgressModePage({ userId }: { userId: string }) {
         icon: Target,
         achieved: girAchieved,
         targets: [1, 2, 3, 4, 5, 6],
+        levelDescriptions: girBreaks.map((row) => `Hit ${row.threshold}/18 GIR in one round`),
       },
       {
         key: "putting",
@@ -123,6 +140,7 @@ export function ProgressModePage({ userId }: { userId: string }) {
         icon: Flag,
         achieved: puttingAchieved,
         targets: [1, 2, 3, 4, 5, 6, 7, 8, 9],
+        levelDescriptions: puttBreaks.map((row) => `Record ${row.threshold} putts or fewer in one round`),
       },
       {
         key: "scoring",
@@ -131,9 +149,19 @@ export function ProgressModePage({ userId }: { userId: string }) {
         icon: Trophy,
         achieved: scoringAchieved,
         targets: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+        levelDescriptions: scoreBreaks.map((row) => `Shoot ${row.threshold} or better in one round`),
       },
     ];
   }, [data]);
+
+  useEffect(() => {
+    if (challenges.length === 0) return;
+    setLevels({
+      gir: Math.min(challenges[0].achieved + 1, challenges[0].targets.length),
+      putting: Math.min(challenges[1].achieved + 1, challenges[1].targets.length),
+      scoring: Math.min(challenges[2].achieved + 1, challenges[2].targets.length),
+    });
+  }, [challenges]);
 
   if (loading) {
     return (
