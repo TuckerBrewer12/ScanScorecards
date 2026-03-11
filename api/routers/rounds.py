@@ -71,8 +71,31 @@ async def get_rounds_for_user(
 ):
     if str(current_user.id) != user_id:
         raise HTTPException(403, "Forbidden")
-    rounds = await db.rounds.get_rounds_for_user(user_id, limit=limit, offset=offset)
-    return [summarize_round(r) for r in rounds]
+    rows = await db.rounds.get_round_summaries_for_user(user_id, limit=limit, offset=offset)
+    return [
+        RoundSummaryResponse(
+            id=str(row["id"]),
+            course_id=str(row["course_id"]) if row["course_id"] else None,
+            course_name=row["course_name"],
+            course_location=row["course_location"],
+            course_par=row["course_par"],
+            tee_box=row["tee_box"],
+            date=row["round_date"],
+            total_score=row["total_score"],
+            to_par=(
+                (row["total_score"] - row["course_par"])
+                if row["total_score"] is not None and row["course_par"] is not None
+                else None
+            ),
+            front_nine=row["front_nine"],
+            back_nine=row["back_nine"],
+            total_putts=row["total_putts"],
+            total_gir=row["total_gir"],
+            fairways_hit=row["fairways_hit"],
+            notes=row["notes"],
+        )
+        for row in rows
+    ]
 
 
 @router.get("/{round_id}")

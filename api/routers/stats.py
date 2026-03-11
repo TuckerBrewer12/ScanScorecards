@@ -1,11 +1,11 @@
 """Stats/dashboard API endpoints."""
 
+from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Query
 from database.db_manager import DatabaseManager
 from api.dependencies import get_current_user, get_db
 from models import User
-from api.schemas import DashboardResponse
-from api.routers.rounds import summarize_round
+from api.schemas import DashboardResponse, RoundSummaryResponse
 from analytics import stats as analytics
 from analytics import handicap as hcap
 
@@ -22,36 +22,62 @@ async def get_dashboard(
     if not user:
         raise HTTPException(404, "User not found")
 
-    all_rounds = await db.rounds.get_rounds_for_user(user_id, limit=500, offset=0)
+    # Single aggregate query for all summary stats (no hole_score fetches)
+    summaries = await db.rounds.get_round_summaries_for_user(user_id, limit=500, offset=0)
 
-    scores = [r.calculate_total_score() for r in all_rounds if r.calculate_total_score()]
-    putts = [r.get_total_putts() for r in all_rounds if r.get_total_putts()]
-    girs = [r.get_total_gir() for r in all_rounds if r.get_total_gir() is not None]
+    scores = [r["total_score"] for r in summaries if r["total_score"] is not None]
+    putts = [r["total_putts"] for r in summaries if r["total_putts"] is not None]
+    girs = [r["total_gir"] for r in summaries if r["total_gir"] is not None]
 
     best_score = min(scores) if scores else None
     best_round_id = None
     best_course = None
-    if best_score:
-        for r in all_rounds:
-            if r.calculate_total_score() == best_score:
-                best_round_id = r.id
-                best_course = r.course.name if r.course else None
+    if best_score is not None:
+        for r in summaries:
+            if r["total_score"] == best_score:
+                best_round_id = str(r["id"])
+                best_course = r["course_name"]
                 break
 
-    recent = all_rounds[:5]
+    # Build recent_rounds response objects from summaries (first 5)
+    def _summary_to_response(row: dict) -> RoundSummaryResponse:
+        return RoundSummaryResponse(
+            id=str(row["id"]),
+            course_id=str(row["course_id"]) if row["course_id"] else None,
+            course_name=row["course_name"],
+            course_location=row["course_location"],
+            course_par=row["course_par"],
+            tee_box=row["tee_box"],
+            date=row["round_date"],
+            total_score=row["total_score"],
+            to_par=(
+                (row["total_score"] - row["course_par"])
+                if row["total_score"] is not None and row["course_par"] is not None
+                else None
+            ),
+            front_nine=row["front_nine"],
+            back_nine=row["back_nine"],
+            total_putts=row["total_putts"],
+            total_gir=row["total_gir"],
+            fairways_hit=row["fairways_hit"],
+            notes=row["notes"],
+        )
 
-    # Use chronological order for handicap calc (DB returns newest-first)
-    rounds_chrono = list(reversed(all_rounds))
+    recent_rounds = [_summary_to_response(r) for r in summaries[:5]]
+
+    # Handicap index only needs the last 20 rounds (full model required for differentials)
+    hi_rounds_desc = await db.rounds.get_rounds_for_user(user_id, limit=20, offset=0)
+    rounds_chrono = list(reversed(hi_rounds_desc))
     calculated_hi = hcap.handicap_index(rounds_chrono)
 
     return DashboardResponse(
-        total_rounds=len(all_rounds),
+        total_rounds=len(summaries),
         scoring_average=round(sum(scores) / len(scores), 1) if scores else None,
         best_round=best_score,
         best_round_id=best_round_id,
         best_round_course=best_course,
         handicap_index=calculated_hi,
-        recent_rounds=[summarize_round(r) for r in recent],
+        recent_rounds=recent_rounds,
         average_putts=round(sum(putts) / len(putts), 1) if putts else None,
         average_gir=round(sum(girs) / len(girs), 1) if girs else None,
     )
@@ -290,6 +316,102 @@ async def get_round_comparison(
         "putts_per_gir": analytics.putts_per_gir_comparison(rounds, round_index=round_index),
         "scrambling": analytics.scrambling_comparison(rounds, round_index=round_index),
     }
+
+
+@router.get("/milestones/{user_id}")
+async def get_milestones(
+    user_id: str,
+    limit: int = Query(default=12, ge=1, le=50),
+    db: DatabaseManager = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Return a flat, sorted list of lifetime milestone events for the user."""
+    user = await db.users.get_user(user_id)
+    if not user:
+        raise HTTPException(404, "User not found")
+
+    all_rounds = await db.rounds.get_rounds_for_user(user_id, limit=500, offset=0)
+    rounds_chrono = list(reversed(all_rounds))
+
+    if not rounds_chrono:
+        return {"milestones": []}
+
+    achievements = analytics.notable_achievements(rounds_chrono, home_course_id=user.home_course_id)
+
+    def _parse_date(d: str) -> datetime:
+        try:
+            return datetime.strptime(d, "%Y/%m/%d")
+        except Exception:
+            return datetime.min
+
+    milestones = []
+
+    # Score breaks (break 120, 110, 100, 95, 90, 85, 80, 75, 70 …)
+    for item in achievements["round_milestones"]["lifetime"]["score_breaks"]:
+        a = item["achievement"]
+        if a:
+            milestones.append({
+                "type": "score_break",
+                "label": f"First to break {item['threshold']}",
+                "date": a["date"],
+                "course": a["course"],
+            })
+
+    # First round under par
+    under_par = achievements["round_milestones"]["lifetime"]["first_round_under_par"]
+    if under_par:
+        milestones.append({
+            "type": "under_par",
+            "label": "First round under par",
+            "date": under_par["date"],
+            "course": under_par["course"],
+        })
+
+    # First eagle
+    eagle = achievements["round_milestones"]["lifetime"]["first_eagle"]
+    if eagle:
+        milestones.append({
+            "type": "eagle",
+            "label": "First eagle",
+            "date": eagle["date"],
+            "course": eagle["course"],
+        })
+
+    # Hole in one
+    hio = achievements["round_milestones"]["lifetime"]["first_hole_in_one"]
+    if hio:
+        milestones.append({
+            "type": "hole_in_one",
+            "label": "Hole in one",
+            "date": hio["date"],
+            "course": hio["course"],
+        })
+
+    # GIR breaks (first 3, 6, 9, 12, 15, 18 GIR in a round)
+    for item in achievements["gir_milestones"]["lifetime"]["gir_breaks"]:
+        a = item["achievement"]
+        if a:
+            pct = round(item["threshold"] / 18 * 100)
+            milestones.append({
+                "type": "gir_break",
+                "label": f"First {item['threshold']} GIR in a round ({pct}%)",
+                "date": a["date"],
+                "course": a["course"],
+            })
+
+    # Putt breaks (first round under 45, 42, 39, 36, 33, 30 … putts)
+    for item in achievements["putting_milestones"]["lifetime"]["putt_breaks"]:
+        a = item["achievement"]
+        if a:
+            milestones.append({
+                "type": "putt_break",
+                "label": f"First round under {item['threshold']} putts",
+                "date": a["date"],
+                "course": a["course"],
+            })
+
+    milestones.sort(key=lambda m: _parse_date(m["date"]), reverse=True)
+    return {"milestones": milestones[:limit]}
 
 
 @router.get("/course-analytics/{user_id}/{course_id}")

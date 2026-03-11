@@ -77,6 +77,13 @@ export interface DashboardData {
   average_gir: number | null;
 }
 
+export interface Milestone {
+  type: "score_break" | "gir_break" | "putt_break" | "eagle" | "hole_in_one" | "under_par";
+  label: string;
+  date: string; // "YYYY/M/D"
+  course: string;
+}
+
 export interface CourseSummary {
   id: string;
   name: string | null;
