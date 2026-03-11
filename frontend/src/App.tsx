@@ -8,6 +8,7 @@ import { RoundDetailPage } from "./pages/RoundDetailPage";
 import { CoursesPage } from "./pages/CoursesPage";
 import { ScanPage } from "./pages/ScanPage";
 import { AnalyticsPage } from "./pages/AnalyticsPage";
+import { ProgressModePage } from "./pages/ProgressModePage";
 import { CareerPage } from "./pages/CareerPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { LoginPage } from "./pages/LoginPage";
@@ -46,6 +47,7 @@ function AppRoutes() {
         <Route path="/courses" element={<CoursesPage userId={userId} />} />
         <Route path="/scan" element={<ScanPage userId={userId} scanState={scanState} setScanState={setScanState} />} />
         <Route path="/analytics" element={<AnalyticsPage userId={userId} />} />
+        <Route path="/progress" element={<ProgressModePage userId={userId} />} />
         <Route path="/career" element={<CareerPage userId={userId} />} />
         <Route path="/settings" element={<SettingsPage userId={userId} />} />
         <Route path="*" element={<Navigate to="/" replace />} />
