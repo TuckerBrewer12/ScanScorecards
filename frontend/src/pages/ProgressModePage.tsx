@@ -20,6 +20,14 @@ type ChallengeLevels = {
   scoring: number;
 };
 
+type StreakAchievement = {
+  key: "par_streak_18" | "birdie_streak_9";
+  title: string;
+  subtitle: string;
+  achieved: number;
+  target: number;
+};
+
 function LevelDots({
   selected,
   totalLevels,
@@ -99,6 +107,37 @@ function ChallengeRow({
   );
 }
 
+function StreakAchievementRow({ achievement }: { achievement: StreakAchievement }) {
+  const progress = Math.min(achievement.achieved, achievement.target);
+  const percent = achievement.target > 0 ? Math.round((progress / achievement.target) * 100) : 0;
+
+  return (
+    <div className="rounded-2xl border border-indigo-200 bg-indigo-50/70 shadow-sm p-6 md:p-8">
+      <div className="grid grid-cols-1 md:grid-cols-[1fr,auto] gap-5 md:gap-6 md:items-start">
+        <div>
+          <div className="text-2xl font-extrabold tracking-wide text-indigo-950 uppercase">{achievement.title}</div>
+          <div className="mt-1 text-lg text-indigo-900/80">{achievement.subtitle}</div>
+          <div className="mt-2 text-sm font-semibold text-indigo-900/90">
+            Goal: <span className="font-bold">{achievement.target}/{achievement.target}</span>
+          </div>
+          <div className="mt-5 h-3 rounded-full bg-white/80 border border-indigo-200 overflow-hidden">
+            <div
+              className="h-full bg-gradient-to-r from-cyan-500 to-indigo-600"
+              style={{ width: `${percent}%` }}
+            />
+          </div>
+        </div>
+        <div className="text-left md:text-right md:pl-3">
+          <div className="text-4xl font-extrabold text-indigo-950 leading-none">{progress}/{achievement.target}</div>
+          <div className="mt-1 text-sm font-semibold uppercase tracking-wide text-indigo-900/70">
+            Best streak {progress}/{achievement.target}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function ProgressModePage({ userId }: { userId: string }) {
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -154,6 +193,30 @@ export function ProgressModePage({ userId }: { userId: string }) {
     ];
   }, [data]);
 
+  const streakAchievements = useMemo<StreakAchievement[]>(() => {
+    if (!data) return [];
+    const lifetimeStreaks = data.notable_achievements.best_performance_streaks.lifetime;
+    const parStreak = Number(lifetimeStreaks.longest_par_streak ?? 0);
+    const birdieStreak = Number(lifetimeStreaks.longest_birdie_streak ?? 0);
+
+    return [
+      {
+        key: "par_streak_18",
+        title: "Par Wall",
+        subtitle: "Get a full 18-hole par streak in one round.",
+        achieved: Number.isFinite(parStreak) ? parStreak : 0,
+        target: 18,
+      },
+      {
+        key: "birdie_streak_9",
+        title: "Birdie Blitz",
+        subtitle: "Get a 9-hole birdie streak in one round.",
+        achieved: Number.isFinite(birdieStreak) ? birdieStreak : 0,
+        target: 9,
+      },
+    ];
+  }, [data]);
+
   useEffect(() => {
     if (challenges.length === 0) return;
     setLevels({
@@ -186,6 +249,9 @@ export function ProgressModePage({ userId }: { userId: string }) {
             level={levels[challenge.key]}
             onLevelChange={(level) => setLevels((prev) => ({ ...prev, [challenge.key]: level }))}
           />
+        ))}
+        {streakAchievements.map((achievement) => (
+          <StreakAchievementRow key={achievement.key} achievement={achievement} />
         ))}
       </div>
     </div>
