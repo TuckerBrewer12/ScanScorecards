@@ -3,13 +3,33 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, Pencil, Trash2, Link2 } from "lucide-react";
 import type { CourseSummary } from "@/types/golf";
 import { CourseLinkSearch } from "@/components/CourseLinkSearch";
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Cell } from "recharts";
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell, Defs } from "recharts";
+import { ScrollSection } from "@/components/analytics/ScrollSection";
 import { api } from "@/lib/api";
 import type { Round } from "@/types/golf";
 import { formatToPar, calcCourseHandicap, calcNetScore } from "@/types/golf";
 import type { RoundComparison, ComparisonRow } from "@/types/analytics";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { ScorecardGrid } from "@/components/round-detail/ScorecardGrid";
+
+const tooltipStyle = {
+  fontSize: 12,
+  borderRadius: 12,
+  border: "1px solid #f1f5f9",
+  boxShadow: "0 4px 24px rgba(0,0,0,0.07)",
+  background: "rgba(255,255,255,0.97)",
+};
+
+function SectionLabel({ children }: { children: string }) {
+  return (
+    <div className="flex items-center gap-3 mb-6">
+      <div className="h-px w-8 bg-primary/30 rounded-full" />
+      <span className="text-[11px] font-bold text-primary/50 uppercase tracking-[0.18em]">
+        {children}
+      </span>
+    </div>
+  );
+}
 
 type EditedScores = Record<number, { strokes: number | null; putts: number | null; gir?: boolean | null }>;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -37,26 +57,32 @@ function ComparisonChartCard({
   }));
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-4">
-      <div className="text-sm font-semibold text-gray-700 mb-1">{title}</div>
-      <div className="text-xs text-gray-500 mb-3">
-        Selected: {formatNumber(rows[0]?.primary_value ?? null)} {primaryLabel}
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:shadow-gray-200/50">
+      <div className="text-sm font-bold text-gray-900 mb-1">{title}</div>
+      <div className="text-xs text-gray-400 mb-3">
+        <span className="font-bold text-primary">{formatNumber(rows[0]?.primary_value ?? null)}</span>
+        {" "}{primaryLabel} this round
       </div>
       <ResponsiveContainer width="100%" height={180}>
         <BarChart data={chartData} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
-          <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#6b7280" }} tickLine={false} axisLine={false} />
+          <Defs>
+            <linearGradient id="selectedBarGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#4ade80" stopOpacity={1} />
+              <stop offset="100%" stopColor="#2d7a3a" stopOpacity={1} />
+            </linearGradient>
+          </Defs>
+          <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
           <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
           <Tooltip
             formatter={((v: number, _name: string, props: { payload: { sampleSize: number } }) => [
               formatNumber(v),
               `${primaryLabel} (${props.payload.sampleSize} round${props.payload.sampleSize === 1 ? "" : "s"})`,
             ]) as Fmt}
-            contentStyle={{ fontSize: 12, borderRadius: 8, border: "1px solid #e5e7eb" }}
+            contentStyle={tooltipStyle}
           />
-          <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+          <Bar dataKey="value" radius={[6, 6, 0, 0]}>
             {chartData.map((d) => (
-              <Cell key={d.label} fill={d.isSelected ? "#2d7a3a" : "#9ca3af"} />
+              <Cell key={d.label} fill={d.isSelected ? "url(#selectedBarGrad)" : "#e5e7eb"} />
             ))}
           </Bar>
         </BarChart>
@@ -425,16 +451,18 @@ export function RoundDetailPage({ userId }: { userId: string }) {
 
       {/* Round comparison */}
       {comparison && (
-        <div className="mt-4 bg-white rounded-xl border border-gray-200 shadow-sm p-5">
-          <div className="text-sm font-semibold text-gray-700 mb-4">Round Comparison</div>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <ComparisonChartCard title="Score" rows={comparison.score} primaryLabel="score" />
-            <ComparisonChartCard title="Putts" rows={comparison.putts} primaryLabel="putts" />
-            <ComparisonChartCard title="GIR" rows={comparison.gir} primaryLabel="GIR" />
-            <ComparisonChartCard title="3-Putts" rows={comparison.three_putts} primaryLabel="3-putts" />
-            <ComparisonChartCard title="Putts per GIR" rows={comparison.putts_per_gir} primaryLabel="putts/GIR" />
-            <ComparisonChartCard title="Scrambling" rows={comparison.scrambling} primaryLabel="scramble successes" />
-          </div>
+        <div className="mt-8">
+          <SectionLabel>Round Comparison</SectionLabel>
+          <ScrollSection>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+              <ComparisonChartCard title="Score" rows={comparison.score} primaryLabel="score" />
+              <ComparisonChartCard title="Putts" rows={comparison.putts} primaryLabel="putts" />
+              <ComparisonChartCard title="GIR" rows={comparison.gir} primaryLabel="GIR" />
+              <ComparisonChartCard title="3-Putts" rows={comparison.three_putts} primaryLabel="3-putts" />
+              <ComparisonChartCard title="Putts per GIR" rows={comparison.putts_per_gir} primaryLabel="putts/GIR" />
+              <ComparisonChartCard title="Scrambling" rows={comparison.scrambling} primaryLabel="scramble successes" />
+            </div>
+          </ScrollSection>
         </div>
       )}
     </div>

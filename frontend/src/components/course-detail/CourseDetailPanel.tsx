@@ -3,13 +3,14 @@ import { useEffect, useState } from "react";
 type Fmt = (v: any, name: any, props: any) => any;
 import { ArrowLeft, MapPin } from "lucide-react";
 import {
+  Area,
   Bar,
   BarChart,
-  CartesianGrid,
   Cell,
+  ComposedChart,
+  Defs,
   Legend,
   Line,
-  LineChart,
   ReferenceLine,
   ResponsiveContainer,
   Tooltip,
@@ -19,11 +20,31 @@ import {
 import { api } from "@/lib/api";
 import type { Course, Tee } from "@/types/golf";
 import type { CourseAnalyticsData } from "@/types/analytics";
+import { ScrollSection } from "@/components/analytics/ScrollSection";
 
 interface CourseDetailPanelProps {
   courseId: string;
   userId: string;
   onBack: () => void;
+}
+
+const tooltipStyle = {
+  fontSize: 12,
+  borderRadius: 12,
+  border: "1px solid #f1f5f9",
+  boxShadow: "0 4px 24px rgba(0,0,0,0.07)",
+  background: "rgba(255,255,255,0.97)",
+};
+
+function SectionLabel({ children }: { children: string }) {
+  return (
+    <div className="flex items-center gap-3 mb-4">
+      <div className="h-px w-8 bg-primary/30 rounded-full" />
+      <span className="text-[11px] font-bold text-primary/50 uppercase tracking-[0.18em]">
+        {children}
+      </span>
+    </div>
+  );
 }
 
 const TEE_COLORS: Record<string, string> = {
@@ -141,8 +162,8 @@ function NineTable({
 
 function ChartCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
-      <div className="text-sm font-semibold text-gray-700 mb-4">{title}</div>
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:shadow-gray-200/50">
+      <div className="text-sm font-semibold text-gray-800 mb-4">{title}</div>
       {children}
     </div>
   );
@@ -153,15 +174,21 @@ export function CourseDetailPanel({ courseId, userId, onBack }: CourseDetailPane
   const [analytics, setAnalytics] = useState<CourseAnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [selectedTeeColor, setSelectedTeeColor] = useState<string | null>(null);
+  const [handicapIndex, setHandicapIndex] = useState<number | null>(null);
 
   useEffect(() => {
     let isMounted = true;
     setLoading(true);
-    Promise.all([api.getCourse(courseId), api.getCourseAnalytics(userId, courseId)])
-      .then(([c, a]) => {
+    Promise.all([
+      api.getCourse(courseId),
+      api.getCourseAnalytics(userId, courseId),
+      api.getUserHandicap(userId).catch(() => ({ handicap_index: null })),
+    ])
+      .then(([c, a, h]) => {
         if (!isMounted) return;
         setCourse(c);
         setAnalytics(a);
+        setHandicapIndex(h.handicap_index);
         const longest = c.tees.reduce<Tee | null>((best, t) => {
           const yards = t.total_yardage ?? Object.values(t.hole_yardages).reduce((s, y) => s + y, 0);
           const bestYards = best
@@ -197,6 +224,11 @@ export function CourseDetailPanel({ courseId, userId, onBack }: CourseDetailPane
   const selectedTee = course.tees.find(
     (t) => t.color?.toLowerCase() === selectedTeeColor?.toLowerCase()
   ) ?? null;
+
+  function courseHandicap(tee: Tee): number | null {
+    if (handicapIndex == null || tee.slope_rating == null || tee.course_rating == null || course.par == null) return null;
+    return Math.round(handicapIndex * (tee.slope_rating / 113) + (tee.course_rating - course.par));
+  }
 
   return (
     <div>
@@ -248,6 +280,11 @@ export function CourseDetailPanel({ courseId, userId, onBack }: CourseDetailPane
                 {tee.course_rating != null && <span className="text-gray-400">Rating {tee.course_rating}</span>}
                 {tee.slope_rating != null && <span className="text-gray-400">/ Slope {tee.slope_rating}</span>}
                 {tee.total_yardage != null && <span className="text-gray-400">/ {tee.total_yardage} yds</span>}
+                {courseHandicap(tee) != null && (
+                  <span className="ml-1 px-1.5 py-0.5 bg-primary/10 text-primary rounded font-semibold text-[10px]">
+                    CH {courseHandicap(tee)}
+                  </span>
+                )}
               </button>
             );
           })}
@@ -264,21 +301,27 @@ export function CourseDetailPanel({ courseId, userId, onBack }: CourseDetailPane
       </div>
 
       <div className="mt-8">
-        <h3 className="text-lg font-semibold text-gray-900 mb-1">Course Performance Analytics</h3>
-        <div className="text-sm text-gray-500 mb-4">
+        <SectionLabel>Course Performance Analytics</SectionLabel>
+        <div className="text-sm text-gray-500 mb-5">
           {analytics?.rounds_played ?? 0} round{(analytics?.rounds_played ?? 0) === 1 ? "" : "s"} played on this course
         </div>
 
         {!analytics || analytics.rounds_played === 0 ? (
-          <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 text-gray-500">
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 text-gray-500">
             No rounds on this course yet for analytics.
           </div>
         ) : (
+          <ScrollSection>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
             <ChartCard title="Score Trend On This Course">
               <ResponsiveContainer width="100%" height={240}>
-                <LineChart data={analytics.score_trend_on_course} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
+                <ComposedChart data={analytics.score_trend_on_course} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+                  <Defs>
+                    <linearGradient id="scoreTrendGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%"  stopColor="#2d7a3a" stopOpacity={0.13} />
+                      <stop offset="95%" stopColor="#2d7a3a" stopOpacity={0} />
+                    </linearGradient>
+                  </Defs>
                   <XAxis
                     dataKey="date"
                     tick={{ fontSize: 10, fill: "#9ca3af" }}
@@ -287,21 +330,21 @@ export function CourseDetailPanel({ courseId, userId, onBack }: CourseDetailPane
                     tickFormatter={(v) => (typeof v === "string" ? v.slice(5, 10) : "")}
                   />
                   <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
-                  <Tooltip />
-                  <Line type="monotone" dataKey="total_score" stroke="#0f172a" strokeWidth={2} dot={false} />
-                </LineChart>
+                  <Tooltip contentStyle={tooltipStyle} />
+                  <Area type="monotone" dataKey="total_score" stroke="none" fill="url(#scoreTrendGrad)" />
+                  <Line type="monotone" dataKey="total_score" stroke="#2d7a3a" strokeWidth={2.5} dot={false} />
+                </ComposedChart>
               </ResponsiveContainer>
             </ChartCard>
 
             <ChartCard title="Average Score To Par By Hole">
               <ResponsiveContainer width="100%" height={240}>
                 <BarChart data={analytics.average_score_relative_to_par_by_hole} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
                   <XAxis dataKey="hole_number" tick={{ fontSize: 10, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
                   <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
-                  <Tooltip formatter={((v: number) => [Number(v ?? 0).toFixed(2), "Avg to Par"]) as Fmt} />
+                  <Tooltip contentStyle={tooltipStyle} formatter={((v: number) => [Number(v ?? 0).toFixed(2), "Avg to Par"]) as Fmt} />
                   <ReferenceLine y={0} stroke="#d1d5db" />
-                  <Bar dataKey="average_to_par">
+                  <Bar dataKey="average_to_par" radius={[6, 6, 0, 0]}>
                     {analytics.average_score_relative_to_par_by_hole.map((row) => (
                       <Cell key={row.hole_number} fill={row.average_to_par <= 0 ? "#059669" : "#f87171"} />
                     ))}
@@ -313,11 +356,16 @@ export function CourseDetailPanel({ courseId, userId, onBack }: CourseDetailPane
             <ChartCard title="GIR Percentage By Hole">
               <ResponsiveContainer width="100%" height={240}>
                 <BarChart data={analytics.gir_percentage_by_hole} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
+                  <Defs>
+                    <linearGradient id="girBarGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%"   stopColor="#4ade80" stopOpacity={1} />
+                      <stop offset="100%" stopColor="#16a34a" stopOpacity={1} />
+                    </linearGradient>
+                  </Defs>
                   <XAxis dataKey="hole_number" tick={{ fontSize: 10, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
                   <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
-                  <Tooltip formatter={((v: number) => [`${Number(v ?? 0).toFixed(1)}%`, "GIR %"]) as Fmt} />
-                  <Bar dataKey="gir_percentage" fill="#16a34a" />
+                  <Tooltip contentStyle={tooltipStyle} formatter={((v: number) => [`${Number(v ?? 0).toFixed(1)}%`, "GIR %"]) as Fmt} />
+                  <Bar dataKey="gir_percentage" fill="url(#girBarGrad)" radius={[6, 6, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </ChartCard>
@@ -325,11 +373,16 @@ export function CourseDetailPanel({ courseId, userId, onBack }: CourseDetailPane
             <ChartCard title="Average Putts By Hole">
               <ResponsiveContainer width="100%" height={240}>
                 <BarChart data={analytics.average_putts_by_hole} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
+                  <Defs>
+                    <linearGradient id="puttsBarGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%"   stopColor="#d1d5db" stopOpacity={1} />
+                      <stop offset="100%" stopColor="#6b7280" stopOpacity={1} />
+                    </linearGradient>
+                  </Defs>
                   <XAxis dataKey="hole_number" tick={{ fontSize: 10, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
                   <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
-                  <Tooltip formatter={((v: number) => [Number(v ?? 0).toFixed(2), "Avg putts"]) as Fmt} />
-                  <Bar dataKey="average_putts" fill="#6b7280" />
+                  <Tooltip contentStyle={tooltipStyle} formatter={((v: number) => [Number(v ?? 0).toFixed(2), "Avg putts"]) as Fmt} />
+                  <Bar dataKey="average_putts" fill="url(#puttsBarGrad)" radius={[6, 6, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </ChartCard>
@@ -337,10 +390,10 @@ export function CourseDetailPanel({ courseId, userId, onBack }: CourseDetailPane
             <ChartCard title="Score Type Distribution By Hole">
               <ResponsiveContainer width="100%" height={260}>
                 <BarChart data={analytics.score_type_distribution_by_hole} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
                   <XAxis dataKey="hole_number" tick={{ fontSize: 10, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
                   <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
                   <Tooltip
+                    contentStyle={tooltipStyle}
                     labelFormatter={(_label, payload) => payload?.[0]?.payload?.sample_size != null ? `${payload[0].payload.sample_size} rounds` : ""}
                     formatter={((v: number) => [`${Number(v ?? 0).toFixed(1)}%`, ""]) as Fmt}
                   />
@@ -362,12 +415,11 @@ export function CourseDetailPanel({ courseId, userId, onBack }: CourseDetailPane
                   data={analytics.course_difficulty_profile_by_hole.map((row) => ({ ...row, label: `H${row.hole_number}` }))}
                   margin={{ top: 4, right: 8, left: -20, bottom: 0 }}
                 >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
                   <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
                   <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
-                  <Tooltip formatter={((v: number) => [Number(v ?? 0).toFixed(2), "Avg to Par"]) as Fmt} />
+                  <Tooltip contentStyle={tooltipStyle} formatter={((v: number) => [Number(v ?? 0).toFixed(2), "Avg to Par"]) as Fmt} />
                   <ReferenceLine y={0} stroke="#d1d5db" />
-                  <Bar dataKey="average_to_par">
+                  <Bar dataKey="average_to_par" radius={[6, 6, 0, 0]}>
                     {analytics.course_difficulty_profile_by_hole.map((row) => (
                       <Cell key={row.hole_number} fill={row.average_to_par <= 0 ? "#059669" : "#f87171"} />
                     ))}
@@ -376,14 +428,14 @@ export function CourseDetailPanel({ courseId, userId, onBack }: CourseDetailPane
               </ResponsiveContainer>
             </ChartCard>
 
-            <ChartCard title="Average Score When GIR Is Hit vs Missed">
+            <ChartCard title="Average Score To Par When GIR Is Hit vs Missed">
               <ResponsiveContainer width="100%" height={240}>
                 <BarChart data={analytics.average_score_when_gir_vs_missed} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
                   <XAxis dataKey="bucket" tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
                   <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
-                  <Tooltip formatter={((v: number) => [Number(v ?? 0).toFixed(2), "Avg score"]) as Fmt} />
-                  <Bar dataKey="average_score">
+                  <Tooltip contentStyle={tooltipStyle} formatter={((v: number) => [Number(v ?? 0).toFixed(2), "Avg to par"]) as Fmt} />
+                  <ReferenceLine y={0} stroke="#d1d5db" />
+                  <Bar dataKey="average_to_par" radius={[6, 6, 0, 0]}>
                     <Cell fill="#16a34a" />
                     <Cell fill="#ef4444" />
                   </Bar>
@@ -397,15 +449,21 @@ export function CourseDetailPanel({ courseId, userId, onBack }: CourseDetailPane
                   data={analytics.score_variance_by_hole.map((row) => ({ ...row, label: `H${row.hole_number}` }))}
                   margin={{ top: 4, right: 8, left: -20, bottom: 0 }}
                 >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" vertical={false} />
+                  <Defs>
+                    <linearGradient id="varianceBarGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%"   stopColor="#fcd34d" stopOpacity={1} />
+                      <stop offset="100%" stopColor="#d97706" stopOpacity={1} />
+                    </linearGradient>
+                  </Defs>
                   <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
                   <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
-                  <Tooltip formatter={((v: number) => [Number(v ?? 0).toFixed(2), "Std dev"]) as Fmt} />
-                  <Bar dataKey="score_std_dev" fill="#f59e0b" />
+                  <Tooltip contentStyle={tooltipStyle} formatter={((v: number) => [Number(v ?? 0).toFixed(2), "Std dev"]) as Fmt} />
+                  <Bar dataKey="score_std_dev" fill="url(#varianceBarGrad)" radius={[6, 6, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </ChartCard>
           </div>
+          </ScrollSection>
         )}
       </div>
     </div>
