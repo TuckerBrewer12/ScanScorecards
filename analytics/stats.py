@@ -1330,7 +1330,12 @@ def average_putts_by_hole(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
         if not round_obj.course:
             continue
 
-        for hole_score in _valid_hole_scores(round_obj):
+        valid_scores = list(_valid_hole_scores(round_obj))
+        # Skip rounds where any scored hole is missing putts (incomplete putt data)
+        if any(hs.putts is None for hs in valid_scores):
+            continue
+
+        for hole_score in valid_scores:
             if hole_score.hole_number is None or hole_score.putts is None:
                 continue
 

@@ -108,7 +108,10 @@ class RoundRepositoryDB:
                     c.location AS course_location,
                     c.par AS course_par,
                     SUM(hs.strokes)  AS total_score,
-                    SUM(hs.putts)    AS total_putts,
+                    CASE WHEN COUNT(CASE WHEN hs.strokes IS NOT NULL AND hs.putts IS NULL THEN 1 END) = 0
+                              AND COUNT(CASE WHEN hs.putts IS NOT NULL THEN 1 END) > 0
+                         THEN SUM(hs.putts)
+                         ELSE NULL END AS total_putts,
                     SUM(CASE WHEN hs.green_in_regulation THEN 1 ELSE 0 END) AS total_gir,
                     SUM(CASE WHEN hs.fairway_hit         THEN 1 ELSE 0 END) AS fairways_hit,
                     CASE WHEN COUNT(CASE WHEN hs.hole_number <= 9 AND hs.strokes IS NOT NULL THEN 1 END) = 9
