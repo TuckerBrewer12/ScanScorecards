@@ -311,7 +311,7 @@ export function AnalyticsPage({ userId }: { userId: string }) {
   }
 
   const {
-    kpis, net_score_trend, putts_trend, three_putts_trend,
+    kpis, net_score_trend, putts_trend,
     scoring_by_par, scoring_by_handicap, gir_vs_non_gir,
     notable_achievements,
   } = data;

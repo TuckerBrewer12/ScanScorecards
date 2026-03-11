@@ -3,7 +3,7 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, Pencil, Trash2, Link2 } from "lucide-react";
 import type { CourseSummary } from "@/types/golf";
 import { CourseLinkSearch } from "@/components/CourseLinkSearch";
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell, Defs } from "recharts";
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell } from "recharts";
 import { ScrollSection } from "@/components/analytics/ScrollSection";
 import { api } from "@/lib/api";
 import type { Round } from "@/types/golf";
@@ -65,12 +65,12 @@ function ComparisonChartCard({
       </div>
       <ResponsiveContainer width="100%" height={180}>
         <BarChart data={chartData} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
-          <Defs>
+          <defs>
             <linearGradient id="selectedBarGrad" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="#4ade80" stopOpacity={1} />
               <stop offset="100%" stopColor="#2d7a3a" stopOpacity={1} />
             </linearGradient>
-          </Defs>
+          </defs>
           <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
           <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
           <Tooltip
