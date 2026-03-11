@@ -85,6 +85,15 @@ export interface ScoringByHandicapRow {
   sample_size: number;
 }
 
+export interface ScoringByYardageRow {
+  par: number;
+  bucket_label: string;
+  bucket_order: number;
+  average_to_par: number;
+  gir_percentage: number | null;
+  sample_size: number;
+}
+
 export interface GIRvsNonGIRRow {
   bucket: "GIR" | "No GIR";
   holes_counted: number;
@@ -239,6 +248,7 @@ export interface AnalyticsData {
   scrambling_trend: ScramblingRow[];
   score_type_distribution: ScoreTypeRow[];
   scoring_by_par: ScoringByParRow[];
+  scoring_by_yardage: ScoringByYardageRow[];
   scoring_by_handicap: ScoringByHandicapRow[];
   gir_vs_non_gir: GIRvsNonGIRRow[];
   handicap_trend: HandicapTrendRow[];

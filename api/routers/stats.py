@@ -280,6 +280,7 @@ async def get_analytics(
         "scrambling_trend": analytics.scrambling_per_round(rounds),
         "score_type_distribution": analytics.score_type_distribution_per_round(rounds),
         "scoring_by_par": analytics.scoring_by_par(rounds),
+        "scoring_by_yardage": analytics.scoring_by_yardage_buckets(rounds),
         "scoring_by_handicap": analytics.scoring_vs_hole_handicap(rounds),
         "gir_vs_non_gir": analytics.gir_vs_non_gir_score_distribution(rounds),
         "handicap_trend": hcap.handicap_trend(rounds),
