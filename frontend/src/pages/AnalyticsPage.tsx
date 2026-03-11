@@ -5,7 +5,7 @@ import { useEffect, useState, useMemo } from "react";
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Cell, Legend,
-  ComposedChart, ReferenceArea,
+  ComposedChart, ReferenceArea, Line,
 } from "recharts";
 import { Gauge, Hash, TrendingDown, Trophy, Target } from "lucide-react";
 import { api } from "@/lib/api";
@@ -314,7 +314,7 @@ export function AnalyticsPage({ userId }: { userId: string }) {
   const {
     kpis, net_score_trend, putts_trend,
     scoring_by_par, scoring_by_yardage, scoring_by_handicap, gir_vs_non_gir,
-    notable_achievements,
+    notable_achievements, scrambling_trend, up_and_down_trend,
   } = data;
 
   return (
@@ -620,6 +620,48 @@ export function AnalyticsPage({ userId }: { userId: string }) {
           </div>
         </ScrollSection>
       </div>
+
+      {/* ╔══════════════════════════════════════════════════════════════════╗ */}
+      {/* ║  SHORT GAME                                                     ║ */}
+      {/* ╚══════════════════════════════════════════════════════════════════╝ */}
+      {(scrambling_trend.length > 0 || up_and_down_trend.length > 0) && (
+        <div className="-mx-8 px-8 py-10 bg-gradient-to-b from-[#fdf4ff]/50 to-[#f8faf8]">
+          <ScrollSection delay={0.1}>
+            <SectionLabel>Short Game</SectionLabel>
+            <ChartCard
+              title="Short Game"
+              subtitle="Scrambling % vs Up & Down % · rounds with GIR misses recorded"
+            >
+              <ResponsiveContainer width="100%" height={240}>
+                <ComposedChart
+                  data={scrambling_trend.map((r, i) => ({
+                    ...r,
+                    up_and_down_pct: up_and_down_trend[i]?.percentage ?? null,
+                  }))}
+                  margin={{ top: 8, right: 16, left: -16, bottom: 0 }}
+                >
+                  <CartesianGrid stroke="#f1f5f1" vertical={false} />
+                  <XAxis dataKey="round_index" tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
+                  <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false}
+                    tickFormatter={(v) => `${v}%`} />
+                  <Tooltip
+                    contentStyle={tooltipStyle}
+                    formatter={((v: number, name: string) => {
+                      if (name === "scrambling_percentage") return [`${v.toFixed(1)}%`, "Scrambling"];
+                      if (name === "up_and_down_pct") return [`${v.toFixed(1)}%`, "Up & Down"];
+                      return [v, name];
+                    }) as Fmt}
+                  />
+                  <Line type="monotone" dataKey="scrambling_percentage" stroke="#f97316"
+                    strokeWidth={2} dot={{ r: 3, fill: "#f97316", strokeWidth: 0 }} connectNulls />
+                  <Line type="monotone" dataKey="up_and_down_pct" stroke="#a855f7"
+                    strokeWidth={2} dot={{ r: 3, fill: "#a855f7", strokeWidth: 0 }} connectNulls={false} />
+                </ComposedChart>
+              </ResponsiveContainer>
+            </ChartCard>
+          </ScrollSection>
+        </div>
+      )}
 
       {/* ╔══════════════════════════════════════════════════════════════════╗ */}
       {/* ║  PERFORMANCE PROFILE                                            ║ */}

@@ -793,6 +793,34 @@ def scrambling_per_round(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
     return results
 
 
+def up_and_down_trend(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
+    """
+    Up & Down: hole where GIR is missed and player finishes with <= 1 putt.
+    Unlike scrambling, requires no course/par — works on any round.
+    Success: green_in_regulation is False AND putts <= 1 (includes holed out from off green).
+    """
+    results: List[Dict[str, Any]] = []
+    for index, round_obj in enumerate(rounds, start=1):
+        opportunities = 0
+        successes = 0
+        for score in _valid_hole_scores(round_obj):
+            if score.green_in_regulation is None or score.putts is None:
+                continue
+            if score.green_in_regulation is False:
+                opportunities += 1
+                if score.putts <= 1:
+                    successes += 1
+        percentage = (successes / opportunities * 100.0) if opportunities else 0.0
+        results.append({
+            "round_index": index,
+            "round_id": round_obj.id,
+            "opportunities": opportunities,
+            "successes": successes,
+            "percentage": round(percentage, 1),
+        })
+    return results
+
+
 def scrambling_comparison(rounds: Iterable[Round], round_index: Optional[int] = None) -> List[Dict[str, Any]]:
     """Selected round scrambling vs trailing averages."""
     return metric_comparison_snapshot(
