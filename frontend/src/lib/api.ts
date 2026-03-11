@@ -1,6 +1,6 @@
 import type { DashboardData, RoundSummary, Round, CourseSummary, Course, User } from "@/types/golf";
 import type { AnalyticsData, CourseAnalyticsData, RoundComparison } from "@/types/analytics";
-import { getToken } from "@/context/AuthContext";
+import { getToken } from "@/lib/auth";
 
 const BASE_URL = "/api";
 

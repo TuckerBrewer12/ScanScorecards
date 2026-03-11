@@ -221,8 +221,7 @@ export function DashboardPage({ userId }: DashboardPageProps) {
                       tick={{ fontSize: 11, fill: "#9ca3af" }}
                       tickLine={false}
                       axisLine={false}
-                      domain={["auto", "auto"]}
-                      reversed
+                      domain={[(min: number) => min - 4, (max: number) => max + 4]}
                       tickFormatter={(v: number) => (v < 0 ? `+${Math.abs(v)}` : String(v))}
                     />
                     <Tooltip

@@ -4,7 +4,7 @@ import type { CourseSummary } from "@/types/golf";
 import type { ScanState, ScanResult, ExtractedHoleScore, ManualTee } from "@/types/scan";
 import { initialScanState } from "@/types/scan";
 import { api } from "@/lib/api";
-import { getToken } from "@/context/AuthContext";
+import { getToken } from "@/lib/auth";
 
 export function useScan(
   userId: string,

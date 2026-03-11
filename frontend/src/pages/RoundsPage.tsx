@@ -1,17 +1,28 @@
 import { useEffect, useState, useMemo, useCallback, useRef } from "react";
 import { Link } from "react-router-dom";
-import { Link2 } from "lucide-react";
+import { Link2, Search } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { CourseLinkSearch } from "@/components/CourseLinkSearch";
 import { api } from "@/lib/api";
 import type { RoundSummary, CourseSummary } from "@/types/golf";
 import { formatToPar } from "@/types/golf";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { ScrollSection } from "@/components/analytics/ScrollSection";
 
 interface RoundsPageProps {
   userId: string;
 }
 
 type SortKey = "date" | "total_score" | "to_par" | "course_name";
+
+const rowVariants = {
+  hidden: { opacity: 0, y: 16 },
+  visible: (i: number) => ({
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] as const, delay: i * 0.03 },
+  }),
+};
 
 export function RoundsPage({ userId }: RoundsPageProps) {
   const [rounds, setRounds] = useState<RoundSummary[]>([]);
@@ -77,7 +88,7 @@ export function RoundsPage({ userId }: RoundsPageProps) {
   }, []);
 
   const filtered = useMemo(() => {
-    let result = rounds;
+    let result = [...rounds];
     if (search) {
       const q = search.toLowerCase();
       result = result.filter(
@@ -125,15 +136,20 @@ export function RoundsPage({ userId }: RoundsPageProps) {
   }
 
   function SortHeader({ label, field }: { label: string; field: SortKey }) {
+    const active = sortKey === field;
     return (
       <th
-        className="px-4 py-3 cursor-pointer hover:text-gray-700 select-none"
+        className={`px-6 py-3 cursor-pointer select-none transition-colors ${
+          active ? "text-primary" : "text-gray-400 hover:text-gray-600"
+        }`}
         onClick={() => handleSort(field)}
       >
-        {label}
-        {sortKey === field && (
-          <span className="ml-1">{sortAsc ? "↑" : "↓"}</span>
-        )}
+        <span className="flex items-center gap-1">
+          {label}
+          <span className={`text-[10px] transition-opacity ${active ? "opacity-100" : "opacity-0"}`}>
+            {sortAsc ? "↑" : "↓"}
+          </span>
+        </span>
       </th>
     );
   }
@@ -153,110 +169,148 @@ export function RoundsPage({ userId }: RoundsPageProps) {
         subtitle={`${rounds.length} rounds played`}
       />
 
-      <div className="mb-4">
-        <input
-          type="text"
-          placeholder="Search by course or tournament..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full max-w-md px-4 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-        />
-      </div>
+      <ScrollSection>
+        {/* Search bar */}
+        <div className="mb-5 relative max-w-sm">
+          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+          <input
+            type="text"
+            placeholder="Search by course or tournament..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm bg-white/80 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary shadow-sm"
+          />
+        </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-        <table className="w-full">
-          <thead>
-            <tr className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-              <SortHeader label="Date" field="date" />
-              <SortHeader label="Course" field="course_name" />
-              <th className="px-4 py-3 text-center">Front</th>
-              <th className="px-4 py-3 text-center">Back</th>
-              <SortHeader label="Score" field="total_score" />
-              <SortHeader label="To Par" field="to_par" />
-              <th className="px-4 py-3 text-center">Putts</th>
-              <th className="px-4 py-3">Tournament</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-100">
-            {filtered.map((r) => (
-              <>
-                <tr key={r.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-4 py-3 text-sm font-medium text-gray-600">
-                    {r.date
-                      ? new Date(r.date).toLocaleDateString()
-                      : "-"}
-                  </td>
-                  <td className="px-4 py-3 text-sm font-semibold text-gray-900">
-                    <div className="flex items-center gap-2">
-                      <Link
-                        to={`/rounds/${r.id}`}
-                        className="hover:text-primary transition-colors"
-                      >
-                        {r.course_name ?? "-"}
-                      </Link>
-                      {!r.course_id && (
-                        <button
-                          onClick={() => linkingRoundId === r.id ? closeLink() : openLink(r.id)}
-                          title="Link to a saved course"
-                          className="text-gray-400 hover:text-primary transition-colors shrink-0"
-                        >
-                          <Link2 size={14} />
-                        </button>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-center text-gray-600">
-                    {r.front_nine ?? "-"}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-center text-gray-600">
-                    {r.back_nine ?? "-"}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-center font-semibold">
-                    {r.total_score ?? "-"}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-center">
-                    <span
-                      className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold ${
-                        r.to_par !== null && r.to_par < 0
-                          ? "bg-birdie/10 text-birdie"
-                          : r.to_par !== null && r.to_par > 0
-                          ? "bg-bogey/10 text-bogey"
-                          : "bg-gray-100 text-gray-600"
-                      }`}
-                    >
-                      {formatToPar(r.to_par)}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-center text-gray-600">
-                    {r.total_putts ?? "-"}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-500">
-                    {r.notes ?? "-"}
-                  </td>
-                </tr>
+        {/* Table */}
+        <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+          <div className="px-6 py-4 border-b border-gray-100">
+            <span className="text-sm font-semibold text-gray-800">
+              {filtered.length} {filtered.length === 1 ? "round" : "rounds"}
+              {search ? ` matching "${search}"` : ""}
+            </span>
+          </div>
 
-                {/* Inline link-course panel */}
-                {linkingRoundId === r.id && (
-                  <tr key={`${r.id}-link`}>
-                    <td colSpan={8} className="px-4 py-3 bg-blue-50 border-b border-blue-100">
-                      <CourseLinkSearch
-                        title={`Link "${r.course_name ?? "this round"}" to a saved course`}
-                        query={linkQuery}
-                        results={linkResults}
-                        searching={linkSearching}
-                        linking={linking}
-                        onQueryChange={handleLinkQuery}
-                        onSelectCourse={(c) => handleSelectCourse(r.id, c)}
-                        onClose={closeLink}
-                      />
+          <table className="w-full">
+            <thead>
+              <tr className="bg-gray-50/60 text-left text-[10px] font-bold uppercase tracking-widest">
+                <SortHeader label="Date" field="date" />
+                <SortHeader label="Course" field="course_name" />
+                <th className="px-6 py-3 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center">Front</th>
+                <th className="px-6 py-3 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center">Back</th>
+                <SortHeader label="Score" field="total_score" />
+                <SortHeader label="To Par" field="to_par" />
+                <th className="px-6 py-3 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center">Putts</th>
+                <th className="px-6 py-3 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Tournament</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {filtered.map((r, i) => (
+                <AnimatePresence key={r.id} mode="wait">
+                  <motion.tr
+                    key={r.id}
+                    custom={i}
+                    variants={rowVariants}
+                    initial="hidden"
+                    animate="visible"
+                    className="cursor-pointer hover:bg-emerald-50/40 border-l-2 border-transparent hover:border-primary/30 transition-all duration-150 group"
+                    onClick={() => {
+                      if (linkingRoundId === r.id) return;
+                    }}
+                  >
+                    <td className="px-6 py-3.5 text-sm text-gray-400">
+                      {r.date
+                        ? new Date(r.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+                        : "—"}
                     </td>
-                  </tr>
-                )}
-              </>
-            ))}
-          </tbody>
-        </table>
-      </div>
+                    <td className="px-6 py-3.5 text-sm font-semibold text-gray-900">
+                      <div className="flex items-center gap-2">
+                        <Link
+                          to={`/rounds/${r.id}`}
+                          className="hover:text-primary transition-colors"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          {r.course_name ?? "—"}
+                        </Link>
+                        {!r.course_id && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              linkingRoundId === r.id ? closeLink() : openLink(r.id);
+                            }}
+                            title="Link to a saved course"
+                            className="text-gray-300 hover:text-primary transition-colors shrink-0 opacity-0 group-hover:opacity-100"
+                          >
+                            <Link2 size={13} />
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-6 py-3.5 text-sm text-center text-gray-500">
+                      {r.front_nine ?? "—"}
+                    </td>
+                    <td className="px-6 py-3.5 text-sm text-center text-gray-500">
+                      {r.back_nine ?? "—"}
+                    </td>
+                    <td className="px-6 py-3.5 text-sm text-center font-bold text-gray-900">
+                      {r.total_score ?? "—"}
+                    </td>
+                    <td className="px-6 py-3.5 text-sm text-center">
+                      <span
+                        className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold ${
+                          r.to_par !== null && r.to_par < 0
+                            ? "bg-birdie/10 text-birdie"
+                            : r.to_par !== null && r.to_par > 0
+                            ? "bg-bogey/10 text-bogey"
+                            : "bg-gray-100 text-gray-500"
+                        }`}
+                      >
+                        {formatToPar(r.to_par)}
+                      </span>
+                    </td>
+                    <td className="px-6 py-3.5 text-sm text-center text-gray-400">
+                      {r.total_putts ?? "—"}
+                    </td>
+                    <td className="px-6 py-3.5 text-sm text-gray-400">
+                      {r.notes ?? "—"}
+                    </td>
+                  </motion.tr>
+
+                  {/* Inline link-course panel */}
+                  {linkingRoundId === r.id && (
+                    <motion.tr
+                      key={`${r.id}-link`}
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+                    >
+                      <td colSpan={8} className="px-6 py-4 bg-blue-50/60 border-b border-blue-100">
+                        <CourseLinkSearch
+                          title={`Link "${r.course_name ?? "this round"}" to a saved course`}
+                          query={linkQuery}
+                          results={linkResults}
+                          searching={linkSearching}
+                          linking={linking}
+                          onQueryChange={handleLinkQuery}
+                          onSelectCourse={(c) => handleSelectCourse(r.id, c)}
+                          onClose={closeLink}
+                        />
+                      </td>
+                    </motion.tr>
+                  )}
+                </AnimatePresence>
+              ))}
+            </tbody>
+          </table>
+
+          {filtered.length === 0 && (
+            <div className="px-6 py-12 text-center text-gray-400 text-sm">
+              No rounds found.
+            </div>
+          )}
+        </div>
+      </ScrollSection>
     </div>
   );
 }
