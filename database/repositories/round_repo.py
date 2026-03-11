@@ -95,6 +95,39 @@ class RoundRepositoryDB:
                 return None
             return await self._assemble_round(conn, row)
 
+    async def get_round_summaries_for_user(
+        self, user_id: str, *, limit: int = 100, offset: int = 0
+    ) -> list[dict]:
+        """Single aggregate query — avoids N+1 hole_score fetches for list views."""
+        async with self._pool.acquire() as conn:
+            rows = await conn.fetch(
+                """SELECT
+                    r.id, r.course_id, r.tee_box_played AS tee_box,
+                    r.round_date, r.notes, r.course_name_played,
+                    COALESCE(c.name, r.course_name_played) AS course_name,
+                    c.location AS course_location,
+                    c.par AS course_par,
+                    SUM(hs.strokes)  AS total_score,
+                    SUM(hs.putts)    AS total_putts,
+                    SUM(CASE WHEN hs.green_in_regulation THEN 1 ELSE 0 END) AS total_gir,
+                    SUM(CASE WHEN hs.fairway_hit         THEN 1 ELSE 0 END) AS fairways_hit,
+                    CASE WHEN COUNT(CASE WHEN hs.hole_number <= 9 AND hs.strokes IS NOT NULL THEN 1 END) = 9
+                         THEN SUM(CASE WHEN hs.hole_number <= 9 THEN hs.strokes ELSE 0 END)
+                         ELSE NULL END AS front_nine,
+                    CASE WHEN COUNT(CASE WHEN hs.hole_number >= 10 AND hs.strokes IS NOT NULL THEN 1 END) = 9
+                         THEN SUM(CASE WHEN hs.hole_number >= 10 THEN hs.strokes ELSE 0 END)
+                         ELSE NULL END AS back_nine
+                FROM users.rounds r
+                LEFT JOIN courses.courses c ON r.course_id = c.id
+                LEFT JOIN users.hole_scores hs ON hs.round_id = r.id
+                WHERE r.user_id = $1
+                GROUP BY r.id, c.name, c.location, c.par
+                ORDER BY r.round_date DESC NULLS LAST
+                LIMIT $2 OFFSET $3""",
+                UUID(user_id), limit, offset,
+            )
+            return [dict(r) for r in rows]
+
     async def get_rounds_for_user(
         self, user_id: str, *, limit: int = 20, offset: int = 0
     ) -> List[Round]:

@@ -4,7 +4,7 @@ import type { CourseSummary } from "@/types/golf";
 import type { ScanState, ScanResult, ExtractedHoleScore, ManualTee } from "@/types/scan";
 import { initialScanState } from "@/types/scan";
 import { api } from "@/lib/api";
-import { getToken } from "@/context/AuthContext";
+import { getToken } from "@/lib/auth";
 
 export function useScan(
   userId: string,
@@ -100,7 +100,7 @@ export function useScan(
     [handleFile]
   );
 
-  const handleExtract = async () => {
+  const handleExtract = useCallback(async () => {
     if (!file) return;
     update({ step: "processing", error: null });
 
@@ -155,22 +155,22 @@ export function useScan(
     } catch (err) {
       update({ error: err instanceof Error ? err.message : "Extraction failed", step: "upload" });
     }
-  };
+  }, [file, scanMode, selectedCourseId, scoringFormat, userContext, update, userId]);
 
-  const handleScoreChange = (index: number, field: keyof ExtractedHoleScore, value: string) => {
+  const handleScoreChange = useCallback((index: number, field: keyof ExtractedHoleScore, value: string) => {
     const next = [...editedScores];
     const parsed = value === "" ? null : parseInt(value);
     if (field === "strokes") next[index] = { ...next[index], strokes: parsed };
     else if (field === "putts") next[index] = { ...next[index], putts: parsed };
     else if (field === "hole_number") next[index] = { ...next[index], hole_number: parsed };
     update({ editedScores: next });
-  };
+  }, [update, editedScores]);
 
-  const handleGirChange = (index: number, value: boolean | null) => {
+  const handleGirChange = useCallback((index: number, value: boolean | null) => {
     const next = [...editedScores];
     next[index] = { ...next[index], green_in_regulation: value };
     update({ editedScores: next });
-  };
+  }, [update, editedScores]);
 
   const selectCourseManual = useCallback(async (course: CourseSummary) => {
     update({ selectedCourseId: course.id, selectedCourseName: course.name ?? course.id });
@@ -195,7 +195,7 @@ export function useScan(
     finally { setLoadingCourse(false); }
   }, [update]);
 
-  const handleStartEntry = () => {
+  const handleStartEntry = useCallback(() => {
     const holes18 = manualCourseHoles.length > 0
       ? manualCourseHoles
       : Array.from({ length: 18 }, (_, i) => ({ number: i + 1, par: null }));
@@ -236,9 +236,9 @@ export function useScan(
       reviewCourseName: selectedCourseName,
       step: "review",
     });
-  };
+  }, [manualCourseHoles, manualCourseTees, selectedCourseId, selectedCourseName, manualTeeBox, manualDate, update]);
 
-  const handleSave = async () => {
+  const handleSave = useCallback(async () => {
     if (!result) return;
     setSaving(true);
     update({ error: null });
@@ -306,7 +306,7 @@ export function useScan(
       update({ error: err instanceof Error ? err.message : "Save failed" });
       setSaving(false);
     }
-  };
+  }, [result, userId, reviewCourseId, reviewCourseName, editedTeeBox, editedDate, editedNotes, editedScores, update, setScanState, navigate]);
 
   return {
     // Derived state from scanState

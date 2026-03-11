@@ -105,6 +105,3 @@ export function useAuth(): AuthContextValue {
   return ctx;
 }
 
-export function getToken(): string | null {
-  return localStorage.getItem(TOKEN_KEY);
-}
