@@ -1,7 +1,7 @@
 """User API endpoints."""
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import List, Optional
 from database.db_manager import DatabaseManager
 from database.exceptions import DuplicateError, NotFoundError
@@ -29,6 +29,7 @@ class UpdateUserTeeRequest(BaseModel):
 
 class UpdateUserRequest(BaseModel):
     home_course_id: Optional[str] = None
+    handicap: Optional[float] = Field(default=None, ge=-10, le=54)
 
 
 @router.get("/by-email/{email}")
@@ -58,6 +59,8 @@ async def update_user(
         raise HTTPException(403, "Forbidden")
 
     updates = req.model_dump(exclude_unset=True)
+    if "handicap" in updates:
+        updates["handicap_index"] = updates.pop("handicap")
     user = await db.users.update_user(user_id, **updates)
     if not user:
         raise HTTPException(404, "User not found")

@@ -108,7 +108,7 @@ def user_from_row(user_row, rounds: Optional[List[Round]] = None) -> User:
         name=user_row["name"],
         email=user_row["email"],
         home_course_id=str(user_row["home_course_id"]) if user_row["home_course_id"] else None,
-        handicap=float(user_row["handicap_index"]) if user_row["handicap_index"] else None,
+        handicap=float(user_row["handicap_index"]) if user_row["handicap_index"] is not None else None,
         rounds=rounds or [],
         created_at=user_row["created_at"],
     )

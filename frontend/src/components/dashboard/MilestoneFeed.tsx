@@ -8,6 +8,8 @@ const ICON_MAP: Record<Milestone["type"], React.ElementType> = {
   eagle: Star,
   hole_in_one: Zap,
   under_par: TrendingDown,
+  par_streak: Trophy,
+  birdie_streak: Star,
 };
 
 const COLOR_MAP: Record<Milestone["type"], string> = {
@@ -17,6 +19,8 @@ const COLOR_MAP: Record<Milestone["type"], string> = {
   eagle:       "bg-purple-50 text-purple-500",
   hole_in_one: "bg-rose-50 text-rose-500",
   under_par:   "bg-primary/8 text-primary",
+  par_streak:  "bg-indigo-50 text-indigo-500",
+  birdie_streak: "bg-fuchsia-50 text-fuchsia-500",
 };
 
 function parseDate(raw: string): string {

@@ -113,7 +113,7 @@ export const api = {
   getUser: (userId: string) =>
     fetchJSON<User>(`/users/${userId}`),
 
-  updateUser: (userId: string, body: { home_course_id?: string | null }) =>
+  updateUser: (userId: string, body: { home_course_id?: string | null; handicap?: number | null }) =>
     patchJSON<User>(`/users/${userId}`, body),
 
   cloneCourse: (courseId: string, userId: string) =>

@@ -41,6 +41,12 @@ const SCORE_COLORS: Record<string, string> = {
   quad_bogey: "#6d28d9",
 };
 const SCORE_KEYS = ["eagle", "birdie", "par", "bogey", "double_bogey", "triple_bogey", "quad_bogey"] as const;
+const RECENT_FORM_LEGEND = [
+  { key: "birdie", label: "Birdie+", color: SCORE_COLORS.birdie },
+  { key: "par", label: "Par", color: SCORE_COLORS.par },
+  { key: "bogey", label: "Bogey", color: SCORE_COLORS.bogey },
+  { key: "double_bogey", label: "Double+", color: SCORE_COLORS.double_bogey },
+] as const;
 
 function BentoCard({ title, subtitle, children, className }: {
   title?: string; subtitle?: string;
@@ -106,9 +112,9 @@ function ActivityCalendar({ rounds }: { rounds: { date: string | null }[] }) {
           <div key={d} className="text-center text-[9px] font-bold text-gray-300 uppercase">{d}</div>
         ))}
       </div>
-      <div className="grid grid-cols-7 gap-1">
+      <div className="grid grid-cols-7 gap-0.5">
         {cells.map((day, i) => (
-          <div key={i} className={`aspect-square rounded-lg flex items-center justify-center text-[10px] font-medium transition-colors ${
+          <div key={i} className={`h-7 rounded-md flex items-center justify-center text-[10px] font-medium transition-colors ${
             day == null ? "" :
             playedDays.has(day)
               ? "bg-primary text-white shadow-sm shadow-primary/30"
@@ -133,7 +139,6 @@ interface DashboardPageProps {
 export function DashboardPage({ userId }: DashboardPageProps) {
   const [data, setData] = useState<DashboardData | null>(null);
   const [trends, setTrends] = useState<AnalyticsData | null>(null);
-  const [milestones, setMilestones] = useState<Milestone[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -141,14 +146,104 @@ export function DashboardPage({ userId }: DashboardPageProps) {
     Promise.all([
       api.getDashboard(userId),
       api.getAnalytics(userId, 20),
-      api.getMilestones(userId, 12),
-    ]).then(([dash, analytics, ms]) => {
+    ]).then(([dash, analytics]) => {
       setData(dash);
       setTrends(analytics);
-      setMilestones(ms.milestones);
       setLoading(false);
     });
   }, [userId]);
+
+  const recentMilestones = useMemo<Milestone[]>(() => {
+    if (!trends) return [];
+    const a = trends.notable_achievements;
+    const normalizeDate = (raw: string) => {
+      const d = raw.split("T")[0];
+      return d.replace(/-/g, "/");
+    };
+
+    const scoreBest = a.round_milestones.lifetime.first_round_under_par
+      ? {
+          type: "score_break" as const,
+          label: `First round under par (${a.round_milestones.lifetime.first_round_under_par.score})`,
+          date: normalizeDate(a.round_milestones.lifetime.first_round_under_par.date),
+          course: a.round_milestones.lifetime.first_round_under_par.course,
+        }
+      : (() => {
+          const best = a.round_milestones.lifetime.score_breaks
+            .filter((row) => row.achievement != null)
+            .reduce<typeof a.round_milestones.lifetime.score_breaks[number] | null>(
+              (curr, row) => (!curr || row.threshold < curr.threshold ? row : curr),
+              null
+            );
+          if (!best?.achievement) return null;
+          return {
+            type: "score_break" as const,
+            label: `Best scoring milestone: ${best.threshold} or better`,
+            date: normalizeDate(best.achievement.date),
+            course: best.achievement.course,
+          };
+        })();
+
+    const puttingBest = (() => {
+      const best = a.putting_milestones.lifetime.putt_breaks
+        .filter((row) => row.achievement != null)
+        .reduce<typeof a.putting_milestones.lifetime.putt_breaks[number] | null>(
+          (curr, row) => (!curr || row.threshold < curr.threshold ? row : curr),
+          null
+        );
+      if (!best?.achievement) return null;
+      return {
+        type: "putt_break" as const,
+        label: `Best putting milestone: ${best.threshold} putts or fewer`,
+        date: normalizeDate(best.achievement.date),
+        course: best.achievement.course,
+      };
+    })();
+
+    const girBest = (() => {
+      const best = a.gir_milestones.lifetime.gir_breaks
+        .filter((row) => row.achievement != null)
+        .reduce<typeof a.gir_milestones.lifetime.gir_breaks[number] | null>(
+          (curr, row) => (!curr || row.threshold > curr.threshold ? row : curr),
+          null
+        );
+      if (!best?.achievement) return null;
+      return {
+        type: "gir_break" as const,
+        label: `Best GIR milestone: ${best.threshold}/18 GIR`,
+        date: normalizeDate(best.achievement.date),
+        course: best.achievement.course,
+      };
+    })();
+
+    const parStreakEvent = a.best_performance_streaks_events.lifetime.longest_par_streak;
+    const parStreakCount = a.best_performance_streaks.lifetime.longest_par_streak;
+    const parStreak = parStreakEvent
+      ? {
+          type: "par_streak" as const,
+          label: `Longest par-or-better streak milestone: ${parStreakCount} in a row`,
+          date: normalizeDate(parStreakEvent.date),
+          course: parStreakEvent.course,
+        }
+      : null;
+
+    const birdieStreakEvent = a.best_performance_streaks_events.lifetime.longest_birdie_streak;
+    const birdieStreakCount = a.best_performance_streaks.lifetime.longest_birdie_streak;
+    const birdieStreak = birdieStreakEvent
+      ? {
+          type: "birdie_streak" as const,
+          label: `Longest birdie streak milestone: ${birdieStreakCount} in a row`,
+          date: normalizeDate(birdieStreakEvent.date),
+          course: birdieStreakEvent.course,
+        }
+      : null;
+
+    const milestoneItems: Array<Milestone | null> = [scoreBest, puttingBest, girBest, parStreak, birdieStreak];
+    return milestoneItems
+      .filter((m): m is Milestone => m !== null)
+      .sort((a, b) => b.date.localeCompare(a.date))
+      .slice(0, 5);
+  }, [trends]);
 
   const dualData = useMemo(() => {
     if (!trends) return [];
@@ -216,7 +311,7 @@ export function DashboardPage({ userId }: DashboardPageProps) {
         <div className="space-y-4 mt-4">
 
           {/* ── Zone 1: KPI stack | Hero dual trend | GIR radial ─────────── */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-start">
 
             {/* KPI Stack */}
             <BentoCard>
@@ -305,48 +400,62 @@ export function DashboardPage({ userId }: DashboardPageProps) {
             </BentoCard>
 
             {/* Stacked Horizontal Score Mix — last 5 rounds */}
-            <BentoCard title="Recent Form" subtitle="Score mix, last 5 rounds">
+            <BentoCard title="Recent Form" subtitle="Last 5 rounds • percent of holes by score type">
               {recentMix.length > 0 ? (
-                <ResponsiveContainer width="100%" height={170}>
-                  <BarChart data={recentMix} layout="vertical" margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-                    <XAxis type="number" domain={[0, 100]} tick={false} axisLine={false} tickLine={false} />
-                    <YAxis type="category" dataKey="round_index"
-                      tick={{ fontSize: 10, fill: "#9ca3af" }} tickLine={false} axisLine={false} width={24} />
-                    <Tooltip contentStyle={tooltipStyle}
-                      formatter={((v: number, name: string) => [`${v.toFixed(0)}%`, name.replace("_", " ")]) as Fmt}
-                    />
-                    {SCORE_KEYS.map((key) => (
-                      <Bar key={key} dataKey={key} stackId="a" fill={SCORE_COLORS[key]}
-                        radius={key === "eagle" ? [4, 4, 0, 0] : key === "quad_bogey" ? [0, 0, 4, 4] : [0, 0, 0, 0]}
+                <div className="mx-auto w-full max-w-[320px]">
+                  <ResponsiveContainer width="100%" height={170}>
+                    <BarChart data={recentMix} layout="vertical" margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+                      <XAxis type="number" domain={[0, 100]} tick={false} axisLine={false} tickLine={false} />
+                      <YAxis type="category" dataKey="round_index"
+                        tick={{ fontSize: 10, fill: "#9ca3af" }} tickLine={false} axisLine={false} width={32}
+                        tickFormatter={(v: number) => `R${v}`} />
+                      <Tooltip contentStyle={tooltipStyle}
+                        formatter={((v: number, name: string) => [`${v.toFixed(0)}%`, name.replace("_", " ")]) as Fmt}
+                        labelFormatter={(v: number) => `Round ${v}`}
                       />
-                    ))}
-                  </BarChart>
-                </ResponsiveContainer>
+                      {SCORE_KEYS.map((key) => (
+                        <Bar key={key} dataKey={key} stackId="a" fill={SCORE_COLORS[key]}
+                          radius={key === "eagle" ? [4, 4, 0, 0] : key === "quad_bogey" ? [0, 0, 4, 4] : [0, 0, 0, 0]}
+                        />
+                      ))}
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
               ) : (
                 <div className="text-sm text-gray-400 text-center py-8">No data yet</div>
               )}
+              <div className="mt-3 flex flex-wrap justify-center gap-2">
+                {RECENT_FORM_LEGEND.map((item) => (
+                  <div key={item.key} className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-gray-50 px-2 py-1">
+                    <span className="h-2 w-2 rounded-full" style={{ backgroundColor: item.color }} />
+                    <span className="text-[10px] font-semibold text-gray-600 uppercase tracking-wide">{item.label}</span>
+                  </div>
+                ))}
+              </div>
             </BentoCard>
 
             {/* Putts Gauge */}
             <BentoCard title="Avg Putts" subtitle="Per round">
-              <div className="relative" style={{ height: 140 }}>
-                <ResponsiveContainer width="100%" height={140}>
-                  <PieChart>
-                    <Pie data={puttsGaugeData} cx="50%" cy="100%"
-                      startAngle={180} endAngle={0}
-                      innerRadius={55} outerRadius={72}
-                      dataKey="value" stroke="none">
-                      <Cell fill={puttsColor} />
-                      <Cell fill="#f1f5f9" />
-                    </Pie>
-                  </PieChart>
-                </ResponsiveContainer>
-                <div className="absolute bottom-2 left-0 right-0 flex flex-col items-center pointer-events-none">
-                  <div className="text-2xl font-bold text-gray-900">{data.average_putts?.toFixed(1) ?? "—"}</div>
-                  <div className="text-[10px] text-gray-400 uppercase tracking-wide">Putts</div>
+              <div className="mx-auto w-full max-w-[260px]">
+                <div className="relative" style={{ height: 140 }}>
+                  <ResponsiveContainer width="100%" height={140}>
+                    <PieChart>
+                      <Pie data={puttsGaugeData} cx="50%" cy="100%"
+                        startAngle={180} endAngle={0}
+                        innerRadius={55} outerRadius={72}
+                        dataKey="value" stroke="none">
+                        <Cell fill={puttsColor} />
+                        <Cell fill="#f1f5f9" />
+                      </Pie>
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className="absolute bottom-2 left-0 right-0 flex flex-col items-center pointer-events-none">
+                    <div className="text-2xl font-bold text-gray-900">{data.average_putts?.toFixed(1) ?? "—"}</div>
+                    <div className="text-[10px] text-gray-400 uppercase tracking-wide">Putts</div>
+                  </div>
                 </div>
               </div>
-              <div className="flex justify-between text-[9px] text-gray-300 font-semibold uppercase tracking-wider mt-1 px-1">
+              <div className="flex justify-center gap-3 text-[9px] text-gray-300 font-semibold uppercase tracking-wider mt-1">
                 <span className="text-emerald-400">{"<30 great"}</span>
                 <span className="text-amber-400">30-35</span>
                 <span className="text-red-400">35+ work</span>
@@ -370,8 +479,8 @@ export function DashboardPage({ userId }: DashboardPageProps) {
               </div>
             </BentoCard>
 
-            <BentoCard title="Milestones">
-              <MilestoneFeed milestones={milestones} />
+            <BentoCard title="Recent Milestones">
+              <MilestoneFeed milestones={recentMilestones} />
             </BentoCard>
 
           </div>

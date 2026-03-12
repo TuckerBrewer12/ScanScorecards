@@ -11,37 +11,60 @@ export function SettingsPage({ userId }: { userId: string }) {
   const [searchResults, setSearchResults] = useState<CourseSummary[]>([]);
   const [showResults, setShowResults] = useState(false);
   const [homeCourseId, setHomeCourseId] = useState<string>("");
+  const [handicapInput, setHandicapInput] = useState<string>("");
   const [getUpdates, setGetUpdates] = useState<boolean>(true);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string>("");
 
   useEffect(() => {
+    let isMounted = true;
     const savedUpdates = localStorage.getItem(UPDATES_PREF_KEY);
     if (savedUpdates !== null) {
       setGetUpdates(savedUpdates === "true");
     }
 
-    Promise.all([
-      api.getCourses(undefined, 200, 0),
-      api.getCourses(userId, 200, 0),
-      api.getUser(userId),
-    ])
-      .then(([globalCourses, userCourses, user]) => {
-        const merged = [...globalCourses, ...userCourses];
+    (async () => {
+      try {
+        const [user, globalCoursesResult, userCoursesResult] = await Promise.all([
+          api.getUser(userId),
+          api.getCourses(undefined, 200, 0).catch(() => [] as CourseSummary[]),
+          api.getCourses(userId, 200, 0).catch(() => [] as CourseSummary[]),
+        ]);
+
+        if (!isMounted) return;
+
+        const merged = [...globalCoursesResult, ...userCoursesResult];
         const byId = new Map<string, CourseSummary>();
         for (const course of merged) {
           byId.set(course.id, course);
         }
         const allCourses = Array.from(byId.values());
         setCourses(allCourses);
+
         setHomeCourseId(user.home_course_id ?? "");
+        setHandicapInput(user.handicap != null ? String(user.handicap) : "");
+
         if (user.home_course_id) {
           const selected = allCourses.find((course) => course.id === user.home_course_id);
-          if (selected) setHomeCourseQuery(selected.name ?? "");
+          if (selected?.name) {
+            setHomeCourseQuery(selected.name);
+          } else {
+            const courseFromId = await api.getCourse(user.home_course_id).catch(() => null);
+            if (!isMounted) return;
+            setHomeCourseQuery(courseFromId?.name ?? "");
+          }
+        } else {
+          setHomeCourseQuery("");
         }
-      })
-      .finally(() => setLoading(false));
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+    };
   }, [userId]);
 
   useEffect(() => {
@@ -81,7 +104,47 @@ export function SettingsPage({ userId }: { userId: string }) {
     setSaving(true);
     setMessage("");
     try {
-      await api.updateUser(userId, { home_course_id: homeCourseId || null });
+      let selectedHomeCourseId = homeCourseId;
+      const normalizedQuery = homeCourseQuery.trim().toLowerCase();
+      if (normalizedQuery !== "" && !selectedHomeCourseId) {
+        const exact = courses.find((course) => (course.name ?? "").trim().toLowerCase() === normalizedQuery);
+        if (exact) {
+          selectedHomeCourseId = exact.id;
+        } else {
+          setMessage("Select a home course from the suggestions, or clear it.");
+          setSaving(false);
+          return;
+        }
+      }
+
+      const trimmed = handicapInput.trim();
+      let handicap: number | null | undefined = undefined;
+      if (trimmed === "") {
+        handicap = null;
+      } else {
+        const parsed = Number(trimmed);
+        if (!Number.isFinite(parsed) || parsed < -10 || parsed > 54) {
+          setMessage("Handicap must be a number between -10 and 54.");
+          setSaving(false);
+          return;
+        }
+        handicap = Math.round(parsed * 10) / 10;
+      }
+
+      await api.updateUser(userId, {
+        home_course_id: selectedHomeCourseId || null,
+        handicap,
+      });
+      const refreshedUser = await api.getUser(userId);
+
+      setHomeCourseId(refreshedUser.home_course_id ?? "");
+      setHandicapInput(refreshedUser.handicap != null ? String(refreshedUser.handicap) : "");
+      if (refreshedUser.home_course_id) {
+        const selected = courses.find((course) => course.id === refreshedUser.home_course_id);
+        setHomeCourseQuery(selected?.name ?? homeCourseQuery);
+      } else {
+        setHomeCourseQuery("");
+      }
       localStorage.setItem(UPDATES_PREF_KEY, String(getUpdates));
       setMessage("Settings saved.");
     } catch (error) {
@@ -125,6 +188,7 @@ export function SettingsPage({ userId }: { userId: string }) {
               value={homeCourseQuery}
               onChange={(event) => {
                 setHomeCourseQuery(event.target.value);
+                setHomeCourseId("");
                 setShowResults(true);
               }}
               onFocus={() => setShowResults(true)}
@@ -165,6 +229,27 @@ export function SettingsPage({ userId }: { userId: string }) {
           </div>
           <p className="text-xs text-gray-500">
             This controls home-course records in your achievements analytics.
+          </p>
+        </section>
+
+        <section className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 space-y-3">
+          <h2 className="text-sm font-semibold text-gray-700">Handicap</h2>
+          <label className="block text-sm text-gray-700" htmlFor="settings-handicap">
+            Manual Handicap Index
+          </label>
+          <input
+            id="settings-handicap"
+            type="number"
+            step="0.1"
+            min={-10}
+            max={54}
+            value={handicapInput}
+            onChange={(event) => setHandicapInput(event.target.value)}
+            placeholder="e.g. 12.4"
+            className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
+          />
+          <p className="text-xs text-gray-500">
+            Leave blank to clear handicap. Allowed range: -10 to 54.
           </p>
         </section>
 
