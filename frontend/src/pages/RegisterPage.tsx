@@ -71,8 +71,8 @@ export function RegisterPage() {
     let parsedHandicap: number | null = null;
     if (handicap.trim() !== "") {
       parsedHandicap = Number(handicap);
-      if (Number.isNaN(parsedHandicap) || parsedHandicap < -10 || parsedHandicap > 54) {
-        setError("Handicap must be between -10 and 54.");
+      if (Number.isNaN(parsedHandicap) || parsedHandicap < 10 || parsedHandicap > 54) {
+        setError("Handicap must be between +10 and 54.");
         return;
       }
     }
@@ -196,7 +196,7 @@ export function RegisterPage() {
                 type="number"
                 value={handicap}
                 onChange={(e) => setHandicap(e.target.value)}
-                min={-10}
+                min={10}
                 max={54}
                 step="0.1"
                 className={inputClass}
