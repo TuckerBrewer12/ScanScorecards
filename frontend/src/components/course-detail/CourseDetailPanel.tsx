@@ -229,10 +229,11 @@ export function CourseDetailPanel({ courseId, userId, onBack }: CourseDetailPane
   const selectedTee = course.tees.find(
     (t) => t.color?.toLowerCase() === selectedTeeColor?.toLowerCase()
   ) ?? null;
+  const coursePar = course.par;
 
   function courseHandicap(tee: Tee): number | null {
-    if (handicapIndex == null || tee.slope_rating == null || tee.course_rating == null || course.par == null) return null;
-    return Math.round(handicapIndex * (tee.slope_rating / 113) + (tee.course_rating - course.par));
+    if (handicapIndex == null || tee.slope_rating == null || tee.course_rating == null || coursePar == null) return null;
+    return Math.round(handicapIndex * (tee.slope_rating / 113) + (tee.course_rating - coursePar));
   }
 
   return (
