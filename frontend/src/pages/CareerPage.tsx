@@ -74,6 +74,14 @@ function eventMeta(event: { date: string; course: string } | null | undefined): 
   return `${event.date} — ${event.course}`;
 }
 
+function isWithinLastDays(dateStr: string, days: number): boolean {
+  const parsed = new Date(dateStr);
+  if (Number.isNaN(parsed.getTime())) return false;
+  const now = new Date();
+  const cutoff = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);
+  return parsed >= cutoff;
+}
+
 type TimeWindow = "lifetime" | "one_year";
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -157,6 +165,8 @@ export function CareerPage({ userId }: { userId: string }) {
     career_totals,
     best_performance_streaks,
     best_performance_streaks_events,
+    putting_milestones,
+    gir_milestones,
     round_milestones,
     scoring_records_events,
     window_days,
@@ -209,6 +219,9 @@ export function CareerPage({ userId }: { userId: string }) {
       meta: eventMeta(best_performance_streaks_events[w].longest_par_streak),
     },
   ];
+
+  const scoreBreaksAbove70 = round_milestones.lifetime.score_breaks.filter((row) => row.threshold > 70);
+  const scoreBreaks70AndBelow = round_milestones.lifetime.score_breaks.filter((row) => row.threshold <= 70);
 
   return (
     <div>
@@ -403,7 +416,7 @@ export function CareerPage({ userId }: { userId: string }) {
           <ChartCard title="Career Milestones" className="xl:col-span-2">
             {w === "lifetime" ? (
               <div className="grid grid-cols-2 gap-2">
-                {round_milestones.lifetime.score_breaks.map((row) => (
+                {scoreBreaksAbove70.map((row) => (
                   <MilestoneBar
                     key={row.threshold}
                     label={`Break ${row.threshold}`}
@@ -414,6 +427,13 @@ export function CareerPage({ userId }: { userId: string }) {
                   label="Round Under Par"
                   achieved={round_milestones.lifetime.first_round_under_par != null}
                 />
+                {scoreBreaks70AndBelow.map((row) => (
+                  <MilestoneBar
+                    key={row.threshold}
+                    label={`Break ${row.threshold}`}
+                    achieved={row.achievement != null}
+                  />
+                ))}
                 <MilestoneBar
                   label="First Eagle"
                   achieved={round_milestones.lifetime.first_eagle != null}
@@ -436,6 +456,42 @@ export function CareerPage({ userId }: { userId: string }) {
                 )}
               </div>
             )}
+          </ChartCard>
+
+          {/* ── Putting Milestones ───────────────────────────────────────── */}
+          <ChartCard title="Putting Milestones" className="xl:col-span-2">
+            <div className="grid grid-cols-2 gap-2">
+              {putting_milestones.lifetime.putt_breaks.map((row) => {
+                const achieved = w === "lifetime"
+                  ? row.achievement != null
+                  : row.achievement != null && isWithinLastDays(row.achievement.date, window_days);
+                return (
+                  <MilestoneBar
+                    key={row.threshold}
+                    label={`Break ${row.threshold} Putts`}
+                    achieved={achieved}
+                  />
+                );
+              })}
+            </div>
+          </ChartCard>
+
+          {/* ── GIR Milestones ───────────────────────────────────────────── */}
+          <ChartCard title="GIR Milestones" className="xl:col-span-2">
+            <div className="grid grid-cols-2 gap-2">
+              {gir_milestones.lifetime.gir_breaks.map((row) => {
+                const achieved = w === "lifetime"
+                  ? row.achievement != null
+                  : row.achievement != null && isWithinLastDays(row.achievement.date, window_days);
+                return (
+                  <MilestoneBar
+                    key={row.threshold}
+                    label={`${row.threshold}/18 GIR`}
+                    achieved={achieved}
+                  />
+                );
+              })}
+            </div>
           </ChartCard>
 
         </div>
