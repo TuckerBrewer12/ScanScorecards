@@ -411,7 +411,7 @@ export function DashboardPage({ userId }: DashboardPageProps) {
                         tickFormatter={(v: number) => `R${v}`} />
                       <Tooltip contentStyle={tooltipStyle}
                         formatter={((v: number, name: string) => [`${v.toFixed(0)}%`, name.replace("_", " ")]) as Fmt}
-                        labelFormatter={(v: number) => `Round ${v}`}
+                        labelFormatter={(v) => `Round ${v}`}
                       />
                       {SCORE_KEYS.map((key) => (
                         <Bar key={key} dataKey={key} stackId="a" fill={SCORE_COLORS[key]}
