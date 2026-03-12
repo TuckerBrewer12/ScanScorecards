@@ -3,6 +3,18 @@ import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { api } from "@/lib/api";
 import type { CourseSummary } from "@/types/golf";
+import { Flag } from "lucide-react";
+
+function Logo() {
+  return (
+    <div className="flex items-center gap-2.5">
+      <div className="h-9 w-9 rounded-full bg-primary flex items-center justify-center shadow-sm">
+        <Flag size={17} className="text-white" />
+      </div>
+      <span className="text-xl font-bold text-gray-900 tracking-tight">ScanScorecards</span>
+    </div>
+  );
+}
 
 export function RegisterPage() {
   const { register } = useAuth();
@@ -79,136 +91,169 @@ export function RegisterPage() {
     }
   };
 
+  const inputClass =
+    "w-full px-4 py-3 border border-gray-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary";
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="w-full max-w-sm">
-        <div className="text-center mb-8">
-          <div className="text-3xl font-bold text-primary mb-1">⛳ GolfLog</div>
-          <div className="text-sm text-gray-500">Create your account</div>
-        </div>
-
-        <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 space-y-4">
-          {error && (
-            <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-2">
-              {error}
-            </div>
-          )}
-
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Name</label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-              autoComplete="name"
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-              placeholder="Tiger Woods"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Email</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              autoComplete="email"
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-              placeholder="you@example.com"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              autoComplete="new-password"
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-              placeholder="At least 8 characters"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Confirm Password</label>
-            <input
-              type="password"
-              value={confirm}
-              onChange={(e) => setConfirm(e.target.value)}
-              required
-              autoComplete="new-password"
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-              placeholder="••••••••"
-            />
-          </div>
-
-          <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Handicap (optional)</label>
-            <input
-              type="number"
-              value={handicap}
-              onChange={(e) => setHandicap(e.target.value)}
-              min={-10}
-              max={54}
-              step="0.1"
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-              placeholder="e.g. 14.2"
-            />
-          </div>
-
-          <div className="relative">
-            <label className="block text-xs font-medium text-gray-600 mb-1">Home Course (optional)</label>
-            <input
-              type="text"
-              value={homeCourseQuery}
-              onChange={(e) => {
-                setHomeCourseQuery(e.target.value);
-                setHomeCourseId("");
-                setShowCourseResults(true);
-              }}
-              onFocus={() => setShowCourseResults(true)}
-              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-              placeholder="Type course name..."
-            />
-            {showCourseResults && courseResults.length > 0 ? (
-              <div className="absolute z-10 mt-1 w-full rounded-lg border border-gray-200 bg-white shadow-lg max-h-56 overflow-auto">
-                {courseResults.map((course) => (
-                  <button
-                    key={course.id}
-                    type="button"
-                    onMouseDown={() => selectCourse(course)}
-                    className="w-full text-left px-3 py-2 text-sm hover:bg-gray-50"
-                  >
-                    <div className="text-gray-900">{course.name ?? "Unnamed Course"}</div>
-                    {course.location ? <div className="text-xs text-gray-500">{course.location}</div> : null}
-                  </button>
-                ))}
-              </div>
-            ) : null}
-            <p className="mt-1 text-xs text-gray-500">
-              Must be selected from existing courses. If it is not in the DB yet, set it later in Settings.
+    <div className="min-h-screen grid md:grid-cols-2">
+      {/* Left hero panel */}
+      <div className="hidden md:flex flex-col justify-between bg-gradient-to-b from-[#eef7f0] to-[#f8faf8] p-12 border-r border-gray-100">
+        <div>
+          <Logo />
+          <div className="mt-16">
+            <h1 className="text-4xl font-extrabold tracking-tight text-gray-900 leading-tight">
+              Elevate your game<br />with smart analytics.
+            </h1>
+            <p className="mt-4 text-base text-gray-500 leading-relaxed">
+              Scan physical scorecards with AI, track every stat, and see exactly where your game improves.
             </p>
+            <ul className="mt-8 space-y-3 text-sm text-gray-600">
+              {["AI scorecard scanning", "GIR, putts & scoring trends", "Course & handicap tracking"].map((f) => (
+                <li key={f} className="flex items-center gap-2">
+                  <div className="h-1.5 w-1.5 rounded-full bg-primary" />
+                  {f}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+        <div className="text-xs text-gray-400">© 2026 ScanScorecards</div>
+      </div>
+
+      {/* Right form panel */}
+      <div className="flex items-center justify-center px-6 py-12 bg-white min-h-screen md:min-h-0">
+        <div className="w-full max-w-md">
+          {/* Mobile logo */}
+          <div className="mb-8 md:hidden">
+            <Logo />
+            <p className="mt-1 text-sm text-gray-500">Create your account</p>
           </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-primary text-white rounded-lg py-2.5 text-sm font-semibold hover:bg-primary/90 transition-colors disabled:opacity-50"
-          >
-            {loading ? "Creating account…" : "Create Account"}
-          </button>
-        </form>
+          <h2 className="text-3xl font-extrabold tracking-tight text-gray-900 mb-8">Create Account</h2>
 
-        <p className="text-center text-sm text-gray-500 mt-4">
-          Already have an account?{" "}
-          <Link to="/login" className="text-primary font-medium hover:underline">
-            Sign in
-          </Link>
-        </p>
+          <form onSubmit={handleSubmit} className="space-y-5">
+            {error && (
+              <div className="bg-red-50 border border-red-100 text-red-600 text-sm rounded-xl px-4 py-3">
+                {error}
+              </div>
+            )}
+
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 mb-1.5">Name</label>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                autoComplete="name"
+                className={inputClass}
+                placeholder="Tiger Woods"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 mb-1.5">Email</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                autoComplete="email"
+                className={inputClass}
+                placeholder="you@example.com"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 mb-1.5">Password</label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                autoComplete="new-password"
+                className={inputClass}
+                placeholder="At least 8 characters"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 mb-1.5">Confirm Password</label>
+              <input
+                type="password"
+                value={confirm}
+                onChange={(e) => setConfirm(e.target.value)}
+                required
+                autoComplete="new-password"
+                className={inputClass}
+                placeholder="••••••••"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-gray-500 mb-1.5">Handicap (optional)</label>
+              <input
+                type="number"
+                value={handicap}
+                onChange={(e) => setHandicap(e.target.value)}
+                min={-10}
+                max={54}
+                step="0.1"
+                className={inputClass}
+                placeholder="e.g. 14.2"
+              />
+            </div>
+
+            <div className="relative">
+              <label className="block text-xs font-semibold text-gray-500 mb-1.5">Home Course (optional)</label>
+              <input
+                type="text"
+                value={homeCourseQuery}
+                onChange={(e) => {
+                  setHomeCourseQuery(e.target.value);
+                  setHomeCourseId("");
+                  setShowCourseResults(true);
+                }}
+                onFocus={() => setShowCourseResults(true)}
+                className={inputClass}
+                placeholder="Type course name..."
+              />
+              {showCourseResults && courseResults.length > 0 ? (
+                <div className="absolute z-10 mt-1 w-full rounded-xl border border-gray-100 bg-white shadow-lg shadow-gray-200/50 max-h-56 overflow-auto">
+                  {courseResults.map((course) => (
+                    <button
+                      key={course.id}
+                      type="button"
+                      onMouseDown={() => selectCourse(course)}
+                      className="w-full text-left px-4 py-2.5 text-sm rounded-lg hover:bg-gray-50 transition-colors"
+                    >
+                      <div className="text-gray-900">{course.name ?? "Unnamed Course"}</div>
+                      {course.location ? <div className="text-xs text-gray-500">{course.location}</div> : null}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+              <p className="mt-1 text-xs text-gray-500">
+                Must be selected from existing courses. If it is not in the DB yet, set it later in Settings.
+              </p>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-primary text-white rounded-xl py-3.5 text-sm font-semibold hover:bg-primary/90 hover:-translate-y-0.5 hover:shadow-md hover:shadow-primary/20 transition-all duration-200 disabled:opacity-50 disabled:translate-y-0 disabled:shadow-none"
+            >
+              {loading ? "Creating account…" : "Create Account"}
+            </button>
+          </form>
+
+          <p className="text-center text-sm text-gray-400 mt-6">
+            Already have an account?{" "}
+            <Link to="/login" className="text-primary font-semibold hover:underline">
+              Sign in
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );
