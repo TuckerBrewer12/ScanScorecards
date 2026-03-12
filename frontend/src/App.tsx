@@ -13,6 +13,7 @@ import { CareerPage } from "./pages/CareerPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { LoginPage } from "./pages/LoginPage";
 import { RegisterPage } from "./pages/RegisterPage";
+import { LandingPage } from "./pages/public/LandingPage";
 import type { ScanState } from "./types/scan";
 import { initialScanState } from "./types/scan";
 
@@ -31,9 +32,10 @@ function AppRoutes() {
   if (!userId) {
     return (
       <Routes>
+        <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
-        <Route path="*" element={<Navigate to="/login" replace />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     );
   }
