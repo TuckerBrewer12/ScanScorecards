@@ -18,32 +18,53 @@ export function SettingsPage({ userId }: { userId: string }) {
   const [message, setMessage] = useState<string>("");
 
   useEffect(() => {
+    let isMounted = true;
     const savedUpdates = localStorage.getItem(UPDATES_PREF_KEY);
     if (savedUpdates !== null) {
       setGetUpdates(savedUpdates === "true");
     }
 
-    Promise.all([
-      api.getCourses(undefined, 200, 0),
-      api.getCourses(userId, 200, 0),
-      api.getUser(userId),
-    ])
-      .then(([globalCourses, userCourses, user]) => {
-        const merged = [...globalCourses, ...userCourses];
+    (async () => {
+      try {
+        const [user, globalCoursesResult, userCoursesResult] = await Promise.all([
+          api.getUser(userId),
+          api.getCourses(undefined, 200, 0).catch(() => [] as CourseSummary[]),
+          api.getCourses(userId, 200, 0).catch(() => [] as CourseSummary[]),
+        ]);
+
+        if (!isMounted) return;
+
+        const merged = [...globalCoursesResult, ...userCoursesResult];
         const byId = new Map<string, CourseSummary>();
         for (const course of merged) {
           byId.set(course.id, course);
         }
         const allCourses = Array.from(byId.values());
         setCourses(allCourses);
+
         setHomeCourseId(user.home_course_id ?? "");
         setHandicapInput(user.handicap != null ? String(user.handicap) : "");
+
         if (user.home_course_id) {
           const selected = allCourses.find((course) => course.id === user.home_course_id);
-          if (selected) setHomeCourseQuery(selected.name ?? "");
+          if (selected?.name) {
+            setHomeCourseQuery(selected.name);
+          } else {
+            const courseFromId = await api.getCourse(user.home_course_id).catch(() => null);
+            if (!isMounted) return;
+            setHomeCourseQuery(courseFromId?.name ?? "");
+          }
+        } else {
+          setHomeCourseQuery("");
         }
-      })
-      .finally(() => setLoading(false));
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+    };
   }, [userId]);
 
   useEffect(() => {
@@ -83,6 +104,19 @@ export function SettingsPage({ userId }: { userId: string }) {
     setSaving(true);
     setMessage("");
     try {
+      let selectedHomeCourseId = homeCourseId;
+      const normalizedQuery = homeCourseQuery.trim().toLowerCase();
+      if (normalizedQuery !== "" && !selectedHomeCourseId) {
+        const exact = courses.find((course) => (course.name ?? "").trim().toLowerCase() === normalizedQuery);
+        if (exact) {
+          selectedHomeCourseId = exact.id;
+        } else {
+          setMessage("Select a home course from the suggestions, or clear it.");
+          setSaving(false);
+          return;
+        }
+      }
+
       const trimmed = handicapInput.trim();
       let handicap: number | null | undefined = undefined;
       if (trimmed === "") {
@@ -98,9 +132,19 @@ export function SettingsPage({ userId }: { userId: string }) {
       }
 
       await api.updateUser(userId, {
-        home_course_id: homeCourseId || null,
+        home_course_id: selectedHomeCourseId || null,
         handicap,
       });
+      const refreshedUser = await api.getUser(userId);
+
+      setHomeCourseId(refreshedUser.home_course_id ?? "");
+      setHandicapInput(refreshedUser.handicap != null ? String(refreshedUser.handicap) : "");
+      if (refreshedUser.home_course_id) {
+        const selected = courses.find((course) => course.id === refreshedUser.home_course_id);
+        setHomeCourseQuery(selected?.name ?? homeCourseQuery);
+      } else {
+        setHomeCourseQuery("");
+      }
       localStorage.setItem(UPDATES_PREF_KEY, String(getUpdates));
       setMessage("Settings saved.");
     } catch (error) {
@@ -144,6 +188,7 @@ export function SettingsPage({ userId }: { userId: string }) {
               value={homeCourseQuery}
               onChange={(event) => {
                 setHomeCourseQuery(event.target.value);
+                setHomeCourseId("");
                 setShowResults(true);
               }}
               onFocus={() => setShowResults(true)}
