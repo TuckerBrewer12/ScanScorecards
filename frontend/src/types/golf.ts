@@ -78,7 +78,7 @@ export interface DashboardData {
 }
 
 export interface Milestone {
-  type: "score_break" | "gir_break" | "putt_break" | "eagle" | "hole_in_one" | "under_par";
+  type: "score_break" | "gir_break" | "putt_break" | "eagle" | "hole_in_one" | "under_par" | "par_streak" | "birdie_streak";
   label: string;
   date: string; // "YYYY/M/D"
   course: string;

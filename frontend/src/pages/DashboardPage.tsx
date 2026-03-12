@@ -133,7 +133,6 @@ interface DashboardPageProps {
 export function DashboardPage({ userId }: DashboardPageProps) {
   const [data, setData] = useState<DashboardData | null>(null);
   const [trends, setTrends] = useState<AnalyticsData | null>(null);
-  const [milestones, setMilestones] = useState<Milestone[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -141,14 +140,104 @@ export function DashboardPage({ userId }: DashboardPageProps) {
     Promise.all([
       api.getDashboard(userId),
       api.getAnalytics(userId, 20),
-      api.getMilestones(userId, 12),
-    ]).then(([dash, analytics, ms]) => {
+    ]).then(([dash, analytics]) => {
       setData(dash);
       setTrends(analytics);
-      setMilestones(ms.milestones);
       setLoading(false);
     });
   }, [userId]);
+
+  const recentMilestones = useMemo<Milestone[]>(() => {
+    if (!trends) return [];
+    const a = trends.notable_achievements;
+    const normalizeDate = (raw: string) => {
+      const d = raw.split("T")[0];
+      return d.replace(/-/g, "/");
+    };
+
+    const scoreBest = a.round_milestones.lifetime.first_round_under_par
+      ? {
+          type: "score_break" as const,
+          label: `First round under par (${a.round_milestones.lifetime.first_round_under_par.score})`,
+          date: normalizeDate(a.round_milestones.lifetime.first_round_under_par.date),
+          course: a.round_milestones.lifetime.first_round_under_par.course,
+        }
+      : (() => {
+          const best = a.round_milestones.lifetime.score_breaks
+            .filter((row) => row.achievement != null)
+            .reduce<typeof a.round_milestones.lifetime.score_breaks[number] | null>(
+              (curr, row) => (!curr || row.threshold < curr.threshold ? row : curr),
+              null
+            );
+          if (!best?.achievement) return null;
+          return {
+            type: "score_break" as const,
+            label: `Best scoring milestone: ${best.threshold} or better`,
+            date: normalizeDate(best.achievement.date),
+            course: best.achievement.course,
+          };
+        })();
+
+    const puttingBest = (() => {
+      const best = a.putting_milestones.lifetime.putt_breaks
+        .filter((row) => row.achievement != null)
+        .reduce<typeof a.putting_milestones.lifetime.putt_breaks[number] | null>(
+          (curr, row) => (!curr || row.threshold < curr.threshold ? row : curr),
+          null
+        );
+      if (!best?.achievement) return null;
+      return {
+        type: "putt_break" as const,
+        label: `Best putting milestone: ${best.threshold} putts or fewer`,
+        date: normalizeDate(best.achievement.date),
+        course: best.achievement.course,
+      };
+    })();
+
+    const girBest = (() => {
+      const best = a.gir_milestones.lifetime.gir_breaks
+        .filter((row) => row.achievement != null)
+        .reduce<typeof a.gir_milestones.lifetime.gir_breaks[number] | null>(
+          (curr, row) => (!curr || row.threshold > curr.threshold ? row : curr),
+          null
+        );
+      if (!best?.achievement) return null;
+      return {
+        type: "gir_break" as const,
+        label: `Best GIR milestone: ${best.threshold}/18 GIR`,
+        date: normalizeDate(best.achievement.date),
+        course: best.achievement.course,
+      };
+    })();
+
+    const parStreakEvent = a.best_performance_streaks_events.lifetime.longest_par_streak;
+    const parStreakCount = a.best_performance_streaks.lifetime.longest_par_streak;
+    const parStreak = parStreakEvent
+      ? {
+          type: "par_streak" as const,
+          label: `Longest par streak milestone: ${parStreakCount} in a row`,
+          date: normalizeDate(parStreakEvent.date),
+          course: parStreakEvent.course,
+        }
+      : null;
+
+    const birdieStreakEvent = a.best_performance_streaks_events.lifetime.longest_birdie_streak;
+    const birdieStreakCount = a.best_performance_streaks.lifetime.longest_birdie_streak;
+    const birdieStreak = birdieStreakEvent
+      ? {
+          type: "birdie_streak" as const,
+          label: `Longest birdie streak milestone: ${birdieStreakCount} in a row`,
+          date: normalizeDate(birdieStreakEvent.date),
+          course: birdieStreakEvent.course,
+        }
+      : null;
+
+    const milestoneItems: Array<Milestone | null> = [scoreBest, puttingBest, girBest, parStreak, birdieStreak];
+    return milestoneItems
+      .filter((m): m is Milestone => m !== null)
+      .sort((a, b) => b.date.localeCompare(a.date))
+      .slice(0, 5);
+  }, [trends]);
 
   const dualData = useMemo(() => {
     if (!trends) return [];
@@ -370,8 +459,8 @@ export function DashboardPage({ userId }: DashboardPageProps) {
               </div>
             </BentoCard>
 
-            <BentoCard title="Milestones">
-              <MilestoneFeed milestones={milestones} />
+            <BentoCard title="Recent Milestones">
+              <MilestoneFeed milestones={recentMilestones} />
             </BentoCard>
 
           </div>
