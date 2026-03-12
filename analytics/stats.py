@@ -755,7 +755,7 @@ def scrambling_per_round(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
     """
     Scrambling by round using the user's rule:
     - Opportunity: hole where GIR is False
-    - Success: opportunity hole where strokes == par
+    - Success: opportunity hole where strokes <= par (par or better)
     """
     results: List[Dict[str, Any]] = []
     for index, round_obj in enumerate(rounds, start=1):
@@ -776,7 +776,7 @@ def scrambling_per_round(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
 
                 if score.green_in_regulation is False and score.putts is not None:
                     opportunities += 1
-                    if score.strokes == hole.par:
+                    if score.strokes <= hole.par:
                         successes += 1
 
         percentage = (successes / opportunities * 100.0) if opportunities else 0.0

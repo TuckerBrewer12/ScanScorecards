@@ -1,6 +1,7 @@
 import { useMemo, useState, useEffect } from "react";
 import { Flag, Target, Trophy } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { ScrollSection } from "@/components/analytics/ScrollSection";
 import { api } from "@/lib/api";
 import type { AnalyticsData } from "@/types/analytics";
 
@@ -31,10 +32,12 @@ type StreakAchievement = {
 function LevelDots({
   selected,
   totalLevels,
+  achieved,
   onSelect,
 }: {
   selected: number;
   totalLevels: number;
+  achieved: number;
   onSelect: (level: number) => void;
 }) {
   return (
@@ -44,10 +47,12 @@ function LevelDots({
           key={level}
           type="button"
           onClick={() => onSelect(level)}
-          className={`h-3.5 w-3.5 rounded-full border transition focus:outline-none focus:ring-2 focus:ring-emerald-400/50 ${
-            selected >= level
-              ? "bg-emerald-500 border-emerald-400"
-              : "bg-white border-emerald-200 hover:border-emerald-300"
+          className={`h-3.5 w-3.5 rounded-full border transition focus:outline-none focus:ring-2 focus:ring-primary/30 ${
+            level <= achieved
+              ? "bg-primary border-primary/60"
+              : level === achieved + 1
+              ? "bg-primary/25 border-primary/30 hover:border-primary/50"
+              : "bg-gray-100 border-gray-200 hover:border-gray-300"
           }`}
           aria-label={`Set level ${level}`}
         />
@@ -66,41 +71,38 @@ function ChallengeRow({
   onLevelChange: (level: number) => void;
 }) {
   const target = challenge.targets[level - 1];
-  const progress = Math.min(challenge.achieved, target);
-  const percent = target > 0 ? Math.round((progress / target) * 100) : 0;
+  const totalLevels = challenge.targets.length;
+  const isCompletedLevel = challenge.achieved >= target;
+  const percent = totalLevels > 0 ? Math.round((challenge.achieved / totalLevels) * 100) : 0;
   const Icon = challenge.icon;
   const selectedGoal = challenge.levelDescriptions[level - 1] ?? "";
-  const isCompletedLevel = challenge.achieved >= target;
 
   return (
-    <div className="rounded-2xl border border-emerald-300 bg-emerald-400/15 shadow-sm p-6 md:p-8">
-      <div className="flex items-center justify-between gap-4 pb-4 mb-5 border-b border-emerald-300/70">
-        <div className="text-xs font-semibold uppercase tracking-wider text-emerald-900/70">Challenge Level</div>
-        <div className="rounded-full bg-emerald-100 border border-emerald-300 px-3 py-1.5">
-          <LevelDots selected={level} totalLevels={challenge.targets.length} onSelect={onLevelChange} />
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hover:-translate-y-0.5 hover:shadow-md hover:shadow-gray-200/50 transition-all duration-200">
+      <div className="flex items-center justify-between gap-4 pb-4 mb-4 border-b border-gray-100">
+        <div className="text-xs font-semibold uppercase tracking-wider text-gray-400">Challenge Level</div>
+        <div className="rounded-full bg-gray-50 border border-gray-200 px-3 py-1.5">
+          <LevelDots selected={level} totalLevels={challenge.targets.length} achieved={challenge.achieved} onSelect={onLevelChange} />
         </div>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-[auto,1fr,auto] md:items-start gap-5 md:gap-6">
-        <div className="h-14 w-14 rounded-xl bg-emerald-500/20 border border-emerald-300 flex items-center justify-center">
-          <Icon size={24} className="text-emerald-800" />
+      <div className="flex items-start gap-4 mt-4">
+        <div className="h-10 w-10 rounded-xl bg-primary/8 border border-gray-100 flex items-center justify-center flex-shrink-0">
+          <Icon size={20} className="text-primary" />
         </div>
         <div className="flex-1 min-w-0">
-          <div className="text-2xl font-extrabold tracking-wide text-emerald-900 uppercase">{challenge.title}</div>
-          <div className="mt-1 text-lg text-emerald-900/80">{challenge.subtitle}</div>
-          <div className="mt-2 text-sm font-semibold text-emerald-900/90">
-            {isCompletedLevel ? "Completed: " : "Current goal: "}
-            <span className="font-bold">{selectedGoal}</span>
+          <div className="text-sm font-semibold text-gray-900">{challenge.title}</div>
+          <div className="text-xs text-gray-400 mt-0.5">{challenge.subtitle}</div>
+          <div className="mt-1.5 text-xs text-gray-500">
+            {isCompletedLevel ? "Completed: " : "Goal: "}
+            <span className="font-semibold text-gray-700">{selectedGoal}</span>
           </div>
-          <div className="mt-5 h-3 rounded-full bg-white/80 border border-emerald-200 overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-amber-400 to-orange-500"
-              style={{ width: `${percent}%` }}
-            />
+          <div className="mt-3 h-1.5 rounded-full bg-gray-100 overflow-hidden">
+            <div className="h-full bg-gradient-to-r from-amber-400 to-orange-500" style={{ width: `${percent}%` }} />
           </div>
         </div>
-        <div className="text-left md:text-right md:pl-3">
-          <div className="text-4xl font-extrabold text-emerald-950 leading-none">{progress}/{target}</div>
-          <div className="mt-1 text-sm font-semibold uppercase tracking-wide text-emerald-900/70">Level {level}</div>
+        <div className="ml-auto flex-shrink-0 text-right">
+          <div className="text-2xl font-bold text-gray-900 leading-none">{challenge.achieved}/{totalLevels}</div>
+          <div className="mt-1 text-[10px] font-bold uppercase tracking-widest text-gray-400">Level {level}</div>
         </div>
       </div>
     </div>
@@ -112,26 +114,21 @@ function StreakAchievementRow({ achievement }: { achievement: StreakAchievement 
   const percent = achievement.target > 0 ? Math.round((progress / achievement.target) * 100) : 0;
 
   return (
-    <div className="rounded-2xl border border-indigo-200 bg-indigo-50/70 shadow-sm p-6 md:p-8">
-      <div className="grid grid-cols-1 md:grid-cols-[1fr,auto] gap-5 md:gap-6 md:items-start">
-        <div>
-          <div className="text-2xl font-extrabold tracking-wide text-indigo-950 uppercase">{achievement.title}</div>
-          <div className="mt-1 text-lg text-indigo-900/80">{achievement.subtitle}</div>
-          <div className="mt-2 text-sm font-semibold text-indigo-900/90">
-            Goal: <span className="font-bold">{achievement.target}/{achievement.target}</span>
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 hover:-translate-y-0.5 hover:shadow-md hover:shadow-gray-200/50 transition-all duration-200">
+      <div className="flex items-start gap-4">
+        <div className="flex-1 min-w-0">
+          <div className="text-sm font-semibold text-gray-900">{achievement.title}</div>
+          <div className="text-xs text-gray-400 mt-0.5">{achievement.subtitle}</div>
+          <div className="mt-1.5 text-xs text-gray-500">
+            Goal: <span className="font-semibold text-gray-700">{achievement.target} consecutive holes</span>
           </div>
-          <div className="mt-5 h-3 rounded-full bg-white/80 border border-indigo-200 overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-cyan-500 to-indigo-600"
-              style={{ width: `${percent}%` }}
-            />
+          <div className="mt-3 h-1.5 rounded-full bg-gray-100 overflow-hidden">
+            <div className="h-full bg-gradient-to-r from-cyan-500 to-indigo-600" style={{ width: `${percent}%` }} />
           </div>
         </div>
-        <div className="text-left md:text-right md:pl-3">
-          <div className="text-4xl font-extrabold text-indigo-950 leading-none">{progress}/{achievement.target}</div>
-          <div className="mt-1 text-sm font-semibold uppercase tracking-wide text-indigo-900/70">
-            Best streak {progress}/{achievement.target}
-          </div>
+        <div className="ml-auto flex-shrink-0 text-right">
+          <div className="text-2xl font-bold text-gray-900 leading-none">{progress}/{achievement.target}</div>
+          <div className="mt-1 text-[10px] font-bold uppercase tracking-widest text-gray-400">Best streak</div>
         </div>
       </div>
     </div>
@@ -241,19 +238,26 @@ export function ProgressModePage({ userId }: { userId: string }) {
   return (
     <div className="mx-auto max-w-6xl">
       <PageHeader title="Progress Mode" subtitle="Gamified milestone grind across GIR, putting, and scoring" />
-      <div className="space-y-6 md:space-y-8">
-        {challenges.map((challenge) => (
-          <ChallengeRow
-            key={challenge.key}
-            challenge={challenge}
-            level={levels[challenge.key]}
-            onLevelChange={(level) => setLevels((prev) => ({ ...prev, [challenge.key]: level }))}
-          />
-        ))}
-        {streakAchievements.map((achievement) => (
-          <StreakAchievementRow key={achievement.key} achievement={achievement} />
-        ))}
-      </div>
+      <ScrollSection>
+        <div className="flex flex-col gap-6">
+          {challenges.map((challenge) => (
+            <ChallengeRow
+              key={challenge.key}
+              challenge={challenge}
+              level={levels[challenge.key]}
+              onLevelChange={(level) => setLevels((prev) => ({ ...prev, [challenge.key]: level }))}
+            />
+          ))}
+        </div>
+      </ScrollSection>
+
+      <ScrollSection delay={0.1}>
+        <div className="flex flex-col gap-6 mt-6">
+          {streakAchievements.map((achievement) => (
+            <StreakAchievementRow key={achievement.key} achievement={achievement} />
+          ))}
+        </div>
+      </ScrollSection>
     </div>
   );
 }
