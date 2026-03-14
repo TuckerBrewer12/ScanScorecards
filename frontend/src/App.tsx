@@ -10,6 +10,7 @@ import { ScanPage } from "./pages/ScanPage";
 import { AnalyticsPage } from "./pages/AnalyticsPage";
 import { ProgressModePage } from "./pages/ProgressModePage";
 import { CareerPage } from "./pages/CareerPage";
+import { SuggestionsPage } from "./pages/SuggestionsPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { LoginPage } from "./pages/LoginPage";
 import { RegisterPage } from "./pages/RegisterPage";
@@ -49,6 +50,7 @@ function AppRoutes() {
         <Route path="/courses" element={<CoursesPage userId={userId} />} />
         <Route path="/scan" element={<ScanPage userId={userId} scanState={scanState} setScanState={setScanState} />} />
         <Route path="/analytics" element={<AnalyticsPage userId={userId} />} />
+        <Route path="/suggestions" element={<SuggestionsPage userId={userId} />} />
         <Route path="/progress" element={<ProgressModePage userId={userId} />} />
         <Route path="/career" element={<CareerPage userId={userId} />} />
         <Route path="/settings" element={<SettingsPage userId={userId} />} />

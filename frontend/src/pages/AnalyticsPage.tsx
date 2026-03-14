@@ -22,7 +22,7 @@ import { BestRoundCard } from "@/components/analytics/BestRoundCard";
 // ─── Constants ───────────────────────────────────────────────────────────────
 
 const SCORE_COLORS: Record<string, string> = {
-  eagle:        "#b45309",
+  eagle:        "#f59e0b",
   birdie:       "#059669",
   par:          "#9ca3af",
   bogey:        "#f87171",
@@ -364,7 +364,7 @@ export function AnalyticsPage({ userId }: { userId: string }) {
       </div>
 
       <ScrollSection className="mb-7" delay={0.05}>
-        <BestRoundCard scoreTrend={data.score_trend} achievements={notable_achievements} />
+        <BestRoundCard scoreTrend={data.score_trend} netScoreTrend={data.net_score_trend} achievements={notable_achievements} />
       </ScrollSection>
 
       {/* ╔══════════════════════════════════════════════════════════════════╗ */}
