@@ -133,4 +133,12 @@ export const api = {
 
   getMilestones: (userId: string, limit = 12) =>
     fetchJSON<{ milestones: Milestone[] }>(`/stats/milestones/${userId}?limit=${limit}`),
+
+  getAISuggestions: (userId: string, limit = 50, targetHandicap?: number | null) => {
+    const params = new URLSearchParams({ limit: String(limit) });
+    if (targetHandicap != null) params.set("target_handicap", String(targetHandicap));
+    return fetchJSON<import("@/types/suggestions").AISuggestionsResponse>(
+      `/ai-insights/${userId}?${params}`
+    );
+  },
 };
