@@ -41,6 +41,8 @@ class CourseSummaryResponse(BaseModel):
     """Course for card/list views."""
     id: str
     name: Optional[str] = None
+    external_course_id: Optional[str] = None
+    source: str = "local"
     location: Optional[str] = None
     par: Optional[int] = None
     total_holes: int = 0

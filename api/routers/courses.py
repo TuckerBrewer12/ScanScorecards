@@ -1,5 +1,6 @@
 """Course API endpoints."""
 
+import logging
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from typing import List, Optional
@@ -8,8 +9,10 @@ from database.exceptions import DuplicateError, IntegrityError, NotFoundError
 from api.dependencies import get_db
 from api.schemas import CourseSummaryResponse
 from models import Course, Hole, Tee
+from services import GolfCourseAPIService
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
 
 class HoleInput(BaseModel):
@@ -27,6 +30,7 @@ class TeeInput(BaseModel):
 
 class CreateCourseRequest(BaseModel):
     name: str
+    external_course_id: Optional[str] = None
     location: Optional[str] = None
     holes: List[HoleInput] = []
     tees: List[TeeInput] = []
@@ -34,6 +38,7 @@ class CreateCourseRequest(BaseModel):
 
 class UpdateCourseRequest(BaseModel):
     name: Optional[str] = None
+    external_course_id: Optional[str] = None
     location: Optional[str] = None
     par: Optional[int] = None
 
@@ -42,10 +47,31 @@ def _summarize_course(c) -> CourseSummaryResponse:
     return CourseSummaryResponse(
         id=c.id,
         name=c.name,
+        external_course_id=getattr(c, "external_course_id", None),
+        source="local",
         location=c.location,
         par=c.get_par(),
         total_holes=len(c.holes),
         tee_count=len(c.tees),
+    )
+
+
+def _summarize_external_course(item: dict) -> CourseSummaryResponse:
+    external_id = item.get("external_course_id")
+    name = item.get("name")
+    city = item.get("city")
+    state = item.get("state")
+    location = ", ".join([p for p in [city, state] if p]) or None
+    fallback_id = (name or "unknown").strip().lower().replace(" ", "-")
+    return CourseSummaryResponse(
+        id=f"external:{external_id or fallback_id}",
+        name=name,
+        external_course_id=external_id,
+        source="external",
+        location=location,
+        par=None,
+        total_holes=0,
+        tee_count=0,
     )
 
 
@@ -64,10 +90,47 @@ async def list_courses(
 async def search_courses(
     q: str = Query(..., min_length=1),
     user_id: Optional[str] = Query(None),
+    include_external: bool = Query(
+        False,
+        description="When true, include GolfCourseAPI fallback results after local search.",
+    ),
     db: DatabaseManager = Depends(get_db),
 ):
     courses = await db.courses.search_courses(q, user_id=user_id)
-    return [_summarize_course(c) for c in courses]
+    out = [_summarize_course(c) for c in courses]
+    if not include_external:
+        return out
+
+    # Enrich with external fallback without breaking existing local-first behavior.
+    try:
+        ext_items = await GolfCourseAPIService().search_external_courses(q, limit=20)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("GolfCourseAPI fallback failed for query='%s': %s", q, exc)
+        return out
+
+    seen_local_keys = {
+        ((c.name or "").strip().lower(), (c.location or "").strip().lower())
+        for c in out
+    }
+    seen_local_external_ids = {
+        (c.external_course_id or "").strip()
+        for c in out
+        if c.external_course_id
+    }
+
+    for item in ext_items:
+        ext_summary = _summarize_external_course(item)
+        ext_key = (
+            (ext_summary.name or "").strip().lower(),
+            (ext_summary.location or "").strip().lower(),
+        )
+        if ext_summary.external_course_id and ext_summary.external_course_id in seen_local_external_ids:
+            continue
+        if ext_key in seen_local_keys:
+            continue
+        out.append(ext_summary)
+
+    return out[:20]
 
 
 @router.get("/{course_id}")
@@ -95,7 +158,13 @@ async def create_course(
         )
         for t in req.tees
     ]
-    course = Course(name=req.name, location=req.location, holes=holes, tees=tees)
+    course = Course(
+        name=req.name,
+        external_course_id=req.external_course_id,
+        location=req.location,
+        holes=holes,
+        tees=tees,
+    )
     try:
         created = await db.courses.create_course(course, user_id=user_id)
         return _summarize_course(created)
