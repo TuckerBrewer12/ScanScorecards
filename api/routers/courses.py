@@ -6,9 +6,9 @@ from pydantic import BaseModel
 from typing import List, Optional
 from database.db_manager import DatabaseManager
 from database.exceptions import DuplicateError, IntegrityError, NotFoundError
-from api.dependencies import get_db
+from api.dependencies import get_db, get_optional_current_user
 from api.schemas import CourseSummaryResponse
-from models import Course, Hole, Tee
+from models import Course, Hole, Tee, User
 from services import GolfCourseAPIService
 
 router = APIRouter()
@@ -95,8 +95,10 @@ async def search_courses(
         description="When true, include GolfCourseAPI fallback results after local search.",
     ),
     db: DatabaseManager = Depends(get_db),
+    current_user: Optional[User] = Depends(get_optional_current_user),
 ):
-    courses = await db.courses.search_courses(q, user_id=user_id)
+    effective_user_id = user_id or (str(current_user.id) if current_user else None)
+    courses = await db.courses.search_courses(q, user_id=effective_user_id)
     out = [_summarize_course(c) for c in courses]
     if not include_external:
         return out

@@ -27,3 +27,19 @@ async def get_current_user(
     if not user:
         raise HTTPException(401, "User not found")
     return user
+
+
+async def get_optional_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
+    db: DatabaseManager = Depends(get_db),
+):
+    """Best-effort auth dependency that returns None when unauthenticated/invalid."""
+    if not credentials:
+        return None
+    payload = decode_access_token(credentials.credentials)
+    if not payload:
+        return None
+    user_id = payload.get("sub")
+    if not user_id:
+        return None
+    return await db.users.get_user(user_id)
