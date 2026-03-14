@@ -3,11 +3,12 @@ import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Trophy, ArrowRight } from "lucide-react";
 import { api } from "@/lib/api";
-import type { ScoreTrendRow, NotableAchievements } from "@/types/analytics";
+import type { ScoreTrendRow, NotableAchievements, NetScoreTrendRow } from "@/types/analytics";
 import type { Round } from "@/types/golf";
 
 interface BestRoundCardProps {
   scoreTrend: ScoreTrendRow[];
+  netScoreTrend: NetScoreTrendRow[];
   achievements: NotableAchievements;
 }
 
@@ -18,20 +19,20 @@ function formatToPar(v: number | null | undefined): string {
 }
 
 function scoreColor(strokes: number | null, par: number | null): string {
-  if (strokes == null || par == null) return "rgba(255,255,255,0.08)";
+  if (strokes == null || par == null) return "#f3f4f6";
   const d = strokes - par;
   if (d <= -2) return "#fbbf24"; // eagle+
   if (d === -1) return "#34d399"; // birdie
-  if (d === 0)  return "rgba(255,255,255,0.22)"; // par
+  if (d === 0)  return "#e5e7eb"; // par
   if (d === 1)  return "#fca5a5"; // bogey
   return "#93c5fd"; // double+
 }
 
 function scoreTextColor(strokes: number | null, par: number | null): string {
-  if (strokes == null || par == null) return "rgba(255,255,255,0.2)";
+  if (strokes == null || par == null) return "rgba(0,0,0,0.2)";
   const d = strokes - par;
   if (d <= -1) return "rgba(0,0,0,0.75)"; // dark on bright bg
-  if (d === 0) return "rgba(255,255,255,0.7)"; // light on translucent
+  if (d === 0) return "rgba(0,0,0,0.45)"; // muted on light gray
   return "rgba(0,0,0,0.65)";
 }
 
@@ -68,13 +69,13 @@ function MiniScorecard({ round }: { round: Round }) {
         {[
           { color: "#fbbf24", label: "Eagle+" },
           { color: "#34d399", label: "Birdie" },
-          { color: "rgba(255,255,255,0.22)", label: "Par" },
+          { color: "#e5e7eb", label: "Par" },
           { color: "#fca5a5", label: "Bogey" },
           { color: "#93c5fd", label: "Double+" },
         ].map(({ color, label }) => (
           <div key={label} className="flex items-center gap-1">
             <div className="w-2 h-2 rounded-sm" style={{ background: color }} />
-            <span className="text-[9px] text-white/40">{label}</span>
+            <span className="text-[9px] text-gray-400">{label}</span>
           </div>
         ))}
       </div>
@@ -82,7 +83,7 @@ function MiniScorecard({ round }: { round: Round }) {
   );
 }
 
-export function BestRoundCard({ scoreTrend, achievements }: BestRoundCardProps) {
+export function BestRoundCard({ scoreTrend, netScoreTrend, achievements }: BestRoundCardProps) {
   const [roundDetail, setRoundDetail] = useState<Round | null>(null);
 
   const best = useMemo(() => {
@@ -90,6 +91,11 @@ export function BestRoundCard({ scoreTrend, achievements }: BestRoundCardProps) 
     if (!withScores.length) return null;
     return withScores.reduce((b, r) => (r.to_par! < b.to_par! ? r : b));
   }, [scoreTrend]);
+
+  const bestNet = useMemo(() => {
+    if (!best?.round_id) return null;
+    return netScoreTrend.find((r) => r.round_id === best.round_id) ?? null;
+  }, [best, netScoreTrend]);
 
   useEffect(() => {
     if (best?.round_id) {
@@ -105,17 +111,15 @@ export function BestRoundCard({ scoreTrend, achievements }: BestRoundCardProps) 
     <motion.div
       whileHover={{ scale: 1.008 }}
       transition={{ type: "spring", stiffness: 350, damping: 28 }}
-      className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#1e3d25] to-[#2d5a35] text-white p-6 shadow-lg"
+      className="relative overflow-hidden rounded-2xl bg-white border border-gray-100 text-gray-900 p-6 shadow-sm"
     >
-      {/* Background glow */}
-      <div className="absolute -top-10 -right-10 w-52 h-52 rounded-full bg-white/5 blur-3xl pointer-events-none" />
 
       <div className="flex items-start justify-between gap-6">
         {/* Left — score info */}
         <div className="shrink-0">
           <div className="flex items-center gap-2 mb-3">
             <Trophy size={13} className="text-amber-400" />
-            <span className="text-[10px] font-bold uppercase tracking-widest text-white/40">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
               Best Round
             </span>
           </div>
@@ -123,20 +127,29 @@ export function BestRoundCard({ scoreTrend, achievements }: BestRoundCardProps) 
             {best.total_score}
           </div>
           <div className="mt-1.5 flex items-baseline gap-2.5">
-            <span className="text-xl font-bold text-amber-400">
+            <span className={`text-xl font-bold ${(best.to_par ?? 0) <= 0 ? "text-primary" : "text-red-500"}`}>
               {formatToPar(best.to_par)}
             </span>
             {event && (
-              <span className="text-xs text-white/40">
+              <span className="text-xs text-gray-400">
                 {event.course}
                 {event.date ? ` · ${new Date(event.date).toLocaleDateString()}` : ""}
               </span>
             )}
           </div>
+          {bestNet?.net_score != null && (
+            <div className="mt-2 flex items-baseline gap-1.5">
+              <span className="text-sm font-semibold text-gray-700">{bestNet.net_score}</span>
+              <span className="text-xs text-gray-400">net</span>
+              {bestNet.course_handicap != null && (
+                <span className="text-xs text-gray-400">· hdcp {bestNet.course_handicap}</span>
+              )}
+            </div>
+          )}
           {best.round_id && (
             <Link
               to={`/rounds/${best.round_id}`}
-              className="inline-flex items-center gap-1.5 mt-5 text-xs font-semibold text-white/50 hover:text-white transition-colors"
+              className="inline-flex items-center gap-1.5 mt-5 text-xs font-semibold text-gray-400 hover:text-primary transition-colors"
             >
               View scorecard <ArrowRight size={11} />
             </Link>
@@ -155,7 +168,7 @@ export function BestRoundCard({ scoreTrend, achievements }: BestRoundCardProps) 
                     <div
                       key={i}
                       className="flex-1 rounded animate-pulse"
-                      style={{ height: 28, background: "rgba(255,255,255,0.06)" }}
+                      style={{ height: 28, background: "#f3f4f6" }}
                     />
                   ))}
                 </div>

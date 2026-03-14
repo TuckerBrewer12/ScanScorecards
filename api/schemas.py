@@ -47,3 +47,47 @@ class CourseSummaryResponse(BaseModel):
     par: Optional[int] = None
     total_holes: int = 0
     tee_count: int = 0
+
+
+class AIComparisonItem(BaseModel):
+    metric: str
+    category: str           # "Ball Striking" | "Short Game" | "Putting"
+    player_value: Optional[float] = None
+    benchmark_value: float
+    unit: str               # "%" | " strokes" | " putts"
+    lower_is_better: bool
+    has_data: bool
+
+
+class AIInsightItem(BaseModel):
+    category: str
+    category_group: str  # "Ball Striking" | "Short Game" | "Putting" | "Mental"
+    title: str
+    description: str
+    priority_score: float  # 0–10
+    key_metric: Optional[float] = None
+    metric_label: str
+    benchmark: Optional[float] = None
+    trend_direction: str  # "improving" | "declining" | "stable"
+    drill_tips: List[str]
+    what_if: Optional[str] = None
+
+
+class AIStrengthItem(BaseModel):
+    category: str
+    title: str
+    metric_label: str
+    player_value: float
+    benchmark_value: float
+    margin_description: str
+
+
+class AISuggestionsResponse(BaseModel):
+    user_id: str
+    handicap_index: Optional[float] = None
+    handicap_range_label: str
+    insights: List[AIInsightItem]
+    strengths: List[AIStrengthItem]
+    comparisons: List[AIComparisonItem]
+    rounds_analyzed: int
+    generated_at: str
