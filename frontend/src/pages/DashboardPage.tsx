@@ -13,6 +13,7 @@ import { RecentRoundsTable } from "@/components/dashboard/RecentRoundsTable";
 import { MilestoneFeed } from "@/components/dashboard/MilestoneFeed";
 import { ScrollSection } from "@/components/analytics/ScrollSection";
 import { NarrativeInsight } from "@/components/analytics/NarrativeInsight";
+import { BentoCard } from "@/components/ui/BentoCard";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Fmt = (v: any, name: any, props: any) => any;
@@ -48,22 +49,6 @@ const RECENT_FORM_LEGEND = [
   { key: "double_bogey", label: "Double+", color: SCORE_COLORS.double_bogey },
 ] as const;
 
-function BentoCard({ title, subtitle, children, className }: {
-  title?: string; subtitle?: string;
-  children: React.ReactNode; className?: string;
-}) {
-  return (
-    <div className={`bg-white rounded-2xl border border-gray-100 shadow-sm p-5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:shadow-gray-200/50 ${className ?? ""}`}>
-      {title && (
-        <div className="mb-3">
-          <div className="text-sm font-semibold text-gray-800">{title}</div>
-          {subtitle && <div className="text-xs text-gray-400 mt-0.5">{subtitle}</div>}
-        </div>
-      )}
-      {children}
-    </div>
-  );
-}
 
 function MiniKpi({ label, value, trend }: {
   label: string; value: string | number | null;
