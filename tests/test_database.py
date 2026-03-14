@@ -166,6 +166,7 @@ async def test_course_repo_get_course(mock_pool):
     course_id = uuid4()
     conn.fetchrow.return_value = {
         "id": course_id, "name": "Test", "location": "Loc",
+        "external_course_id": None,
         "par": 72, "total_holes": 18, "metadata": "{}", "user_id": None,
     }
     conn.fetch.side_effect = [
@@ -201,6 +202,7 @@ async def test_course_repo_create_course(mock_pool):
     tee_id = uuid4()
     conn.fetchrow.side_effect = [
         {"id": course_id, "name": "New Course", "location": "Loc",
+         "external_course_id": None,
          "par": 72, "total_holes": 18, "metadata": "{}", "user_id": None},
         {"id": tee_id},
     ]
@@ -216,6 +218,48 @@ async def test_course_repo_create_course(mock_pool):
     assert saved.name == "New Course"
     # Verify holes were inserted via executemany
     conn.executemany.assert_called()
+
+
+@pytest.mark.asyncio
+async def test_course_repo_create_course_persists_external_course_id(mock_pool):
+    """Creating a course from an external match keeps external_course_id in DB writes and model output."""
+    pool, conn = mock_pool
+    repo = CourseRepositoryDB(pool)
+
+    conn.transaction = MagicMock()
+    conn.transaction.return_value.__aenter__.return_value = AsyncMock()
+
+    course_id = uuid4()
+    conn.fetchrow.side_effect = [
+        {
+            "id": course_id,
+            "name": "Diablo Creek Golf Course",
+            "external_course_id": "gc_12345",
+            "location": "Concord, CA",
+            "par": None,
+            "total_holes": 0,
+            "metadata": "{}",
+            "user_id": None,
+        },
+    ]
+    conn.fetch.side_effect = [
+        [],  # holes (assembly)
+        [],  # tees  (assembly)
+    ]
+
+    course = Course(
+        name="Diablo Creek Golf Course",
+        external_course_id="gc_12345",
+        location="Concord, CA",
+        holes=[],
+        tees=[],
+    )
+    saved = await repo.create_course(course)
+
+    assert saved.external_course_id == "gc_12345"
+    # INSERT args include external_course_id as third positional argument
+    # (args: sql, name, external_course_id, ...)
+    assert conn.fetchrow.call_args.args[2] == "gc_12345"
 
 
 # ================================================================
