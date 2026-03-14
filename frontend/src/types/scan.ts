@@ -69,6 +69,7 @@ export interface ScanState {
   userContext: string;
   // Review step: user-selected course override
   reviewCourseId: string | null;
+  reviewExternalCourseId: string | null;
   reviewCourseName: string | null;
   // Manual entry: fetched course data
   manualCourseHoles: { number: number | null; par: number | null }[];
@@ -91,6 +92,7 @@ export const initialScanState: ScanState = {
   error: null,
   userContext: "",
   reviewCourseId: null,
+  reviewExternalCourseId: null,
   reviewCourseName: null,
   manualCourseHoles: [],
   manualCourseTees: [],

@@ -16,6 +16,7 @@ interface ScanReviewStepProps {
   error: string | null;
   preview: string | null;
   reviewCourseId: string | null;
+  reviewExternalCourseId: string | null;
   reviewCourseName: string | null;
   saving: boolean;
   handicapIndex: number | null;
@@ -74,6 +75,7 @@ export function ScanReviewStep({
   error,
   preview,
   reviewCourseId,
+  reviewExternalCourseId,
   reviewCourseName,
   saving,
   handicapIndex,
@@ -409,11 +411,11 @@ export function ScanReviewStep({
 
             {/* Course link / search */}
             <div className="mt-3">
-              {reviewCourseId ? (
+              {reviewCourseId || reviewExternalCourseId ? (
                 <CourseLinkChip
                   name={reviewCourseName ?? ""}
                   onClear={() => {
-                    onUpdate({ reviewCourseId: null });
+                    onUpdate({ reviewCourseId: null, reviewExternalCourseId: null });
                     setReviewCourseQuery(reviewCourseName ?? "");
                   }}
                 />
@@ -429,7 +431,11 @@ export function ScanReviewStep({
                     onClose={() => { setReviewCourseQuery(""); setReviewCourseResults([]); }}
                     reviewVariant
                     onUseCustomName={(name) => {
-                      onUpdate({ reviewCourseName: name, reviewCourseId: null });
+                      onUpdate({
+                        reviewCourseName: name,
+                        reviewCourseId: null,
+                        reviewExternalCourseId: null,
+                      });
                       setReviewCourseResults([]);
                     }}
                   />

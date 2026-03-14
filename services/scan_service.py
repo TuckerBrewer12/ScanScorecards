@@ -53,6 +53,31 @@ class ScanService:
                 await self._fill_gaps(str(course.id), scan_holes, tees)
                 return course, str(course.id)
 
+        # Tier 0.5: confirmed external match from UI
+        # Create local row keyed by external_course_id if missing.
+        if req.external_course_id:
+            course = await self._db.courses.find_course_by_external_id(
+                req.external_course_id,
+                user_id=req.user_id,
+            )
+            if course:
+                await self._fill_gaps(str(course.id), scan_holes, tees)
+                return course, str(course.id)
+
+            if req.course_name:
+                course = await self._db.courses.create_course(
+                    Course(
+                        name=req.course_name,
+                        external_course_id=req.external_course_id,
+                        location=req.course_location,
+                        holes=[],
+                        tees=[],
+                    ),
+                    user_id=req.user_id,
+                )
+                await self._fill_gaps(str(course.id), scan_holes, tees)
+                return course, str(course.id)
+
         if not req.course_name:
             return None, None
 

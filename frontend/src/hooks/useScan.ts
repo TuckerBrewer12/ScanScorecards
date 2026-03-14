@@ -12,7 +12,7 @@ export function useScan(
   setScanState: React.Dispatch<React.SetStateAction<ScanState>>
 ) {
   const navigate = useNavigate();
-  const { step, scanMode, selectedCourseId, selectedCourseName, scoringFormat, file, result, editedScores, editedNotes, editedDate, editedTeeBox, userContext, reviewCourseId, reviewCourseName, manualCourseHoles, manualCourseTees } = scanState;
+  const { step, scanMode, selectedCourseId, selectedCourseName, scoringFormat, file, result, editedScores, editedNotes, editedDate, editedTeeBox, userContext, reviewCourseId, reviewExternalCourseId, reviewCourseName, manualCourseHoles, manualCourseTees } = scanState;
 
   const update = useCallback(
     (patch: Partial<ScanState>) => setScanState((prev) => ({ ...prev, ...patch })),
@@ -47,7 +47,7 @@ export function useScan(
     reviewSearchTimer.current = setTimeout(async () => {
       setReviewSearching(true);
       try {
-        const results = await api.searchCourses(q.trim(), userId);
+        const results = await api.searchCourses(q.trim(), userId, true);
         setReviewCourseResults(results);
       } catch { setReviewCourseResults([]); }
       finally { setReviewSearching(false); }
@@ -55,7 +55,12 @@ export function useScan(
   }, [userId]);
 
   const selectReviewCourse = useCallback((course: CourseSummary) => {
-    update({ reviewCourseId: course.id, reviewCourseName: course.name ?? course.id });
+    const isExternal = course.source === "external" || course.id.startsWith("external:");
+    update({
+      reviewCourseId: isExternal ? null : course.id,
+      reviewExternalCourseId: isExternal ? (course.external_course_id ?? null) : null,
+      reviewCourseName: course.name ?? course.id,
+    });
     setReviewCourseQuery("");
     setReviewCourseResults([]);
   }, [update]);
@@ -147,6 +152,7 @@ export function useScan(
           : new Date().toISOString().substring(0, 10),
         editedTeeBox: data.round.tee_box ?? null,
         reviewCourseId: null,
+        reviewExternalCourseId: null,
         reviewCourseName: data.round.course?.name ?? null,
         step: "review",
       });
@@ -233,6 +239,7 @@ export function useScan(
       editedDate: manualDate,
       editedTeeBox: manualTeeBox || null,
       reviewCourseId: selectedCourseId,
+      reviewExternalCourseId: null,
       reviewCourseName: selectedCourseName,
       step: "review",
     });
@@ -252,6 +259,11 @@ export function useScan(
           user_id: userId,
           ...(reviewCourseId
             ? { course_id: reviewCourseId }
+            : reviewExternalCourseId
+            ? {
+                external_course_id: reviewExternalCourseId,
+                course_name: reviewCourseName ?? result.round.course?.name,
+              }
             : { course_name: reviewCourseName ?? result.round.course?.name }),
           course_location: result.round.course?.location,
           tee_box: editedTeeBox,
@@ -306,7 +318,7 @@ export function useScan(
       update({ error: err instanceof Error ? err.message : "Save failed" });
       setSaving(false);
     }
-  }, [result, userId, reviewCourseId, reviewCourseName, editedTeeBox, editedDate, editedNotes, editedScores, update, setScanState, navigate]);
+  }, [result, userId, reviewCourseId, reviewExternalCourseId, reviewCourseName, editedTeeBox, editedDate, editedNotes, editedScores, update, setScanState, navigate]);
 
   return {
     // Derived state from scanState
@@ -323,6 +335,7 @@ export function useScan(
     editedTeeBox,
     userContext,
     reviewCourseId,
+    reviewExternalCourseId,
     reviewCourseName,
     manualCourseHoles,
     manualCourseTees,

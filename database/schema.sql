@@ -30,6 +30,7 @@ $$ LANGUAGE plpgsql;
 CREATE TABLE IF NOT EXISTS courses.courses (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name VARCHAR(255) NOT NULL,
+    external_course_id VARCHAR(255),
     location VARCHAR(255),
     par INTEGER CHECK (par BETWEEN 27 AND 80),
     total_holes INTEGER CHECK (total_holes IN (9, 18)),
@@ -41,6 +42,7 @@ CREATE TABLE IF NOT EXISTS courses.courses (
 
 CREATE INDEX IF NOT EXISTS idx_courses_location ON courses.courses (location);
 CREATE INDEX IF NOT EXISTS idx_courses_name ON courses.courses (name);
+CREATE INDEX IF NOT EXISTS idx_courses_external_course_id ON courses.courses (external_course_id);
 CREATE INDEX IF NOT EXISTS idx_courses_user_id ON courses.courses (user_id);
 
 -- Partial unique indexes: master courses unique by (name, location),
