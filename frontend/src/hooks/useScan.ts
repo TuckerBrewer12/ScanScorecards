@@ -43,7 +43,7 @@ export function useScan(
   const handleReviewCourseQuery = useCallback((q: string) => {
     setReviewCourseQuery(q);
     if (reviewSearchTimer.current) clearTimeout(reviewSearchTimer.current);
-    if (q.trim().length < 2) { setReviewCourseResults([]); return; }
+    if (!userId || q.trim().length < 2) { setReviewCourseResults([]); return; }
     reviewSearchTimer.current = setTimeout(async () => {
       setReviewSearching(true);
       try {
@@ -79,7 +79,7 @@ export function useScan(
   const handleCourseQuery = useCallback((q: string) => {
     setCourseQuery(q);
     if (searchTimer.current) clearTimeout(searchTimer.current);
-    if (q.trim().length < 2) { setCourseResults([]); return; }
+    if (!userId || q.trim().length < 2) { setCourseResults([]); return; }
     searchTimer.current = setTimeout(async () => {
       setSearching(true);
       try {
