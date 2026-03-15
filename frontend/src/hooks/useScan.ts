@@ -67,7 +67,7 @@ export function useScan(
     }
     update({
       reviewCourseId: isExternal ? null : course.id,
-      reviewExternalCourseId: isExternal ? (course.external_course_id ?? null) : null,
+      reviewExternalCourseId: course.external_course_id ?? null,
       reviewCourseName: course.name ?? course.id,
       error: null,
     });
@@ -273,7 +273,10 @@ export function useScan(
         body: JSON.stringify({
           user_id: userId,
           ...(reviewCourseId
-            ? { course_id: reviewCourseId }
+            ? {
+                course_id: reviewCourseId,
+                ...(reviewExternalCourseId ? { external_course_id: reviewExternalCourseId } : {}),
+              }
             : reviewExternalCourseId
             ? {
                 external_course_id: reviewExternalCourseId,

@@ -114,6 +114,14 @@ async def search_courses(
         ((c.name or "").strip().lower(), (c.location or "").strip().lower())
         for c in out
     }
+    local_index_by_key = {
+        ((c.name or "").strip().lower(), (c.location or "").strip().lower()): i
+        for i, c in enumerate(out)
+    }
+    local_indices_by_name = {}
+    for i, c in enumerate(out):
+        name_key = (c.name or "").strip().lower()
+        local_indices_by_name.setdefault(name_key, []).append(i)
     seen_local_external_ids = {
         (c.external_course_id or "").strip()
         for c in out
@@ -129,9 +137,23 @@ async def search_courses(
             (ext_summary.name or "").strip().lower(),
             (ext_summary.location or "").strip().lower(),
         )
+        ext_name_key = (ext_summary.name or "").strip().lower()
         if ext_summary.external_course_id and ext_summary.external_course_id in seen_local_external_ids:
             continue
         if ext_key in seen_local_keys:
+            # Enrich existing local hit with provider ID when missing.
+            idx = local_index_by_key.get(ext_key)
+            if idx is not None and not out[idx].external_course_id:
+                out[idx].external_course_id = ext_summary.external_course_id
+                seen_local_external_ids.add(ext_summary.external_course_id)
+            continue
+        # Fallback: when locations differ/missing, match by name-only to backfill local rows.
+        if ext_name_key in local_indices_by_name:
+            for idx in local_indices_by_name[ext_name_key]:
+                if not out[idx].external_course_id:
+                    out[idx].external_course_id = ext_summary.external_course_id
+                    seen_local_external_ids.add(ext_summary.external_course_id)
+                    break
             continue
         out.append(ext_summary)
 
