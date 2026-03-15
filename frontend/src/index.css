@@ -32,6 +32,79 @@ body {
   color: #1a2e1a;
 }
 
+:root.dark body {
+  background-color: #111213;
+  color: #e6edf3;
+}
+
+:root.dark .bg-white {
+  background-color: #18191A !important;
+}
+
+:root.dark .bg-white\/80 {
+  background-color: rgba(24, 25, 26, 0.92) !important;
+}
+
+:root.dark .bg-gray-50 {
+  background-color: #18191A !important;
+}
+
+:root.dark .bg-gray-50\/60 {
+  background-color: rgba(24, 25, 26, 0.85) !important;
+}
+
+:root.dark .bg-gray-100 {
+  background-color: #222426 !important;
+}
+
+:root.dark .bg-emerald-50\/40 {
+  background-color: rgba(45, 122, 58, 0.16) !important;
+}
+
+:root.dark .bg-blue-50\/60 {
+  background-color: rgba(59, 130, 246, 0.16) !important;
+}
+
+:root.dark .bg-\[\#eef7f0\] {
+  background-color: rgba(45, 122, 58, 0.2) !important;
+}
+
+:root.dark .divide-gray-50 > :not([hidden]) ~ :not([hidden]) {
+  border-color: #2a2d30 !important;
+}
+
+:root.dark .text-gray-900 {
+  color: #f1f5f9 !important;
+}
+
+:root.dark .text-gray-700,
+:root.dark .text-gray-600 {
+  color: #d7dde5 !important;
+}
+
+:root.dark .text-gray-500,
+:root.dark .text-gray-400 {
+  color: #9aa4b2 !important;
+}
+
+:root.dark .border-gray-100,
+:root.dark .border-gray-200,
+:root.dark .border-gray-300 {
+  border-color: #2a2d30 !important;
+}
+
+:root.dark input,
+:root.dark textarea,
+:root.dark select {
+  background-color: #18191A;
+  color: #e6edf3;
+}
+
+:root.dark .shadow-sm,
+:root.dark .shadow-lg {
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.28) !important;
+}
+
 #root {
   min-height: 100vh;
 }
