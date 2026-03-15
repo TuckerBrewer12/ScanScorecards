@@ -216,7 +216,7 @@ function SectionLabel({ children }: { children: string }) {
 
 function ChartCard({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+    <div className="analytics-chart-card bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
       <div className="mb-5">
         <div className="text-sm font-semibold text-gray-800">{title}</div>
         {subtitle && <div className="text-xs text-gray-400 mt-0.5">{subtitle}</div>}
@@ -370,7 +370,7 @@ export function AnalyticsPage({ userId }: { userId: string }) {
       {/* ╔══════════════════════════════════════════════════════════════════╗ */}
       {/* ║  SCORING                                                        ║ */}
       {/* ╚══════════════════════════════════════════════════════════════════╝ */}
-      <div className="-mx-8 px-8 py-10 bg-gradient-to-b from-[#eef7f0]/70 to-[#f8faf8]">
+      <div className="analytics-section analytics-section-scoring -mx-8 px-8 py-10 bg-gradient-to-b from-[#eef7f0]/70 to-[#f8faf8]">
         <ScrollSection>
           <SectionLabel>Scoring</SectionLabel>
 
@@ -449,7 +449,7 @@ export function AnalyticsPage({ userId }: { userId: string }) {
       {/* ╔══════════════════════════════════════════════════════════════════╗ */}
       {/* ║  BALL STRIKING & SCORE MIX                                      ║ */}
       {/* ╚══════════════════════════════════════════════════════════════════╝ */}
-      <div className="-mx-8 px-8 py-10 bg-white">
+      <div className="analytics-section analytics-section-ball -mx-8 px-8 py-10 bg-white">
         <ScrollSection>
           <SectionLabel>Ball Striking</SectionLabel>
 
@@ -537,7 +537,7 @@ export function AnalyticsPage({ userId }: { userId: string }) {
       {/* ╔══════════════════════════════════════════════════════════════════╗ */}
       {/* ║  PUTTING                                                        ║ */}
       {/* ╚══════════════════════════════════════════════════════════════════╝ */}
-      <div className="-mx-8 px-8 py-10 bg-gradient-to-b from-[#f0f5ff]/50 to-[#f8faf8]">
+      <div className="analytics-section analytics-section-putting -mx-8 px-8 py-10 bg-gradient-to-b from-[#f0f5ff]/50 to-[#f8faf8]">
         <ScrollSection>
           <SectionLabel>Putting</SectionLabel>
 
@@ -625,7 +625,7 @@ export function AnalyticsPage({ userId }: { userId: string }) {
       {/* ║  SHORT GAME                                                     ║ */}
       {/* ╚══════════════════════════════════════════════════════════════════╝ */}
       {(scrambling_trend.length > 0 || up_and_down_trend.length > 0) && (
-        <div className="-mx-8 px-8 py-10 bg-gradient-to-b from-[#fdf4ff]/50 to-[#f8faf8]">
+        <div className="analytics-section analytics-section-shortgame -mx-8 px-8 py-10 bg-gradient-to-b from-[#fdf4ff]/50 to-[#f8faf8]">
           <ScrollSection delay={0.1}>
             <SectionLabel>Short Game</SectionLabel>
             <ChartCard
@@ -666,7 +666,7 @@ export function AnalyticsPage({ userId }: { userId: string }) {
       {/* ╔══════════════════════════════════════════════════════════════════╗ */}
       {/* ║  PERFORMANCE PROFILE                                            ║ */}
       {/* ╚══════════════════════════════════════════════════════════════════╝ */}
-      <div className="-mx-8 px-8 py-10">
+      <div className="analytics-section analytics-section-profile -mx-8 px-8 py-10">
         <ScrollSection>
           <SectionLabel>Performance Profile</SectionLabel>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
