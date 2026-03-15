@@ -9,6 +9,8 @@ import {
 } from "recharts";
 import { Gauge, Hash, TrendingDown, Trophy, Target } from "lucide-react";
 import { api } from "@/lib/api";
+import { getStoredColorBlindMode } from "@/lib/accessibility";
+import { getColorBlindPalette } from "@/lib/chartPalettes";
 import type {
   AnalyticsData, ScoreTrendRow, ScoreTypeRow, GIRTrendRow, ScoringByParRow, PuttsTrendRow,
 } from "@/types/analytics";
@@ -232,6 +234,17 @@ export function AnalyticsPage({ userId }: { userId: string }) {
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [limit, setLimit] = useState<Limit>(50);
+  const colorBlindMode = useMemo(() => getStoredColorBlindMode(), []);
+  const colorBlindPalette = useMemo(() => getColorBlindPalette(colorBlindMode), [colorBlindMode]);
+  const scoreColors = colorBlindPalette?.score ?? SCORE_COLORS;
+  const trendPrimary = colorBlindPalette?.trend.primary ?? "#2d7a3a";
+  const trendSecondary = colorBlindPalette?.trend.secondary ?? "#f97316";
+  const trendTertiary = colorBlindPalette?.trend.tertiary ?? "#a855f7";
+  const successColor = colorBlindPalette?.ui.success ?? "#059669";
+  const dangerColor = colorBlindPalette?.ui.danger ?? "#f87171";
+  const neutralColor = colorBlindPalette?.ui.neutral ?? "#6b7280";
+  const gridColor = colorBlindPalette?.ui.grid ?? "#f1f5f1";
+  const mutedFill = colorBlindPalette?.ui.mutedFill ?? "#e5e7eb";
 
   useEffect(() => {
     setLoading(true);
@@ -388,23 +401,23 @@ export function AnalyticsPage({ userId }: { userId: string }) {
                 <AreaChart data={scoreTrendWithAvg} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
                   <defs>
                     <linearGradient id="scoreGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%"  stopColor="#2d7a3a" stopOpacity={0.12} />
-                      <stop offset="95%" stopColor="#2d7a3a" stopOpacity={0} />
+                      <stop offset="5%"  stopColor={trendPrimary} stopOpacity={0.12} />
+                      <stop offset="95%" stopColor={trendPrimary} stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid stroke="#f1f5f1" horizontal={true} vertical={false} />
+                  <CartesianGrid stroke={gridColor} horizontal={true} vertical={false} />
                   <XAxis dataKey="round_index" tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
                   <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} domain={["auto", "auto"]} />
                   <Tooltip contentStyle={tooltipStyle}
                     formatter={((v: number, name: string) => [v, name === "rolling_avg" ? "5-Round Avg" : "Score"]) as Fmt}
                   />
-                  <ReferenceLine y={72} stroke="#d1fae5" strokeDasharray="4 2"
-                    label={{ value: "Par 72", fontSize: 10, fill: "#059669" }}
+                  <ReferenceLine y={72} stroke={mutedFill} strokeDasharray="4 2"
+                    label={{ value: "Par 72", fontSize: 10, fill: successColor }}
                   />
-                  <Area type="monotone" dataKey="total_score" stroke="#2d7a3a" strokeWidth={1.5}
+                  <Area type="monotone" dataKey="total_score" stroke={trendPrimary} strokeWidth={1.5}
                     fill="url(#scoreGrad)" dot={false} activeDot={{ r: 4, strokeWidth: 0 }}
                   />
-                  <Area type="monotone" dataKey="rolling_avg" stroke="#2d7a3a" strokeWidth={2.5}
+                  <Area type="monotone" dataKey="rolling_avg" stroke={trendPrimary} strokeWidth={2.5}
                     fill="none" dot={false} activeDot={{ r: 4, strokeWidth: 0 }} strokeOpacity={0.45}
                   />
                 </AreaChart>
@@ -416,11 +429,11 @@ export function AnalyticsPage({ userId }: { userId: string }) {
                 <AreaChart data={net_score_trend} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
                   <defs>
                     <linearGradient id="netScoreGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%"  stopColor="#2d7a3a" stopOpacity={0.15} />
-                      <stop offset="95%" stopColor="#2d7a3a" stopOpacity={0} />
+                      <stop offset="5%"  stopColor={trendPrimary} stopOpacity={0.15} />
+                      <stop offset="95%" stopColor={trendPrimary} stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid stroke="#f1f5f1" horizontal={true} vertical={false} />
+                  <CartesianGrid stroke={gridColor} horizontal={true} vertical={false} />
                   <XAxis dataKey="round_index" tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
                   <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} domain={["auto", "auto"]} />
                   <Tooltip contentStyle={tooltipStyle}
@@ -433,10 +446,10 @@ export function AnalyticsPage({ userId }: { userId: string }) {
                       return [`${v}${detail}`, "Net Score"];
                     }) as Fmt}
                   />
-                  <ReferenceLine y={72} stroke="#d1fae5" strokeDasharray="4 2"
-                    label={{ value: "Par 72", fontSize: 10, fill: "#059669" }}
+                  <ReferenceLine y={72} stroke={mutedFill} strokeDasharray="4 2"
+                    label={{ value: "Par 72", fontSize: 10, fill: successColor }}
                   />
-                  <Area type="monotone" dataKey="net_score" stroke="#2d7a3a" strokeWidth={2}
+                  <Area type="monotone" dataKey="net_score" stroke={trendPrimary} strokeWidth={2}
                     fill="url(#netScoreGrad)" dot={false} activeDot={{ r: 4, strokeWidth: 0 }}
                   />
                 </AreaChart>
@@ -467,18 +480,18 @@ export function AnalyticsPage({ userId }: { userId: string }) {
                 <AreaChart data={girData} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
                   <defs>
                     <linearGradient id="girGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%"  stopColor="#059669" stopOpacity={0.15} />
-                      <stop offset="95%" stopColor="#059669" stopOpacity={0} />
+                      <stop offset="5%"  stopColor={successColor} stopOpacity={0.15} />
+                      <stop offset="95%" stopColor={successColor} stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid stroke="#f1f5f1" horizontal={true} vertical={false} />
+                  <CartesianGrid stroke={gridColor} horizontal={true} vertical={false} />
                   <XAxis dataKey="round_index" tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
                   <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} domain={[0, 100]} unit="%" />
                   <Tooltip contentStyle={tooltipStyle}
                     formatter={((v: number) => [`${v?.toFixed(1)}%`, "GIR %"]) as Fmt}
                   />
-                  <Area type="monotone" dataKey="gir_percentage" stroke="#059669" strokeWidth={2}
-                    fill="url(#girGrad)" dot={{ r: 3, fill: "#059669", strokeWidth: 0 }}
+                  <Area type="monotone" dataKey="gir_percentage" stroke={successColor} strokeWidth={2}
+                    fill="url(#girGrad)" dot={{ r: 3, fill: successColor, strokeWidth: 0 }}
                     activeDot={{ r: 5, strokeWidth: 0 }}
                   />
                 </AreaChart>
@@ -502,7 +515,7 @@ export function AnalyticsPage({ userId }: { userId: string }) {
                         stroke="none"
                       >
                         {donutData.map((entry) => (
-                          <Cell key={entry.name} fill={SCORE_COLORS[entry.name]} />
+                          <Cell key={entry.name} fill={scoreColors[entry.name]} />
                         ))}
                       </Pie>
                       <Tooltip contentStyle={tooltipStyle}
@@ -514,7 +527,7 @@ export function AnalyticsPage({ userId }: { userId: string }) {
                     {birdiePct != null && (
                       <>
                         <div className="text-2xl font-black text-gray-800">{birdiePct.toFixed(0)}%</div>
-                        <div className="text-[10px] font-semibold text-emerald-600 uppercase tracking-wider">birdies</div>
+                        <div className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: successColor }}>birdies</div>
                       </>
                     )}
                   </div>
@@ -522,7 +535,7 @@ export function AnalyticsPage({ userId }: { userId: string }) {
                 <div className="flex flex-col gap-2 min-w-0">
                   {donutData.map((d) => (
                     <div key={d.name} className="flex items-center gap-2.5">
-                      <div className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: SCORE_COLORS[d.name] }} />
+                      <div className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: scoreColors[d.name] }} />
                       <span className="text-xs text-gray-500 flex-1 truncate">{SCORE_LABELS[d.name] ?? d.name}</span>
                       <span className="text-xs font-semibold text-gray-700 tabular-nums">{d.value.toFixed(1)}%</span>
                     </div>
@@ -562,11 +575,11 @@ export function AnalyticsPage({ userId }: { userId: string }) {
                 <AreaChart data={putts_trend.filter(r => r.total_putts != null)} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
                   <defs>
                     <linearGradient id="puttsGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%"  stopColor="#6b7280" stopOpacity={0.12} />
-                      <stop offset="95%" stopColor="#6b7280" stopOpacity={0} />
+                      <stop offset="5%"  stopColor={neutralColor} stopOpacity={0.12} />
+                      <stop offset="95%" stopColor={neutralColor} stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid stroke="#f1f5f1" horizontal={true} vertical={false} />
+                  <CartesianGrid stroke={gridColor} horizontal={true} vertical={false} />
                   <XAxis dataKey="round_index" tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
                   <YAxis
                     tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false}
@@ -575,11 +588,11 @@ export function AnalyticsPage({ userId }: { userId: string }) {
                   <Tooltip contentStyle={tooltipStyle}
                     formatter={((v: number) => [v, "Putts"]) as Fmt}
                   />
-                  <ReferenceLine y={36} stroke="#e5e7eb" strokeDasharray="4 2"
+                  <ReferenceLine y={36} stroke={mutedFill} strokeDasharray="4 2"
                     label={{ value: "36", fontSize: 10, fill: "#9ca3af" }}
                   />
-                  <Area type="monotone" dataKey="total_putts" stroke="#6b7280" strokeWidth={2}
-                    fill="url(#puttsGrad)" dot={{ r: 3, fill: "#6b7280", strokeWidth: 0 }}
+                  <Area type="monotone" dataKey="total_putts" stroke={neutralColor} strokeWidth={2}
+                    fill="url(#puttsGrad)" dot={{ r: 3, fill: neutralColor, strokeWidth: 0 }}
                     activeDot={{ r: 5, strokeWidth: 0 }}
                   />
                 </AreaChart>
@@ -592,11 +605,11 @@ export function AnalyticsPage({ userId }: { userId: string }) {
                   <AreaChart data={threePuttsData} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
                     <defs>
                       <linearGradient id="threePuttGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%"  stopColor="#f87171" stopOpacity={0.15} />
-                        <stop offset="95%" stopColor="#f87171" stopOpacity={0} />
+                        <stop offset="5%"  stopColor={dangerColor} stopOpacity={0.15} />
+                        <stop offset="95%" stopColor={dangerColor} stopOpacity={0} />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid stroke="#f1f5f1" horizontal={true} vertical={false} />
+                    <CartesianGrid stroke={gridColor} horizontal={true} vertical={false} />
                     <XAxis dataKey="round_index" tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
                     <YAxis
                       tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false}
@@ -606,11 +619,11 @@ export function AnalyticsPage({ userId }: { userId: string }) {
                     <Tooltip contentStyle={tooltipStyle}
                       formatter={((v: number) => [v, "3-Putts"]) as Fmt}
                     />
-                    <ReferenceLine y={2} stroke="#e5e7eb" strokeDasharray="4 2"
+                    <ReferenceLine y={2} stroke={mutedFill} strokeDasharray="4 2"
                       label={{ value: "2", fontSize: 10, fill: "#9ca3af" }}
                     />
-                    <Area type="monotone" dataKey="three_putt_count" stroke="#f87171" strokeWidth={2}
-                      fill="url(#threePuttGrad)" dot={{ r: 3, fill: "#f87171", strokeWidth: 0 }}
+                    <Area type="monotone" dataKey="three_putt_count" stroke={dangerColor} strokeWidth={2}
+                      fill="url(#threePuttGrad)" dot={{ r: 3, fill: dangerColor, strokeWidth: 0 }}
                       activeDot={{ r: 5, strokeWidth: 0 }}
                     />
                   </AreaChart>
@@ -640,7 +653,7 @@ export function AnalyticsPage({ userId }: { userId: string }) {
                   }))}
                   margin={{ top: 8, right: 16, left: -16, bottom: 0 }}
                 >
-                  <CartesianGrid stroke="#f1f5f1" vertical={false} />
+                  <CartesianGrid stroke={gridColor} vertical={false} />
                   <XAxis dataKey="round_index" tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
                   <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false}
                     tickFormatter={(v) => `${v}%`} />
@@ -652,10 +665,10 @@ export function AnalyticsPage({ userId }: { userId: string }) {
                       return [v, name];
                     }) as Fmt}
                   />
-                  <Line type="monotone" dataKey="scrambling_percentage" stroke="#f97316"
-                    strokeWidth={2} dot={{ r: 3, fill: "#f97316", strokeWidth: 0 }} connectNulls />
-                  <Line type="monotone" dataKey="up_and_down_pct" stroke="#a855f7"
-                    strokeWidth={2} dot={{ r: 3, fill: "#a855f7", strokeWidth: 0 }} connectNulls={false} />
+                  <Line type="monotone" dataKey="scrambling_percentage" stroke={trendSecondary}
+                    strokeWidth={2} dot={{ r: 3, fill: trendSecondary, strokeWidth: 0 }} connectNulls />
+                  <Line type="monotone" dataKey="up_and_down_pct" stroke={trendTertiary}
+                    strokeWidth={2} dot={{ r: 3, fill: trendTertiary, strokeWidth: 0 }} connectNulls={false} />
                 </ComposedChart>
               </ResponsiveContainer>
             </ChartCard>
@@ -673,7 +686,7 @@ export function AnalyticsPage({ userId }: { userId: string }) {
             <ChartCard title="Avg Score to Par by Hole Par">
               <ResponsiveContainer width="100%" height={220}>
                 <BarChart data={scoring_by_par} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
-                  <CartesianGrid stroke="#f1f5f1" vertical={false} />
+                  <CartesianGrid stroke={gridColor} vertical={false} />
                   <XAxis dataKey="par" tick={{ fontSize: 12, fill: "#6b7280" }} tickLine={false} axisLine={false}
                     tickFormatter={(v) => `Par ${v}`}
                   />
@@ -683,10 +696,10 @@ export function AnalyticsPage({ userId }: { userId: string }) {
                   <Tooltip contentStyle={tooltipStyle}
                     formatter={((v: number) => [v > 0 ? `+${v.toFixed(2)}` : v.toFixed(2), "Avg to Par"]) as Fmt}
                   />
-                  <ReferenceLine y={0} stroke="#e5e7eb" />
+                  <ReferenceLine y={0} stroke={mutedFill} />
                   <Bar dataKey="average_to_par" radius={[6, 6, 0, 0]}>
                     {scoring_by_par.map((row) => (
-                      <Cell key={row.par} fill={row.average_to_par <= 0 ? "#059669" : "#f87171"} />
+                      <Cell key={row.par} fill={row.average_to_par <= 0 ? successColor : dangerColor} />
                     ))}
                   </Bar>
                 </BarChart>
@@ -696,7 +709,7 @@ export function AnalyticsPage({ userId }: { userId: string }) {
             <ChartCard title="Avg Score by Hole Difficulty" subtitle="Handicap 1 (hardest) → 18 (easiest)">
               <ResponsiveContainer width="100%" height={220}>
                 <BarChart data={scoring_by_handicap} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
-                  <CartesianGrid stroke="#f1f5f1" vertical={false} />
+                  <CartesianGrid stroke={gridColor} vertical={false} />
                   <XAxis dataKey="handicap" tick={{ fontSize: 10, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
                   <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false}
                     tickFormatter={(v) => (v > 0 ? `+${v}` : v)}
@@ -708,10 +721,10 @@ export function AnalyticsPage({ userId }: { userId: string }) {
                     ]) as Fmt}
                     labelFormatter={(l) => `Hcp ${l}`}
                   />
-                  <ReferenceLine y={0} stroke="#e5e7eb" />
+                  <ReferenceLine y={0} stroke={mutedFill} />
                   <Bar dataKey="average_to_par" radius={[4, 4, 0, 0]}>
                     {scoring_by_handicap.map((row) => (
-                      <Cell key={row.handicap} fill={row.average_to_par <= 0 ? "#059669" : "#f87171"} />
+                      <Cell key={row.handicap} fill={row.average_to_par <= 0 ? successColor : dangerColor} />
                     ))}
                   </Bar>
                 </BarChart>
@@ -741,7 +754,7 @@ export function AnalyticsPage({ userId }: { userId: string }) {
                 <ChartCard title="Avg Score to Par by Yardage">
                   <ResponsiveContainer width="100%" height={260}>
                     <ComposedChart data={yardageData} margin={{ top: 16, right: 16, left: -16, bottom: 40 }}>
-                      <CartesianGrid stroke="#f1f5f1" vertical={false} />
+                      <CartesianGrid stroke={gridColor} vertical={false} />
                       {sharedXAxis}
                       <YAxis
                         tick={{ fontSize: 11, fill: "#9ca3af" }}
@@ -756,10 +769,10 @@ export function AnalyticsPage({ userId }: { userId: string }) {
                           "Avg to Par",
                         ]) as Fmt}
                       />
-                      <ReferenceLine y={0} stroke="#e5e7eb" />
+                      <ReferenceLine y={0} stroke={mutedFill} />
                       <Bar dataKey="average_to_par" radius={[5, 5, 0, 0]} maxBarSize={36}>
                         {scoring_by_yardage.map((row, i) => (
-                          <Cell key={i} fill={row.average_to_par <= 0 ? "#059669" : "#f87171"} />
+                          <Cell key={i} fill={row.average_to_par <= 0 ? successColor : dangerColor} />
                         ))}
                       </Bar>
                     </ComposedChart>
@@ -769,7 +782,7 @@ export function AnalyticsPage({ userId }: { userId: string }) {
                 <ChartCard title="GIR % by Yardage" subtitle="Green in regulation rate">
                   <ResponsiveContainer width="100%" height={260}>
                     <ComposedChart data={yardageData} margin={{ top: 16, right: 16, left: -16, bottom: 40 }}>
-                      <CartesianGrid stroke="#f1f5f1" vertical={false} />
+                      <CartesianGrid stroke={gridColor} vertical={false} />
                       {sharedXAxis}
                       <YAxis
                         domain={[0, 100]}
@@ -785,7 +798,7 @@ export function AnalyticsPage({ userId }: { userId: string }) {
                           "GIR %",
                         ]) as Fmt}
                       />
-                      <Bar dataKey="gir_percentage" radius={[5, 5, 0, 0]} maxBarSize={36} fill="#60a5fa" />
+                      <Bar dataKey="gir_percentage" radius={[5, 5, 0, 0]} maxBarSize={36} fill={scoreColors.double_bogey} />
                     </ComposedChart>
                   </ResponsiveContainer>
                 </ChartCard>
@@ -799,7 +812,7 @@ export function AnalyticsPage({ userId }: { userId: string }) {
                 subtitle="Where your scores come from — on vs off the green in regulation">
                 <ResponsiveContainer width="100%" height={240}>
                   <BarChart data={gir_vs_non_gir} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
-                    <CartesianGrid stroke="#f1f5f1" vertical={false} />
+                    <CartesianGrid stroke={gridColor} vertical={false} />
                     <XAxis dataKey="bucket" tick={{ fontSize: 12, fill: "#6b7280" }} tickLine={false} axisLine={false} />
                     <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} unit="%" />
                     <Tooltip contentStyle={tooltipStyle}
@@ -807,7 +820,7 @@ export function AnalyticsPage({ userId }: { userId: string }) {
                     />
                     <Legend formatter={(name) => SCORE_LABELS[name] ?? name} wrapperStyle={{ fontSize: 11 }} />
                     {(["eagle", "birdie", "par", "bogey", "double_bogey", "triple_bogey", "quad_bogey"] as const).map((key) => (
-                      <Bar key={key} dataKey={key} stackId="a" fill={SCORE_COLORS[key]}
+                      <Bar key={key} dataKey={key} stackId="a" fill={scoreColors[key]}
                         radius={key === "eagle" ? [4, 4, 0, 0] : [0, 0, 0, 0]}
                       />
                     ))}

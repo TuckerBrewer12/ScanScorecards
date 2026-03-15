@@ -6,6 +6,8 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts";
 import { api } from "@/lib/api";
+import { getStoredColorBlindMode } from "@/lib/accessibility";
+import { getColorBlindPalette } from "@/lib/chartPalettes";
 import type { DashboardData, Milestone } from "@/types/golf";
 import type { AnalyticsData } from "@/types/analytics";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -42,12 +44,6 @@ const SCORE_COLORS: Record<string, string> = {
   quad_bogey: "#6d28d9",
 };
 const SCORE_KEYS = ["eagle", "birdie", "par", "bogey", "double_bogey", "triple_bogey", "quad_bogey"] as const;
-const RECENT_FORM_LEGEND = [
-  { key: "birdie", label: "Birdie+", color: SCORE_COLORS.birdie },
-  { key: "par", label: "Par", color: SCORE_COLORS.par },
-  { key: "bogey", label: "Bogey", color: SCORE_COLORS.bogey },
-  { key: "double_bogey", label: "Double+", color: SCORE_COLORS.double_bogey },
-] as const;
 
 
 function MiniKpi({ label, value, trend }: {
@@ -125,6 +121,25 @@ export function DashboardPage({ userId }: DashboardPageProps) {
   const [data, setData] = useState<DashboardData | null>(null);
   const [trends, setTrends] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
+  const colorBlindMode = useMemo(() => getStoredColorBlindMode(), []);
+  const colorBlindPalette = useMemo(
+    () => getColorBlindPalette(colorBlindMode),
+    [colorBlindMode],
+  );
+  const scoreColors = colorBlindPalette?.score ?? SCORE_COLORS;
+  const scoreLineColor = colorBlindPalette?.trend.primary ?? "#2d7a3a";
+  const handicapLineColor = colorBlindPalette?.trend.secondary ?? "#60a5fa";
+  const girColor = colorBlindPalette?.ui.success ?? "#059669";
+  const warningColor = colorBlindPalette?.ui.warning ?? "#f59e0b";
+  const dangerColor = colorBlindPalette?.ui.danger ?? "#ef4444";
+  const gridColor = colorBlindPalette?.ui.grid ?? "#f1f5f1";
+  const mutedFill = colorBlindPalette?.ui.mutedFill ?? "#f1f5f9";
+  const recentFormLegend = [
+    { key: "birdie", label: "Birdie+", color: scoreColors.birdie },
+    { key: "par", label: "Par", color: scoreColors.par },
+    { key: "bogey", label: "Bogey", color: scoreColors.bogey },
+    { key: "double_bogey", label: "Double+", color: scoreColors.double_bogey },
+  ] as const;
 
   useEffect(() => {
     setLoading(true);
@@ -286,7 +301,9 @@ export function DashboardPage({ userId }: DashboardPageProps) {
   const putts = data.average_putts ?? 36;
   const puttsClamped = Math.max(20, Math.min(40, putts));
   const puttsGaugeData = [{ value: puttsClamped - 20 }, { value: 20 }];
-  const puttsColor = putts < 30 ? "#16a34a" : putts <= 35 ? "#f59e0b" : "#ef4444";
+  const puttsColor = putts < 30
+    ? (colorBlindPalette?.ui.success ?? "#16a34a")
+    : putts <= 35 ? warningColor : dangerColor;
 
   return (
     <div>
@@ -317,15 +334,15 @@ export function DashboardPage({ userId }: DashboardPageProps) {
                 <ComposedChart data={dualData} margin={{ top: 4, right: 40, left: -20, bottom: 0 }}>
                   <defs>
                     <linearGradient id="bentoScoreGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#2d7a3a" stopOpacity={0.14} />
-                      <stop offset="95%" stopColor="#2d7a3a" stopOpacity={0} />
+                      <stop offset="5%" stopColor={scoreLineColor} stopOpacity={0.14} />
+                      <stop offset="95%" stopColor={scoreLineColor} stopOpacity={0} />
                     </linearGradient>
                     <linearGradient id="bentoHiGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#60a5fa" stopOpacity={0.10} />
-                      <stop offset="95%" stopColor="#60a5fa" stopOpacity={0} />
+                      <stop offset="5%" stopColor={handicapLineColor} stopOpacity={0.10} />
+                      <stop offset="95%" stopColor={handicapLineColor} stopOpacity={0} />
                     </linearGradient>
                   </defs>
-                  <CartesianGrid stroke="#f1f5f1" horizontal vertical={false} />
+                  <CartesianGrid stroke={gridColor} horizontal vertical={false} />
                   <XAxis dataKey="round_index" tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
                   <YAxis yAxisId="score" tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} domain={["auto", "auto"]} />
                   <YAxis yAxisId="hi" orientation="right" tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false}
@@ -337,10 +354,10 @@ export function DashboardPage({ userId }: DashboardPageProps) {
                     ]) as Fmt}
                   />
                   <Area yAxisId="score" type="monotone" dataKey="total_score"
-                    stroke="#2d7a3a" strokeWidth={2} fill="url(#bentoScoreGrad)"
+                    stroke={scoreLineColor} strokeWidth={2} fill="url(#bentoScoreGrad)"
                     dot={false} activeDot={{ r: 4, strokeWidth: 0 }} />
                   <Area yAxisId="hi" type="monotone" dataKey="handicap_index"
-                    stroke="#60a5fa" strokeWidth={1.5} fill="url(#bentoHiGrad)"
+                    stroke={handicapLineColor} strokeWidth={1.5} fill="url(#bentoHiGrad)"
                     dot={false} activeDot={{ r: 4, strokeWidth: 0 }} connectNulls={false} />
                 </ComposedChart>
               </ResponsiveContainer>
@@ -359,8 +376,8 @@ export function DashboardPage({ userId }: DashboardPageProps) {
                     <Pie data={girDonutData} dataKey="value"
                       innerRadius={50} outerRadius={68} stroke="none"
                       startAngle={90} endAngle={-270}>
-                      <Cell fill="#059669" />
-                      <Cell fill="#f1f5f9" />
+                      <Cell fill={girColor} />
+                      <Cell fill={mutedFill} />
                     </Pie>
                   </PieChart>
                 </ResponsiveContainer>
@@ -399,7 +416,7 @@ export function DashboardPage({ userId }: DashboardPageProps) {
                         labelFormatter={(v) => `Round ${v}`}
                       />
                       {SCORE_KEYS.map((key) => (
-                        <Bar key={key} dataKey={key} stackId="a" fill={SCORE_COLORS[key]}
+                        <Bar key={key} dataKey={key} stackId="a" fill={scoreColors[key]}
                           radius={key === "eagle" ? [4, 4, 0, 0] : key === "quad_bogey" ? [0, 0, 4, 4] : [0, 0, 0, 0]}
                         />
                       ))}
@@ -410,7 +427,7 @@ export function DashboardPage({ userId }: DashboardPageProps) {
                 <div className="text-sm text-gray-400 text-center py-8">No data yet</div>
               )}
               <div className="mt-3 flex flex-wrap justify-center gap-2">
-                {RECENT_FORM_LEGEND.map((item) => (
+                {recentFormLegend.map((item) => (
                   <div key={item.key} className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-gray-50 px-2 py-1">
                     <span className="h-2 w-2 rounded-full" style={{ backgroundColor: item.color }} />
                     <span className="text-[10px] font-semibold text-gray-600 uppercase tracking-wide">{item.label}</span>
@@ -430,7 +447,7 @@ export function DashboardPage({ userId }: DashboardPageProps) {
                         innerRadius={55} outerRadius={72}
                         dataKey="value" stroke="none">
                         <Cell fill={puttsColor} />
-                        <Cell fill="#f1f5f9" />
+                        <Cell fill={mutedFill} />
                       </Pie>
                     </PieChart>
                   </ResponsiveContainer>
@@ -441,9 +458,9 @@ export function DashboardPage({ userId }: DashboardPageProps) {
                 </div>
               </div>
               <div className="flex justify-center gap-3 text-[9px] text-gray-300 font-semibold uppercase tracking-wider mt-1">
-                <span className="text-emerald-400">{"<30 great"}</span>
-                <span className="text-amber-400">30-35</span>
-                <span className="text-red-400">35+ work</span>
+                <span style={{ color: girColor }}>{"<30 great"}</span>
+                <span style={{ color: warningColor }}>30-35</span>
+                <span style={{ color: dangerColor }}>35+ work</span>
               </div>
             </BentoCard>
 

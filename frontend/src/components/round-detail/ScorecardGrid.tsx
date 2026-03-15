@@ -1,6 +1,9 @@
 import type { Round } from "@/types/golf";
 import { getScoreColor } from "@/types/golf";
 import { ScoreCell } from "./ScoreCell";
+import { useMemo, type CSSProperties } from "react";
+import { getStoredColorBlindMode } from "@/lib/accessibility";
+import { getColorBlindPalette, type ChartPalette } from "@/lib/chartPalettes";
 
 type EditedScores = Record<number, { strokes: number | null; putts: number | null; gir?: boolean | null }>;
 
@@ -68,11 +71,20 @@ function formatToPar(diff: number | null): string {
   return `${diff}`;
 }
 
-function toParColorClass(diff: number | null): string {
+function toParColorClass(diff: number | null, palette?: ChartPalette | null): string {
+  if (palette) return "font-semibold";
   if (diff === null) return "text-gray-400";
   if (diff < 0) return "text-birdie font-semibold";
   if (diff > 0) return "text-bogey";
   return "text-gray-600";
+}
+
+function toParColorStyle(diff: number | null, palette?: ChartPalette | null): CSSProperties | undefined {
+  if (!palette) return undefined;
+  if (diff === null) return { color: "#9CA3AF" };
+  if (diff < 0) return { color: palette.score.birdie };
+  if (diff > 0) return { color: palette.score.bogey };
+  return { color: "#6B7280" };
 }
 
 function NineTable({
@@ -85,6 +97,7 @@ function NineTable({
   activeTeeBox,
   onScoreChange,
   onGirChange,
+  palette,
 }: {
   round: Round;
   holes: number[];
@@ -95,6 +108,7 @@ function NineTable({
   activeTeeBox?: string | null;
   onScoreChange?: (holeNumber: number, field: "strokes" | "putts", value: number | null) => void;
   onGirChange?: (holeNumber: number, value: boolean | null) => void;
+  palette?: ChartPalette | null;
 }) {
   const data = holes.map((n) => getHoleData(round, n, activeTeeBox));
   const allHoles = showTotal ? Array.from({ length: 18 }, (_, i) => i + 1) : [];
@@ -203,7 +217,7 @@ function NineTable({
           <td className="px-3 py-2 font-bold text-gray-800">Score</td>
           {holes.map((n, i) => {
             if (!editMode) {
-              return <ScoreCell key={n} strokes={data[i].score?.strokes ?? null} par={data[i].effectivePar} />;
+              return <ScoreCell key={n} strokes={data[i].score?.strokes ?? null} par={data[i].effectivePar} palette={palette} />;
             }
             const strokes = effectiveStrokes[i];
             const par = data[i].effectivePar;
@@ -216,6 +230,27 @@ function NineTable({
             const shapeClass = isOverPar ? "rounded-sm" : "rounded-full";
             const ringClass =
               diff === -1 ? "ring-2 ring-birdie/50" : diff !== null && diff >= 1 ? "ring-1 ring-bogey/40" : "";
+            const paletteBackground =
+              diff !== null
+                ? diff <= -2
+                  ? palette?.score.eagle
+                  : diff === -1
+                  ? palette?.score.birdie
+                  : diff === 0
+                  ? palette?.score.par
+                  : diff === 1
+                  ? palette?.score.bogey
+                  : diff === 2
+                  ? palette?.score.double_bogey
+                  : palette?.score.triple_bogey
+                : undefined;
+            const paletteStyle = paletteBackground
+              ? {
+                  backgroundColor: paletteBackground,
+                  color: diff === 0 ? "#111827" : "#ffffff",
+                  boxShadow: `0 0 0 ${diff <= -1 ? 2 : 1}px ${paletteBackground}66`,
+                }
+              : undefined;
             return (
               <td key={n} className="px-1 py-1 text-center">
                 <input
@@ -230,7 +265,10 @@ function NineTable({
                     const num = parseInt(v, 10);
                     if (!isNaN(num)) onScoreChange?.(n, "strokes", num);
                   }}
-                  className={`w-7 h-7 text-center text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/40 ${shapeClass} ${colorClass} ${ringClass}`}
+                  className={`w-7 h-7 text-center text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/40 ${shapeClass} ${
+                    paletteStyle ? "" : `${colorClass} ${ringClass}`
+                  }`}
+                  style={paletteStyle}
                 />
               </td>
             );
@@ -250,16 +288,16 @@ function NineTable({
                 ? effectiveStrokes[i]! - data[i].effectivePar!
                 : null;
             return (
-              <td key={n} className={`px-2 py-2 text-center ${toParColorClass(diff)}`}>
+              <td key={n} className={`px-2 py-2 text-center ${toParColorClass(diff, palette)}`} style={toParColorStyle(diff, palette)}>
                 {formatToPar(diff)}
               </td>
             );
           })}
-          <td className={`px-2 py-2 text-center font-bold ${toParColorClass(outToPar)}`}>
+          <td className={`px-2 py-2 text-center font-bold ${toParColorClass(outToPar, palette)}`} style={toParColorStyle(outToPar, palette)}>
             {formatToPar(outToPar)}
           </td>
           {showTotal && (
-            <td className={`px-2 py-2 text-center font-bold text-sm ${toParColorClass(totalToPar)}`}>
+            <td className={`px-2 py-2 text-center font-bold text-sm ${toParColorClass(totalToPar, palette)}`} style={toParColorStyle(totalToPar, palette)}>
               {formatToPar(totalToPar)}
             </td>
           )}
@@ -290,8 +328,9 @@ function NineTable({
               <td
                 key={n}
                 className={`px-2 py-2 text-center ${
-                  (data[i].score?.putts ?? 0) >= 3 ? "text-red-500 font-bold" : ""
+                  (data[i].score?.putts ?? 0) >= 3 ? "font-bold" : ""
                 }`}
+                style={(data[i].score?.putts ?? 0) >= 3 ? { color: palette?.ui.danger ?? "#ef4444" } : undefined}
               >
                 {data[i].score?.putts ?? "-"}
               </td>
@@ -314,7 +353,7 @@ function NineTable({
 
         {/* GIR row */}
         <tr className="text-xs">
-          <td className="px-3 py-2 font-bold text-green-700">GIR</td>
+          <td className="px-3 py-2 font-bold" style={{ color: palette?.ui.success ?? "#15803d" }}>GIR</td>
           {holes.map((n, i) => {
             const gir = editMode
               ? resolveGir(n, editedScores, data[i].score?.green_in_regulation)
@@ -330,7 +369,7 @@ function NineTable({
                     className="w-7 h-7 flex items-center justify-center mx-auto rounded-full hover:bg-gray-100 focus:outline-none"
                     title={gir === true ? "GIR hit — click to mark missed" : gir === false ? "GIR missed — click to clear" : "GIR unknown — click to mark hit"}
                   >
-                    <span className={gir === true ? "text-green-600" : "text-gray-400"}>
+                    <span style={{ color: gir === true ? (palette?.ui.success ?? "#16a34a") : "#9ca3af" }}>
                       {gir === true ? "●" : gir === false ? "○" : "–"}
                     </span>
                   </button>
@@ -339,17 +378,17 @@ function NineTable({
             }
             return (
               <td key={n} className="px-2 py-2 text-center">
-                <span className={gir === true ? "text-green-600" : "text-gray-400"}>
+                <span style={{ color: gir === true ? (palette?.ui.success ?? "#16a34a") : "#9ca3af" }}>
                   {gir === true ? "●" : gir === false ? "○" : "-"}
                 </span>
               </td>
             );
           })}
-          <td className="px-2 py-2 text-center text-green-700 font-semibold">
+          <td className="px-2 py-2 text-center font-semibold" style={{ color: palette?.ui.success ?? "#15803d" }}>
             {girCount || "-"}
           </td>
           {showTotal && (
-            <td className="px-2 py-2 text-center text-green-700 font-semibold">
+            <td className="px-2 py-2 text-center font-semibold" style={{ color: palette?.ui.success ?? "#15803d" }}>
               {totalGirCount || "-"}
             </td>
           )}
@@ -369,6 +408,8 @@ export function ScorecardGrid({
   onTeeBoxChange,
   onGirChange,
 }: ScorecardGridProps) {
+  const colorBlindMode = useMemo(() => getStoredColorBlindMode(), []);
+  const colorBlindPalette = useMemo(() => getColorBlindPalette(colorBlindMode), [colorBlindMode]);
   const front = [1, 2, 3, 4, 5, 6, 7, 8, 9];
   const back = [10, 11, 12, 13, 14, 15, 16, 17, 18];
 
@@ -442,6 +483,7 @@ export function ScorecardGrid({
           activeTeeBox={activeTeeBox}
           onScoreChange={onScoreChange}
           onGirChange={onGirChange}
+          palette={colorBlindPalette}
         />
         <div className="flex items-center gap-3 px-4 py-1.5 bg-gray-50/60 border-y border-gray-100">
           <div className="flex-1 h-px bg-gray-200" />
@@ -458,6 +500,7 @@ export function ScorecardGrid({
           activeTeeBox={activeTeeBox}
           onScoreChange={onScoreChange}
           onGirChange={onGirChange}
+          palette={colorBlindPalette}
         />
       </div>
     </div>

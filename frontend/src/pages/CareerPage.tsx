@@ -10,6 +10,8 @@ import {
   ResponsiveContainer, Tooltip, ReferenceLine,
 } from "recharts";
 import { api } from "@/lib/api";
+import { getStoredColorBlindMode } from "@/lib/accessibility";
+import { getColorBlindPalette } from "@/lib/chartPalettes";
 import type { AnalyticsData, AnalyticsKPIs, ScoreTypeRow, ScoringByParRow } from "@/types/analytics";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { ScrollSection } from "@/components/analytics/ScrollSection";
@@ -118,12 +120,23 @@ function StatTile({ label, value }: { label: string; value: number | string | nu
   );
 }
 
-function MilestoneBar({ label, achieved }: { label: string; achieved: boolean }) {
+function MilestoneBar({
+  label,
+  achieved,
+  achievedColor = "var(--color-primary)",
+}: {
+  label: string;
+  achieved: boolean;
+  achievedColor?: string;
+}) {
   return (
     <div className="flex items-center gap-3">
-      <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${achieved ? "bg-primary" : "bg-gray-200"}`} />
+      <div
+        className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+        style={{ backgroundColor: achieved ? achievedColor : "#e5e7eb" }}
+      />
       <div className={`text-sm ${achieved ? "text-gray-900 font-medium" : "text-gray-400"}`}>{label}</div>
-      {achieved && <div className="ml-auto text-[10px] font-bold text-primary uppercase tracking-wide">Achieved</div>}
+      {achieved && <div className="ml-auto text-[10px] font-bold uppercase tracking-wide" style={{ color: achievedColor }}>Achieved</div>}
     </div>
   );
 }
@@ -134,6 +147,16 @@ export function CareerPage({ userId }: { userId: string }) {
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [timeWindow, setTimeWindow] = useState<TimeWindow>("lifetime");
+  const colorBlindMode = useMemo(() => getStoredColorBlindMode(), []);
+  const colorBlindPalette = useMemo(() => getColorBlindPalette(colorBlindMode), [colorBlindMode]);
+  const scoreColors = colorBlindPalette?.score ?? SCORE_COLORS;
+  const trendPrimary = colorBlindPalette?.trend.primary ?? "#2d7a3a";
+  const successColor = colorBlindPalette?.ui.success ?? "#16a34a";
+  const warningColor = colorBlindPalette?.ui.warning ?? "#f59e0b";
+  const dangerColor = colorBlindPalette?.ui.danger ?? "#ef4444";
+  const neutralColor = colorBlindPalette?.ui.neutral ?? "#9ca3af";
+  const gridColor = colorBlindPalette?.ui.grid ?? "#f1f5f9";
+  const mutedFill = colorBlindPalette?.ui.mutedFill ?? "#f1f5f9";
 
   useEffect(() => {
     setLoading(true);
@@ -179,7 +202,7 @@ export function CareerPage({ userId }: { userId: string }) {
 
   const hi = Math.max(0, Math.min(36, data.kpis.handicap_index ?? 18));
   const gaugeData = [{ value: hi }, { value: 36 - hi }];
-  const hiColor = hi < 10 ? "#16a34a" : hi < 20 ? "#f59e0b" : "#ef4444";
+  const hiColor = hi < 10 ? successColor : hi < 20 ? warningColor : dangerColor;
   const hiDisplay =
     data.kpis.handicap_index != null
       ? data.kpis.handicap_index < 0
@@ -257,8 +280,8 @@ export function CareerPage({ userId }: { userId: string }) {
               <AreaChart data={data.handicap_trend} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
                 <defs>
                   <linearGradient id="hiGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%"  stopColor="#2d7a3a" stopOpacity={0.13} />
-                    <stop offset="95%" stopColor="#2d7a3a" stopOpacity={0} />
+                    <stop offset="5%"  stopColor={trendPrimary} stopOpacity={0.13} />
+                    <stop offset="95%" stopColor={trendPrimary} stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <XAxis dataKey="round_index" tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
@@ -267,11 +290,11 @@ export function CareerPage({ userId }: { userId: string }) {
                   contentStyle={tooltipStyle}
                   formatter={((v: number) => [v?.toFixed(1), "Handicap Index"]) as Fmt}
                 />
-                <ReferenceLine y={0} stroke="#d1d5db" strokeDasharray="3 3" />
+                <ReferenceLine y={0} stroke={mutedFill} strokeDasharray="3 3" />
                 <Area
                   type="monotone"
                   dataKey="handicap_index"
-                  stroke="#2d7a3a"
+                  stroke={trendPrimary}
                   strokeWidth={2}
                   fill="url(#hiGrad)"
                   dot={false}
@@ -295,7 +318,7 @@ export function CareerPage({ userId }: { userId: string }) {
                     paddingAngle={2}
                   >
                     {donutData.map((d) => (
-                      <Cell key={d.name} fill={SCORE_COLORS[d.name]} />
+                      <Cell key={d.name} fill={scoreColors[d.name]} />
                     ))}
                   </Pie>
                   <Tooltip
@@ -315,12 +338,12 @@ export function CareerPage({ userId }: { userId: string }) {
           <ChartCard title="Player Profile">
             <ResponsiveContainer width="100%" height={220}>
               <RadarChart data={radarData} outerRadius={80}>
-                <PolarGrid stroke="#f1f5f9" />
-                <PolarAngleAxis dataKey="axis" tick={{ fontSize: 11, fill: "#6b7280" }} />
+                <PolarGrid stroke={gridColor} />
+                <PolarAngleAxis dataKey="axis" tick={{ fontSize: 11, fill: neutralColor }} />
                 <Radar
                   dataKey="value"
-                  stroke="#2d7a3a"
-                  fill="#2d7a3a"
+                  stroke={trendPrimary}
+                  fill={trendPrimary}
                   fillOpacity={0.15}
                   strokeWidth={2}
                 />
@@ -367,7 +390,7 @@ export function CareerPage({ userId }: { userId: string }) {
                     stroke="none"
                   >
                     <Cell fill={hiColor} />
-                    <Cell fill="#f1f5f9" />
+                    <Cell fill={mutedFill} />
                   </Pie>
                 </PieChart>
               </ResponsiveContainer>
@@ -421,26 +444,31 @@ export function CareerPage({ userId }: { userId: string }) {
                     key={row.threshold}
                     label={`Break ${row.threshold}`}
                     achieved={row.achievement != null}
+                    achievedColor={successColor}
                   />
                 ))}
                 <MilestoneBar
                   label="Round Under Par"
                   achieved={round_milestones.lifetime.first_round_under_par != null}
+                  achievedColor={successColor}
                 />
                 {scoreBreaks70AndBelow.map((row) => (
                   <MilestoneBar
                     key={row.threshold}
                     label={`Break ${row.threshold}`}
                     achieved={row.achievement != null}
+                    achievedColor={successColor}
                   />
                 ))}
                 <MilestoneBar
                   label="First Eagle"
                   achieved={round_milestones.lifetime.first_eagle != null}
+                  achievedColor={successColor}
                 />
                 <MilestoneBar
                   label="Hole-in-One"
                   achieved={round_milestones.lifetime.first_hole_in_one != null}
+                  achievedColor={successColor}
                 />
               </div>
             ) : (
@@ -449,7 +477,7 @@ export function CareerPage({ userId }: { userId: string }) {
                   {round_milestones.one_year.new_personal_records_achieved_count} new personal records in the last {window_days} days.
                 </div>
                 {round_milestones.one_year.new_personal_records_achieved.map((pr) => (
-                  <MilestoneBar key={pr} label={pr} achieved={true} />
+                  <MilestoneBar key={pr} label={pr} achieved={true} achievedColor={successColor} />
                 ))}
                 {round_milestones.one_year.new_personal_records_achieved.length === 0 && (
                   <div className="text-sm text-gray-400">No new records yet — keep playing!</div>
@@ -470,6 +498,7 @@ export function CareerPage({ userId }: { userId: string }) {
                     key={row.threshold}
                     label={`Break ${row.threshold} Putts`}
                     achieved={achieved}
+                    achievedColor={successColor}
                   />
                 );
               })}
@@ -488,6 +517,7 @@ export function CareerPage({ userId }: { userId: string }) {
                     key={row.threshold}
                     label={`${row.threshold}/18 GIR`}
                     achieved={achieved}
+                    achievedColor={successColor}
                   />
                 );
               })}

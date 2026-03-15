@@ -1,7 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, ChevronDown, Dumbbell, Target, Pin, TrendingUp, TrendingDown } from "lucide-react";
 import { api } from "@/lib/api";
+import { getStoredColorBlindMode } from "@/lib/accessibility";
+import { getColorBlindPalette } from "@/lib/chartPalettes";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { StatComparisonBar } from "@/components/suggestions/StatComparisonBar";
 import { ComparisonTargetToggle } from "@/components/suggestions/ComparisonTargetToggle";
@@ -11,9 +13,9 @@ import type { AISuggestionsResponse, AIInsightItem, AIComparisonItem } from "@/t
 const COMPARISON_CATEGORIES = ["Ball Striking", "Short Game", "Putting"] as const;
 
 const CATEGORY_STYLES: Record<string, { dot: string; heading: string }> = {
-  "Ball Striking": { dot: "bg-blue-400",   heading: "text-blue-700" },
-  "Short Game":    { dot: "bg-amber-400",  heading: "text-amber-700" },
-  "Putting":       { dot: "bg-emerald-500", heading: "text-emerald-700" },
+  "Ball Striking": { dot: "#60A5FA", heading: "#1D4ED8" },
+  "Short Game": { dot: "#FBBF24", heading: "#B45309" },
+  "Putting": { dot: "#10B981", heading: "#047857" },
 };
 
 const GROUP_ICONS: Record<string, React.ElementType> = {
@@ -43,7 +45,15 @@ function LoadingSkeleton() {
   );
 }
 
-function InsightCard({ insight, index }: { insight: AIInsightItem; index: number }) {
+function InsightCard({
+  insight,
+  index,
+  accentColor,
+}: {
+  insight: AIInsightItem;
+  index: number;
+  accentColor: string;
+}) {
   const [open, setOpen] = useState(false);
   const Icon = GROUP_ICONS[insight.category_group] ?? Target;
 
@@ -70,7 +80,7 @@ function InsightCard({ insight, index }: { insight: AIInsightItem; index: number
 
             {insight.what_if && (
               <div className="mt-2.5 bg-gray-50 border border-gray-100 rounded-lg px-3 py-2">
-                <p className="text-[11px] font-semibold text-primary leading-snug">
+                <p className="text-[11px] font-semibold leading-snug" style={{ color: accentColor }}>
                   {insight.what_if}
                 </p>
               </div>
@@ -103,7 +113,7 @@ function InsightCard({ insight, index }: { insight: AIInsightItem; index: number
             <ul className="px-4 py-3 space-y-1.5">
               {insight.drill_tips.map((tip, i) => (
                 <li key={i} className="flex gap-2 text-xs text-gray-600">
-                  <span className="text-primary font-bold shrink-0">{i + 1}.</span>
+                  <span className="font-bold shrink-0" style={{ color: accentColor }}>{i + 1}.</span>
                   {tip}
                 </li>
               ))}
@@ -121,13 +131,21 @@ function ComparisonCategory({
   items,
   benchmarkLabel,
   globalIndex,
+  goodColor,
+  badColor,
+  benchmarkColor,
+  categoryStyles,
 }: {
   category: string;
   items: AIComparisonItem[];
   benchmarkLabel: string;
   globalIndex: number;
+  goodColor: string;
+  badColor: string;
+  benchmarkColor: string;
+  categoryStyles: Record<string, { dot: string; heading: string }>;
 }) {
-  const style = CATEGORY_STYLES[category] ?? { dot: "bg-gray-400", heading: "text-gray-600" };
+  const style = categoryStyles[category] ?? { dot: "#9CA3AF", heading: "#4B5563" };
 
   const itemsWithData = items.filter((i) => i.has_data).length;
   const better = items.filter((i) => {
@@ -145,8 +163,8 @@ function ComparisonCategory({
         {/* Category header */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <div className={`w-2 h-2 rounded-full ${style.dot}`} />
-            <h3 className={`text-[13px] font-bold uppercase tracking-wider ${style.heading}`}>
+            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: style.dot }} />
+            <h3 className="text-[13px] font-bold uppercase tracking-wider" style={{ color: style.heading }}>
               {category}
             </h3>
           </div>
@@ -165,6 +183,9 @@ function ComparisonCategory({
               item={item}
               benchmarkLabel={benchmarkLabel}
               index={globalIndex * 10 + i}
+              goodColor={goodColor}
+              badColor={badColor}
+              benchmarkColor={benchmarkColor}
             />
           ))}
         </div>
@@ -177,6 +198,23 @@ export function SuggestionsPage({ userId }: SuggestionsPageProps) {
   const [data, setData] = useState<AISuggestionsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [targetHandicap, setTargetHandicap] = useState<number | null>(null);
+  const colorBlindMode = useMemo(() => getStoredColorBlindMode(), []);
+  const colorBlindPalette = useMemo(() => getColorBlindPalette(colorBlindMode), [colorBlindMode]);
+  const goodColor = colorBlindPalette?.ui.success ?? "#10B981";
+  const badColor = colorBlindPalette?.ui.danger ?? "#F87171";
+  const benchmarkColor = colorBlindPalette?.ui.mutedFill ?? "#E5E7EB";
+  const accentColor = colorBlindPalette?.trend.primary ?? "var(--color-primary)";
+  const categoryStyles = useMemo(
+    () =>
+      colorBlindPalette
+        ? {
+            "Ball Striking": { dot: colorBlindPalette.trend.primary, heading: colorBlindPalette.trend.primary },
+            "Short Game": { dot: colorBlindPalette.trend.secondary, heading: colorBlindPalette.trend.secondary },
+            "Putting": { dot: colorBlindPalette.ui.success, heading: colorBlindPalette.ui.success },
+          }
+        : CATEGORY_STYLES,
+    [colorBlindPalette],
+  );
 
   async function load() {
     setLoading(true);
@@ -247,12 +285,12 @@ export function SuggestionsPage({ userId }: SuggestionsPageProps) {
             {summary && (
               <div className="mt-3 mb-4 flex items-center gap-3">
                 <div className="flex items-center gap-1.5 bg-gray-50 border border-gray-100 rounded-xl px-3 py-2">
-                  <TrendingUp size={14} className="text-emerald-500" />
+                  <TrendingUp size={14} style={{ color: goodColor }} />
                   <span className="text-sm font-bold text-gray-900">{summary.better}</span>
                   <span className="text-xs text-gray-400">stats above avg</span>
                 </div>
                 <div className="flex items-center gap-1.5 bg-gray-50 border border-gray-100 rounded-xl px-3 py-2">
-                  <TrendingDown size={14} className="text-red-400" />
+                  <TrendingDown size={14} style={{ color: badColor }} />
                   <span className="text-sm font-bold text-gray-900">{summary.total - summary.better}</span>
                   <span className="text-xs text-gray-400">below avg</span>
                 </div>
@@ -275,6 +313,10 @@ export function SuggestionsPage({ userId }: SuggestionsPageProps) {
                     items={items}
                     benchmarkLabel="Avg"
                     globalIndex={i}
+                    goodColor={goodColor}
+                    badColor={badColor}
+                    benchmarkColor={benchmarkColor}
+                    categoryStyles={categoryStyles}
                   />
                 );
               })}
@@ -301,7 +343,7 @@ export function SuggestionsPage({ userId }: SuggestionsPageProps) {
                     transition={{ delay: i * 0.08, duration: 0.35 }}
                   >
                     <BentoCard>
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-primary mb-0.5">
+                      <p className="text-[10px] font-bold uppercase tracking-widest mb-0.5" style={{ color: accentColor }}>
                         {s.category}
                       </p>
                       <p className="text-sm font-bold text-gray-900 mb-2">{s.title}</p>
@@ -309,7 +351,7 @@ export function SuggestionsPage({ userId }: SuggestionsPageProps) {
                         {s.player_value}
                         <span className="text-xs font-normal text-gray-400 ml-1">{s.metric_label}</span>
                       </p>
-                      <p className="text-xs text-primary font-semibold mt-1.5">
+                      <p className="text-xs font-semibold mt-1.5" style={{ color: accentColor }}>
                         {s.margin_description}
                       </p>
                     </BentoCard>
@@ -325,7 +367,7 @@ export function SuggestionsPage({ userId }: SuggestionsPageProps) {
               <h2 className="text-base font-bold text-gray-900 mb-3">Top Focus Areas</h2>
               <div className="space-y-3">
                 {data.insights.map((insight, i) => (
-                  <InsightCard key={i} insight={insight} index={i} />
+                  <InsightCard key={i} insight={insight} index={i} accentColor={accentColor} />
                 ))}
               </div>
             </section>

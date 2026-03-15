@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, Pencil, Trash2, Link2 } from "lucide-react";
 import type { CourseSummary } from "@/types/golf";
@@ -6,6 +6,8 @@ import { CourseLinkSearch } from "@/components/CourseLinkSearch";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell } from "recharts";
 import { ScrollSection } from "@/components/analytics/ScrollSection";
 import { api } from "@/lib/api";
+import { getStoredColorBlindMode } from "@/lib/accessibility";
+import { getColorBlindPalette, type ChartPalette } from "@/lib/chartPalettes";
 import type { Round } from "@/types/golf";
 import { formatToPar, calcCourseHandicap, calcNetScore } from "@/types/golf";
 import type { RoundComparison, ComparisonRow } from "@/types/analytics";
@@ -44,10 +46,12 @@ function ComparisonChartCard({
   title,
   rows,
   primaryLabel,
+  palette,
 }: {
   title: string;
   rows: ComparisonRow[];
   primaryLabel: string;
+  palette?: ChartPalette | null;
 }) {
   const chartData = rows.map((row, i) => ({
     label: row.label,
@@ -55,6 +59,7 @@ function ComparisonChartCard({
     sampleSize: row.sample_size,
     isSelected: i === 0,
   }));
+  const selectedFill = palette ? (palette.trend.primary ?? "#2563EB") : "url(#selectedBarGrad)";
 
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:shadow-gray-200/50">
@@ -67,8 +72,8 @@ function ComparisonChartCard({
         <BarChart data={chartData} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
           <defs>
             <linearGradient id="selectedBarGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#4ade80" stopOpacity={1} />
-              <stop offset="100%" stopColor="#2d7a3a" stopOpacity={1} />
+              <stop offset="0%" stopColor={palette?.trend.secondary ?? "#4ade80"} stopOpacity={1} />
+              <stop offset="100%" stopColor={palette?.trend.primary ?? "#2d7a3a"} stopOpacity={1} />
             </linearGradient>
           </defs>
           <XAxis dataKey="label" tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
@@ -82,7 +87,7 @@ function ComparisonChartCard({
           />
           <Bar dataKey="value" radius={[6, 6, 0, 0]}>
             {chartData.map((d) => (
-              <Cell key={d.label} fill={d.isSelected ? "url(#selectedBarGrad)" : "#e5e7eb"} />
+              <Cell key={d.label} fill={d.isSelected ? selectedFill : (palette?.ui.mutedFill ?? "#e5e7eb")} />
             ))}
           </Bar>
         </BarChart>
@@ -110,6 +115,8 @@ export function RoundDetailPage({ userId }: { userId: string }) {
   const [linkSearching, setLinkSearching] = useState(false);
   const [linking, setLinking] = useState(false);
   const linkTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const colorBlindMode = useMemo(() => getStoredColorBlindMode(), []);
+  const colorBlindPalette = useMemo(() => getColorBlindPalette(colorBlindMode), [colorBlindMode]);
 
   useEffect(() => {
     if (!roundId) return;
@@ -455,12 +462,12 @@ export function RoundDetailPage({ userId }: { userId: string }) {
           <SectionLabel>Round Comparison</SectionLabel>
           <ScrollSection>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-              <ComparisonChartCard title="Score" rows={comparison.score} primaryLabel="score" />
-              <ComparisonChartCard title="Putts" rows={comparison.putts} primaryLabel="putts" />
-              <ComparisonChartCard title="GIR" rows={comparison.gir} primaryLabel="GIR" />
-              <ComparisonChartCard title="3-Putts" rows={comparison.three_putts} primaryLabel="3-putts" />
-              <ComparisonChartCard title="Putts per GIR" rows={comparison.putts_per_gir} primaryLabel="putts/GIR" />
-              <ComparisonChartCard title="Scrambling" rows={comparison.scrambling} primaryLabel="scramble successes" />
+              <ComparisonChartCard title="Score" rows={comparison.score} primaryLabel="score" palette={colorBlindPalette} />
+              <ComparisonChartCard title="Putts" rows={comparison.putts} primaryLabel="putts" palette={colorBlindPalette} />
+              <ComparisonChartCard title="GIR" rows={comparison.gir} primaryLabel="GIR" palette={colorBlindPalette} />
+              <ComparisonChartCard title="3-Putts" rows={comparison.three_putts} primaryLabel="3-putts" palette={colorBlindPalette} />
+              <ComparisonChartCard title="Putts per GIR" rows={comparison.putts_per_gir} primaryLabel="putts/GIR" palette={colorBlindPalette} />
+              <ComparisonChartCard title="Scrambling" rows={comparison.scrambling} primaryLabel="scramble successes" palette={colorBlindPalette} />
             </div>
           </ScrollSection>
         </div>

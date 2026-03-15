@@ -1,5 +1,5 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { useState } from "react";
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { useEffect, useState } from "react";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { AppLayout } from "./components/layout/AppLayout";
 import { DashboardPage } from "./pages/DashboardPage";
@@ -18,10 +18,23 @@ import { RegisterPage } from "./pages/RegisterPage";
 import { LandingPage } from "./pages/public/LandingPage";
 import type { ScanState } from "./types/scan";
 import { initialScanState } from "./types/scan";
+import { applyTheme, getStoredPublicTheme, getStoredTheme } from "./lib/theme";
 
 function AppRoutes() {
   const { userId, loading } = useAuth();
   const [scanState, setScanState] = useState<ScanState>(initialScanState);
+  const location = useLocation();
+
+  useEffect(() => {
+    if (userId) {
+      applyTheme(getStoredTheme());
+      return;
+    }
+    // Logged-out routes use public theme preference.
+    if (location.pathname === "/" || location.pathname === "/login" || location.pathname === "/register") {
+      applyTheme(getStoredPublicTheme());
+    }
+  }, [userId, location.pathname]);
 
   if (loading) {
     return (

@@ -3,6 +3,8 @@ import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { Trophy, ArrowRight } from "lucide-react";
 import { api } from "@/lib/api";
+import { getStoredColorBlindMode } from "@/lib/accessibility";
+import { getColorBlindPalette, type ChartPalette } from "@/lib/chartPalettes";
 import type { ScoreTrendRow, NotableAchievements, NetScoreTrendRow } from "@/types/analytics";
 import type { Round } from "@/types/golf";
 
@@ -18,14 +20,14 @@ function formatToPar(v: number | null | undefined): string {
   return v > 0 ? `+${v}` : String(v);
 }
 
-function scoreColor(strokes: number | null, par: number | null): string {
+function scoreColor(strokes: number | null, par: number | null, palette?: ChartPalette | null): string {
   if (strokes == null || par == null) return "#f3f4f6";
   const d = strokes - par;
-  if (d <= -2) return "#fbbf24"; // eagle+
-  if (d === -1) return "#34d399"; // birdie
-  if (d === 0)  return "#e5e7eb"; // par
-  if (d === 1)  return "#fca5a5"; // bogey
-  return "#93c5fd"; // double+
+  if (d <= -2) return palette?.score.eagle ?? "#fbbf24"; // eagle+
+  if (d === -1) return palette?.score.birdie ?? "#34d399"; // birdie
+  if (d === 0)  return palette?.score.par ?? "#e5e7eb"; // par
+  if (d === 1)  return palette?.score.bogey ?? "#fca5a5"; // bogey
+  return palette?.score.double_bogey ?? "#93c5fd"; // double+
 }
 
 function scoreTextColor(strokes: number | null, par: number | null): string {
@@ -36,7 +38,7 @@ function scoreTextColor(strokes: number | null, par: number | null): string {
   return "rgba(0,0,0,0.65)";
 }
 
-function MiniScorecard({ round }: { round: Round }) {
+function MiniScorecard({ round, palette }: { round: Round; palette?: ChartPalette | null }) {
   const holes = round.hole_scores.slice(0, 18);
   if (!holes.length) return null;
 
@@ -48,7 +50,7 @@ function MiniScorecard({ round }: { round: Round }) {
         <div key={rowIdx} className="flex gap-1">
           {nine.map((h, i) => {
             const par = h.par_played;
-            const bg = scoreColor(h.strokes, par);
+            const bg = scoreColor(h.strokes, par, palette);
             const fg = scoreTextColor(h.strokes, par);
             return (
               <div
@@ -67,11 +69,11 @@ function MiniScorecard({ round }: { round: Round }) {
       {/* Legend */}
       <div className="flex items-center gap-3 mt-1">
         {[
-          { color: "#fbbf24", label: "Eagle+" },
-          { color: "#34d399", label: "Birdie" },
-          { color: "#e5e7eb", label: "Par" },
-          { color: "#fca5a5", label: "Bogey" },
-          { color: "#93c5fd", label: "Double+" },
+          { color: palette?.score.eagle ?? "#fbbf24", label: "Eagle+" },
+          { color: palette?.score.birdie ?? "#34d399", label: "Birdie" },
+          { color: palette?.score.par ?? "#e5e7eb", label: "Par" },
+          { color: palette?.score.bogey ?? "#fca5a5", label: "Bogey" },
+          { color: palette?.score.double_bogey ?? "#93c5fd", label: "Double+" },
         ].map(({ color, label }) => (
           <div key={label} className="flex items-center gap-1">
             <div className="w-2 h-2 rounded-sm" style={{ background: color }} />
@@ -85,6 +87,8 @@ function MiniScorecard({ round }: { round: Round }) {
 
 export function BestRoundCard({ scoreTrend, netScoreTrend, achievements }: BestRoundCardProps) {
   const [roundDetail, setRoundDetail] = useState<Round | null>(null);
+  const colorBlindMode = useMemo(() => getStoredColorBlindMode(), []);
+  const colorBlindPalette = useMemo(() => getColorBlindPalette(colorBlindMode), [colorBlindMode]);
 
   const best = useMemo(() => {
     const withScores = scoreTrend.filter((r) => r.to_par != null && r.total_score != null);
@@ -127,7 +131,10 @@ export function BestRoundCard({ scoreTrend, netScoreTrend, achievements }: BestR
             {best.total_score}
           </div>
           <div className="mt-1.5 flex items-baseline gap-2.5">
-            <span className={`text-xl font-bold ${(best.to_par ?? 0) <= 0 ? "text-primary" : "text-red-500"}`}>
+            <span
+              className={`text-xl font-bold ${(best.to_par ?? 0) <= 0 ? "text-primary" : ""}`}
+              style={(best.to_par ?? 0) > 0 ? { color: colorBlindPalette?.score.bogey ?? "#ef4444" } : undefined}
+            >
               {formatToPar(best.to_par)}
             </span>
             {event && (
@@ -159,7 +166,7 @@ export function BestRoundCard({ scoreTrend, netScoreTrend, achievements }: BestR
         {/* Right — mini scorecard */}
         <div className="flex-1 min-w-0">
           {roundDetail ? (
-            <MiniScorecard round={roundDetail} />
+            <MiniScorecard round={roundDetail} palette={colorBlindPalette} />
           ) : (
             <div className="flex flex-col gap-1.5">
               {[0, 1].map((row) => (
