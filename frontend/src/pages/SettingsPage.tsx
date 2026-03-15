@@ -17,7 +17,7 @@ export function SettingsPage({ userId }: { userId: string }) {
   const [handicapInput, setHandicapInput] = useState<string>("");
   const [friendCode, setFriendCode] = useState<string>("");
   const [getUpdates, setGetUpdates] = useState<boolean>(true);
-  const [theme, setTheme] = useState<AppTheme>("light");
+  const [theme, setTheme] = useState<AppTheme>(() => getStoredTheme());
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string>("");
@@ -28,7 +28,6 @@ export function SettingsPage({ userId }: { userId: string }) {
     if (savedUpdates !== null) {
       setGetUpdates(savedUpdates === "true");
     }
-    setTheme(getStoredTheme());
 
     (async () => {
       try {
@@ -111,6 +110,12 @@ export function SettingsPage({ userId }: { userId: string }) {
     setShowResults(false);
   };
 
+  const setThemePreference = (nextTheme: AppTheme) => {
+    setTheme(nextTheme);
+    setStoredTheme(nextTheme);
+    applyTheme(nextTheme);
+  };
+
   const saveSettings = async () => {
     setSaving(true);
     setMessage("");
@@ -158,8 +163,6 @@ export function SettingsPage({ userId }: { userId: string }) {
         setHomeCourseQuery("");
       }
       localStorage.setItem(UPDATES_PREF_KEY, String(getUpdates));
-      setStoredTheme(theme);
-      applyTheme(theme);
       setMessage("Settings saved.");
     } catch (error) {
       const text = error instanceof Error ? error.message : "Failed to save settings.";
@@ -218,7 +221,7 @@ export function SettingsPage({ userId }: { userId: string }) {
             <div className="inline-flex items-center rounded-lg border border-gray-300 overflow-hidden">
               <button
                 type="button"
-                onClick={() => setTheme("light")}
+                onClick={() => setThemePreference("light")}
                 className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs ${
                   theme === "light" ? "bg-[#eef7f0] text-primary font-semibold" : "bg-white text-gray-600"
                 }`}
@@ -228,7 +231,7 @@ export function SettingsPage({ userId }: { userId: string }) {
               </button>
               <button
                 type="button"
-                onClick={() => setTheme("dark")}
+                onClick={() => setThemePreference("dark")}
                 className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs ${
                   theme === "dark" ? "bg-[#eef7f0] text-primary font-semibold" : "bg-white text-gray-600"
                 }`}
