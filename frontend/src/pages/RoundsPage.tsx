@@ -4,6 +4,8 @@ import { Link2, Search } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { CourseLinkSearch } from "@/components/CourseLinkSearch";
 import { api } from "@/lib/api";
+import { getStoredColorBlindMode } from "@/lib/accessibility";
+import { getColorBlindPalette } from "@/lib/chartPalettes";
 import type { RoundSummary, CourseSummary } from "@/types/golf";
 import { formatToPar } from "@/types/golf";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -14,6 +16,15 @@ interface RoundsPageProps {
 }
 
 type SortKey = "date" | "total_score" | "to_par" | "course_name";
+
+function withAlpha(hex: string, alpha: number): string {
+  const normalized = hex.replace("#", "");
+  if (normalized.length !== 6) return hex;
+  const r = parseInt(normalized.slice(0, 2), 16);
+  const g = parseInt(normalized.slice(2, 4), 16);
+  const b = parseInt(normalized.slice(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
 
 const rowVariants = {
   hidden: { opacity: 0, y: 16 },
@@ -70,6 +81,8 @@ export function RoundsPage({ userId }: RoundsPageProps) {
   const [linkSearching, setLinkSearching] = useState(false);
   const [linking, setLinking] = useState(false);
   const linkTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const colorBlindMode = useMemo(() => getStoredColorBlindMode(), []);
+  const colorBlindPalette = useMemo(() => getColorBlindPalette(colorBlindMode), [colorBlindMode]);
 
   useEffect(() => {
     api.getRoundsForUser(userId, 100).then((r) => {
@@ -271,12 +284,33 @@ export function RoundsPage({ userId }: RoundsPageProps) {
                     <td className="px-6 py-3.5 text-sm text-center">
                       <span
                         className={`inline-block px-2 py-0.5 rounded-full text-xs font-semibold ${
-                          r.to_par !== null && r.to_par < 0
-                            ? "bg-birdie/10 text-birdie"
-                            : r.to_par !== null && r.to_par > 0
-                            ? "bg-bogey/10 text-bogey"
-                            : "bg-gray-100 text-gray-500"
+                          !colorBlindPalette
+                            ? r.to_par !== null && r.to_par < 0
+                              ? "bg-birdie/10 text-birdie"
+                              : r.to_par !== null && r.to_par > 0
+                              ? "bg-bogey/10 text-bogey"
+                              : "bg-gray-100 text-gray-500"
+                            : r.to_par === null
+                            ? "bg-gray-100 text-gray-500"
+                            : ""
                         }`}
+                        style={
+                          colorBlindPalette && r.to_par !== null && r.to_par < 0
+                            ? {
+                                color: colorBlindPalette?.score.birdie ?? undefined,
+                                backgroundColor: colorBlindPalette?.score.birdie
+                                  ? withAlpha(colorBlindPalette.score.birdie, 0.14)
+                                  : undefined,
+                              }
+                            : colorBlindPalette && r.to_par !== null && r.to_par > 0
+                            ? {
+                                color: colorBlindPalette?.score.bogey ?? undefined,
+                                backgroundColor: colorBlindPalette?.score.bogey
+                                  ? withAlpha(colorBlindPalette.score.bogey, 0.14)
+                                  : undefined,
+                              }
+                            : undefined
+                        }
                       >
                         {formatToPar(r.to_par)}
                       </span>

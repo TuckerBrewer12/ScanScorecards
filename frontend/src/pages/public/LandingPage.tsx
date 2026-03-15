@@ -10,7 +10,7 @@ import { FinalCtaSection } from "./sections/FinalCtaSection";
 
 export function LandingPage() {
   return (
-    <div className="min-h-screen bg-white">
+    <div className="public-landing min-h-screen bg-white">
       <PublicNav />
       <HeroSection />
       <ProblemSection />

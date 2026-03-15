@@ -3,10 +3,18 @@ import { Moon, Sun } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { api } from "@/lib/api";
 import { applyTheme, getStoredTheme, setStoredTheme } from "@/lib/theme";
+import { getStoredColorBlindMode, setStoredColorBlindMode } from "@/lib/accessibility";
 import type { AppTheme } from "@/lib/theme";
+import type { ColorBlindMode } from "@/lib/accessibility";
 import type { CourseSummary } from "@/types/golf";
 
 const UPDATES_PREF_KEY = "settings_get_updates";
+const COLORBLIND_MODES: Array<{ key: ColorBlindMode; label: string }> = [
+  { key: "none", label: "No Filter" },
+  { key: "protanopia", label: "Protanopia" },
+  { key: "deuteranopia", label: "Deuteranopia" },
+  { key: "tritanopia", label: "Tritanopia" },
+];
 
 export function SettingsPage({ userId }: { userId: string }) {
   const [courses, setCourses] = useState<CourseSummary[]>([]);
@@ -18,6 +26,7 @@ export function SettingsPage({ userId }: { userId: string }) {
   const [friendCode, setFriendCode] = useState<string>("");
   const [getUpdates, setGetUpdates] = useState<boolean>(true);
   const [theme, setTheme] = useState<AppTheme>(() => getStoredTheme());
+  const [colorBlindMode, setColorBlindMode] = useState<ColorBlindMode>(() => getStoredColorBlindMode());
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string>("");
@@ -114,6 +123,19 @@ export function SettingsPage({ userId }: { userId: string }) {
     setTheme(nextTheme);
     setStoredTheme(nextTheme);
     applyTheme(nextTheme);
+  };
+
+  const setColorBlindPreference = (mode: ColorBlindMode) => {
+    setColorBlindMode(mode);
+    setStoredColorBlindMode(mode);
+  };
+
+  const colorBlindIndex = COLORBLIND_MODES.findIndex((m) => m.key === colorBlindMode);
+  const colorBlindDisplay = COLORBLIND_MODES[colorBlindIndex]?.label ?? "No Filter";
+
+  const stepColorBlindMode = (direction: -1 | 1) => {
+    const next = (colorBlindIndex + direction + COLORBLIND_MODES.length) % COLORBLIND_MODES.length;
+    setColorBlindPreference(COLORBLIND_MODES[next].key);
   };
 
   const saveSettings = async () => {
@@ -250,6 +272,48 @@ export function SettingsPage({ userId }: { userId: string }) {
               className="h-4 w-4"
             />
           </label>
+
+          <div className="space-y-2">
+            <div className="rounded-xl border border-gray-300 overflow-hidden">
+              <div className="grid grid-cols-[1.4fr_auto_1fr_auto] items-stretch">
+                <div className="px-3 py-2.5 text-xs font-bold tracking-wider uppercase text-gray-700 bg-gray-50 border-r border-gray-300">
+                  Color Blind Mode
+                </div>
+                <button
+                  type="button"
+                  onClick={() => stepColorBlindMode(-1)}
+                  aria-label="Previous color blind mode"
+                  className="px-3 py-2.5 text-gray-600 bg-white border-r border-gray-300 hover:bg-gray-50"
+                >
+                  ‹
+                </button>
+                <div className="px-3 py-2.5 bg-white border-r border-gray-300">
+                  <div className="text-sm font-semibold text-gray-900">{colorBlindDisplay}</div>
+                  <div className="mt-1 flex gap-1">
+                    {COLORBLIND_MODES.map((m, i) => (
+                      <span
+                        key={m.key}
+                        className={`h-1.5 flex-1 rounded-sm ${
+                          i === colorBlindIndex ? "bg-primary" : "bg-gray-300"
+                        }`}
+                      />
+                    ))}
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => stepColorBlindMode(1)}
+                  aria-label="Next color blind mode"
+                  className="px-3 py-2.5 text-gray-600 bg-white hover:bg-gray-50"
+                >
+                  ›
+                </button>
+              </div>
+            </div>
+            <p className="text-xs text-gray-500">
+              Preview modes now; chart color remapping will be applied in the next step.
+            </p>
+          </div>
         </section>
 
         <section className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 space-y-3">

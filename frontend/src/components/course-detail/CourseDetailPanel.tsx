@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState, type CSSProperties } from "react";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Fmt = (v: any, name: any, props: any) => any;
 import { ArrowLeft, MapPin } from "lucide-react";
@@ -17,6 +17,8 @@ import {
   YAxis,
 } from "recharts";
 import { api } from "@/lib/api";
+import { getStoredColorBlindMode } from "@/lib/accessibility";
+import { getColorBlindPalette, type ChartPalette } from "@/lib/chartPalettes";
 import type { Course, Tee } from "@/types/golf";
 import type { CourseAnalyticsData } from "@/types/analytics";
 import { ScrollSection } from "@/components/analytics/ScrollSection";
@@ -60,6 +62,31 @@ const TEE_COLORS: Record<string, string> = {
 function teeBadgeClass(color: string | null): string {
   if (!color) return "bg-gray-200 text-gray-700";
   return TEE_COLORS[color.toLowerCase()] ?? "bg-gray-200 text-gray-700";
+}
+
+function teeBadgeStyle(color: string | null, palette: ChartPalette | null): CSSProperties | undefined {
+  if (!palette) return undefined;
+  const c = color?.toLowerCase() ?? "";
+  const mapped = c === "blue"
+    ? palette.trend.primary
+    : c === "green"
+    ? palette.score.birdie
+    : c === "red"
+    ? palette.score.bogey
+    : c === "yellow" || c === "gold"
+    ? palette.ui.warning
+    : c === "black"
+    ? "#111827"
+    : c === "silver"
+    ? palette.ui.neutral
+    : c === "white"
+    ? "#e5e7eb"
+    : palette.ui.neutral;
+  return {
+    backgroundColor: mapped,
+    color: c === "white" || c === "yellow" || c === "gold" ? "#111827" : "#ffffff",
+    border: c === "white" ? "1px solid #9ca3af" : "none",
+  };
 }
 
 function sumYardages(tee: Tee, holes: number[]): number {
@@ -174,6 +201,8 @@ export function CourseDetailPanel({ courseId, userId, onBack }: CourseDetailPane
   const [loading, setLoading] = useState(true);
   const [selectedTeeColor, setSelectedTeeColor] = useState<string | null>(null);
   const [handicapIndex, setHandicapIndex] = useState<number | null>(null);
+  const colorBlindMode = useMemo(() => getStoredColorBlindMode(), []);
+  const colorBlindPalette = useMemo(() => getColorBlindPalette(colorBlindMode), [colorBlindMode]);
 
   useEffect(() => {
     let isMounted = true;
@@ -229,6 +258,16 @@ export function CourseDetailPanel({ courseId, userId, onBack }: CourseDetailPane
   const selectedTee = course.tees.find(
     (t) => t.color?.toLowerCase() === selectedTeeColor?.toLowerCase()
   ) ?? null;
+  const scoreTrendStroke = colorBlindPalette?.trend.primary ?? "#2d7a3a";
+  const gridLineColor = colorBlindPalette?.ui.grid ?? "#d1d5db";
+  const successColor = colorBlindPalette?.ui.success ?? "#059669";
+  const dangerColor = colorBlindPalette?.ui.danger ?? "#f87171";
+  const girGradTop = colorBlindPalette?.trend.tertiary ?? "#4ade80";
+  const girGradBottom = colorBlindPalette?.trend.primary ?? "#16a34a";
+  const puttsGradTop = colorBlindPalette?.ui.mutedFill ?? "#d1d5db";
+  const puttsGradBottom = colorBlindPalette?.ui.neutral ?? "#6b7280";
+  const varianceGradTop = colorBlindPalette?.ui.warning ?? "#fcd34d";
+  const varianceGradBottom = colorBlindPalette?.score.bogey ?? "#d97706";
   const coursePar = course.par;
 
   function courseHandicap(tee: Tee): number | null {
@@ -281,7 +320,10 @@ export function CourseDetailPanel({ courseId, userId, onBack }: CourseDetailPane
                     : "bg-white border-gray-200 shadow-sm hover:shadow-md hover:border-gray-300"
                 }`}
               >
-                <span className={`inline-block w-3 h-3 rounded-full flex-shrink-0 ${teeBadgeClass(tee.color)}`} />
+                <span
+                  className={`inline-block w-3 h-3 rounded-full flex-shrink-0 ${teeBadgeClass(tee.color)}`}
+                  style={teeBadgeStyle(tee.color, colorBlindPalette)}
+                />
                 <span className="font-semibold capitalize">{tee.color}</span>
                 {tee.course_rating != null && <span className="text-gray-400">Rating {tee.course_rating}</span>}
                 {tee.slope_rating != null && <span className="text-gray-400">/ Slope {tee.slope_rating}</span>}
@@ -324,8 +366,8 @@ export function CourseDetailPanel({ courseId, userId, onBack }: CourseDetailPane
                 <ComposedChart data={analytics.score_trend_on_course} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
                   <defs>
                     <linearGradient id="scoreTrendGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%"  stopColor="#2d7a3a" stopOpacity={0.13} />
-                      <stop offset="95%" stopColor="#2d7a3a" stopOpacity={0} />
+                      <stop offset="5%"  stopColor={scoreTrendStroke} stopOpacity={0.13} />
+                      <stop offset="95%" stopColor={scoreTrendStroke} stopOpacity={0} />
                     </linearGradient>
                   </defs>
                   <XAxis
@@ -338,7 +380,7 @@ export function CourseDetailPanel({ courseId, userId, onBack }: CourseDetailPane
                   <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} domain={scoreTrendDomain} />
                   <Tooltip contentStyle={tooltipStyle} />
                   <Area type="monotone" dataKey="total_score" stroke="none" fill="url(#scoreTrendGrad)" />
-                  <Line type="monotone" dataKey="total_score" stroke="#2d7a3a" strokeWidth={2.5} dot={false} />
+                  <Line type="monotone" dataKey="total_score" stroke={scoreTrendStroke} strokeWidth={2.5} dot={false} />
                 </ComposedChart>
               </ResponsiveContainer>
             </ChartCard>
@@ -349,10 +391,10 @@ export function CourseDetailPanel({ courseId, userId, onBack }: CourseDetailPane
                   <XAxis dataKey="hole_number" tick={{ fontSize: 10, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
                   <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
                   <Tooltip contentStyle={tooltipStyle} formatter={((v: number) => [Number(v ?? 0).toFixed(2), "Avg to Par"]) as Fmt} />
-                  <ReferenceLine y={0} stroke="#d1d5db" />
+                  <ReferenceLine y={0} stroke={gridLineColor} />
                   <Bar dataKey="average_to_par" radius={[6, 6, 0, 0]}>
                     {analytics.average_score_relative_to_par_by_hole.map((row) => (
-                      <Cell key={row.hole_number} fill={row.average_to_par <= 0 ? "#059669" : "#f87171"} />
+                      <Cell key={row.hole_number} fill={row.average_to_par <= 0 ? successColor : dangerColor} />
                     ))}
                   </Bar>
                 </BarChart>
@@ -364,8 +406,8 @@ export function CourseDetailPanel({ courseId, userId, onBack }: CourseDetailPane
                 <BarChart data={analytics.gir_percentage_by_hole} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
                   <defs>
                     <linearGradient id="girBarGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%"   stopColor="#4ade80" stopOpacity={1} />
-                      <stop offset="100%" stopColor="#16a34a" stopOpacity={1} />
+                      <stop offset="0%"   stopColor={girGradTop} stopOpacity={1} />
+                      <stop offset="100%" stopColor={girGradBottom} stopOpacity={1} />
                     </linearGradient>
                   </defs>
                   <XAxis dataKey="hole_number" tick={{ fontSize: 10, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
@@ -381,8 +423,8 @@ export function CourseDetailPanel({ courseId, userId, onBack }: CourseDetailPane
                 <BarChart data={analytics.average_putts_by_hole} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
                   <defs>
                     <linearGradient id="puttsBarGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%"   stopColor="#d1d5db" stopOpacity={1} />
-                      <stop offset="100%" stopColor="#6b7280" stopOpacity={1} />
+                      <stop offset="0%"   stopColor={puttsGradTop} stopOpacity={1} />
+                      <stop offset="100%" stopColor={puttsGradBottom} stopOpacity={1} />
                     </linearGradient>
                   </defs>
                   <XAxis dataKey="hole_number" tick={{ fontSize: 10, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
@@ -404,13 +446,13 @@ export function CourseDetailPanel({ courseId, userId, onBack }: CourseDetailPane
                     formatter={((v: number) => [`${Number(v ?? 0).toFixed(1)}%`, ""]) as Fmt}
                   />
                   <Legend wrapperStyle={{ fontSize: 11 }} />
-                  <Bar dataKey="eagle" stackId="a" fill="#b45309" name="Eagle+" />
-                  <Bar dataKey="birdie" stackId="a" fill="#059669" name="Birdie" />
-                  <Bar dataKey="par" stackId="a" fill="#9ca3af" name="Par" />
-                  <Bar dataKey="bogey" stackId="a" fill="#f87171" name="Bogey" />
-                  <Bar dataKey="double_bogey" stackId="a" fill="#60a5fa" name="Double" />
-                  <Bar dataKey="triple_bogey" stackId="a" fill="#a78bfa" name="Triple" />
-                  <Bar dataKey="quad_bogey" stackId="a" fill="#6d28d9" name="Quad+" />
+                  <Bar dataKey="eagle" stackId="a" fill={colorBlindPalette?.score.eagle ?? "#b45309"} name="Eagle+" />
+                  <Bar dataKey="birdie" stackId="a" fill={colorBlindPalette?.score.birdie ?? "#059669"} name="Birdie" />
+                  <Bar dataKey="par" stackId="a" fill={colorBlindPalette?.score.par ?? "#9ca3af"} name="Par" />
+                  <Bar dataKey="bogey" stackId="a" fill={colorBlindPalette?.score.bogey ?? "#f87171"} name="Bogey" />
+                  <Bar dataKey="double_bogey" stackId="a" fill={colorBlindPalette?.score.double_bogey ?? "#60a5fa"} name="Double" />
+                  <Bar dataKey="triple_bogey" stackId="a" fill={colorBlindPalette?.score.triple_bogey ?? "#a78bfa"} name="Triple" />
+                  <Bar dataKey="quad_bogey" stackId="a" fill={colorBlindPalette?.score.quad_bogey ?? "#6d28d9"} name="Quad+" />
                 </BarChart>
               </ResponsiveContainer>
             </ChartCard>
@@ -424,10 +466,10 @@ export function CourseDetailPanel({ courseId, userId, onBack }: CourseDetailPane
                   <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
                   <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
                   <Tooltip contentStyle={tooltipStyle} formatter={((v: number) => [Number(v ?? 0).toFixed(2), "Avg to Par"]) as Fmt} />
-                  <ReferenceLine y={0} stroke="#d1d5db" />
+                  <ReferenceLine y={0} stroke={gridLineColor} />
                   <Bar dataKey="average_to_par" radius={[6, 6, 0, 0]}>
                     {analytics.course_difficulty_profile_by_hole.map((row) => (
-                      <Cell key={row.hole_number} fill={row.average_to_par <= 0 ? "#059669" : "#f87171"} />
+                      <Cell key={row.hole_number} fill={row.average_to_par <= 0 ? successColor : dangerColor} />
                     ))}
                   </Bar>
                 </BarChart>
@@ -440,10 +482,10 @@ export function CourseDetailPanel({ courseId, userId, onBack }: CourseDetailPane
                   <XAxis dataKey="bucket" tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
                   <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
                   <Tooltip contentStyle={tooltipStyle} formatter={((v: number) => [Number(v ?? 0).toFixed(2), "Avg to par"]) as Fmt} />
-                  <ReferenceLine y={0} stroke="#d1d5db" />
+                  <ReferenceLine y={0} stroke={gridLineColor} />
                   <Bar dataKey="average_to_par" radius={[6, 6, 0, 0]}>
-                    <Cell fill="#16a34a" />
-                    <Cell fill="#ef4444" />
+                    <Cell fill={successColor} />
+                    <Cell fill={dangerColor} />
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
@@ -457,8 +499,8 @@ export function CourseDetailPanel({ courseId, userId, onBack }: CourseDetailPane
                 >
                   <defs>
                     <linearGradient id="varianceBarGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%"   stopColor="#fcd34d" stopOpacity={1} />
-                      <stop offset="100%" stopColor="#d97706" stopOpacity={1} />
+                      <stop offset="0%"   stopColor={varianceGradTop} stopOpacity={1} />
+                      <stop offset="100%" stopColor={varianceGradBottom} stopOpacity={1} />
                     </linearGradient>
                   </defs>
                   <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
