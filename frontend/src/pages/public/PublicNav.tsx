@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { Flag, Menu, X } from "lucide-react";
+import { Flag, Menu, Moon, Sun, X } from "lucide-react";
+import { applyTheme, getStoredPublicTheme, setStoredPublicTheme } from "@/lib/theme";
 
 function Logo() {
   return (
@@ -19,6 +20,14 @@ function scrollTo(id: string) {
 
 export function PublicNav() {
   const [open, setOpen] = useState(false);
+  const [theme, setTheme] = useState<"light" | "dark">(() => getStoredPublicTheme());
+
+  const toggleTheme = () => {
+    const next = theme === "dark" ? "light" : "dark";
+    setTheme(next);
+    setStoredPublicTheme(next);
+    applyTheme(next);
+  };
 
   return (
     <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur-sm border-b border-gray-100">
@@ -51,6 +60,14 @@ export function PublicNav() {
           >
             Sign Up Free
           </Link>
+          <button
+            type="button"
+            onClick={toggleTheme}
+            title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+            className="inline-flex items-center justify-center h-9 w-9 rounded-full border border-gray-200 text-gray-600 hover:border-primary hover:text-primary transition-colors"
+          >
+            {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
+          </button>
         </div>
 
         {/* Mobile hamburger */}
@@ -85,6 +102,13 @@ export function PublicNav() {
             Pricing
           </button>
           <div className="flex flex-col gap-2 pt-2 border-t border-gray-100">
+            <button
+              type="button"
+              onClick={toggleTheme}
+              className="border border-gray-200 text-gray-700 rounded-full px-5 py-2 text-sm font-medium text-center hover:border-primary hover:text-primary transition-colors"
+            >
+              {theme === "dark" ? "Light Mode" : "Dark Mode"}
+            </button>
             <Link
               to="/login"
               onClick={() => setOpen(false)}
