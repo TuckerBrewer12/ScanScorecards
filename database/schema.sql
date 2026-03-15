@@ -110,6 +110,7 @@ CREATE INDEX IF NOT EXISTS idx_tee_yardages_tee_id ON courses.tee_yardages (tee_
 -- =============
 CREATE TABLE IF NOT EXISTS users.users (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    friend_code VARCHAR(12) NOT NULL UNIQUE,
     name VARCHAR(255) NOT NULL,
     email VARCHAR(255) NOT NULL UNIQUE,
     handicap_index NUMERIC(4,1),
@@ -122,6 +123,7 @@ CREATE TABLE IF NOT EXISTS users.users (
 
 CREATE INDEX IF NOT EXISTS idx_users_email ON users.users (email);
 CREATE INDEX IF NOT EXISTS idx_users_home_course ON users.users (home_course_id);
+CREATE INDEX IF NOT EXISTS idx_users_friend_code ON users.users (friend_code);
 
 CREATE TRIGGER trg_users_updated_at
     BEFORE UPDATE ON users.users

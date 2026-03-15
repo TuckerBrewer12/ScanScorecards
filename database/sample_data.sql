@@ -182,9 +182,10 @@ INSERT INTO courses.tee_yardages (tee_id, hole_number, yardage) VALUES
 -- =============
 -- User
 -- =============
-INSERT INTO users.users (id, name, email, handicap_index)
+INSERT INTO users.users (id, friend_code, name, email, handicap_index)
 VALUES (
     '00000000-0000-0000-0000-200000000001',
+    'GCTUCKER01',
     'Tucker',
     'tucker@example.com',
     NULL

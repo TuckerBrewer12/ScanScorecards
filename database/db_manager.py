@@ -8,6 +8,7 @@ from database.repositories.course_repo import CourseRepositoryDB
 from database.repositories.user_repo import UserRepositoryDB
 from database.repositories.round_repo import RoundRepositoryDB
 from database.repositories.user_tee_repo import UserTeeRepositoryDB
+from database.repositories.friendship_repo import FriendshipRepositoryDB
 
 
 class DatabaseManager:
@@ -31,6 +32,7 @@ class DatabaseManager:
         self.users = UserRepositoryDB(pool)
         self.rounds = RoundRepositoryDB(pool, self.courses)
         self.user_tees = UserTeeRepositoryDB(pool)
+        self.friendships = FriendshipRepositoryDB(pool)
 
     # ================================================================
     # Course delegates

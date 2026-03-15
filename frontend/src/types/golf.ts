@@ -105,6 +105,7 @@ export interface UserTee {
 
 export interface User {
   id: string | null;
+  friend_code?: string | null;
   name: string | null;
   email: string | null;
   home_course_id: string | null;
