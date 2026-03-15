@@ -129,6 +129,13 @@ async def save_round(
     """Save a reviewed/edited round to the database."""
     try:
         req.user_id = str(current_user.id)
+        logger.info(
+            "Scan save request received: user_id=%s course_id=%s external_course_id=%s course_name=%s",
+            req.user_id,
+            req.course_id,
+            req.external_course_id,
+            req.course_name,
+        )
         service = ScanService(db)
         saved = await service.save_reviewed_scan(req)
         return {"id": saved.id, "total_score": saved.calculate_total_score()}

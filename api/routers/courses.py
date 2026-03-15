@@ -1,12 +1,13 @@
 """Course API endpoints."""
 
 import logging
+import re
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 from typing import List, Optional
 from database.db_manager import DatabaseManager
 from database.exceptions import DuplicateError, IntegrityError, NotFoundError
-from api.dependencies import get_db, get_optional_current_user
+from api.dependencies import get_db, get_optional_current_user, get_current_user
 from api.schemas import CourseSummaryResponse
 from models import Course, Hole, Tee, User
 from services import GolfCourseAPIService
@@ -75,6 +76,16 @@ def _summarize_external_course(item: dict) -> CourseSummaryResponse:
     )
 
 
+def _norm_name(value: Optional[str]) -> str:
+    base = re.sub(r"[^a-z0-9]+", " ", (value or "").lower()).strip()
+    base = re.sub(
+        r"\b(golf|course|club|country|links|gc|cc)\b",
+        " ",
+        base,
+    )
+    return " ".join(base.split())
+
+
 @router.get("", response_model=List[CourseSummaryResponse])
 async def list_courses(
     limit: int = Query(50, ge=1, le=100),
@@ -119,9 +130,12 @@ async def search_courses(
         for i, c in enumerate(out)
     }
     local_indices_by_name = {}
+    local_indices_by_norm_name = {}
     for i, c in enumerate(out):
         name_key = (c.name or "").strip().lower()
         local_indices_by_name.setdefault(name_key, []).append(i)
+        norm_name_key = _norm_name(c.name)
+        local_indices_by_norm_name.setdefault(norm_name_key, []).append(i)
     seen_local_external_ids = {
         (c.external_course_id or "").strip()
         for c in out
@@ -138,6 +152,7 @@ async def search_courses(
             (ext_summary.location or "").strip().lower(),
         )
         ext_name_key = (ext_summary.name or "").strip().lower()
+        ext_norm_name = _norm_name(ext_summary.name)
         if ext_summary.external_course_id and ext_summary.external_course_id in seen_local_external_ids:
             continue
         if ext_key in seen_local_keys:
@@ -155,6 +170,31 @@ async def search_courses(
                     seen_local_external_ids.add(ext_summary.external_course_id)
                     break
             continue
+        # Fallback: normalized name similarity for slight naming differences.
+        if ext_norm_name:
+            matched = False
+            if ext_norm_name in local_indices_by_norm_name:
+                for idx in local_indices_by_norm_name[ext_norm_name]:
+                    if not out[idx].external_course_id:
+                        out[idx].external_course_id = ext_summary.external_course_id
+                        seen_local_external_ids.add(ext_summary.external_course_id)
+                        matched = True
+                        break
+            if not matched:
+                for local_norm, indices in local_indices_by_norm_name.items():
+                    if not local_norm:
+                        continue
+                    if local_norm in ext_norm_name or ext_norm_name in local_norm:
+                        for idx in indices:
+                            if not out[idx].external_course_id:
+                                out[idx].external_course_id = ext_summary.external_course_id
+                                seen_local_external_ids.add(ext_summary.external_course_id)
+                                matched = True
+                                break
+                    if matched:
+                        break
+            if matched:
+                continue
         out.append(ext_summary)
 
     return out[:20]
@@ -171,8 +211,9 @@ async def get_course(course_id: str, db: DatabaseManager = Depends(get_db)):
 @router.post("", status_code=201)
 async def create_course(
     req: CreateCourseRequest,
-    user_id: str = Query(..., description="Owner user ID for the custom course"),
+    user_id: Optional[str] = Query(None, description="Owner user ID for the custom course"),
     db: DatabaseManager = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """Create a custom course for a user."""
     holes = [Hole(number=h.number, par=h.par, handicap=h.handicap) for h in req.holes]
@@ -185,6 +226,8 @@ async def create_course(
         )
         for t in req.tees
     ]
+    effective_user_id = user_id or str(current_user.id)
+
     course = Course(
         name=req.name,
         external_course_id=req.external_course_id,
@@ -193,7 +236,7 @@ async def create_course(
         tees=tees,
     )
     try:
-        created = await db.courses.create_course(course, user_id=user_id)
+        created = await db.courses.create_course(course, user_id=effective_user_id)
         return _summarize_course(created)
     except DuplicateError:
         raise HTTPException(409, "A course with that name already exists for this user")
