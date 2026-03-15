@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
+import { Moon, Sun } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { api } from "@/lib/api";
+import { applyTheme, getStoredTheme, setStoredTheme } from "@/lib/theme";
+import type { AppTheme } from "@/lib/theme";
 import type { CourseSummary } from "@/types/golf";
 
 const UPDATES_PREF_KEY = "settings_get_updates";
@@ -14,6 +17,7 @@ export function SettingsPage({ userId }: { userId: string }) {
   const [handicapInput, setHandicapInput] = useState<string>("");
   const [friendCode, setFriendCode] = useState<string>("");
   const [getUpdates, setGetUpdates] = useState<boolean>(true);
+  const [theme, setTheme] = useState<AppTheme>(() => getStoredTheme());
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string>("");
@@ -70,6 +74,10 @@ export function SettingsPage({ userId }: { userId: string }) {
   }, [userId]);
 
   useEffect(() => {
+    applyTheme(theme);
+  }, [theme]);
+
+  useEffect(() => {
     const q = homeCourseQuery.trim();
     if (q.length < 2) {
       setSearchResults([]);
@@ -100,6 +108,12 @@ export function SettingsPage({ userId }: { userId: string }) {
     setHomeCourseQuery("");
     setSearchResults([]);
     setShowResults(false);
+  };
+
+  const setThemePreference = (nextTheme: AppTheme) => {
+    setTheme(nextTheme);
+    setStoredTheme(nextTheme);
+    applyTheme(nextTheme);
   };
 
   const saveSettings = async () => {
@@ -202,6 +216,31 @@ export function SettingsPage({ userId }: { userId: string }) {
 
         <section className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 space-y-3">
           <h2 className="text-sm font-semibold text-gray-700">Preferences</h2>
+          <label className="flex items-center justify-between rounded-lg border border-gray-200 px-3 py-2.5">
+            <span className="text-sm text-gray-700">Theme</span>
+            <div className="inline-flex items-center rounded-lg border border-gray-300 overflow-hidden">
+              <button
+                type="button"
+                onClick={() => setThemePreference("light")}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs ${
+                  theme === "light" ? "bg-[#eef7f0] text-primary font-semibold" : "bg-white text-gray-600"
+                }`}
+              >
+                <Sun size={14} />
+                Light
+              </button>
+              <button
+                type="button"
+                onClick={() => setThemePreference("dark")}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs ${
+                  theme === "dark" ? "bg-[#eef7f0] text-primary font-semibold" : "bg-white text-gray-600"
+                }`}
+              >
+                <Moon size={14} />
+                Dark
+              </button>
+            </div>
+          </label>
           <label className="flex items-center justify-between rounded-lg border border-gray-200 px-3 py-2.5">
             <span className="text-sm text-gray-700">Get updates</span>
             <input
