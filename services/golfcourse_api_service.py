@@ -1,6 +1,7 @@
 """Client for querying external GolfCourseAPI course search."""
 
 import os
+import re
 from typing import Any, Dict, List, Optional
 
 import httpx
@@ -48,7 +49,7 @@ class GolfCourseAPIService:
           "raw": <original item>
         }
         """
-        q = (query or "").strip()
+        q = self._normalize_search_query(query)
         if len(q) < 2:
             return []
         if not self._api_key:
@@ -59,33 +60,28 @@ class GolfCourseAPIService:
         headers = {"Authorization": f"Key {self._api_key}"}
         path = self._search_path if self._search_path.startswith("/") else f"/{self._search_path}"
 
-        # Try common query parameter names since public docs/shape may vary.
-        candidate_params = (
-            {"q": q, "limit": limit},
-            {"search": q, "limit": limit},
-            {"query": q, "limit": limit},
-            {"name": q, "limit": limit},
-        )
-
+        params = {"search_query": q, "limit": limit}
         async with httpx.AsyncClient(base_url=self._base_url, timeout=self._timeout) as client:
-            last_error: Optional[Exception] = None
-            for params in candidate_params:
-                try:
-                    resp = await client.get(path, headers=headers, params=params)
-                    # If one param style is unsupported, another may still work.
-                    if resp.status_code in (400, 404, 405, 422):
-                        continue
-                    resp.raise_for_status()
-                    data = resp.json()
-                    items = self._extract_items(data)
-                    return self._normalize_items(items, limit=limit)
-                except Exception as exc:  # noqa: BLE001
-                    last_error = exc
-                    continue
+            try:
+                resp = await client.get(path, headers=headers, params=params)
+                resp.raise_for_status()
+                data = resp.json()
+                items = self._extract_items(data)
+                return self._normalize_items(items, limit=limit)
+            except Exception as exc:  # noqa: BLE001
+                raise RuntimeError(f"GolfCourseAPI search failed: {exc}") from exc
 
-        if last_error:
-            raise RuntimeError(f"GolfCourseAPI search failed: {last_error}") from last_error
-        return []
+    def _normalize_search_query(self, query: str) -> str:
+        """Normalize user query to provider-friendly form while keeping one request."""
+        base = " ".join((query or "").strip().split())
+        lowered = base.lower()
+        cleaned = re.sub(
+            r"\b(golf|course|club|country|links|gc|cc)\b",
+            " ",
+            lowered,
+        )
+        cleaned = " ".join(cleaned.split())
+        return cleaned or base
 
     def _extract_items(self, payload: Any) -> List[Dict[str, Any]]:
         """Extract a list of course objects from varying JSON response shapes."""
@@ -108,12 +104,24 @@ class GolfCourseAPIService:
         out: List[Dict[str, Any]] = []
         for row in items:
             external_id = self._extract_external_id(row)
+            location_obj = row.get("location") if isinstance(row.get("location"), dict) else {}
+            club_name = row.get("club_name")
+            course_name = row.get("course_name")
+            resolved_name = (
+                row.get("name")
+                or row.get("course_name")
+                or (
+                    f"{club_name} {course_name}".strip()
+                    if club_name and course_name
+                    else club_name or course_name
+                )
+            )
             out.append(
                 {
                     "external_course_id": str(external_id) if external_id is not None else None,
-                    "name": row.get("name") or row.get("course_name"),
-                    "city": row.get("city"),
-                    "state": row.get("state"),
+                    "name": resolved_name,
+                    "city": row.get("city") or location_obj.get("city"),
+                    "state": row.get("state") or location_obj.get("state"),
                     "source": "golfcourseapi",
                     "raw": row,
                 }
