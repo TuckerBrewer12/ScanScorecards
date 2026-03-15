@@ -3,26 +3,18 @@ import { Moon, Sun } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { api } from "@/lib/api";
 import { applyTheme, getStoredTheme, setStoredTheme } from "@/lib/theme";
+import { getStoredColorBlindMode, setStoredColorBlindMode } from "@/lib/accessibility";
 import type { AppTheme } from "@/lib/theme";
+import type { ColorBlindMode } from "@/lib/accessibility";
 import type { CourseSummary } from "@/types/golf";
 
 const UPDATES_PREF_KEY = "settings_get_updates";
-const COLORBLIND_PREF_KEY = "settings_colorblind_mode";
-type ColorBlindMode = "none" | "protanopia" | "deuteranopia" | "tritanopia";
 const COLORBLIND_MODES: Array<{ key: ColorBlindMode; label: string }> = [
   { key: "none", label: "No Filter" },
   { key: "protanopia", label: "Protanopia" },
   { key: "deuteranopia", label: "Deuteranopia" },
   { key: "tritanopia", label: "Tritanopia" },
 ];
-
-function getStoredColorBlindMode(): ColorBlindMode {
-  const value = localStorage.getItem(COLORBLIND_PREF_KEY);
-  if (value === "protanopia" || value === "deuteranopia" || value === "tritanopia") {
-    return value;
-  }
-  return "none";
-}
 
 export function SettingsPage({ userId }: { userId: string }) {
   const [courses, setCourses] = useState<CourseSummary[]>([]);
@@ -135,7 +127,7 @@ export function SettingsPage({ userId }: { userId: string }) {
 
   const setColorBlindPreference = (mode: ColorBlindMode) => {
     setColorBlindMode(mode);
-    localStorage.setItem(COLORBLIND_PREF_KEY, mode);
+    setStoredColorBlindMode(mode);
   };
 
   const colorBlindIndex = COLORBLIND_MODES.findIndex((m) => m.key === colorBlindMode);
