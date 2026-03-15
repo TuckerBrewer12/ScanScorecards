@@ -1,12 +1,45 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { api } from "@/lib/api";
+import { useAuth } from "@/context/AuthContext";
+import type { Friendship } from "@/types/golf";
 
 export function SocialPage() {
+  const { userId } = useAuth();
   const [friendCode, setFriendCode] = useState("");
   const [sending, setSending] = useState(false);
   const [message, setMessage] = useState("");
+  const [friends, setFriends] = useState<Friendship[]>([]);
+  const [loadingFriends, setLoadingFriends] = useState(true);
+
+  const loadFriends = async () => {
+    setLoadingFriends(true);
+    try {
+      const accepted = await api.getFriendships("accepted");
+      setFriends(accepted);
+    } catch {
+      setFriends([]);
+    } finally {
+      setLoadingFriends(false);
+    }
+  };
+
+  useEffect(() => {
+    void loadFriends();
+  }, []);
+
+  const friendRows = useMemo(() => {
+    if (!userId) return [];
+    return friends.map((f) => {
+      const isRequester = f.requester_id === userId;
+      return {
+        id: f.id,
+        name: isRequester ? (f.addressee_name || "Unknown user") : (f.requester_name || "Unknown user"),
+        email: isRequester ? f.addressee_email : f.requester_email,
+      };
+    });
+  }, [friends, userId]);
 
   const sendRequest = async () => {
     const code = friendCode.trim().toUpperCase();
@@ -21,6 +54,7 @@ export function SocialPage() {
       await api.sendFriendRequest(code);
       setMessage("Friend request sent.");
       setFriendCode("");
+      await loadFriends();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Failed to send request.");
     } finally {
@@ -64,6 +98,33 @@ export function SocialPage() {
             </Link>
             .
           </p>
+        </section>
+
+        <section className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 space-y-3">
+          <div className="flex items-center gap-2">
+            <h2 className="text-sm font-semibold text-gray-700">Friends List</h2>
+            <button
+              type="button"
+              onClick={loadFriends}
+              className="ml-auto rounded-md border border-gray-300 px-2.5 py-1.5 text-xs text-gray-700 hover:bg-gray-50"
+            >
+              Refresh
+            </button>
+          </div>
+          {loadingFriends ? (
+            <p className="text-sm text-gray-500">Loading friends...</p>
+          ) : friendRows.length === 0 ? (
+            <p className="text-sm text-gray-500">No friends yet.</p>
+          ) : (
+            <div className="divide-y divide-gray-100 rounded-lg border border-gray-100">
+              {friendRows.map((f) => (
+                <div key={f.id} className="px-3 py-2">
+                  <p className="text-sm font-medium text-gray-900">{f.name}</p>
+                  <p className="text-xs text-gray-500">{f.email ?? "No email"}</p>
+                </div>
+              ))}
+            </div>
+          )}
         </section>
       </div>
     </div>
