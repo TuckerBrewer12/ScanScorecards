@@ -113,6 +113,19 @@ export interface User {
   created_at: string | null;
 }
 
+export interface Friendship {
+  id: string;
+  requester_id: string;
+  addressee_id: string;
+  status: "pending" | "accepted" | "declined" | "blocked";
+  created_at: string;
+  updated_at: string;
+  requester_name?: string | null;
+  requester_email?: string | null;
+  addressee_name?: string | null;
+  addressee_email?: string | null;
+}
+
 export type ScoreType = "eagle" | "birdie" | "par" | "bogey" | "double-bogey" | "worse";
 
 export function getScoreType(strokes: number, par: number): ScoreType {

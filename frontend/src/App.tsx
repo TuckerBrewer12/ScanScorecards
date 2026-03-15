@@ -12,6 +12,7 @@ import { ProgressModePage } from "./pages/ProgressModePage";
 import { CareerPage } from "./pages/CareerPage";
 import { SuggestionsPage } from "./pages/SuggestionsPage";
 import { SettingsPage } from "./pages/SettingsPage";
+import { FriendsInboxPage } from "./pages/FriendsInboxPage";
 import { LoginPage } from "./pages/LoginPage";
 import { RegisterPage } from "./pages/RegisterPage";
 import { LandingPage } from "./pages/public/LandingPage";
@@ -53,6 +54,7 @@ function AppRoutes() {
         <Route path="/suggestions" element={<SuggestionsPage userId={userId} />} />
         <Route path="/progress" element={<ProgressModePage userId={userId} />} />
         <Route path="/career" element={<CareerPage userId={userId} />} />
+        <Route path="/inbox" element={<FriendsInboxPage userId={userId} />} />
         <Route path="/settings" element={<SettingsPage userId={userId} />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
