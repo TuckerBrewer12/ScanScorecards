@@ -11,6 +11,8 @@ import { AnalyticsPage } from "./pages/AnalyticsPage";
 import { CareerPage } from "./pages/CareerPage";
 import { SuggestionsPage } from "./pages/SuggestionsPage";
 import { SettingsPage } from "./pages/SettingsPage";
+import { FriendsInboxPage } from "./pages/FriendsInboxPage";
+import { SocialPage } from "./pages/SocialPage";
 import { LoginPage } from "./pages/LoginPage";
 import { RegisterPage } from "./pages/RegisterPage";
 import { LandingPage } from "./pages/public/LandingPage";
@@ -50,7 +52,9 @@ function AppRoutes() {
         <Route path="/scan" element={<ScanPage userId={userId} scanState={scanState} setScanState={setScanState} />} />
         <Route path="/analytics" element={<AnalyticsPage userId={userId} />} />
         <Route path="/suggestions" element={<SuggestionsPage userId={userId} />} />
+        <Route path="/social" element={<SocialPage />} />
         <Route path="/career" element={<CareerPage userId={userId} />} />
+        <Route path="/inbox" element={<FriendsInboxPage userId={userId} />} />
         <Route path="/settings" element={<SettingsPage userId={userId} />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

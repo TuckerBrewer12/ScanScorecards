@@ -106,6 +106,7 @@ def user_from_row(user_row, rounds: Optional[List[Round]] = None) -> User:
     """users.users row -> User model."""
     return User(
         id=str(user_row["id"]),
+        friend_code=user_row.get("friend_code"),
         name=user_row["name"],
         email=user_row["email"],
         home_course_id=str(user_row["home_course_id"]) if user_row["home_course_id"] else None,
@@ -184,6 +185,7 @@ def round_to_row(
 def user_to_row(user: User) -> dict:
     """User -> dict for users.users INSERT."""
     return {
+        "friend_code": user.friend_code,
         "name": user.name,
         "email": user.email,
         "handicap_index": user.handicap,

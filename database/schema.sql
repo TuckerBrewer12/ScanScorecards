@@ -110,6 +110,7 @@ CREATE INDEX IF NOT EXISTS idx_tee_yardages_tee_id ON courses.tee_yardages (tee_
 -- =============
 CREATE TABLE IF NOT EXISTS users.users (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    friend_code VARCHAR(12) NOT NULL UNIQUE,
     name VARCHAR(255) NOT NULL,
     email VARCHAR(255) NOT NULL UNIQUE,
     handicap_index NUMERIC(4,1),
@@ -122,9 +123,38 @@ CREATE TABLE IF NOT EXISTS users.users (
 
 CREATE INDEX IF NOT EXISTS idx_users_email ON users.users (email);
 CREATE INDEX IF NOT EXISTS idx_users_home_course ON users.users (home_course_id);
+CREATE INDEX IF NOT EXISTS idx_users_friend_code ON users.users (friend_code);
 
 CREATE TRIGGER trg_users_updated_at
     BEFORE UPDATE ON users.users
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+-- =============
+-- users.friendships
+-- Directed request rows with undirected uniqueness per user-pair.
+-- =============
+CREATE TABLE IF NOT EXISTS users.friendships (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    requester_id UUID NOT NULL REFERENCES users.users(id) ON DELETE CASCADE,
+    addressee_id UUID NOT NULL REFERENCES users.users(id) ON DELETE CASCADE,
+    status VARCHAR(20) NOT NULL CHECK (status IN ('pending', 'accepted', 'declined', 'blocked')),
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW(),
+    CHECK (requester_id <> addressee_id)
+);
+
+-- One friendship row max per user-pair regardless of direction.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_friendships_unique_pair
+    ON users.friendships (
+        LEAST(requester_id, addressee_id),
+        GREATEST(requester_id, addressee_id)
+    );
+CREATE INDEX IF NOT EXISTS idx_friendships_requester ON users.friendships (requester_id);
+CREATE INDEX IF NOT EXISTS idx_friendships_addressee ON users.friendships (addressee_id);
+CREATE INDEX IF NOT EXISTS idx_friendships_status ON users.friendships (status);
+
+CREATE TRIGGER trg_friendships_updated_at
+    BEFORE UPDATE ON users.friendships
     FOR EACH ROW EXECUTE FUNCTION update_updated_at();
 
 -- =============

@@ -70,6 +70,7 @@ async def login(req: LoginRequest, db: DatabaseManager = Depends(get_db)):
 async def me(current_user: User = Depends(get_current_user)):
     return {
         "user_id": str(current_user.id),
+        "friend_code": current_user.friend_code,
         "name": current_user.name,
         "email": current_user.email,
     }

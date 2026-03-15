@@ -5,14 +5,16 @@ from uuid import uuid4
 from database.repositories.course_repo import CourseRepositoryDB
 from database.repositories.round_repo import RoundRepositoryDB
 from database.repositories.user_tee_repo import UserTeeRepositoryDB
+from database.repositories.user_repo import UserRepositoryDB
 from database.converters import (
     hole_score_from_row,
     hole_score_to_row,
     round_from_rows,
     round_to_row,
     user_tee_from_row,
+    user_from_row,
 )
-from models import Course, Hole, Tee, Round, HoleScore, UserTee
+from models import Course, Hole, Tee, Round, HoleScore, UserTee, User
 
 
 # ================================================================
@@ -154,6 +156,23 @@ def test_user_tee_converter_roundtrip():
     assert ut.hole_yardages == {1: 400, 9: 350}   # keys converted to int
 
 
+def test_user_converter_maps_friend_code():
+    """user_from_row should map friend_code from users.users."""
+    uid = uuid4()
+    row = {
+        "id": uid,
+        "friend_code": "GCABC12345",
+        "name": "Guo",
+        "email": "guo@example.com",
+        "home_course_id": None,
+        "handicap_index": None,
+        "created_at": None,
+    }
+    user = user_from_row(row)
+    assert user.id == str(uid)
+    assert user.friend_code == "GCABC12345"
+
+
 # ================================================================
 # CourseRepositoryDB
 # ================================================================
@@ -265,6 +284,52 @@ async def test_course_repo_create_course_persists_external_course_id(mock_pool):
 # ================================================================
 # RoundRepositoryDB
 # ================================================================
+
+
+@pytest.mark.asyncio
+async def test_user_repo_create_user_persists_friend_code(mock_pool):
+    pool, conn = mock_pool
+    repo = UserRepositoryDB(pool)
+    uid = uuid4()
+
+    conn.fetchrow.return_value = {
+        "id": uid,
+        "friend_code": "GCWXYZ1234",
+        "name": "Test User",
+        "email": "test@example.com",
+        "home_course_id": None,
+        "handicap_index": None,
+        "created_at": None,
+    }
+
+    created = await repo.create_user(User(name="Test User", email="test@example.com"))
+    assert created.id == str(uid)
+    assert created.friend_code == "GCWXYZ1234"
+    # INSERT args: friend_code, name, email, handicap_index, home_course_id, password_hash
+    inserted_code = conn.fetchrow.call_args.args[1]
+    assert inserted_code.startswith("GC")
+    assert len(inserted_code) == 10
+
+
+@pytest.mark.asyncio
+async def test_user_repo_get_user_by_friend_code(mock_pool):
+    pool, conn = mock_pool
+    repo = UserRepositoryDB(pool)
+    uid = uuid4()
+    conn.fetchrow.return_value = {
+        "id": uid,
+        "friend_code": "GCQWER5678",
+        "name": "Friend",
+        "email": "friend@example.com",
+        "home_course_id": None,
+        "handicap_index": None,
+        "created_at": None,
+    }
+
+    user = await repo.get_user_by_friend_code(" gcqwer5678 ")
+    assert user is not None
+    assert user.friend_code == "GCQWER5678"
+    assert conn.fetchrow.call_args.args[1] == "GCQWER5678"
 
 @pytest.mark.asyncio
 async def test_round_repo_get_round(mock_pool):

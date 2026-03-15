@@ -10,6 +10,7 @@ if TYPE_CHECKING:
 class User(BaseGolfModel):
     """Golfer with their rounds and handicap."""
     id: Optional[str] = None
+    friend_code: Optional[str] = None
     name: Optional[str] = None
     email: Optional[str] = None
     home_course_id: Optional[str] = None
