@@ -87,6 +87,8 @@ export interface Milestone {
 export interface CourseSummary {
   id: string;
   name: string | null;
+  external_course_id?: string | null;
+  source?: "local" | "external";
   location: string | null;
   par: number | null;
   total_holes: number;

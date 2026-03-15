@@ -6,13 +6,17 @@ import { initialScanState } from "@/types/scan";
 import { api } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 
+function normalizeCourseQuery(value: string): string {
+  return value.trim().replace(/\s+/g, " ");
+}
+
 export function useScan(
   userId: string,
   scanState: ScanState,
   setScanState: React.Dispatch<React.SetStateAction<ScanState>>
 ) {
   const navigate = useNavigate();
-  const { step, scanMode, selectedCourseId, selectedCourseName, scoringFormat, file, result, editedScores, editedNotes, editedDate, editedTeeBox, userContext, reviewCourseId, reviewCourseName, manualCourseHoles, manualCourseTees } = scanState;
+  const { step, scanMode, selectedCourseId, selectedCourseName, scoringFormat, file, result, editedScores, editedNotes, editedDate, editedTeeBox, userContext, reviewCourseId, reviewExternalCourseId, reviewCourseName, manualCourseHoles, manualCourseTees } = scanState;
 
   const update = useCallback(
     (patch: Partial<ScanState>) => setScanState((prev) => ({ ...prev, ...patch })),
@@ -41,13 +45,14 @@ export function useScan(
   const reviewSearchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleReviewCourseQuery = useCallback((q: string) => {
-    setReviewCourseQuery(q);
+    const normalized = normalizeCourseQuery(q);
+    setReviewCourseQuery(normalized);
     if (reviewSearchTimer.current) clearTimeout(reviewSearchTimer.current);
-    if (q.trim().length < 2) { setReviewCourseResults([]); return; }
+    if (!userId || normalized.length < 2) { setReviewCourseResults([]); return; }
     reviewSearchTimer.current = setTimeout(async () => {
       setReviewSearching(true);
       try {
-        const results = await api.searchCourses(q.trim(), userId);
+        const results = await api.searchCourses(normalized, userId, true);
         setReviewCourseResults(results);
       } catch { setReviewCourseResults([]); }
       finally { setReviewSearching(false); }
@@ -55,7 +60,17 @@ export function useScan(
   }, [userId]);
 
   const selectReviewCourse = useCallback((course: CourseSummary) => {
-    update({ reviewCourseId: course.id, reviewCourseName: course.name ?? course.id });
+    const isExternal = course.source === "external" || course.id.startsWith("external:");
+    if (isExternal && !course.external_course_id) {
+      update({ error: "External course result is missing provider ID. Please choose another match or enter a custom name." });
+      return;
+    }
+    update({
+      reviewCourseId: isExternal ? null : course.id,
+      reviewExternalCourseId: course.external_course_id ?? null,
+      reviewCourseName: course.name ?? course.id,
+      error: null,
+    });
     setReviewCourseQuery("");
     setReviewCourseResults([]);
   }, [update]);
@@ -67,13 +82,14 @@ export function useScan(
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleCourseQuery = useCallback((q: string) => {
-    setCourseQuery(q);
+    const normalized = normalizeCourseQuery(q);
+    setCourseQuery(normalized);
     if (searchTimer.current) clearTimeout(searchTimer.current);
-    if (q.trim().length < 2) { setCourseResults([]); return; }
+    if (!userId || normalized.length < 2) { setCourseResults([]); return; }
     searchTimer.current = setTimeout(async () => {
       setSearching(true);
       try {
-        const results = await api.searchCourses(q.trim(), userId);
+        const results = await api.searchCourses(normalized, userId);
         setCourseResults(results);
       } catch { setCourseResults([]); }
       finally { setSearching(false); }
@@ -147,15 +163,20 @@ export function useScan(
           : new Date().toISOString().substring(0, 10),
         editedTeeBox: data.round.tee_box ?? null,
         reviewCourseId: null,
+        reviewExternalCourseId: null,
         reviewCourseName: data.round.course?.name ?? null,
         step: "review",
       });
       // Pre-fill the review search box with whatever the LLM extracted
-      setReviewCourseQuery(data.round.course?.name ?? "");
+      const extractedCourseName = normalizeCourseQuery(data.round.course?.name ?? "");
+      setReviewCourseQuery(extractedCourseName);
+      if (extractedCourseName.length >= 2) {
+        handleReviewCourseQuery(extractedCourseName);
+      }
     } catch (err) {
       update({ error: err instanceof Error ? err.message : "Extraction failed", step: "upload" });
     }
-  }, [file, scanMode, selectedCourseId, scoringFormat, userContext, update, userId]);
+  }, [file, scanMode, selectedCourseId, scoringFormat, userContext, update, userId, handleReviewCourseQuery]);
 
   const handleScoreChange = useCallback((index: number, field: keyof ExtractedHoleScore, value: string) => {
     const next = [...editedScores];
@@ -233,6 +254,7 @@ export function useScan(
       editedDate: manualDate,
       editedTeeBox: manualTeeBox || null,
       reviewCourseId: selectedCourseId,
+      reviewExternalCourseId: null,
       reviewCourseName: selectedCourseName,
       step: "review",
     });
@@ -251,7 +273,15 @@ export function useScan(
         body: JSON.stringify({
           user_id: userId,
           ...(reviewCourseId
-            ? { course_id: reviewCourseId }
+            ? {
+                course_id: reviewCourseId,
+                ...(reviewExternalCourseId ? { external_course_id: reviewExternalCourseId } : {}),
+              }
+            : reviewExternalCourseId
+            ? {
+                external_course_id: reviewExternalCourseId,
+                course_name: reviewCourseName ?? result.round.course?.name,
+              }
             : { course_name: reviewCourseName ?? result.round.course?.name }),
           course_location: result.round.course?.location,
           tee_box: editedTeeBox,
@@ -306,7 +336,7 @@ export function useScan(
       update({ error: err instanceof Error ? err.message : "Save failed" });
       setSaving(false);
     }
-  }, [result, userId, reviewCourseId, reviewCourseName, editedTeeBox, editedDate, editedNotes, editedScores, update, setScanState, navigate]);
+  }, [result, userId, reviewCourseId, reviewExternalCourseId, reviewCourseName, editedTeeBox, editedDate, editedNotes, editedScores, update, setScanState, navigate]);
 
   return {
     // Derived state from scanState
@@ -323,6 +353,7 @@ export function useScan(
     editedTeeBox,
     userContext,
     reviewCourseId,
+    reviewExternalCourseId,
     reviewCourseName,
     manualCourseHoles,
     manualCourseTees,

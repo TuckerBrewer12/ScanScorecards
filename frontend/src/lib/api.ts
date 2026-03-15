@@ -101,9 +101,10 @@ export const api = {
     return fetchJSON<CourseSummary[]>(`/courses?${params}`);
   },
 
-  searchCourses: (query: string, userId?: string) => {
+  searchCourses: (query: string, userId?: string, includeExternal = false) => {
     const params = new URLSearchParams({ q: query });
     if (userId) params.set("user_id", userId);
+    if (includeExternal) params.set("include_external", "true");
     return fetchJSON<CourseSummary[]>(`/courses/search?${params}`);
   },
 

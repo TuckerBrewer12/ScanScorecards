@@ -214,7 +214,7 @@ export function CareerPage({ userId }: { userId: string }) {
       meta: eventMeta(best_performance_streaks_events[w].longest_birdie_streak),
     },
     {
-      label: "Par Streak",
+      label: "Par-or-Better Streak",
       value: best_performance_streaks[w].longest_par_streak,
       meta: eventMeta(best_performance_streaks_events[w].longest_par_streak),
     },

@@ -343,13 +343,19 @@ def notable_achievements(
     }
 
     lifetime_birdie_streak, lifetime_birdie_event = _streak_with_event(lifetime_holes, lambda row: row["score_type"] == "birdie")
-    lifetime_par_streak, lifetime_par_event = _streak_with_event(lifetime_holes, lambda row: row["score_type"] == "par")
+    lifetime_par_streak, lifetime_par_event = _streak_with_event(
+        lifetime_holes,
+        lambda row: row["score_type"] in {"par", "birdie", "eagle"},
+    )
     lifetime_gir_streak, lifetime_gir_event = _streak_with_event(lifetime_holes, lambda row: row["gir"])
     lifetime_two_putt_streak, lifetime_two_putt_event = _streak_with_event(
         lifetime_holes, lambda row: row["putts"] is not None and row["putts"] <= 2
     )
     one_year_birdie_streak, one_year_birdie_event = _streak_with_event(year_holes, lambda row: row["score_type"] == "birdie")
-    one_year_par_streak, one_year_par_event = _streak_with_event(year_holes, lambda row: row["score_type"] == "par")
+    one_year_par_streak, one_year_par_event = _streak_with_event(
+        year_holes,
+        lambda row: row["score_type"] in {"par", "birdie", "eagle"},
+    )
     one_year_gir_streak, one_year_gir_event = _streak_with_event(year_holes, lambda row: row["gir"])
     one_year_two_putt_streak, one_year_two_putt_event = _streak_with_event(
         year_holes, lambda row: row["putts"] is not None and row["putts"] <= 2

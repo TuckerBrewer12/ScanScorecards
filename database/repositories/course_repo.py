@@ -185,6 +185,39 @@ class CourseRepositoryDB:
                 return None
             return await self._assemble(conn, row)
 
+    async def find_course_by_external_id(
+        self,
+        external_course_id: str,
+        *,
+        user_id: Optional[str] = None,
+    ) -> Optional[Course]:
+        """Find a course by provider ID.
+
+        With user_id: searches master plus this user's custom courses.
+        Without user_id: searches master courses only.
+        """
+        async with self._pool.acquire() as conn:
+            if user_id:
+                row = await conn.fetchrow(
+                    """SELECT * FROM courses.courses
+                       WHERE external_course_id = $1
+                         AND (user_id IS NULL OR user_id = $2)
+                       ORDER BY user_id NULLS FIRST
+                       LIMIT 1""",
+                    external_course_id, UUID(user_id),
+                )
+            else:
+                row = await conn.fetchrow(
+                    """SELECT * FROM courses.courses
+                       WHERE external_course_id = $1
+                         AND user_id IS NULL
+                       LIMIT 1""",
+                    external_course_id,
+                )
+            if not row:
+                return None
+            return await self._assemble(conn, row)
+
     async def find_user_course_by_name(
         self,
         name: str,
@@ -463,9 +496,9 @@ class CourseRepositoryDB:
                 async with conn.transaction():
                     row_data = course_to_row(course, user_id=uid)
                     course_row = await conn.fetchrow(
-                        """INSERT INTO courses.courses (name, location, par, total_holes, user_id)
-                           VALUES ($1, $2, $3, $4, $5) RETURNING *""",
-                        row_data["name"], row_data["location"],
+                        """INSERT INTO courses.courses (name, external_course_id, location, par, total_holes, user_id)
+                           VALUES ($1, $2, $3, $4, $5, $6) RETURNING *""",
+                        row_data["name"], row_data["external_course_id"], row_data["location"],
                         row_data["par"], row_data["total_holes"], row_data["user_id"],
                     )
                     course_id = course_row["id"]
@@ -551,7 +584,7 @@ class CourseRepositoryDB:
         When user_id is provided, enforces that the course is owned by that user
         (returns None if it's a master course or belongs to another user).
         """
-        allowed = {"name", "location", "par", "total_holes", "metadata"}
+        allowed = {"name", "external_course_id", "location", "par", "total_holes", "metadata"}
         updates = {k: v for k, v in fields.items() if k in allowed}
         if not updates:
             return await self.get_course(course_id)

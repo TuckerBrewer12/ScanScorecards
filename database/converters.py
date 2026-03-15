@@ -53,6 +53,7 @@ def course_from_rows(
     return Course(
         id=str(course_row["id"]),
         name=course_row["name"],
+        external_course_id=course_row["external_course_id"],
         location=course_row["location"],
         par=course_row["par"],
         holes=holes,
@@ -122,6 +123,7 @@ def course_to_row(course: Course, user_id: Optional[UUID] = None) -> dict:
     """Course -> dict for courses.courses INSERT."""
     return {
         "name": course.name,
+        "external_course_id": course.external_course_id,
         "location": course.location,
         "par": course.get_par(),
         "total_holes": len(course.holes) if course.holes else None,

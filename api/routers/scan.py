@@ -42,6 +42,14 @@ async def extract_scan(
     current_user: User = Depends(get_current_user),
 ):
     """Upload a scorecard image, run LLM extraction, return results for review."""
+    logger.info(
+        "Scan extract request received: filename=%s strategy=%s course_id=%s scoring_format=%s user_id=%s",
+        file.filename,
+        strategy,
+        course_id,
+        scoring_format,
+        current_user.id,
+    )
     # Validate file type
     suffix = Path(file.filename or "upload.jpg").suffix.lower()
     allowed = {".jpg", ".jpeg", ".png", ".webp", ".heic", ".pdf"}
@@ -121,6 +129,13 @@ async def save_round(
     """Save a reviewed/edited round to the database."""
     try:
         req.user_id = str(current_user.id)
+        logger.info(
+            "Scan save request received: user_id=%s course_id=%s external_course_id=%s course_name=%s",
+            req.user_id,
+            req.course_id,
+            req.external_course_id,
+            req.course_name,
+        )
         service = ScanService(db)
         saved = await service.save_reviewed_scan(req)
         return {"id": saved.id, "total_score": saved.calculate_total_score()}
