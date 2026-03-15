@@ -124,7 +124,7 @@ export function SettingsPage({ userId }: { userId: string }) {
       } else {
         const parsed = Number(trimmed);
         if (!Number.isFinite(parsed) || parsed < -10 || parsed > 54) {
-          setMessage("Handicap must be a number between -10 and 54.");
+          setMessage("Handicap must be a number between +10 and 54.");
           setSaving(false);
           return;
         }
@@ -249,7 +249,7 @@ export function SettingsPage({ userId }: { userId: string }) {
             className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
           />
           <p className="text-xs text-gray-500">
-            Leave blank to clear handicap. Allowed range: -10 to 54.
+            Leave blank to clear handicap. Allowed range: +10 to 54.
           </p>
         </section>
 

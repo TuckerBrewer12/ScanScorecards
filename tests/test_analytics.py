@@ -458,6 +458,11 @@ def test_notable_achievements_lifetime_and_one_year():
     assert year_totals["rounds_played"] == 2
     assert year_totals["birdies"] == 6
     assert year_totals["triple_bogeys"] == 0
+    assert summary["best_performance_streaks"]["lifetime"]["longest_par_streak"] == 14
+    assert summary["best_performance_streaks_events"]["lifetime"]["longest_par_streak"] == {
+        "date": "2026/2/1",
+        "course": "Demo Course",
+    }
 
     assert summary["home_course_records"]["lifetime"]["home_course_name"] is None
     assert summary["home_course_records"]["lifetime"]["lowest_score_on_home_course"] is None

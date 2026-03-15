@@ -32,6 +32,7 @@ export function ScanPage({ userId, scanState, setScanState }: ScanPageProps) {
         error={scan.error}
         preview={scan.preview}
         reviewCourseId={scan.reviewCourseId}
+        reviewExternalCourseId={scan.reviewExternalCourseId}
         reviewCourseName={scan.reviewCourseName}
         saving={scan.saving}
         handicapIndex={scan.handicapIndex}
