@@ -26,8 +26,8 @@ class FriendshipRepositoryDB:
             # Check if pair already exists (any direction)
             row = await conn.fetchrow(
                 """SELECT * FROM users.friendships
-                   WHERE LEAST(requester_id, addressee_id) = LEAST($1, $2)
-                     AND GREATEST(requester_id, addressee_id) = GREATEST($1, $2)
+                   WHERE (requester_id = $1 AND addressee_id = $2)
+                      OR (requester_id = $2 AND addressee_id = $1)
                    LIMIT 1""",
                 req, adr,
             )
