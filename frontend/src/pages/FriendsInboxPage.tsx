@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { PageHeader } from "@/components/layout/PageHeader";
+import { Link } from "react-router-dom";
+import { ArrowLeft } from "lucide-react";
 import { api } from "@/lib/api";
 import type { Friendship } from "@/types/golf";
 
@@ -65,7 +66,21 @@ export function FriendsInboxPage({ userId }: { userId: string }) {
 
   return (
     <div>
-      <PageHeader title="Inbox" subtitle="Friend requests received and sent" />
+      <div className="mb-8 border-b border-gray-100 pb-6">
+        <div className="flex items-center justify-between gap-3">
+          <Link
+            to="/social"
+            className="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+          >
+            <ArrowLeft size={16} />
+            Back
+          </Link>
+          <div className="text-right">
+            <h1 className="text-3xl font-extrabold tracking-tight text-gray-900">Inbox</h1>
+            <p className="text-sm text-gray-500 mt-1.5">Friend requests received and sent</p>
+          </div>
+        </div>
+      </div>
 
       <div className="max-w-4xl space-y-4">
         <div className="flex items-center gap-2">
