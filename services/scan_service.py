@@ -1,12 +1,14 @@
 """Scan save service — orchestrates course resolution, par lookup, and round creation."""
 
 import logging
+import re
 from datetime import datetime
 from typing import List, Optional, Tuple
 
 from api.request_models import CourseHoleInput, SaveRoundRequest, TeeInput
 from database.db_manager import DatabaseManager
 from models import Course, Hole, HoleScore, Round, Tee, UserTee
+from services.golfcourse_api_service import GolfCourseAPIService
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +45,7 @@ class ScanService:
         self, req: SaveRoundRequest
     ) -> Tuple[Optional[Course], Optional[str]]:
         """5-tier course resolution. Returns (course, course_id_str)."""
+        await self._maybe_lookup_external_id_from_name(req)
         tees = self._build_tees(req)
         scan_holes = req.course_holes or []
 
@@ -137,6 +140,56 @@ class ScanService:
         )
         course = await self._db.courses.create_course(new_course, user_id=req.user_id)
         return course, str(course.id) if course else None
+
+    async def _maybe_lookup_external_id_from_name(self, req: SaveRoundRequest) -> None:
+        """Best-effort provider lookup when UI did not send external_course_id."""
+        if req.external_course_id or not req.course_name:
+            return
+        try:
+            rows = await GolfCourseAPIService().search_external_courses(req.course_name, limit=8)
+        except Exception as exc:  # noqa: BLE001
+            logger.info("External lookup skipped for '%s': %s", req.course_name, exc)
+            return
+        if not rows:
+            return
+
+        target = self._normalize_name(req.course_name)
+
+        # Prefer exact-ish normalized name match; fallback to first row with an ID.
+        chosen = None
+        for row in rows:
+            external_id = row.get("external_course_id")
+            if not external_id:
+                continue
+            name = row.get("name") or ""
+            norm = self._normalize_name(name)
+            if norm == target or target in norm or norm in target:
+                chosen = row
+                break
+            if chosen is None:
+                chosen = row
+
+        if chosen and chosen.get("external_course_id"):
+            req.external_course_id = chosen["external_course_id"]
+            if not req.course_location:
+                city = chosen.get("city")
+                state = chosen.get("state")
+                req.course_location = ", ".join([p for p in [city, state] if p]) or None
+            logger.info(
+                "External lookup resolved for '%s': external_course_id=%s",
+                req.course_name,
+                req.external_course_id,
+            )
+
+    @staticmethod
+    def _normalize_name(value: str) -> str:
+        base = re.sub(r"[^a-z0-9]+", " ", (value or "").lower()).strip()
+        base = re.sub(
+            r"\b(golf|course|club|country|links|gc|cc)\b",
+            " ",
+            base,
+        )
+        return " ".join(base.split())
 
     async def _maybe_backfill_external_id(
         self,
