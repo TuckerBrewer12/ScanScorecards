@@ -105,11 +105,25 @@ export interface UserTee {
 
 export interface User {
   id: string | null;
+  friend_code?: string | null;
   name: string | null;
   email: string | null;
   home_course_id: string | null;
   handicap: number | null;
   created_at: string | null;
+}
+
+export interface Friendship {
+  id: string;
+  requester_id: string;
+  addressee_id: string;
+  status: "pending" | "accepted" | "declined" | "blocked";
+  created_at: string;
+  updated_at: string;
+  requester_name?: string | null;
+  requester_email?: string | null;
+  addressee_name?: string | null;
+  addressee_email?: string | null;
 }
 
 export type ScoreType = "eagle" | "birdie" | "par" | "bogey" | "double-bogey" | "worse";

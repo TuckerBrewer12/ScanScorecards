@@ -1,6 +1,7 @@
 """CRUD operations for the users.users table."""
 
 import asyncpg
+import secrets
 from typing import Optional
 from uuid import UUID
 
@@ -12,8 +13,16 @@ from database.exceptions import DuplicateError, NotFoundError
 class UserRepositoryDB:
     """Async CRUD for users."""
 
+    FRIEND_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+    FRIEND_CODE_LEN = 8
+
     def __init__(self, pool: asyncpg.Pool):
         self._pool = pool
+
+    def _generate_friend_code(self) -> str:
+        return "GC" + "".join(
+            secrets.choice(self.FRIEND_CODE_ALPHABET) for _ in range(self.FRIEND_CODE_LEN)
+        )
 
     # ================================================================
     # Read
@@ -35,6 +44,15 @@ class UserRepositoryDB:
             )
             return user_from_row(row) if row else None
 
+    async def get_user_by_friend_code(self, friend_code: str) -> Optional[User]:
+        """Get user by friend code."""
+        normalized = friend_code.strip().upper()
+        async with self._pool.acquire() as conn:
+            row = await conn.fetchrow(
+                "SELECT * FROM users.users WHERE friend_code = $1", normalized
+            )
+            return user_from_row(row) if row else None
+
     # ================================================================
     # Create
     # ================================================================
@@ -50,18 +68,30 @@ class UserRepositoryDB:
     async def create_user(self, user: User, *, password_hash: Optional[str] = None) -> User:
         """Create a new user. Returns User with DB-generated id."""
         data = user_to_row(user)
-        try:
-            async with self._pool.acquire() as conn:
-                row = await conn.fetchrow(
-                    """INSERT INTO users.users (name, email, handicap_index, home_course_id, password_hash)
-                       VALUES ($1, $2, $3, $4, $5) RETURNING *""",
-                    data["name"], data["email"],
-                    data["handicap_index"], data["home_course_id"],
-                    password_hash,
-                )
-                return user_from_row(row)
-        except asyncpg.UniqueViolationError as e:
-            raise DuplicateError(f"Email already in use: {e}") from e
+        async with self._pool.acquire() as conn:
+            for _ in range(10):
+                friend_code = data["friend_code"] or self._generate_friend_code()
+                try:
+                    row = await conn.fetchrow(
+                        """INSERT INTO users.users (friend_code, name, email, handicap_index, home_course_id, password_hash)
+                           VALUES ($1, $2, $3, $4, $5, $6) RETURNING *""",
+                        friend_code,
+                        data["name"],
+                        data["email"],
+                        data["handicap_index"],
+                        data["home_course_id"],
+                        password_hash,
+                    )
+                    return user_from_row(row)
+                except asyncpg.UniqueViolationError as e:
+                    # Retry for friend_code collisions; fail fast for email collisions.
+                    if e.constraint_name in {"users_users_email_key", "idx_users_email"}:
+                        raise DuplicateError(f"Email already in use: {e}") from e
+                    if e.constraint_name in {"users_users_friend_code_key", "idx_users_friend_code"}:
+                        data["friend_code"] = None
+                        continue
+                    raise
+            raise DuplicateError("Could not allocate a unique friend code")
 
     # ================================================================
     # Update
