@@ -12,6 +12,7 @@ export function SettingsPage({ userId }: { userId: string }) {
   const [showResults, setShowResults] = useState(false);
   const [homeCourseId, setHomeCourseId] = useState<string>("");
   const [handicapInput, setHandicapInput] = useState<string>("");
+  const [friendCode, setFriendCode] = useState<string>("");
   const [getUpdates, setGetUpdates] = useState<boolean>(true);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -44,6 +45,7 @@ export function SettingsPage({ userId }: { userId: string }) {
 
         setHomeCourseId(user.home_course_id ?? "");
         setHandicapInput(user.handicap != null ? String(user.handicap) : "");
+        setFriendCode(user.friend_code ?? "");
 
         if (user.home_course_id) {
           const selected = allCourses.find((course) => course.id === user.home_course_id);
@@ -139,6 +141,7 @@ export function SettingsPage({ userId }: { userId: string }) {
 
       setHomeCourseId(refreshedUser.home_course_id ?? "");
       setHandicapInput(refreshedUser.handicap != null ? String(refreshedUser.handicap) : "");
+      setFriendCode(refreshedUser.friend_code ?? "");
       if (refreshedUser.home_course_id) {
         const selected = courses.find((course) => course.id === refreshedUser.home_course_id);
         setHomeCourseQuery(selected?.name ?? homeCourseQuery);
@@ -167,6 +170,36 @@ export function SettingsPage({ userId }: { userId: string }) {
     <div>
       <PageHeader title="Settings" subtitle="Manage account preferences" />
       <div className="max-w-3xl space-y-5">
+        <section className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 space-y-3">
+          <h2 className="text-sm font-semibold text-gray-700">Friend Code</h2>
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              value={friendCode || "Unavailable"}
+              readOnly
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm bg-gray-50"
+            />
+            <button
+              type="button"
+              onClick={async () => {
+                if (!friendCode) return;
+                try {
+                  await navigator.clipboard.writeText(friendCode);
+                  setMessage("Friend code copied.");
+                } catch {
+                  setMessage("Could not copy friend code.");
+                }
+              }}
+              className="rounded-md border border-gray-300 px-3 py-2 text-xs text-gray-700 hover:bg-gray-50"
+            >
+              Copy
+            </button>
+          </div>
+          <p className="text-xs text-gray-500">
+            Share this code so other users can send you a friend request.
+          </p>
+        </section>
+
         <section className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 space-y-3">
           <h2 className="text-sm font-semibold text-gray-700">Preferences</h2>
           <label className="flex items-center justify-between rounded-lg border border-gray-200 px-3 py-2.5">

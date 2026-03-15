@@ -1,4 +1,4 @@
-import type { DashboardData, RoundSummary, Round, CourseSummary, Course, User, Milestone } from "@/types/golf";
+import type { DashboardData, RoundSummary, Round, CourseSummary, Course, User, Milestone, Friendship } from "@/types/golf";
 import type { AnalyticsData, CourseAnalyticsData, RoundComparison } from "@/types/analytics";
 import { getToken } from "@/lib/auth";
 
@@ -142,4 +142,19 @@ export const api = {
       `/ai-insights/${userId}?${params}`
     );
   },
+
+  getFriendships: (status?: "pending" | "accepted" | "declined" | "blocked") => {
+    const params = new URLSearchParams();
+    if (status) params.set("status", status);
+    const suffix = params.toString() ? `?${params.toString()}` : "";
+    return fetchJSON<Friendship[]>(`/users/me/friends${suffix}`);
+  },
+
+  sendFriendRequest: (addresseeFriendCode: string) =>
+    postJSON<Friendship>(`/users/me/friends`, { addressee_friend_code: addresseeFriendCode }),
+
+  updateFriendshipStatus: (
+    friendshipId: string,
+    status: "accepted" | "declined" | "blocked",
+  ) => patchJSON<Friendship>(`/users/me/friends/${friendshipId}`, { status }),
 };
