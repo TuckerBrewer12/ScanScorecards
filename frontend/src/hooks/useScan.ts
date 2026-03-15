@@ -6,6 +6,10 @@ import { initialScanState } from "@/types/scan";
 import { api } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 
+function normalizeCourseQuery(value: string): string {
+  return value.trim().replace(/\s+/g, " ");
+}
+
 export function useScan(
   userId: string,
   scanState: ScanState,
@@ -41,13 +45,14 @@ export function useScan(
   const reviewSearchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleReviewCourseQuery = useCallback((q: string) => {
-    setReviewCourseQuery(q);
+    const normalized = normalizeCourseQuery(q);
+    setReviewCourseQuery(normalized);
     if (reviewSearchTimer.current) clearTimeout(reviewSearchTimer.current);
-    if (!userId || q.trim().length < 2) { setReviewCourseResults([]); return; }
+    if (!userId || normalized.length < 2) { setReviewCourseResults([]); return; }
     reviewSearchTimer.current = setTimeout(async () => {
       setReviewSearching(true);
       try {
-        const results = await api.searchCourses(q.trim(), userId, true);
+        const results = await api.searchCourses(normalized, userId, true);
         setReviewCourseResults(results);
       } catch { setReviewCourseResults([]); }
       finally { setReviewSearching(false); }
@@ -77,13 +82,14 @@ export function useScan(
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleCourseQuery = useCallback((q: string) => {
-    setCourseQuery(q);
+    const normalized = normalizeCourseQuery(q);
+    setCourseQuery(normalized);
     if (searchTimer.current) clearTimeout(searchTimer.current);
-    if (!userId || q.trim().length < 2) { setCourseResults([]); return; }
+    if (!userId || normalized.length < 2) { setCourseResults([]); return; }
     searchTimer.current = setTimeout(async () => {
       setSearching(true);
       try {
-        const results = await api.searchCourses(q.trim(), userId);
+        const results = await api.searchCourses(normalized, userId);
         setCourseResults(results);
       } catch { setCourseResults([]); }
       finally { setSearching(false); }
@@ -162,11 +168,15 @@ export function useScan(
         step: "review",
       });
       // Pre-fill the review search box with whatever the LLM extracted
-      setReviewCourseQuery(data.round.course?.name ?? "");
+      const extractedCourseName = normalizeCourseQuery(data.round.course?.name ?? "");
+      setReviewCourseQuery(extractedCourseName);
+      if (extractedCourseName.length >= 2) {
+        handleReviewCourseQuery(extractedCourseName);
+      }
     } catch (err) {
       update({ error: err instanceof Error ? err.message : "Extraction failed", step: "upload" });
     }
-  }, [file, scanMode, selectedCourseId, scoringFormat, userContext, update, userId]);
+  }, [file, scanMode, selectedCourseId, scoringFormat, userContext, update, userId, handleReviewCourseQuery]);
 
   const handleScoreChange = useCallback((index: number, field: keyof ExtractedHoleScore, value: string) => {
     const next = [...editedScores];
