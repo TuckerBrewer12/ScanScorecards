@@ -50,6 +50,7 @@ class ScanService:
         if req.course_id:
             course = await self._db.courses.get_course(req.course_id)
             if course:
+                course = await self._maybe_backfill_external_id(course, req)
                 await self._fill_gaps(str(course.id), scan_holes, tees)
                 return course, str(course.id)
 
@@ -61,22 +62,20 @@ class ScanService:
                 user_id=req.user_id,
             )
             if course:
+                course = await self._maybe_backfill_external_id(course, req)
                 await self._fill_gaps(str(course.id), scan_holes, tees)
                 return course, str(course.id)
 
+            # If provider ID is new but a local course already exists by name,
+            # backfill that row instead of creating a duplicate.
             if req.course_name:
-                course = await self._db.courses.create_course(
-                    Course(
-                        name=req.course_name,
-                        external_course_id=req.external_course_id,
-                        location=req.course_location,
-                        holes=[],
-                        tees=[],
-                    ),
-                    user_id=req.user_id,
+                existing_by_name = await self._db.courses.find_course_by_name(
+                    req.course_name, req.course_location, req.user_id
                 )
-                await self._fill_gaps(str(course.id), scan_holes, tees)
-                return course, str(course.id)
+                if existing_by_name:
+                    course = await self._maybe_backfill_external_id(existing_by_name, req)
+                    await self._fill_gaps(str(course.id), scan_holes, tees)
+                    return course, str(course.id)
 
         if not req.course_name:
             return None, None
@@ -84,6 +83,7 @@ class ScanService:
         # Tier 1: master exists
         course = await self._db.courses.find_course_by_name(req.course_name, req.course_location)
         if course:
+            course = await self._maybe_backfill_external_id(course, req)
             await self._fill_gaps(str(course.id), scan_holes, tees)
             return course, str(course.id)
 
@@ -92,6 +92,7 @@ class ScanService:
             req.course_name, req.course_location, req.user_id
         )
         if course:
+            course = await self._maybe_backfill_external_id(course, req)
             await self._fill_gaps(str(course.id), scan_holes, tees)
             return course, str(course.id)
 
@@ -100,6 +101,7 @@ class ScanService:
             req.course_name, req.course_location
         )
         if course:
+            course = await self._maybe_backfill_external_id(course, req)
             await self._fill_gaps(str(course.id), scan_holes, tees)
             course = await self._db.courses.promote_to_master(str(course.id))
             return course, str(course.id)
@@ -127,6 +129,7 @@ class ScanService:
             ))
         new_course = Course(
             name=req.course_name,
+            external_course_id=req.external_course_id,
             location=req.course_location,
             par=None,
             holes=holes,
@@ -134,6 +137,25 @@ class ScanService:
         )
         course = await self._db.courses.create_course(new_course, user_id=req.user_id)
         return course, str(course.id) if course else None
+
+    async def _maybe_backfill_external_id(
+        self,
+        course: Course,
+        req: SaveRoundRequest,
+    ) -> Course:
+        """Fill external_course_id on an existing local course when available."""
+        if (
+            req.external_course_id
+            and course.id
+            and not course.external_course_id
+        ):
+            updated = await self._db.courses.update_course(
+                str(course.id),
+                external_course_id=req.external_course_id,
+            )
+            if updated:
+                return updated
+        return course
 
     def _build_tees(self, req: SaveRoundRequest) -> List[TeeInput]:
         """Normalised tee list: all_tees preferred, single played tee as fallback."""
