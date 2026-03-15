@@ -5,7 +5,7 @@ import { useEffect, useState, useMemo } from "react";
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Cell, Legend,
-  ComposedChart, ReferenceArea, Line, Scatter,
+  ComposedChart, Line,
 } from "recharts";
 import { Gauge, Hash, TrendingDown, Trophy, Target } from "lucide-react";
 import { api } from "@/lib/api";
@@ -216,7 +216,7 @@ function SectionLabel({ children }: { children: string }) {
 
 function ChartCard({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+    <div className="analytics-chart-card bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
       <div className="mb-5">
         <div className="text-sm font-semibold text-gray-800">{title}</div>
         {subtitle && <div className="text-xs text-gray-400 mt-0.5">{subtitle}</div>}
@@ -370,7 +370,7 @@ export function AnalyticsPage({ userId }: { userId: string }) {
       {/* ╔══════════════════════════════════════════════════════════════════╗ */}
       {/* ║  SCORING                                                        ║ */}
       {/* ╚══════════════════════════════════════════════════════════════════╝ */}
-      <div className="-mx-8 px-8 py-10 bg-gradient-to-b from-[#eef7f0]/70 to-[#f8faf8]">
+      <div className="analytics-section analytics-section-scoring -mx-8 px-8 py-10 bg-gradient-to-b from-[#eef7f0]/70 to-[#f8faf8]">
         <ScrollSection>
           <SectionLabel>Scoring</SectionLabel>
 
@@ -449,7 +449,7 @@ export function AnalyticsPage({ userId }: { userId: string }) {
       {/* ╔══════════════════════════════════════════════════════════════════╗ */}
       {/* ║  BALL STRIKING & SCORE MIX                                      ║ */}
       {/* ╚══════════════════════════════════════════════════════════════════╝ */}
-      <div className="-mx-8 px-8 py-10 bg-white">
+      <div className="analytics-section analytics-section-ball -mx-8 px-8 py-10 bg-white">
         <ScrollSection>
           <SectionLabel>Ball Striking</SectionLabel>
 
@@ -537,7 +537,7 @@ export function AnalyticsPage({ userId }: { userId: string }) {
       {/* ╔══════════════════════════════════════════════════════════════════╗ */}
       {/* ║  PUTTING                                                        ║ */}
       {/* ╚══════════════════════════════════════════════════════════════════╝ */}
-      <div className="-mx-8 px-8 py-10 bg-gradient-to-b from-[#f0f5ff]/50 to-[#f8faf8]">
+      <div className="analytics-section analytics-section-putting -mx-8 px-8 py-10 bg-gradient-to-b from-[#f0f5ff]/50 to-[#f8faf8]">
         <ScrollSection>
           <SectionLabel>Putting</SectionLabel>
 
@@ -625,7 +625,7 @@ export function AnalyticsPage({ userId }: { userId: string }) {
       {/* ║  SHORT GAME                                                     ║ */}
       {/* ╚══════════════════════════════════════════════════════════════════╝ */}
       {(scrambling_trend.length > 0 || up_and_down_trend.length > 0) && (
-        <div className="-mx-8 px-8 py-10 bg-gradient-to-b from-[#fdf4ff]/50 to-[#f8faf8]">
+        <div className="analytics-section analytics-section-shortgame -mx-8 px-8 py-10 bg-gradient-to-b from-[#fdf4ff]/50 to-[#f8faf8]">
           <ScrollSection delay={0.1}>
             <SectionLabel>Short Game</SectionLabel>
             <ChartCard
@@ -666,7 +666,7 @@ export function AnalyticsPage({ userId }: { userId: string }) {
       {/* ╔══════════════════════════════════════════════════════════════════╗ */}
       {/* ║  PERFORMANCE PROFILE                                            ║ */}
       {/* ╚══════════════════════════════════════════════════════════════════╝ */}
-      <div className="-mx-8 px-8 py-10">
+      <div className="analytics-section analytics-section-profile -mx-8 px-8 py-10">
         <ScrollSection>
           <SectionLabel>Performance Profile</SectionLabel>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
@@ -724,31 +724,6 @@ export function AnalyticsPage({ userId }: { userId: string }) {
               ...r,
               label: `P${r.par} ${r.bucket_label}`,
             }));
-            const scatterPoints = scoring_by_yardage.flatMap((row, bucketIdx) =>
-              row.raw_scores.map(({ to_par, yardage }, scoreIdx) => ({
-                x: bucketIdx + ((scoreIdx % 7) - 3) * 0.09,
-                y: Math.min(to_par, 4),
-                actual: to_par,
-                yardage,
-                par: row.par,
-                color: to_par <= -2 ? "#f59e0b" : to_par === -1 ? "#059669" : to_par === 0 ? "#9ca3af" : "#f87171",
-              }))
-            );
-            const par3 = scoring_by_yardage.filter(r => r.par === 3);
-            const par4 = scoring_by_yardage.filter(r => r.par === 4);
-            const par5 = scoring_by_yardage.filter(r => r.par === 5);
-            const makeArea = (par: number, x1: string, x2: string) => (
-              <ReferenceArea key={par} x1={x1} x2={x2}
-                fill={par === 3 ? "#f0fdf4" : par === 4 ? "#eff6ff" : "#faf5ff"}
-                fillOpacity={0.5}
-                label={{ value: `Par ${par}`, position: "insideTop", fontSize: 11, fill: "#9ca3af", dy: -10 }}
-              />
-            );
-            const referenceAreas = [
-              par3.length > 0 && makeArea(3, `P3 ${par3[0].bucket_label}`, `P3 ${par3[par3.length - 1].bucket_label}`),
-              par4.length > 0 && makeArea(4, `P4 ${par4[0].bucket_label}`, `P4 ${par4[par4.length - 1].bucket_label}`),
-              par5.length > 0 && makeArea(5, `P5 ${par5[0].bucket_label}`, `P5 ${par5[par5.length - 1].bucket_label}`),
-            ];
             const sharedXAxis = (
               <XAxis
                 dataKey="label"
@@ -763,90 +738,37 @@ export function AnalyticsPage({ userId }: { userId: string }) {
             );
             return (
               <div className="flex flex-col gap-5 mb-5">
-                <ChartCard title="Avg Score to Par by Yardage" subtitle="Shaded by par group">
+                <ChartCard title="Avg Score to Par by Yardage">
                   <ResponsiveContainer width="100%" height={260}>
-                    <ComposedChart data={yardageData} margin={{ top: 28, right: 16, left: 8, bottom: 40 }}>
-                      {referenceAreas}
+                    <ComposedChart data={yardageData} margin={{ top: 16, right: 16, left: -16, bottom: 40 }}>
                       <CartesianGrid stroke="#f1f5f1" vertical={false} />
                       {sharedXAxis}
                       <YAxis
-                        domain={[-3, 4.6]}
-                        allowDataOverflow
-                        ticks={[-3, -2, -1, 0, 1, 2, 3, 4]}
-                        tick={{ fontSize: 11, fill: "#6b7280" }}
-                        tickLine={{ stroke: "#e5e7eb" }}
+                        tick={{ fontSize: 11, fill: "#9ca3af" }}
+                        tickLine={false}
                         axisLine={false}
                         tickFormatter={(v) => (v > 0 ? `+${v}` : String(v))}
-                        width={28}
                       />
                       <Tooltip
                         contentStyle={tooltipStyle}
-                        content={({ active, payload }) => {
-                          if (!active || !payload?.length) return null;
-                          const raw = payload[0].payload as Record<string, unknown>;
-                          if ("yardage" in raw) {
-                            const actual = raw.actual as number;
-                            const label = actual <= -2 ? "Eagle" : actual === -1 ? "Birdie" : actual === 0 ? "Par" : actual === 1 ? "Bogey" : actual === 2 ? "Double" : actual === 3 ? "Triple" : "Quad+";
-                            const sign = actual > 0 ? "+" : "";
-                            return (
-                              <div style={tooltipStyle} className="px-3 py-2">
-                                <div className="text-xs text-gray-500">Par {raw.par as number} · {raw.yardage as number} yds</div>
-                                <div className="font-semibold text-gray-800">{sign}{actual} ({label})</div>
-                              </div>
-                            );
-                          }
-                          const avg = raw.average_to_par as number;
-                          const sign = avg > 0 ? "+" : "";
-                          return (
-                            <div style={tooltipStyle} className="px-3 py-2">
-                              <div className="text-xs text-gray-500">Average · n={raw.sample_size as number}</div>
-                              <div className="font-semibold text-gray-800">{sign}{avg.toFixed(2)}</div>
-                            </div>
-                          );
-                        }}
-                      />
-                      <XAxis
-                        xAxisId="scatter-x"
-                        type="number"
-                        dataKey="x"
-                        domain={[-0.5, scoring_by_yardage.length - 0.5]}
-                        hide
+                        formatter={((v: number, _name: string, props: { payload: { sample_size: number } }) => [
+                          `${v > 0 ? "+" : ""}${v.toFixed(2)} (n=${props.payload.sample_size})`,
+                          "Avg to Par",
+                        ]) as Fmt}
                       />
                       <ReferenceLine y={0} stroke="#e5e7eb" />
                       <Bar dataKey="average_to_par" radius={[5, 5, 0, 0]} maxBarSize={36}>
                         {scoring_by_yardage.map((row, i) => (
-                          <Cell key={i} fill={row.average_to_par <= 0 ? "#059669" : "#f87171"} fillOpacity={0.25} />
+                          <Cell key={i} fill={row.average_to_par <= 0 ? "#059669" : "#f87171"} />
                         ))}
                       </Bar>
-                      <Scatter
-                        xAxisId="scatter-x"
-                        data={scatterPoints}
-                        dataKey="y"
-                        isAnimationActive={false}
-                        shape={(props: { cx?: number; cy?: number; payload?: { color: string; actual: number } }) => {
-                          const { cx = 0, cy = 0, payload } = props;
-                          if (!payload) return <g />;
-                          const { color, actual } = payload;
-                          return (
-                            <g>
-                              <circle cx={cx} cy={cy} r={2} fill={color} />
-                              {actual > 4 && (
-                                <text x={cx + 5} y={cy + 3} fontSize={8} fill={color} fontWeight={600}>
-                                  +{actual}
-                                </text>
-                              )}
-                            </g>
-                          );
-                        }}
-                      />
                     </ComposedChart>
                   </ResponsiveContainer>
                 </ChartCard>
 
-                <ChartCard title="GIR % by Yardage" subtitle="Green in regulation rate · shaded by par group">
+                <ChartCard title="GIR % by Yardage" subtitle="Green in regulation rate">
                   <ResponsiveContainer width="100%" height={260}>
                     <ComposedChart data={yardageData} margin={{ top: 16, right: 16, left: -16, bottom: 40 }}>
-                      {referenceAreas}
                       <CartesianGrid stroke="#f1f5f1" vertical={false} />
                       {sharedXAxis}
                       <YAxis
