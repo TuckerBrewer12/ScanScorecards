@@ -123,7 +123,7 @@ export function DashboardPage({ userId }: DashboardPageProps) {
   const [loading, setLoading] = useState(true);
   const colorBlindMode = useMemo(() => getStoredColorBlindMode(), []);
   const colorBlindPalette = useMemo(
-    () => (colorBlindMode === "protanopia" ? getColorBlindPalette(colorBlindMode) : null),
+    () => getColorBlindPalette(colorBlindMode),
     [colorBlindMode],
   );
   const scoreColors = colorBlindPalette?.score ?? SCORE_COLORS;
