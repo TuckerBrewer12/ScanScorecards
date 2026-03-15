@@ -18,9 +18,28 @@ interface StatComparisonBarProps {
   item: AIComparisonItem;
   benchmarkLabel: string;
   index: number;
+  goodColor?: string;
+  badColor?: string;
+  benchmarkColor?: string;
 }
 
-export function StatComparisonBar({ item, benchmarkLabel, index }: StatComparisonBarProps) {
+function withAlpha(hex: string, alpha: number): string {
+  const normalized = hex.replace("#", "");
+  if (normalized.length !== 6) return hex;
+  const r = parseInt(normalized.slice(0, 2), 16);
+  const g = parseInt(normalized.slice(2, 4), 16);
+  const b = parseInt(normalized.slice(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+export function StatComparisonBar({
+  item,
+  benchmarkLabel,
+  index,
+  goodColor = "#10b981",
+  badColor = "#f87171",
+  benchmarkColor = "#e5e7eb",
+}: StatComparisonBarProps) {
   const hasPdata = item.has_data && item.player_value != null;
   const pVal = item.player_value ?? 0;
   const bVal = item.benchmark_value;
@@ -52,11 +71,11 @@ export function StatComparisonBar({ item, benchmarkLabel, index }: StatCompariso
         <span className="text-[13px] font-semibold text-gray-700">{item.metric}</span>
         {diffLabel ? (
           <span
-            className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
-              diffGood
-                ? "bg-emerald-100 text-emerald-700"
-                : "bg-red-100 text-red-500"
-            }`}
+            className="text-[11px] font-bold px-2 py-0.5 rounded-full"
+            style={{
+              backgroundColor: withAlpha(diffGood ? goodColor : badColor, 0.18),
+              color: diffGood ? goodColor : badColor,
+            }}
           >
             {diffLabel}
           </span>
@@ -74,9 +93,8 @@ export function StatComparisonBar({ item, benchmarkLabel, index }: StatCompariso
               initial={{ width: 0 }}
               animate={{ width: `${pPct}%` }}
               transition={{ duration: 0.65, ease: "easeOut", delay: delay + 0.15 }}
-              className={`h-full rounded-full ${
-                playerIsGood ? "bg-emerald-400" : "bg-red-400"
-              }`}
+              className="h-full rounded-full"
+              style={{ backgroundColor: playerIsGood ? goodColor : badColor }}
             />
           ) : (
             <div className="h-full w-1/4 bg-gray-200 rounded-full opacity-50" />
@@ -87,9 +105,10 @@ export function StatComparisonBar({ item, benchmarkLabel, index }: StatCompariso
             !hasPdata
               ? "text-gray-300"
               : playerIsGood
-              ? "text-emerald-600"
-              : "text-red-500"
+              ? ""
+              : ""
           }`}
+          style={hasPdata ? { color: playerIsGood ? goodColor : badColor } : undefined}
         >
           {hasPdata ? fmt(pVal, item.unit) : "—"}
         </span>
@@ -105,7 +124,8 @@ export function StatComparisonBar({ item, benchmarkLabel, index }: StatCompariso
             initial={{ width: 0 }}
             animate={{ width: `${bPct}%` }}
             transition={{ duration: 0.65, ease: "easeOut", delay: delay + 0.28 }}
-            className="h-full rounded-full bg-gray-200"
+            className="h-full rounded-full"
+            style={{ backgroundColor: benchmarkColor }}
           />
         </div>
         <span className="text-[12px] font-bold text-gray-400 w-11 text-right shrink-0">
