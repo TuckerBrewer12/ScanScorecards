@@ -8,7 +8,6 @@ import { RoundDetailPage } from "./pages/RoundDetailPage";
 import { CoursesPage } from "./pages/CoursesPage";
 import { ScanPage } from "./pages/ScanPage";
 import { AnalyticsPage } from "./pages/AnalyticsPage";
-import { ProgressModePage } from "./pages/ProgressModePage";
 import { CareerPage } from "./pages/CareerPage";
 import { SuggestionsPage } from "./pages/SuggestionsPage";
 import { SettingsPage } from "./pages/SettingsPage";
@@ -54,7 +53,6 @@ function AppRoutes() {
         <Route path="/analytics" element={<AnalyticsPage userId={userId} />} />
         <Route path="/suggestions" element={<SuggestionsPage userId={userId} />} />
         <Route path="/social" element={<SocialPage />} />
-        <Route path="/progress" element={<ProgressModePage userId={userId} />} />
         <Route path="/career" element={<CareerPage userId={userId} />} />
         <Route path="/inbox" element={<FriendsInboxPage userId={userId} />} />
         <Route path="/settings" element={<SettingsPage userId={userId} />} />

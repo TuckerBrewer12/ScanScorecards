@@ -101,6 +101,7 @@ export interface ScoringByYardageRow {
   average_to_par: number;
   gir_percentage: number | null;
   sample_size: number;
+  raw_scores: { to_par: number; yardage: number }[];
 }
 
 export interface GIRvsNonGIRRow {
