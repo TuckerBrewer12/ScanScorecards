@@ -162,6 +162,39 @@ body {
   border-color: #2a2d30 !important;
 }
 
+/* Public landing page dark mode overrides */
+:root.dark .public-landing .bg-white\/90 {
+  background-color: rgba(17, 18, 19, 0.9) !important;
+}
+
+:root.dark .public-landing .bg-gray-50\/50 {
+  background-color: rgba(24, 25, 26, 0.78) !important;
+}
+
+:root.dark .public-landing .bg-\[\#fdfaf6\] {
+  background-color: #111213 !important;
+}
+
+:root.dark .public-landing .bg-primary\/5 {
+  background-color: rgba(45, 122, 58, 0.14) !important;
+}
+
+:root.dark .public-landing .bg-red-50,
+:root.dark .public-landing .bg-blue-50,
+:root.dark .public-landing .bg-amber-50,
+:root.dark .public-landing .bg-purple-50 {
+  background-color: #222426 !important;
+}
+
+:root.dark .public-landing .from-gray-200 {
+  --tw-gradient-from: #2a2d30 var(--tw-gradient-from-position) !important;
+  --tw-gradient-to: rgb(42 45 48 / 0) var(--tw-gradient-to-position) !important;
+}
+
+:root.dark .public-landing .to-gray-100 {
+  --tw-gradient-to: #18191A var(--tw-gradient-to-position) !important;
+}
+
 #root {
   min-height: 100vh;
 }
