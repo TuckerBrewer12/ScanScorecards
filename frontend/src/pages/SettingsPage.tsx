@@ -81,7 +81,7 @@ export function SettingsPage({ userId }: { userId: string }) {
     if (searchTimer.current) clearTimeout(searchTimer.current);
     const q = value.trim();
     if (q.length < 2) { setSearchResults([]); return; }
-    searchTimer.current = window.setTimeout(() => {
+    searchTimer.current = setTimeout(() => {
       api.searchCourses(q, userId).then(setSearchResults).catch(() => setSearchResults([]));
     }, 250);
   };

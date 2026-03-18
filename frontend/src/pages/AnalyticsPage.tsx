@@ -21,6 +21,9 @@ import { ScrollSection } from "@/components/analytics/ScrollSection";
 import { NarrativeInsight } from "@/components/analytics/NarrativeInsight";
 import { StickyScoreBar } from "@/components/analytics/StickyScoreBar";
 import { BestRoundCard } from "@/components/analytics/BestRoundCard";
+import { RangeFan }         from "@/components/analytics/RangeFan";
+import { ApexTracers }      from "@/components/analytics/ApexTracers";
+import { RangeInsightsHUD } from "@/components/analytics/RangeInsightsHUD";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -746,33 +749,25 @@ export function AnalyticsPage({ userId }: { userId: string }) {
             );
             return (
               <div className="flex flex-col gap-5 mb-5">
-                <ChartCard title="Avg Score to Par by Yardage">
-                  <ResponsiveContainer width="100%" height={260}>
-                    <ComposedChart data={yardageData} margin={{ top: 16, right: 16, left: -16, bottom: 40 }}>
-                      <CartesianGrid stroke={gridColor} vertical={false} />
-                      {sharedXAxis}
-                      <YAxis
-                        tick={{ fontSize: 11, fill: "#9ca3af" }}
-                        tickLine={false}
-                        axisLine={false}
-                        tickFormatter={(v) => (v > 0 ? `+${v}` : String(v))}
-                      />
-                      <Tooltip
-                        contentStyle={tooltipStyle}
-                        formatter={((v: number, _name: string, props: { payload: { sample_size: number } }) => [
-                          `${v > 0 ? "+" : ""}${v.toFixed(2)} (n=${props.payload.sample_size})`,
-                          "Avg to Par",
-                        ]) as Fmt}
-                      />
-                      <ReferenceLine y={0} stroke={mutedFill} />
-                      <Bar dataKey="average_to_par" radius={[5, 5, 0, 0]} maxBarSize={36}>
-                        {scoring_by_yardage.map((row, i) => (
-                          <Cell key={i} fill={row.average_to_par <= 0 ? successColor : dangerColor} />
-                        ))}
-                      </Bar>
-                    </ComposedChart>
-                  </ResponsiveContainer>
-                </ChartCard>
+                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+                  <div className="text-sm font-bold text-gray-900 mb-0.5">Range View</div>
+                  <div className="text-xs text-gray-400 mb-5">Every hole you've played — by yardage</div>
+
+                  <div className="mb-6">
+                    <div className="text-xs font-medium text-gray-500 mb-2 uppercase tracking-wide">Top-Down Dispersion</div>
+                    <RangeFan rows={scoring_by_yardage} />
+                  </div>
+
+                  <div className="mb-6">
+                    <div className="text-xs font-medium text-gray-500 mb-2 uppercase tracking-wide">Avg Score Arc by Par</div>
+                    <ApexTracers rows={scoring_by_yardage} />
+                  </div>
+
+                  <div>
+                    <div className="text-xs font-medium text-gray-500 mb-2 uppercase tracking-wide">Distance Zone Performance</div>
+                    <RangeInsightsHUD rows={scoring_by_yardage} />
+                  </div>
+                </div>
 
                 <ChartCard title="GIR % by Yardage" subtitle="Green in regulation rate">
                   <ResponsiveContainer width="100%" height={260}>

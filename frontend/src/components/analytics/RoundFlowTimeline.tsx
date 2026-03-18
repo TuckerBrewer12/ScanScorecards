@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { scaleLinear } from "d3-scale";
-import { line, curveMonotoneX, area } from "d3-shape";
+import { line, curveMonotoneX } from "d3-shape";
 import type { Round } from "@/types/golf";
 
 interface HolePoint {
@@ -20,7 +20,7 @@ interface RoundFlowTimelineProps {
 
 const W = 720;
 const H = 220;
-const PAD = { top: 24, right: 16, bottom: 36, left: 36 };
+const PAD = { top: 28, right: 16, bottom: 36, left: 40 };
 
 function getScoreLabel(toPar: number): string {
   if (toPar <= -3) return "Albatross";
@@ -38,6 +38,12 @@ function getDotColor(toPar: number): string {
   if (toPar === -1) return "#059669";
   if (toPar === 0) return "#9ca3af";
   return "#ef4444";
+}
+
+function getYAxisColor(v: number): string {
+  if (v < 0) return "#059669";
+  if (v > 0) return "#ef4444";
+  return "#6b7280";
 }
 
 export function RoundFlowTimeline({ round }: RoundFlowTimelineProps) {
@@ -71,34 +77,24 @@ export function RoundFlowTimeline({ round }: RoundFlowTimelineProps) {
     .domain([minHole, maxHole])
     .range([PAD.left, W - PAD.right]);
 
-  const yExtent = Math.max(4, ...points.map((p) => Math.abs(p.to_par)));
+  // Cap domain at ±5 so one blow-up hole doesn't compress the whole chart.
+  // Points beyond ±5 are clamped to the boundary for rendering.
+  const yExtent = 5;
+  const clamp = (v: number) => Math.max(-yExtent, Math.min(yExtent, v));
+
+  // Inverted: bogey+ (positive) at top, birdie- (negative) at bottom
   const yScale = scaleLinear()
     .domain([-yExtent, yExtent])
-    .range([PAD.top, H - PAD.bottom]);
+    .range([H - PAD.bottom, PAD.top]);
 
   const pathGen = line<HolePoint>()
     .x((d) => xScale(d.hole))
-    .y((d) => yScale(d.to_par))
-    .curve(curveMonotoneX);
-
-  const areaGen = area<HolePoint>()
-    .x((d) => xScale(d.hole))
-    .y0(yScale(0))
-    .y1((d) => yScale(d.to_par))
+    .y((d) => yScale(clamp(d.to_par)))
     .curve(curveMonotoneX);
 
   const pathD = pathGen(points) ?? "";
-  const areaD = areaGen(points) ?? "";
 
-  const yZero = yScale(0);
-  const gradId = `flowGrad-${round.id ?? "rft"}`;
-  const glowId = `glow-${round.id ?? "rft"}`;
-  const areaGradId = `areaGrad-${round.id ?? "rft"}`;
-
-  const yTicks = Array.from(
-    { length: Math.ceil(yExtent) * 2 + 1 },
-    (_, i) => -Math.ceil(yExtent) + i
-  ).filter((v) => v >= -yExtent && v <= yExtent);
+  const yTicks = [-3, -2, -1, 0, 1, 2, 3];
 
   const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -124,41 +120,16 @@ export function RoundFlowTimeline({ round }: RoundFlowTimelineProps) {
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
       >
-        <defs>
-          <linearGradient id={gradId} x1="0" y1={PAD.top} x2="0" y2={H - PAD.bottom} gradientUnits="userSpaceOnUse">
-            <stop offset="0%"   stopColor="#059669" />
-            <stop offset="40%"  stopColor="#6ee7b7" />
-            <stop offset="50%"  stopColor="#9ca3af" />
-            <stop offset="65%"  stopColor="#fca5a5" />
-            <stop offset="100%" stopColor="#ef4444" />
-          </linearGradient>
-          <linearGradient id={areaGradId} x1="0" y1={PAD.top} x2="0" y2={H - PAD.bottom} gradientUnits="userSpaceOnUse">
-            <stop offset="0%"   stopColor="#059669" stopOpacity={0.18} />
-            <stop offset="50%"  stopColor="#9ca3af" stopOpacity={0.04} />
-            <stop offset="100%" stopColor="#ef4444" stopOpacity={0.18} />
-          </linearGradient>
-          <filter id={glowId} x="-20%" y="-20%" width="140%" height="140%">
-            <feGaussianBlur stdDeviation="3" result="blur" />
-            <feMerge>
-              <feMergeNode in="blur" />
-              <feMergeNode in="SourceGraphic" />
-            </feMerge>
-          </filter>
-        </defs>
-
-        {/* Background grid lines */}
-        {yTicks.map((v) => (
-          <line
-            key={v}
-            x1={PAD.left}
-            x2={W - PAD.right}
-            y1={yScale(v)}
-            y2={yScale(v)}
-            stroke={v === 0 ? "#6b7280" : "#e5e7eb"}
-            strokeWidth={v === 0 ? 1.5 : 0.75}
-            strokeDasharray={v === 0 ? "4 3" : "2 4"}
-          />
-        ))}
+        {/* Subtle par (zero) reference line only */}
+        <line
+          x1={PAD.left}
+          x2={W - PAD.right}
+          y1={yScale(0)}
+          y2={yScale(0)}
+          stroke="#e5e7eb"
+          strokeWidth={1.5}
+          strokeDasharray="5 4"
+        />
 
         {/* Front/back nine divider */}
         {maxHole > 9 && minHole <= 9 && (
@@ -167,28 +138,17 @@ export function RoundFlowTimeline({ round }: RoundFlowTimelineProps) {
             x2={xScale(9.5)}
             y1={PAD.top}
             y2={H - PAD.bottom}
-            stroke="#d1d5db"
+            stroke="#f3f4f6"
             strokeWidth={1}
-            strokeDasharray="3 3"
           />
         )}
 
-        {/* Area fill */}
-        <motion.path
-          d={areaD}
-          fill={`url(#${areaGradId})`}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.6, delay: 0.8 }}
-        />
-
-        {/* Main line */}
+        {/* Main line — solid gray */}
         <motion.path
           d={pathD}
           fill="none"
-          stroke={`url(#${gradId})`}
+          stroke="#94a3b8"
           strokeWidth={2.5}
-          filter={`url(#${glowId})`}
           strokeLinecap="round"
           strokeLinejoin="round"
           initial={{ pathLength: 0, opacity: 0 }}
@@ -201,7 +161,7 @@ export function RoundFlowTimeline({ round }: RoundFlowTimelineProps) {
           <motion.circle
             key={p.hole}
             cx={xScale(p.hole)}
-            cy={yScale(p.to_par)}
+            cy={yScale(clamp(p.to_par))}
             r={hovered?.hole === p.hole ? 6 : 4}
             fill={getDotColor(p.to_par)}
             stroke="white"
@@ -215,18 +175,15 @@ export function RoundFlowTimeline({ round }: RoundFlowTimelineProps) {
 
         {/* Hover crosshair */}
         {hovered && (
-          <>
-            <line
-              x1={xScale(hovered.hole)}
-              x2={xScale(hovered.hole)}
-              y1={PAD.top}
-              y2={H - PAD.bottom}
-              stroke="#9ca3af"
-              strokeWidth={1}
-              strokeDasharray="3 3"
-              opacity={0.7}
-            />
-          </>
+          <line
+            x1={xScale(hovered.hole)}
+            x2={xScale(hovered.hole)}
+            y1={PAD.top}
+            y2={H - PAD.bottom}
+            stroke="#e5e7eb"
+            strokeWidth={1}
+            strokeDasharray="3 3"
+          />
         )}
 
         {/* X-axis hole labels */}
@@ -244,22 +201,20 @@ export function RoundFlowTimeline({ round }: RoundFlowTimelineProps) {
           </text>
         ))}
 
-        {/* Y-axis labels */}
-        {yTicks
-          .filter((v) => v % 1 === 0 && Math.abs(v) <= 3)
-          .map((v) => (
-            <text
-              key={`y-${v}`}
-              x={PAD.left - 6}
-              y={yScale(v) + 4}
-              textAnchor="end"
-              fontSize={9}
-              fill={v === 0 ? "#6b7280" : "#c4c4c4"}
-              fontWeight={v === 0 ? "600" : "400"}
-            >
-              {v === 0 ? "E" : v > 0 ? `+${v}` : `${v}`}
-            </text>
-          ))}
+        {/* Y-axis labels — negative = green, positive = red, 0 = gray */}
+        {yTicks.map((v) => (
+          <text
+            key={`y-${v}`}
+            x={PAD.left - 8}
+            y={yScale(v) + 4}
+            textAnchor="end"
+            fontSize={9}
+            fill={getYAxisColor(v)}
+            fontWeight={v === 0 ? "600" : "500"}
+          >
+            {v === 0 ? "E" : v > 0 ? `+${v}` : `${v}`}
+          </text>
+        ))}
       </svg>
 
       {/* Tooltip */}
@@ -267,9 +222,9 @@ export function RoundFlowTimeline({ round }: RoundFlowTimelineProps) {
         {hovered && (
           <motion.div
             key={hovered.hole}
-            className="absolute pointer-events-none z-10 bg-white rounded-xl border border-gray-100 shadow-lg px-3 py-2.5 text-xs min-w-[130px]"
+            className="absolute pointer-events-none z-10 bg-white/95 backdrop-blur-sm rounded-xl border border-gray-100 shadow-lg px-3 py-2.5 text-xs min-w-[130px]"
             style={{
-              left: tooltipPos.x + (tooltipPos.x > W * 0.65 ? -145 : 14),
+              left: tooltipPos.x + (tooltipPos.x > W * 0.65 ? -150 : 14),
               top: tooltipPos.y - 10,
             }}
             initial={{ opacity: 0, scale: 0.92, y: 4 }}
