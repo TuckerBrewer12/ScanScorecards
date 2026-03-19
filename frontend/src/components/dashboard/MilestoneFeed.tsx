@@ -60,16 +60,13 @@ export function MilestoneFeed({ milestones }: MilestoneFeedProps) {
               <Icon size={14} />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-gray-800 leading-tight">
+              <p className="text-sm font-semibold text-gray-800 leading-tight line-clamp-2">
                 {m.label}
               </p>
               <p className="text-xs text-gray-400 truncate mt-0.5">
                 {m.course}
               </p>
             </div>
-            <span className="text-xs text-gray-400 shrink-0 tabular-nums">
-              {parseDate(m.date)}
-            </span>
           </div>
         );
       })}

@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles, ChevronDown, Dumbbell, Target, Pin, TrendingUp, TrendingDown } from "lucide-react";
 import { api } from "@/lib/api";
@@ -195,9 +196,11 @@ function ComparisonCategory({
 }
 
 export function SuggestionsPage({ userId }: SuggestionsPageProps) {
-  const [data, setData] = useState<AISuggestionsResponse | null>(null);
-  const [loading, setLoading] = useState(true);
   const [targetHandicap, setTargetHandicap] = useState<number | null>(null);
+  const { data, isLoading: loading } = useQuery({
+    queryKey: ["suggestions", userId, targetHandicap],
+    queryFn: () => api.getAISuggestions(userId, 50, targetHandicap),
+  });
   const colorBlindMode = useMemo(() => getStoredColorBlindMode(), []);
   const colorBlindPalette = useMemo(() => getColorBlindPalette(colorBlindMode), [colorBlindMode]);
   const goodColor = colorBlindPalette?.ui.success ?? "#10B981";
@@ -215,20 +218,6 @@ export function SuggestionsPage({ userId }: SuggestionsPageProps) {
         : CATEGORY_STYLES,
     [colorBlindPalette],
   );
-
-  async function load() {
-    setLoading(true);
-    try {
-      const result = await api.getAISuggestions(userId, 50, targetHandicap);
-      setData(result);
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  useEffect(() => { load(); }, [userId, targetHandicap]);
 
   // Derive comparison summary for hero
   function getSummary() {

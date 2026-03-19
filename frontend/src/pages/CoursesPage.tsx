@@ -1,4 +1,5 @@
-import { useEffect, useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { MapPin, Search } from "lucide-react";
 import { motion } from "framer-motion";
 import { api } from "@/lib/api";
@@ -18,24 +19,23 @@ const cardVariants = {
 };
 
 export function CoursesPage({ userId }: { userId: string }) {
-  const [courses, setCourses] = useState<CourseSummary[]>([]);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
+  const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const loadCourses = useCallback(async () => {
-    setLoading(true);
-    const data = search
-      ? await api.searchCourses(search, userId)
-      : await api.getCourses(userId);
-    setCourses(data);
-    setLoading(false);
-  }, [search, userId]);
+  const { data: courses = [], isLoading: loading } = useQuery({
+    queryKey: ["courses", userId, debouncedSearch],
+    queryFn: () => debouncedSearch
+      ? api.searchCourses(debouncedSearch, userId)
+      : api.getCourses(userId),
+  });
 
-  useEffect(() => {
-    const timer = setTimeout(loadCourses, search ? 300 : 0);
-    return () => clearTimeout(timer);
-  }, [loadCourses, search]);
+  const handleSearchChange = useCallback((value: string) => {
+    setSearch(value);
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    debounceTimer.current = setTimeout(() => setDebouncedSearch(value), 300);
+  }, []);
 
   if (selectedCourseId) {
     return (
@@ -62,7 +62,7 @@ export function CoursesPage({ userId }: { userId: string }) {
             type="text"
             placeholder="Search courses..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => handleSearchChange(e.target.value)}
             className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm bg-white/80 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary shadow-sm"
           />
         </div>

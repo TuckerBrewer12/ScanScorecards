@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { Inbox } from "lucide-react";
 import { api } from "@/lib/api";
@@ -10,24 +11,11 @@ export function SocialPage() {
   const [friendCode, setFriendCode] = useState("");
   const [sending, setSending] = useState(false);
   const [message, setMessage] = useState("");
-  const [friends, setFriends] = useState<Friendship[]>([]);
-  const [loadingFriends, setLoadingFriends] = useState(true);
 
-  const loadFriends = async () => {
-    setLoadingFriends(true);
-    try {
-      const accepted = await api.getFriendships("accepted");
-      setFriends(accepted);
-    } catch {
-      setFriends([]);
-    } finally {
-      setLoadingFriends(false);
-    }
-  };
-
-  useEffect(() => {
-    void loadFriends();
-  }, []);
+  const { data: friends = [], isLoading: loadingFriends, refetch: refetchFriends } = useQuery({
+    queryKey: ["friendships", "accepted"],
+    queryFn: () => api.getFriendships("accepted"),
+  });
 
   const friendRows = useMemo(() => {
     if (!userId) return [];
@@ -54,7 +42,7 @@ export function SocialPage() {
       await api.sendFriendRequest(code);
       setMessage("Friend request sent.");
       setFriendCode("");
-      await loadFriends();
+      await refetchFriends();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Failed to send request.");
     } finally {
@@ -114,7 +102,7 @@ export function SocialPage() {
             <h2 className="text-sm font-semibold text-gray-700">Friends List</h2>
             <button
               type="button"
-              onClick={loadFriends}
+              onClick={() => void refetchFriends()}
               className="ml-auto rounded-md border border-gray-300 px-2.5 py-1.5 text-xs text-gray-700 hover:bg-gray-50"
             >
               Refresh

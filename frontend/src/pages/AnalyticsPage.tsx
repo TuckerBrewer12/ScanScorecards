@@ -1,7 +1,8 @@
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Fmt = (v: any, name: any, props: any) => any;
 
-import { useEffect, useState, useMemo } from "react";
+import { useState, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Cell, Legend,
@@ -20,6 +21,7 @@ import { ScrollSection } from "@/components/analytics/ScrollSection";
 import { NarrativeInsight } from "@/components/analytics/NarrativeInsight";
 import { StickyScoreBar } from "@/components/analytics/StickyScoreBar";
 import { BestRoundCard } from "@/components/analytics/BestRoundCard";
+import { ParMatrixGrid } from "@/components/analytics/ParMatrixGrid";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -231,9 +233,11 @@ function ChartCard({ title, subtitle, children }: { title: string; subtitle?: st
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export function AnalyticsPage({ userId }: { userId: string }) {
-  const [data, setData] = useState<AnalyticsData | null>(null);
-  const [loading, setLoading] = useState(true);
   const [limit, setLimit] = useState<Limit>(50);
+  const { data, isLoading: loading } = useQuery({
+    queryKey: ["analytics", userId, limit],
+    queryFn: () => api.getAnalytics(userId, limit),
+  });
   const colorBlindMode = useMemo(() => getStoredColorBlindMode(), []);
   const colorBlindPalette = useMemo(() => getColorBlindPalette(colorBlindMode), [colorBlindMode]);
   const scoreColors = colorBlindPalette?.score ?? SCORE_COLORS;
@@ -245,14 +249,6 @@ export function AnalyticsPage({ userId }: { userId: string }) {
   const neutralColor = colorBlindPalette?.ui.neutral ?? "#6b7280";
   const gridColor = colorBlindPalette?.ui.grid ?? "#f1f5f1";
   const mutedFill = colorBlindPalette?.ui.mutedFill ?? "#e5e7eb";
-
-  useEffect(() => {
-    setLoading(true);
-    api.getAnalytics(userId, limit).then((d) => {
-      setData(d);
-      setLoading(false);
-    });
-  }, [userId, limit]);
 
   // ── Derived data ──────────────────────────────────────────────────────────
   const scoreTrendWithAvg = useMemo(
@@ -751,33 +747,7 @@ export function AnalyticsPage({ userId }: { userId: string }) {
             );
             return (
               <div className="flex flex-col gap-5 mb-5">
-                <ChartCard title="Avg Score to Par by Yardage">
-                  <ResponsiveContainer width="100%" height={260}>
-                    <ComposedChart data={yardageData} margin={{ top: 16, right: 16, left: -16, bottom: 40 }}>
-                      <CartesianGrid stroke={gridColor} vertical={false} />
-                      {sharedXAxis}
-                      <YAxis
-                        tick={{ fontSize: 11, fill: "#9ca3af" }}
-                        tickLine={false}
-                        axisLine={false}
-                        tickFormatter={(v) => (v > 0 ? `+${v}` : String(v))}
-                      />
-                      <Tooltip
-                        contentStyle={tooltipStyle}
-                        formatter={((v: number, _name: string, props: { payload: { sample_size: number } }) => [
-                          `${v > 0 ? "+" : ""}${v.toFixed(2)} (n=${props.payload.sample_size})`,
-                          "Avg to Par",
-                        ]) as Fmt}
-                      />
-                      <ReferenceLine y={0} stroke={mutedFill} />
-                      <Bar dataKey="average_to_par" radius={[5, 5, 0, 0]} maxBarSize={36}>
-                        {scoring_by_yardage.map((row, i) => (
-                          <Cell key={i} fill={row.average_to_par <= 0 ? successColor : dangerColor} />
-                        ))}
-                      </Bar>
-                    </ComposedChart>
-                  </ResponsiveContainer>
-                </ChartCard>
+                <ParMatrixGrid rows={scoring_by_yardage} />
 
                 <ChartCard title="GIR % by Yardage" subtitle="Green in regulation rate">
                   <ResponsiveContainer width="100%" height={260}>

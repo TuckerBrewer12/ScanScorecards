@@ -1,7 +1,8 @@
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Fmt = (v: any, name: any, props: any) => any;
 
-import { useEffect, useState, useMemo } from "react";
+import { useState, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   AreaChart, Area,
   PieChart, Pie, Cell,
@@ -144,9 +145,11 @@ function MilestoneBar({
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export function CareerPage({ userId }: { userId: string }) {
-  const [data, setData] = useState<AnalyticsData | null>(null);
-  const [loading, setLoading] = useState(true);
   const [timeWindow, setTimeWindow] = useState<TimeWindow>("lifetime");
+  const { data, isLoading: loading } = useQuery({
+    queryKey: ["career-analytics", userId],
+    queryFn: () => api.getAnalytics(userId, 200),
+  });
   const colorBlindMode = useMemo(() => getStoredColorBlindMode(), []);
   const colorBlindPalette = useMemo(() => getColorBlindPalette(colorBlindMode), [colorBlindMode]);
   const scoreColors = colorBlindPalette?.score ?? SCORE_COLORS;
@@ -157,14 +160,6 @@ export function CareerPage({ userId }: { userId: string }) {
   const neutralColor = colorBlindPalette?.ui.neutral ?? "#9ca3af";
   const gridColor = colorBlindPalette?.ui.grid ?? "#f1f5f9";
   const mutedFill = colorBlindPalette?.ui.mutedFill ?? "#f1f5f9";
-
-  useEffect(() => {
-    setLoading(true);
-    api.getAnalytics(userId, 200).then((d) => {
-      setData(d);
-      setLoading(false);
-    });
-  }, [userId]);
 
   const donutData = useMemo(
     () => aggregateDonut(data?.score_type_distribution ?? []),
