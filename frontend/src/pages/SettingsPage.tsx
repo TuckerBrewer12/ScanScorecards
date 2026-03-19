@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Moon, Sun } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { api } from "@/lib/api";
@@ -17,7 +18,6 @@ const COLORBLIND_MODES: Array<{ key: ColorBlindMode; label: string }> = [
 ];
 
 export function SettingsPage({ userId }: { userId: string }) {
-  const [courses, setCourses] = useState<CourseSummary[]>([]);
   const [homeCourseQuery, setHomeCourseQuery] = useState<string>("");
   const [searchResults, setSearchResults] = useState<CourseSummary[]>([]);
   const [showResults, setShowResults] = useState(false);
@@ -27,84 +27,64 @@ export function SettingsPage({ userId }: { userId: string }) {
   const [getUpdates, setGetUpdates] = useState<boolean>(true);
   const [theme, setTheme] = useState<AppTheme>(() => getStoredTheme());
   const [colorBlindMode, setColorBlindMode] = useState<ColorBlindMode>(() => getStoredColorBlindMode());
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string>("");
+  const initializedRef = useRef(false);
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => {
-    let isMounted = true;
-    const savedUpdates = localStorage.getItem(UPDATES_PREF_KEY);
-    if (savedUpdates !== null) {
-      setGetUpdates(savedUpdates === "true");
-    }
-
-    (async () => {
-      try {
-        const [user, globalCoursesResult, userCoursesResult] = await Promise.all([
-          api.getUser(userId),
-          api.getCourses(undefined, 200, 0).catch(() => [] as CourseSummary[]),
-          api.getCourses(userId, 200, 0).catch(() => [] as CourseSummary[]),
-        ]);
-
-        if (!isMounted) return;
-
-        const merged = [...globalCoursesResult, ...userCoursesResult];
-        const byId = new Map<string, CourseSummary>();
-        for (const course of merged) {
-          byId.set(course.id, course);
-        }
-        const allCourses = Array.from(byId.values());
-        setCourses(allCourses);
-
-        setHomeCourseId(user.home_course_id ?? "");
-        setHandicapInput(user.handicap != null ? String(user.handicap) : "");
-        setFriendCode(user.friend_code ?? "");
-
-        if (user.home_course_id) {
-          const selected = allCourses.find((course) => course.id === user.home_course_id);
-          if (selected?.name) {
-            setHomeCourseQuery(selected.name);
-          } else {
-            const courseFromId = await api.getCourse(user.home_course_id).catch(() => null);
-            if (!isMounted) return;
-            setHomeCourseQuery(courseFromId?.name ?? "");
-          }
+  const { data: settingsData, isLoading: loading } = useQuery({
+    queryKey: ["settings", userId],
+    queryFn: async () => {
+      const [user, globalCoursesResult, userCoursesResult] = await Promise.all([
+        api.getUser(userId),
+        api.getCourses(undefined, 200, 0).catch(() => [] as CourseSummary[]),
+        api.getCourses(userId, 200, 0).catch(() => [] as CourseSummary[]),
+      ]);
+      const merged = [...globalCoursesResult, ...userCoursesResult];
+      const byId = new Map<string, CourseSummary>();
+      for (const course of merged) byId.set(course.id, course);
+      const allCourses = Array.from(byId.values());
+      let homeCourseQueryDefault = "";
+      if (user.home_course_id) {
+        const selected = allCourses.find((c) => c.id === user.home_course_id);
+        if (selected?.name) {
+          homeCourseQueryDefault = selected.name;
         } else {
-          setHomeCourseQuery("");
+          const courseFromId = await api.getCourse(user.home_course_id).catch(() => null);
+          homeCourseQueryDefault = courseFromId?.name ?? "";
         }
-      } finally {
-        if (isMounted) setLoading(false);
       }
-    })();
+      return { user, allCourses, homeCourseQueryDefault };
+    },
+  });
 
-    return () => {
-      isMounted = false;
-    };
-  }, [userId]);
+  // Initialize form state once when data first loads
+  useEffect(() => {
+    if (!settingsData || initializedRef.current) return;
+    initializedRef.current = true;
+    const savedUpdates = localStorage.getItem(UPDATES_PREF_KEY);
+    if (savedUpdates !== null) setGetUpdates(savedUpdates === "true");
+    setHomeCourseId(settingsData.user.home_course_id ?? "");
+    setHandicapInput(settingsData.user.handicap != null ? String(settingsData.user.handicap) : "");
+    setFriendCode(settingsData.user.friend_code ?? "");
+    setHomeCourseQuery(settingsData.homeCourseQueryDefault);
+  }, [settingsData]);
 
   useEffect(() => {
     applyTheme(theme);
   }, [theme]);
 
-  useEffect(() => {
-    const q = homeCourseQuery.trim();
-    if (q.length < 2) {
-      setSearchResults([]);
-      return;
-    }
-
-    const handle = window.setTimeout(() => {
-      api.searchCourses(q, userId)
-        .then((rows) => {
-          setSearchResults(rows);
-        })
-        .catch(() => {
-          setSearchResults([]);
-        });
+  const handleHomeCourseQueryChange = (value: string) => {
+    setHomeCourseQuery(value);
+    setHomeCourseId("");
+    setShowResults(true);
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    const q = value.trim();
+    if (q.length < 2) { setSearchResults([]); return; }
+    searchTimer.current = setTimeout(() => {
+      api.searchCourses(q, userId).then(setSearchResults).catch(() => setSearchResults([]));
     }, 250);
-
-    return () => window.clearTimeout(handle);
-  }, [homeCourseQuery, userId]);
+  };
 
   const selectHomeCourse = (course: CourseSummary) => {
     setHomeCourseId(course.id);
@@ -139,6 +119,7 @@ export function SettingsPage({ userId }: { userId: string }) {
   };
 
   const saveSettings = async () => {
+    const courses = settingsData?.allCourses ?? [];
     setSaving(true);
     setMessage("");
     try {
@@ -179,7 +160,7 @@ export function SettingsPage({ userId }: { userId: string }) {
       setHandicapInput(refreshedUser.handicap != null ? String(refreshedUser.handicap) : "");
       setFriendCode(refreshedUser.friend_code ?? "");
       if (refreshedUser.home_course_id) {
-        const selected = courses.find((course) => course.id === refreshedUser.home_course_id);
+        const selected = (settingsData?.allCourses ?? []).find((course) => course.id === refreshedUser.home_course_id);
         setHomeCourseQuery(selected?.name ?? homeCourseQuery);
       } else {
         setHomeCourseQuery("");
@@ -322,11 +303,7 @@ export function SettingsPage({ userId }: { userId: string }) {
             <input
               type="text"
               value={homeCourseQuery}
-              onChange={(event) => {
-                setHomeCourseQuery(event.target.value);
-                setHomeCourseId("");
-                setShowResults(true);
-              }}
+              onChange={(event) => handleHomeCourseQueryChange(event.target.value)}
               onFocus={() => setShowResults(true)}
               placeholder="Type course name..."
               className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
@@ -357,7 +334,7 @@ export function SettingsPage({ userId }: { userId: string }) {
             </button>
             {homeCourseId ? (
               <span className="text-xs text-gray-600">
-                Selected: {courses.find((course) => course.id === homeCourseId)?.name ?? homeCourseQuery}
+                Selected: {(settingsData?.allCourses ?? []).find((course) => course.id === homeCourseId)?.name ?? homeCourseQuery}
               </span>
             ) : (
               <span className="text-xs text-gray-500">No home course selected.</span>

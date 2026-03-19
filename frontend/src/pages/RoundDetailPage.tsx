@@ -1,4 +1,5 @@
-import { useEffect, useState, useCallback, useRef, useMemo } from "react";
+import { useState, useCallback, useRef, useMemo } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, Pencil, Trash2, Link2 } from "lucide-react";
 import type { CourseSummary } from "@/types/golf";
@@ -13,6 +14,7 @@ import { formatToPar, calcCourseHandicap, calcNetScore } from "@/types/golf";
 import type { RoundComparison, ComparisonRow } from "@/types/analytics";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { ScorecardGrid } from "@/components/round-detail/ScorecardGrid";
+import { RoundFlowTimeline } from "@/components/analytics/RoundFlowTimeline";
 
 const tooltipStyle = {
   fontSize: 12,
@@ -99,16 +101,13 @@ function ComparisonChartCard({
 export function RoundDetailPage({ userId }: { userId: string }) {
   const { roundId } = useParams<{ roundId: string }>();
   const navigate = useNavigate();
-  const [round, setRound] = useState<Round | null>(null);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
   const [editMode, setEditMode] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [saving, setSaving] = useState(false);
   const [editedScores, setEditedScores] = useState<EditedScores>({});
   const [editedTeeBox, setEditedTeeBox] = useState("");
   const [availableTees, setAvailableTees] = useState<string[]>([]);
-  const [comparison, setComparison] = useState<RoundComparison | null>(null);
-  const [handicapIndex, setHandicapIndex] = useState<number | null>(null);
   const [showLinkCourse, setShowLinkCourse] = useState(false);
   const [linkQuery, setLinkQuery] = useState("");
   const [linkResults, setLinkResults] = useState<CourseSummary[]>([]);
@@ -118,15 +117,21 @@ export function RoundDetailPage({ userId }: { userId: string }) {
   const colorBlindMode = useMemo(() => getStoredColorBlindMode(), []);
   const colorBlindPalette = useMemo(() => getColorBlindPalette(colorBlindMode), [colorBlindMode]);
 
-  useEffect(() => {
-    if (!roundId) return;
-    api.getRound(roundId).then((r) => {
-      setRound(r);
-      setLoading(false);
-    });
-    api.getRoundComparison(userId, roundId).then(setComparison).catch(() => {});
-    api.getUserHandicap(userId).then((r) => setHandicapIndex(r.handicap_index)).catch(() => {});
-  }, [roundId, userId]);
+  const { data: round, isLoading: loading } = useQuery({
+    queryKey: ["round", roundId],
+    queryFn: () => api.getRound(roundId!),
+    enabled: !!roundId,
+  });
+  const { data: comparison } = useQuery({
+    queryKey: ["round-comparison", userId, roundId],
+    queryFn: () => api.getRoundComparison(userId, roundId!),
+    enabled: !!roundId,
+  });
+  const { data: handicapData } = useQuery({
+    queryKey: ["handicap", userId],
+    queryFn: () => api.getUserHandicap(userId),
+  });
+  const handicapIndex = handicapData?.handicap_index ?? null;
 
 
   const enterEditMode = useCallback(async () => {
@@ -188,9 +193,9 @@ export function RoundDetailPage({ userId }: { userId: string }) {
         hole_scores: holeScores,
         tee_box: editedTeeBox || null,
       });
-      setRound(updated);
+      queryClient.setQueryData(["round", roundId], updated);
+      queryClient.invalidateQueries({ queryKey: ["round-comparison", userId, roundId] });
       setEditMode(false);
-      api.getRoundComparison(userId, roundId).then(setComparison).catch(() => {});
     } catch (err) {
       console.error("Save failed:", err);
     } finally {
@@ -243,9 +248,7 @@ export function RoundDetailPage({ userId }: { userId: string }) {
     setLinking(true);
     try {
       await api.linkCourse(roundId, course.id);
-      // Reload the full round to get updated course/par data
-      const updated = await api.getRound(roundId);
-      setRound(updated);
+      await queryClient.invalidateQueries({ queryKey: ["round", roundId] });
       setShowLinkCourse(false);
       setLinkQuery("");
       setLinkResults([]);
@@ -455,6 +458,16 @@ export function RoundDetailPage({ userId }: { userId: string }) {
         onTeeBoxChange={setEditedTeeBox}
         onGirChange={handleGirChange}
       />
+
+      {/* Round Flow Timeline */}
+      {round.hole_scores.filter((s) => s.strokes != null).length >= 3 && (
+        <div className="mt-6">
+          <SectionLabel>Round Flow</SectionLabel>
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+            <RoundFlowTimeline round={round} />
+          </div>
+        </div>
+      )}
 
       {/* Round comparison */}
       {comparison && (

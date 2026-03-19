@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { api } from "@/lib/api";
@@ -14,28 +15,14 @@ function statusClass(status: Friendship["status"]): string {
 }
 
 export function FriendsInboxPage({ userId }: { userId: string }) {
-  const [items, setItems] = useState<Friendship[]>([]);
-  const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<string>("");
   const [activeTab, setActiveTab] = useState<Tab>("received");
   const [busyId, setBusyId] = useState<string | null>(null);
 
-  const load = async () => {
-    setLoading(true);
-    setMessage("");
-    try {
-      const rows = await api.getFriendships();
-      setItems(rows);
-    } catch (error) {
-      setMessage(error instanceof Error ? error.message : "Failed to load inbox.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    void load();
-  }, []);
+  const { data: items = [], isLoading: loading, refetch } = useQuery({
+    queryKey: ["friendships-all"],
+    queryFn: () => api.getFriendships(),
+  });
 
   const received = useMemo(
     () => items.filter((f) => f.addressee_id === userId),
@@ -55,7 +42,7 @@ export function FriendsInboxPage({ userId }: { userId: string }) {
     setMessage("");
     try {
       await api.updateFriendshipStatus(friendshipId, status);
-      await load();
+      await refetch();
       setMessage(`Request ${status}.`);
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Failed to update request.");
@@ -108,7 +95,7 @@ export function FriendsInboxPage({ userId }: { userId: string }) {
           </button>
           <button
             type="button"
-            onClick={load}
+            onClick={() => void refetch()}
             className="ml-auto rounded-md border border-gray-300 px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-50"
           >
             Refresh

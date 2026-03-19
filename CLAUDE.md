@@ -128,6 +128,151 @@ Two DB schemas: `courses` (courses, holes, tees, tee_yardages) and `users` (user
 
 ### `frontend/` — React + TypeScript + Vite
 
+---
+
+## UI Design System
+
+### Philosophy
+Clean, minimal, data-first. Premium/professional feel — refined spacing, subtle motion, semantic color. Not flashy; every visual element earns its place.
+
+### Color Palette
+
+**Primary:** `#2d7a3a` (forest green) — used for primary buttons, accents, section tints.
+
+**Score type colors** (semantic across all charts + components):
+- Eagle+: `#f59e0b` (amber)
+- Birdie: `#059669` (emerald)
+- Par: `#9ca3af` (gray)
+- Bogey: `#ef4444` (red)
+- Double: `#60a5fa` (blue)
+- Triple: `#a78bfa` (purple)
+- Quad+: `#6d28d9` (deep purple)
+
+**UI semantic colors:**
+- Success/GIR: `#059669`
+- Danger: `#ef4444` / `#f87171`
+- Neutral/grid: `#e5e7eb`
+- Muted fill: `#e5e7eb`
+
+**Backgrounds:**
+- Page: `#f8faf8` (off-white)
+- Card: `white` with `border-gray-100`
+- Scoring section: `bg-gradient-to-b from-[#eef7f0]/70 to-[#f8faf8]`
+- Putting section: `bg-gradient-to-b from-[#f0f5ff]/50 to-[#f8faf8]`
+- Short game section: `bg-gradient-to-b from-[#fdf4ff]/50 to-[#f8faf8]`
+- Sidebar: `linear-gradient(180deg, #1e3d25 0%, #152d1b 100%)`
+
+**Par badge colors** (used in distance zone lists, pills):
+- Par 3: bg `#ede9fe` / text `#6d28d9`
+- Par 4: bg `#e0f2fe` / text `#0369a1`
+- Par 5: bg `#dcfce7` / text `#15803d`
+
+### Typography
+
+Font: `"Inter", system-ui, -apple-system, sans-serif` with `-webkit-font-smoothing: antialiased`.
+
+| Role | Classes |
+|---|---|
+| Page title | `text-3xl font-extrabold tracking-tight text-gray-900` |
+| Section label | `text-[11px] font-bold text-primary/50 uppercase tracking-[0.18em]` |
+| Card title | `text-sm font-semibold text-gray-800` |
+| Subsection label | `text-xs font-medium text-gray-500 uppercase tracking-wide` |
+| Body | `text-sm text-gray-600` |
+| Caption / axis | `text-[10px] text-gray-400` |
+| Hero stat | `text-2xl font-bold` (cards) / `text-6xl font-black` (best round) |
+
+### Cards & Containers
+
+**Standard chart card:**
+```tsx
+<div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+```
+
+**Glassmorphic card / HUD:**
+```tsx
+<div className="bg-white/70 backdrop-blur-sm rounded-2xl border border-gray-100 shadow-sm">
+```
+
+**Tooltip:**
+```tsx
+<div className="bg-white/95 backdrop-blur-sm rounded-xl border border-gray-100 shadow-lg px-3 py-2.5 text-xs">
+```
+
+Rules: `rounded-2xl` for cards, `rounded-xl` for tooltips/small elements. Border always `border-gray-100`. Shadow always `shadow-sm` (heavier only on hover). Divide lists with `divide-y divide-gray-50`.
+
+### Layout
+
+- Analytics sections bleed to full width with `-mx-8 px-8 py-10` + colored `bg-gradient-to-b` backgrounds.
+- Chart grids: `grid grid-cols-1 lg:grid-cols-2 gap-5`.
+- Insight rows: `grid grid-cols-1 md:grid-cols-2 gap-3`.
+- Stat row: `grid grid-cols-2 lg:grid-cols-5 gap-4`.
+- Page-level padding: `p-5` cards, `p-6` chart cards, `px-4 py-3` list rows.
+
+### Motion & Animation
+
+All animation via `framer-motion`. Principles: fast enough to feel snappy, slow enough to register. Spring physics on hover; eased transitions for entrances.
+
+**Scroll entrance (ScrollSection):**
+```tsx
+initial={{ opacity: 0, y: 36 }}
+animate={{ opacity: 1, y: 0 }}
+transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
+```
+
+**Hover spring (cards, stat pills):**
+```tsx
+whileHover={{ scale: 1.025, boxShadow: "0 10px 32px rgba(0,0,0,0.10)" }}
+transition={{ type: "spring", stiffness: 360, damping: 28 }}
+```
+
+**Tooltip fade:**
+```tsx
+initial={{ opacity: 0, scale: 0.92, y: 4 }}
+animate={{ opacity: 1, scale: 1, y: 0 }}
+transition={{ duration: 0.15 }}
+```
+
+**SVG path draw (tracers, timeline):**
+```tsx
+initial={{ pathLength: 0, opacity: 0 }}
+animate={{ pathLength: 1, opacity: 1 }}
+transition={{ duration: 1.0–1.4, ease: "easeInOut" }}
+```
+
+**Staggered dot entrance:**
+```tsx
+transition={{ delay: Math.min(i * 0.004, 1.0), duration: 0.5, ease: "easeOut" }}
+```
+
+### SVG / Data Viz
+
+Golf-native visualizations preferred over generic chart types where possible (see Range View). SVG components use `viewBox` with `overflow: visible`. D3 scales (`d3-scale`, `d3-shape`) for math; framer-motion for animation. Recharts used for trend/bar/area charts.
+
+Common SVG patterns:
+- Dashed reference lines: `strokeDasharray="4 5"`, `stroke="#e5e7eb"`
+- Glow filter on positive outliers: `feGaussianBlur stdDeviation="2"` + feMerge
+- Ground/fill gradients: `from #f1f5f9 to transparent`
+- Chart tooltip: nearest-point detection on `onMouseMove`, dismissed on `onMouseLeave`
+
+### Buttons
+
+```tsx
+// Primary (selected/active)
+"bg-primary text-white shadow-sm"
+
+// Default
+"bg-white border border-gray-200 text-gray-600 hover:border-gray-300"
+
+// Both
+"px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
+```
+
+### Dark Mode
+
+Implemented via `:root.dark` in `index.css`. Card bg: `#18191A`, borders: `#2a2d30`, text: `#f1f5f9` → `#9aa4b2`. Color-blind palette support via `getStoredColorBlindMode()` / `getColorBlindPalette()` in `src/lib/accessibility.ts` — always use `colorBlindPalette` overrides when rendering score colors in charts.
+
+---
+
 Key files:
 - `src/App.tsx` — routing + scan state (lifted here to persist across navigation)
 - `src/lib/api.ts` — API client (`updateRound`, `cloneCourse`, `getCourses`, `searchCourses`, etc.)

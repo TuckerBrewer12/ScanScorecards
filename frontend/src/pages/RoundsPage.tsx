@@ -1,4 +1,5 @@
-import { useEffect, useState, useMemo, useCallback, useRef } from "react";
+import { useState, useMemo, useCallback, useRef } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { Link2, Search } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -67,8 +68,11 @@ function SortHeader({
 }
 
 export function RoundsPage({ userId }: RoundsPageProps) {
-  const [rounds, setRounds] = useState<RoundSummary[]>([]);
-  const [loading, setLoading] = useState(true);
+  const queryClient = useQueryClient();
+  const { data: rounds = [], isLoading: loading } = useQuery({
+    queryKey: ["rounds", userId],
+    queryFn: () => api.getRoundsForUser(userId, 100),
+  });
   const [search, setSearch] = useState("");
   const [sortKey, setSortKey] = useState<SortKey>("date");
   const [sortAsc, setSortAsc] = useState(false);
@@ -83,13 +87,6 @@ export function RoundsPage({ userId }: RoundsPageProps) {
   const linkTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const colorBlindMode = useMemo(() => getStoredColorBlindMode(), []);
   const colorBlindPalette = useMemo(() => getColorBlindPalette(colorBlindMode), [colorBlindMode]);
-
-  useEffect(() => {
-    api.getRoundsForUser(userId, 100).then((r) => {
-      setRounds(r);
-      setLoading(false);
-    });
-  }, [userId]);
 
   const handleLinkQuery = useCallback((q: string) => {
     setLinkQuery(q);
@@ -109,7 +106,9 @@ export function RoundsPage({ userId }: RoundsPageProps) {
     setLinking(true);
     try {
       const updated = await api.linkCourse(roundId, course.id);
-      setRounds((prev) => prev.map((r) => r.id === roundId ? updated : r));
+      queryClient.setQueryData<RoundSummary[]>(["rounds", userId], (prev) =>
+        prev ? prev.map((r) => r.id === roundId ? updated : r) : [updated]
+      );
       setLinkingRoundId(null);
       setLinkQuery("");
       setLinkResults([]);

@@ -1,4 +1,5 @@
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import type { CourseSummary } from "@/types/golf";
 import type { ScanState, ScanResult, ExtractedHoleScore, ManualTee } from "@/types/scan";
@@ -26,17 +27,17 @@ export function useScan(
   // Transient UI state — fine to reset on navigation
   const [saving, setSaving] = useState(false);
   const [dragOver, setDragOver] = useState(false);
-  const [handicapIndex, setHandicapIndex] = useState<number | null>(null);
   // Manual entry transient state
   const [manualDate, setManualDate] = useState(new Date().toISOString().substring(0, 10));
   const [manualTeeBox, setManualTeeBox] = useState("");
   const [loadingCourse, setLoadingCourse] = useState(false);
 
-  useEffect(() => {
-    if (step === "review") {
-      api.getUserHandicap(userId).then((r) => setHandicapIndex(r.handicap_index)).catch(() => {});
-    }
-  }, [step, userId]);
+  const { data: handicapData } = useQuery({
+    queryKey: ["handicap", userId],
+    queryFn: () => api.getUserHandicap(userId),
+    enabled: step === "review",
+  });
+  const handicapIndex = handicapData?.handicap_index ?? null;
 
   // Review step: course search state
   const [reviewCourseQuery, setReviewCourseQuery] = useState("");
