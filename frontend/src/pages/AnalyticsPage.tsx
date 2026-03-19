@@ -15,8 +15,6 @@ import { getColorBlindPalette } from "@/lib/chartPalettes";
 import type {
   AnalyticsData, ScoreTrendRow, ScoreTypeRow, GIRTrendRow, ScoringByParRow, PuttsTrendRow,
 } from "@/types/analytics";
-import { PageHeader } from "@/components/layout/PageHeader";
-import { StatCard } from "@/components/dashboard/StatCard";
 import { ScrollSection } from "@/components/analytics/ScrollSection";
 import { NarrativeInsight } from "@/components/analytics/NarrativeInsight";
 import { StickyScoreBar } from "@/components/analytics/StickyScoreBar";
@@ -314,7 +312,8 @@ export function AnalyticsPage({ userId }: { userId: string }) {
   if (!data || data.kpis.total_rounds === 0) {
     return (
       <div>
-        <PageHeader title="Analytics" subtitle="No rounds yet" />
+        <h1 className="text-2xl font-bold tracking-tight text-gray-900">Analytics</h1>
+        <p className="text-sm text-gray-500 mt-1">No rounds yet</p>
         <div className="text-gray-400 mt-8">Play some rounds to see your analytics.</div>
       </div>
     );
@@ -331,45 +330,55 @@ export function AnalyticsPage({ userId }: { userId: string }) {
       {/* ── Sticky bar ────────────────────────────────────────────────────── */}
       <StickyScoreBar kpis={kpis} />
 
-      {/* ── Page header ────────────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between mb-4 gap-4 flex-wrap">
-        <PageHeader title="Analytics" subtitle="Season overview" />
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-gray-400">Last</span>
+      {/* ── Dynamic Header ────────────────────────────────────────────────── */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-6">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-gray-900">Analytics</h1>
+          <p className="text-sm text-gray-500 mt-1">
+            Last <span className="font-semibold text-gray-700">{limit}</span> rounds
+          </p>
+        </div>
+        <div className="flex items-center bg-gray-100/80 p-1 rounded-xl gap-0.5 self-start sm:self-auto">
           {LIMIT_OPTIONS.map((n) => (
             <button
               key={n}
               onClick={() => setLimit(n)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                 limit === n
-                  ? "bg-primary text-white shadow-sm"
-                  : "bg-white border border-gray-200 text-gray-600 hover:border-gray-300"
+                  ? "bg-white shadow-sm text-gray-900"
+                  : "text-gray-500 hover:text-gray-700"
               }`}
             >
               {n}
             </button>
           ))}
-          <span className="text-xs text-gray-400">rounds</span>
         </div>
       </div>
 
-      {/* ── Dashboard-style stat row ──────────────────────────────────────── */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-4">
-        <StatCard label="Handicap Index"   value={formatHI(kpis.handicap_index)}  icon={Gauge}        highlight />
-        <StatCard label="Total Rounds"     value={kpis.total_rounds}              icon={Hash} />
-        <StatCard label="Scoring Average"  value={kpis.scoring_average}           icon={TrendingDown} />
-        <StatCard
-          label="Best Round"
-          value={bestRound?.total_score ?? null}
-          icon={Trophy}
-          subtitle={
-            (() => {
-              const ev = notable_achievements?.scoring_records_events?.lifetime?.lowest_score;
-              return ev ? ev.course : undefined;
-            })()
-          }
-        />
-        <StatCard label="Avg Putts" value={avgPutts} icon={Target} />
+      {/* ── Panoramic Bento Bar ───────────────────────────────────────────── */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm flex flex-wrap divide-y md:divide-y-0 md:divide-x divide-gray-50 overflow-hidden mb-6">
+        {/* Handicap — accent cell */}
+        <div className="flex-1 min-w-[130px] p-4 bg-primary relative overflow-hidden flex flex-col">
+          <div className="absolute -top-5 -right-5 w-20 h-20 rounded-full bg-white/5 blur-2xl pointer-events-none" />
+          <span className="text-[10px] font-bold uppercase tracking-widest text-white/50 mb-2">Handicap Index</span>
+          <span className="text-2xl font-bold text-white">{formatHI(kpis.handicap_index) ?? "—"}</span>
+          <Gauge size={13} className="absolute top-3 right-3 text-white/25" />
+        </div>
+        {/* Regular cells */}
+        {[
+          { label: "Rounds",      value: kpis.total_rounds,            icon: Hash },
+          { label: "Scoring Avg", value: kpis.scoring_average,         icon: TrendingDown },
+          { label: "Best Round",  value: bestRound?.total_score ?? null, icon: Trophy,
+            subtitle: (() => { const ev = notable_achievements?.scoring_records_events?.lifetime?.lowest_score; return ev?.course; })() },
+          { label: "Avg Putts",   value: avgPutts,                     icon: Target },
+        ].map(({ label, value, icon: Icon, subtitle }) => (
+          <div key={label} className="flex-1 min-w-[130px] p-4 flex flex-col relative">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-2">{label}</span>
+            <span className="text-2xl font-bold text-gray-900">{value ?? "—"}</span>
+            {subtitle && <span className="text-xs text-gray-400 mt-1 truncate">{subtitle}</span>}
+            <Icon size={13} className="absolute top-3 right-3 text-gray-200" />
+          </div>
+        ))}
       </div>
 
       <ScrollSection className="mb-5" delay={0.05}>
