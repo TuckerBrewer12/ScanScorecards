@@ -4,10 +4,10 @@ type Fmt = (v: any, name: any, props: any) => any;
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
-  AreaChart, Area, BarChart, Bar, PieChart, Pie,
-  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Cell, Legend,
-  ComposedChart, Line,
+  BarChart, Bar, PieChart, Pie, Cell, Legend,
+  CartesianGrid, XAxis, YAxis, Tooltip, ReferenceLine, ResponsiveContainer,
 } from "recharts";
+import { SVGTimeSeriesArea } from "@/components/analytics/SVGTimeSeriesArea";
 import { Gauge, Hash, TrendingDown, Trophy, Target } from "lucide-react";
 import { api } from "@/lib/api";
 import { getStoredColorBlindMode } from "@/lib/accessibility";
@@ -393,63 +393,59 @@ export function AnalyticsPage({ userId }: { userId: string }) {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
             <ChartCard title="Score Trend" subtitle="5-round rolling average">
-              <ResponsiveContainer width="100%" height={220}>
-                <AreaChart data={scoreTrendWithAvg} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="scoreGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%"  stopColor={trendPrimary} stopOpacity={0.12} />
-                      <stop offset="95%" stopColor={trendPrimary} stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid stroke={gridColor} horizontal={true} vertical={false} />
-                  <XAxis dataKey="round_index" tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
-                  <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} domain={["auto", "auto"]} />
-                  <Tooltip contentStyle={tooltipStyle}
-                    formatter={((v: number, name: string) => [v, name === "rolling_avg" ? "5-Round Avg" : "Score"]) as Fmt}
-                  />
-                  <ReferenceLine y={72} stroke={mutedFill} strokeDasharray="4 2"
-                    label={{ value: "Par 72", fontSize: 10, fill: successColor }}
-                  />
-                  <Area type="monotone" dataKey="total_score" stroke={trendPrimary} strokeWidth={1.5}
-                    fill="url(#scoreGrad)" dot={false} activeDot={{ r: 4, strokeWidth: 0 }}
-                  />
-                  <Area type="monotone" dataKey="rolling_avg" stroke={trendPrimary} strokeWidth={2.5}
-                    fill="none" dot={false} activeDot={{ r: 4, strokeWidth: 0 }} strokeOpacity={0.45}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
+              <SVGTimeSeriesArea
+                data={scoreTrendWithAvg}
+                valueKey="total_score"
+                rollingAvgKey="rolling_avg"
+                indexKey="round_index"
+                color={trendPrimary}
+                gridColor={gridColor}
+                referenceLine={{ y: 72, label: "Par 72" }}
+                gradientSuffix="score"
+                showDots={false}
+                height={220}
+                tooltipLabel="Score"
+              />
             </ChartCard>
 
             <ChartCard title="Net Score Trend" subtitle="Handicap-adjusted score per round">
-              <ResponsiveContainer width="100%" height={220}>
-                <AreaChart data={net_score_trend} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="netScoreGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%"  stopColor={trendPrimary} stopOpacity={0.15} />
-                      <stop offset="95%" stopColor={trendPrimary} stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid stroke={gridColor} horizontal={true} vertical={false} />
-                  <XAxis dataKey="round_index" tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
-                  <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} domain={["auto", "auto"]} />
-                  <Tooltip contentStyle={tooltipStyle}
-                    formatter={((v: number, _n: string, props: { payload: { course_handicap: number | null; gross_score: number | null } }) => {
-                      const hcp = props.payload.course_handicap;
-                      const gross = props.payload.gross_score;
-                      const detail = hcp != null && gross != null
-                        ? ` (gross ${gross}, HCP ${hcp < 0 ? `+${Math.abs(hcp)}` : hcp})`
-                        : "";
-                      return [`${v}${detail}`, "Net Score"];
-                    }) as Fmt}
-                  />
-                  <ReferenceLine y={72} stroke={mutedFill} strokeDasharray="4 2"
-                    label={{ value: "Par 72", fontSize: 10, fill: successColor }}
-                  />
-                  <Area type="monotone" dataKey="net_score" stroke={trendPrimary} strokeWidth={2}
-                    fill="url(#netScoreGrad)" dot={false} activeDot={{ r: 4, strokeWidth: 0 }}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
+              <SVGTimeSeriesArea
+                data={net_score_trend}
+                valueKey="net_score"
+                indexKey="round_index"
+                color={trendPrimary}
+                gridColor={gridColor}
+                referenceLine={{ y: 72, label: "Par 72" }}
+                gradientSuffix="netScore"
+                showDots={false}
+                height={220}
+                tooltipLabel="Net Score"
+                renderTooltipExtra={(row) => (
+                  <>
+                    {row.course_name && (
+                      <div className="text-[11px] text-gray-400 mt-1 truncate max-w-[160px]">{row.course_name}</div>
+                    )}
+                    <div className="border-t border-gray-100 mt-1.5 pt-1.5 flex flex-col gap-0.5">
+                      {row.to_par != null && (
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="text-gray-500">To Par</span>
+                          <span className={`font-semibold ${row.to_par < 0 ? "text-emerald-600" : row.to_par > 0 ? "text-red-500" : "text-gray-500"}`}>
+                            {row.to_par > 0 ? `+${row.to_par}` : row.to_par === 0 ? "E" : row.to_par}
+                          </span>
+                        </div>
+                      )}
+                      {row.course_handicap != null && (
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="text-gray-500">Course HCP</span>
+                          <span className="font-semibold text-gray-800">
+                            {row.course_handicap < 0 ? `+${Math.abs(row.course_handicap)}` : row.course_handicap}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
+              />
             </ChartCard>
           </div>
         </ScrollSection>
@@ -472,26 +468,20 @@ export function AnalyticsPage({ userId }: { userId: string }) {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
             <ChartCard title="GIR % per Round" subtitle={girData.length < (data?.gir_trend ?? []).length ? "Rounds without GIR data excluded" : undefined}>
-              <ResponsiveContainer width="100%" height={220}>
-                <AreaChart data={girData} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="girGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%"  stopColor={successColor} stopOpacity={0.15} />
-                      <stop offset="95%" stopColor={successColor} stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid stroke={gridColor} horizontal={true} vertical={false} />
-                  <XAxis dataKey="round_index" tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
-                  <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} domain={[0, 100]} unit="%" />
-                  <Tooltip contentStyle={tooltipStyle}
-                    formatter={((v: number) => [`${v?.toFixed(1)}%`, "GIR %"]) as Fmt}
-                  />
-                  <Area type="monotone" dataKey="gir_percentage" stroke={successColor} strokeWidth={2}
-                    fill="url(#girGrad)" dot={{ r: 3, fill: successColor, strokeWidth: 0 }}
-                    activeDot={{ r: 5, strokeWidth: 0 }}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
+              <SVGTimeSeriesArea
+                data={girData}
+                valueKey="gir_percentage"
+                unit="%"
+                indexKey="round_index"
+                color={successColor}
+                gridColor={gridColor}
+                yDomain={[0, 100]}
+                gradientSuffix="gir"
+                showDots={girData.length <= 30}
+                height={220}
+                tooltipLabel="GIR %"
+                formatTooltipValue={(v) => `${v.toFixed(1)}%`}
+              />
             </ChartCard>
 
             {/* Score Mix Donut */}
@@ -567,63 +557,35 @@ export function AnalyticsPage({ userId }: { userId: string }) {
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
             <ChartCard title="Total Putts per Round">
-              <ResponsiveContainer width="100%" height={220}>
-                <AreaChart data={putts_trend.filter(r => r.total_putts != null)} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="puttsGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%"  stopColor={neutralColor} stopOpacity={0.12} />
-                      <stop offset="95%" stopColor={neutralColor} stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid stroke={gridColor} horizontal={true} vertical={false} />
-                  <XAxis dataKey="round_index" tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
-                  <YAxis
-                    tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false}
-                    domain={[(min: number) => Math.max(20, min - 2), (max: number) => max + 2]}
-                  />
-                  <Tooltip contentStyle={tooltipStyle}
-                    formatter={((v: number) => [v, "Putts"]) as Fmt}
-                  />
-                  <ReferenceLine y={36} stroke={mutedFill} strokeDasharray="4 2"
-                    label={{ value: "36", fontSize: 10, fill: "#9ca3af" }}
-                  />
-                  <Area type="monotone" dataKey="total_putts" stroke={neutralColor} strokeWidth={2}
-                    fill="url(#puttsGrad)" dot={{ r: 3, fill: neutralColor, strokeWidth: 0 }}
-                    activeDot={{ r: 5, strokeWidth: 0 }}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
+              <SVGTimeSeriesArea
+                data={putts_trend.filter((r) => r.total_putts != null)}
+                valueKey="total_putts"
+                indexKey="round_index"
+                color={neutralColor}
+                gridColor={gridColor}
+                referenceLine={{ y: 36, label: "36" }}
+                gradientSuffix="putts"
+                showDots={true}
+                height={220}
+                tooltipLabel="Putts"
+              />
             </ChartCard>
 
             {threePuttsData.length > 0 && (
               <ChartCard title="3-Putts per Round" subtitle="Number of holes with 3 or more putts">
-                <ResponsiveContainer width="100%" height={220}>
-                  <AreaChart data={threePuttsData} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
-                    <defs>
-                      <linearGradient id="threePuttGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%"  stopColor={dangerColor} stopOpacity={0.15} />
-                        <stop offset="95%" stopColor={dangerColor} stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid stroke={gridColor} horizontal={true} vertical={false} />
-                    <XAxis dataKey="round_index" tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
-                    <YAxis
-                      tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false}
-                      domain={[0, (max: number) => Math.max(6, max + 1)]}
-                      allowDecimals={false}
-                    />
-                    <Tooltip contentStyle={tooltipStyle}
-                      formatter={((v: number) => [v, "3-Putts"]) as Fmt}
-                    />
-                    <ReferenceLine y={2} stroke={mutedFill} strokeDasharray="4 2"
-                      label={{ value: "2", fontSize: 10, fill: "#9ca3af" }}
-                    />
-                    <Area type="monotone" dataKey="three_putt_count" stroke={dangerColor} strokeWidth={2}
-                      fill="url(#threePuttGrad)" dot={{ r: 3, fill: dangerColor, strokeWidth: 0 }}
-                      activeDot={{ r: 5, strokeWidth: 0 }}
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
+                <SVGTimeSeriesArea
+                  data={threePuttsData}
+                  valueKey="three_putt_count"
+                  indexKey="round_index"
+                  color={dangerColor}
+                  gridColor={gridColor}
+                  yDomain={[0, "auto"]}
+                  referenceLine={{ y: 2, label: "2" }}
+                  gradientSuffix="threePutts"
+                  showDots={true}
+                  height={220}
+                  tooltipLabel="3-Putts"
+                />
               </ChartCard>
             )}
           </div>
@@ -641,32 +603,26 @@ export function AnalyticsPage({ userId }: { userId: string }) {
               title="Short Game"
               subtitle="Scrambling % vs Up & Down % · rounds with GIR misses recorded"
             >
-              <ResponsiveContainer width="100%" height={240}>
-                <ComposedChart
-                  data={scrambling_trend.map((r, i) => ({
-                    ...r,
-                    up_and_down_pct: up_and_down_trend[i]?.percentage ?? null,
-                  }))}
-                  margin={{ top: 8, right: 16, left: -16, bottom: 0 }}
-                >
-                  <CartesianGrid stroke={gridColor} vertical={false} />
-                  <XAxis dataKey="round_index" tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
-                  <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false}
-                    tickFormatter={(v) => `${v}%`} />
-                  <Tooltip
-                    contentStyle={tooltipStyle}
-                    formatter={((v: number, name: string) => {
-                      if (name === "scrambling_percentage") return [`${v.toFixed(1)}%`, "Scrambling"];
-                      if (name === "up_and_down_pct") return [`${v.toFixed(1)}%`, "Up & Down"];
-                      return [v, name];
-                    }) as Fmt}
-                  />
-                  <Line type="monotone" dataKey="scrambling_percentage" stroke={trendSecondary}
-                    strokeWidth={2} dot={{ r: 3, fill: trendSecondary, strokeWidth: 0 }} connectNulls />
-                  <Line type="monotone" dataKey="up_and_down_pct" stroke={trendTertiary}
-                    strokeWidth={2} dot={{ r: 3, fill: trendTertiary, strokeWidth: 0 }} connectNulls={false} />
-                </ComposedChart>
-              </ResponsiveContainer>
+              <SVGTimeSeriesArea
+                data={scrambling_trend.map((r, i) => ({
+                  ...r,
+                  up_and_down_pct: up_and_down_trend[i]?.percentage ?? null,
+                }))}
+                valueKey="scrambling_percentage"
+                secondaryValueKey="up_and_down_pct"
+                secondaryColor={trendTertiary}
+                indexKey="round_index"
+                unit="%"
+                color={trendSecondary}
+                gridColor={gridColor}
+                yDomain={[0, 100]}
+                tooltipLabel="Scrambling"
+                secondaryTooltipLabel="Up & Down"
+                gradientSuffix="shortGame"
+                showDots={true}
+                height={240}
+                formatTooltipValue={(v) => `${v.toFixed(1)}%`}
+              />
             </ChartCard>
           </ScrollSection>
         </div>

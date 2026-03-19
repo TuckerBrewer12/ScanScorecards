@@ -39,6 +39,12 @@ const SCORE_COLORS: Record<string, string> = {
 
 const SCORE_KEYS = ["eagle", "birdie", "par", "bogey", "double_bogey", "triple_bogey", "quad_bogey"] as const;
 
+const SCORE_LABELS: Record<string, string> = {
+  eagle: "Eagle+", birdie: "Birdie", par: "Par",
+  bogey: "Bogey", double_bogey: "Double",
+  triple_bogey: "Triple", quad_bogey: "Quad+",
+};
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function aggregateDonut(dist: ScoreTypeRow[]) {
@@ -302,13 +308,13 @@ export function CareerPage({ userId }: { userId: string }) {
           {/* ── Score Mix Donut ──────────────────────────────────────────── */}
           <ChartCard title="Career Score Mix">
             <div className="relative">
-              <ResponsiveContainer width="100%" height={200}>
+              <ResponsiveContainer width="100%" height={180}>
                 <PieChart>
                   <Pie
                     data={donutData}
                     dataKey="value"
-                    innerRadius={60}
-                    outerRadius={80}
+                    innerRadius={55}
+                    outerRadius={74}
                     stroke="none"
                     paddingAngle={2}
                   >
@@ -318,7 +324,7 @@ export function CareerPage({ userId }: { userId: string }) {
                   </Pie>
                   <Tooltip
                     contentStyle={tooltipStyle}
-                    formatter={((v: number) => [`${v.toFixed(1)}%`, ""]) as Fmt}
+                    formatter={((v: number, name: string) => [`${v.toFixed(1)}%`, SCORE_LABELS[name] ?? name]) as Fmt}
                   />
                 </PieChart>
               </ResponsiveContainer>
@@ -326,6 +332,15 @@ export function CareerPage({ userId }: { userId: string }) {
                 <div className="text-2xl font-bold text-gray-900">{totalHoles}</div>
                 <div className="text-[10px] text-gray-400 uppercase tracking-wide">holes</div>
               </div>
+            </div>
+            <div className="mt-2 flex flex-col gap-1.5">
+              {donutData.map((d) => (
+                <div key={d.name} className="flex items-center gap-2">
+                  <div className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: scoreColors[d.name] }} />
+                  <span className="text-xs text-gray-500 flex-1">{SCORE_LABELS[d.name] ?? d.name}</span>
+                  <span className="text-xs font-semibold text-gray-700 tabular-nums">{d.value.toFixed(1)}%</span>
+                </div>
+              ))}
             </div>
           </ChartCard>
 

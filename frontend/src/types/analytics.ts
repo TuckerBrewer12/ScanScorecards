@@ -28,6 +28,7 @@ export interface ScoreTrendRow {
   round_id: string | null;
   total_score: number | null;
   to_par: number | null;
+  course_name: string | null;
 }
 
 export interface GIRTrendRow {
@@ -246,6 +247,8 @@ export interface NetScoreTrendRow {
   gross_score: number | null;
   course_handicap: number | null;
   net_score: number | null;
+  course_name: string | null;
+  to_par: number | null;
 }
 
 export interface AnalyticsData {

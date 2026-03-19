@@ -844,12 +844,16 @@ def score_trend(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
     for index, round_obj in enumerate(rounds, start=1):
         total_score = round_obj.calculate_total_score()
         total_to_par = round_obj.total_to_par()
+        course_name = (
+            round_obj.course.name if round_obj.course else round_obj.course_name_played
+        )
         results.append(
             {
                 "round_index": index,
                 "round_id": round_obj.id,
                 "total_score": total_score,
                 "to_par": total_to_par,
+                "course_name": course_name,
             }
         )
     return results
@@ -888,6 +892,10 @@ def net_score_trend(
             )
             net_score = gross - course_handicap
 
+        course_name = (
+            round_obj.course.name if round_obj.course else round_obj.course_name_played
+        )
+        to_par = (gross - course_par) if gross is not None and course_par is not None else None
         results.append(
             {
                 "round_index": index,
@@ -895,6 +903,8 @@ def net_score_trend(
                 "gross_score": gross,
                 "course_handicap": course_handicap,
                 "net_score": net_score,
+                "course_name": course_name,
+                "to_par": to_par,
             }
         )
     return results
