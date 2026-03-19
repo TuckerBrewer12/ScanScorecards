@@ -4,11 +4,9 @@ type Fmt = (v: any, name: any, props: any) => any;
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
-  AreaChart, Area,
   PieChart, Pie, Cell,
   RadarChart, Radar, PolarGrid, PolarAngleAxis,
-  XAxis, YAxis,
-  ResponsiveContainer, Tooltip, ReferenceLine,
+  ResponsiveContainer, Tooltip,
 } from "recharts";
 import { api } from "@/lib/api";
 import { getStoredColorBlindMode } from "@/lib/accessibility";
@@ -16,6 +14,7 @@ import { getColorBlindPalette } from "@/lib/chartPalettes";
 import type { AnalyticsData, AnalyticsKPIs, ScoreTypeRow, ScoringByParRow } from "@/types/analytics";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { ScrollSection } from "@/components/analytics/ScrollSection";
+import { SVGHandicapTrend } from "@/components/analytics/SVGHandicapTrend";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -277,32 +276,12 @@ export function CareerPage({ userId }: { userId: string }) {
             subtitle={data.kpis.handicap_index != null ? `Current: ${hiDisplay}` : undefined}
             className="xl:col-span-3"
           >
-            <ResponsiveContainer width="100%" height={220}>
-              <AreaChart data={data.handicap_trend} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="hiGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%"  stopColor={trendPrimary} stopOpacity={0.13} />
-                    <stop offset="95%" stopColor={trendPrimary} stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <XAxis dataKey="round_index" tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
-                <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} domain={["auto", "auto"]} />
-                <Tooltip
-                  contentStyle={tooltipStyle}
-                  formatter={((v: number) => [v?.toFixed(1), "Handicap Index"]) as Fmt}
-                />
-                <ReferenceLine y={0} stroke={mutedFill} strokeDasharray="3 3" />
-                <Area
-                  type="monotone"
-                  dataKey="handicap_index"
-                  stroke={trendPrimary}
-                  strokeWidth={2}
-                  fill="url(#hiGrad)"
-                  dot={false}
-                  activeDot={{ r: 4, strokeWidth: 0 }}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
+            <SVGHandicapTrend
+              data={data.handicap_trend}
+              color={trendPrimary}
+              gridColor={gridColor}
+              height={240}
+            />
           </ChartCard>
 
           {/* ── Score Mix Donut ──────────────────────────────────────────── */}
