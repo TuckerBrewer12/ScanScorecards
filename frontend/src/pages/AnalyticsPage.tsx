@@ -728,53 +728,11 @@ export function AnalyticsPage({ userId }: { userId: string }) {
             </ChartCard>
           </div>
 
-          {scoring_by_yardage.length > 0 && (() => {
-            const yardageData = scoring_by_yardage.map(r => ({
-              ...r,
-              label: `P${r.par} ${r.bucket_label}`,
-            }));
-            const sharedXAxis = (
-              <XAxis
-                dataKey="label"
-                tick={{ fontSize: 10, fill: "#6b7280" }}
-                tickLine={false}
-                axisLine={false}
-                angle={-35}
-                textAnchor="end"
-                interval={0}
-                height={55}
-              />
-            );
-            return (
-              <div className="flex flex-col gap-5 mb-5">
-                <ParMatrixGrid rows={scoring_by_yardage} />
-
-                <ChartCard title="GIR % by Yardage" subtitle="Green in regulation rate">
-                  <ResponsiveContainer width="100%" height={260}>
-                    <ComposedChart data={yardageData} margin={{ top: 16, right: 16, left: -16, bottom: 40 }}>
-                      <CartesianGrid stroke={gridColor} vertical={false} />
-                      {sharedXAxis}
-                      <YAxis
-                        domain={[0, 100]}
-                        tick={{ fontSize: 11, fill: "#9ca3af" }}
-                        tickLine={false}
-                        axisLine={false}
-                        tickFormatter={(v) => `${v}%`}
-                      />
-                      <Tooltip
-                        contentStyle={tooltipStyle}
-                        formatter={((v: number, _name: string, props: { payload: { sample_size: number } }) => [
-                          `${v.toFixed(1)}% (n=${props.payload.sample_size})`,
-                          "GIR %",
-                        ]) as Fmt}
-                      />
-                      <Bar dataKey="gir_percentage" radius={[5, 5, 0, 0]} maxBarSize={36} fill={scoreColors.double_bogey} />
-                    </ComposedChart>
-                  </ResponsiveContainer>
-                </ChartCard>
-              </div>
-            );
-          })()}
+          {scoring_by_yardage.length > 0 && (
+            <div className="mb-5">
+              <ParMatrixGrid rows={scoring_by_yardage} />
+            </div>
+          )}
 
           {gir_vs_non_gir.length > 0 && (
             <ScrollSection delay={0.1}>
