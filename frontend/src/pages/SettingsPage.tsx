@@ -70,10 +70,6 @@ export function SettingsPage({ userId }: { userId: string }) {
     setHomeCourseQuery(settingsData.homeCourseQueryDefault);
   }, [settingsData]);
 
-  useEffect(() => {
-    applyTheme(theme);
-  }, [theme]);
-
   const handleHomeCourseQueryChange = (value: string) => {
     setHomeCourseQuery(value);
     setHomeCourseId("");
@@ -101,8 +97,6 @@ export function SettingsPage({ userId }: { userId: string }) {
 
   const setThemePreference = (nextTheme: AppTheme) => {
     setTheme(nextTheme);
-    setStoredTheme(nextTheme);
-    applyTheme(nextTheme);
   };
 
   const setColorBlindPreference = (mode: ColorBlindMode) => {
@@ -154,6 +148,8 @@ export function SettingsPage({ userId }: { userId: string }) {
         home_course_id: selectedHomeCourseId || null,
         handicap,
       });
+      setStoredTheme(theme);
+      applyTheme(theme);
       const refreshedUser = await api.getUser(userId);
 
       setHomeCourseId(refreshedUser.home_course_id ?? "");
