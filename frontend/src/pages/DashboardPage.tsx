@@ -3,9 +3,10 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { TrendingDown, TrendingUp, Minus } from "lucide-react";
 import {
-  ComposedChart, Area, BarChart, Bar, PieChart, Pie, Cell,
-  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  BarChart, Bar, PieChart, Pie, Cell,
+  CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer,
 } from "recharts";
+import { SVGScoreHandicapTrend } from "@/components/dashboard/SVGScoreHandicapTrend";
 import { api } from "@/lib/api";
 import { getStoredColorBlindMode } from "@/lib/accessibility";
 import { getColorBlindPalette } from "@/lib/chartPalettes";
@@ -49,14 +50,6 @@ const SCORE_LABELS: Record<string, string> = {
   eagle: "Eagle+", birdie: "Birdie", par: "Par",
   bogey: "Bogey", double_bogey: "Double", triple_bogey: "Triple", quad_bogey: "Quad+",
 };
-
-function getScoreDotColor(toPar: number | null, scoreLineColor: string): string {
-  if (toPar == null) return scoreLineColor;
-  if (toPar <= -2) return "#b45309";   // eagle+
-  if (toPar === -1) return "#059669";  // birdie
-  if (toPar === 0)  return "#9ca3af";  // par
-  return "#ef4444";                    // bogey+
-}
 
 
 function MiniKpi({ label, value, trend }: {
@@ -302,49 +295,12 @@ export function DashboardPage({ userId }: DashboardPageProps) {
 
           {/* 2. Hero: Dual-Axis Score + HI Trend */}
           <BentoCard title="Score & Handicap Trend" subtitle="Last 20 rounds" className="md:col-span-2 lg:col-span-2">
-            <ResponsiveContainer width="100%" height={200}>
-              <ComposedChart data={dualData} margin={{ top: 4, right: 40, left: -20, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="bentoScoreGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={scoreLineColor} stopOpacity={0.14} />
-                    <stop offset="95%" stopColor={scoreLineColor} stopOpacity={0} />
-                  </linearGradient>
-                  <linearGradient id="bentoHiGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={handicapLineColor} stopOpacity={0.10} />
-                    <stop offset="95%" stopColor={handicapLineColor} stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid stroke={gridColor} horizontal vertical={false} />
-                <XAxis dataKey="round_index" tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
-                <YAxis yAxisId="score" tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} domain={["auto", "auto"]} />
-                <YAxis yAxisId="hi" orientation="right" tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false}
-                  domain={["auto", "auto"]} tickFormatter={(v: number) => formatHI(v)} />
-                <Tooltip contentStyle={tooltipStyle}
-                  formatter={((v: number, name: string) => [
-                    name === "handicap_index" ? formatHI(v) : v,
-                    name === "handicap_index" ? "HI" : "Score",
-                  ]) as Fmt}
-                />
-                <Area yAxisId="score" type="monotone" dataKey="total_score"
-                  stroke={scoreLineColor} strokeWidth={2} fill="url(#bentoScoreGrad)"
-                  activeDot={{ r: 5, strokeWidth: 0 }}
-                  dot={(props: any) => {
-                    const { cx, cy, payload } = props;
-                    if (!payload.total_score) return <g key={props.key} />;
-                    const color = getScoreDotColor(payload.to_par, scoreLineColor);
-                    return <circle key={props.key} cx={cx} cy={cy} r={3.5} fill={color} stroke="white" strokeWidth={1.5} />;
-                  }}
-                  label={(props: any) => {
-                    const { x, y, value } = props;
-                    if (!value) return <g key={props.key} />;
-                    return <text key={props.key} x={x} y={y - 8} textAnchor="middle" fontSize={9} fill="#9ca3af" fontWeight="600">{value}</text>;
-                  }}
-                />
-                <Area yAxisId="hi" type="monotone" dataKey="handicap_index"
-                  stroke={handicapLineColor} strokeWidth={1.5} fill="url(#bentoHiGrad)"
-                  dot={false} activeDot={{ r: 4, strokeWidth: 0 }} connectNulls={false} />
-              </ComposedChart>
-            </ResponsiveContainer>
+            <SVGScoreHandicapTrend
+              data={dualData}
+              scoreColor={scoreLineColor}
+              handicapColor={handicapLineColor}
+              gridColor={gridColor}
+            />
           </BentoCard>
 
           {/* 3. GIR % Radial Donut */}
