@@ -21,9 +21,7 @@ import { ScrollSection } from "@/components/analytics/ScrollSection";
 import { NarrativeInsight } from "@/components/analytics/NarrativeInsight";
 import { StickyScoreBar } from "@/components/analytics/StickyScoreBar";
 import { BestRoundCard } from "@/components/analytics/BestRoundCard";
-import { RangeFan }         from "@/components/analytics/RangeFan";
-import { ApexTracers }      from "@/components/analytics/ApexTracers";
-import { RangeInsightsHUD } from "@/components/analytics/RangeInsightsHUD";
+import { ParMatrixGrid } from "@/components/analytics/ParMatrixGrid";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -749,25 +747,7 @@ export function AnalyticsPage({ userId }: { userId: string }) {
             );
             return (
               <div className="flex flex-col gap-5 mb-5">
-                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-                  <div className="text-sm font-bold text-gray-900 mb-0.5">Range View</div>
-                  <div className="text-xs text-gray-400 mb-5">Every hole you've played — by yardage</div>
-
-                  <div className="mb-6">
-                    <div className="text-xs font-medium text-gray-500 mb-2 uppercase tracking-wide">Top-Down Dispersion</div>
-                    <RangeFan rows={scoring_by_yardage} />
-                  </div>
-
-                  <div className="mb-6">
-                    <div className="text-xs font-medium text-gray-500 mb-2 uppercase tracking-wide">Avg Score Arc by Par</div>
-                    <ApexTracers rows={scoring_by_yardage} />
-                  </div>
-
-                  <div>
-                    <div className="text-xs font-medium text-gray-500 mb-2 uppercase tracking-wide">Distance Zone Performance</div>
-                    <RangeInsightsHUD rows={scoring_by_yardage} />
-                  </div>
-                </div>
+                <ParMatrixGrid rows={scoring_by_yardage} />
 
                 <ChartCard title="GIR % by Yardage" subtitle="Green in regulation rate">
                   <ResponsiveContainer width="100%" height={260}>
