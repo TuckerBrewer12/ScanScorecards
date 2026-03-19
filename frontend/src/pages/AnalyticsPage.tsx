@@ -4,10 +4,10 @@ type Fmt = (v: any, name: any, props: any) => any;
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
-  AreaChart, Area, BarChart, Bar, PieChart, Pie,
-  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine, Cell, Legend,
-  ComposedChart, Line,
+  BarChart, Bar, PieChart, Pie, Cell, Legend,
+  CartesianGrid, XAxis, YAxis, Tooltip, ReferenceLine, ResponsiveContainer,
 } from "recharts";
+import { SVGTimeSeriesArea } from "@/components/analytics/SVGTimeSeriesArea";
 import { Gauge, Hash, TrendingDown, Trophy, Target } from "lucide-react";
 import { api } from "@/lib/api";
 import { getStoredColorBlindMode } from "@/lib/accessibility";
@@ -15,8 +15,6 @@ import { getColorBlindPalette } from "@/lib/chartPalettes";
 import type {
   AnalyticsData, ScoreTrendRow, ScoreTypeRow, GIRTrendRow, ScoringByParRow, PuttsTrendRow,
 } from "@/types/analytics";
-import { PageHeader } from "@/components/layout/PageHeader";
-import { StatCard } from "@/components/dashboard/StatCard";
 import { ScrollSection } from "@/components/analytics/ScrollSection";
 import { NarrativeInsight } from "@/components/analytics/NarrativeInsight";
 import { StickyScoreBar } from "@/components/analytics/StickyScoreBar";
@@ -211,7 +209,7 @@ function formatHI(hi: number | null | undefined): string | null {
 
 function SectionLabel({ children }: { children: string }) {
   return (
-    <div className="flex items-center gap-3 mb-7">
+    <div className="flex items-center gap-3">
       <div className="h-px w-8 bg-primary/30 rounded-full" />
       <span className="text-[11px] font-bold text-primary/50 uppercase tracking-[0.18em]">{children}</span>
     </div>
@@ -220,8 +218,8 @@ function SectionLabel({ children }: { children: string }) {
 
 function ChartCard({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
   return (
-    <div className="analytics-chart-card bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-      <div className="mb-5">
+    <div className="analytics-chart-card bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+      <div className="mb-3">
         <div className="text-sm font-semibold text-gray-800">{title}</div>
         {subtitle && <div className="text-xs text-gray-400 mt-0.5">{subtitle}</div>}
       </div>
@@ -314,7 +312,8 @@ export function AnalyticsPage({ userId }: { userId: string }) {
   if (!data || data.kpis.total_rounds === 0) {
     return (
       <div>
-        <PageHeader title="Analytics" subtitle="No rounds yet" />
+        <h1 className="text-2xl font-bold tracking-tight text-gray-900">Analytics</h1>
+        <p className="text-sm text-gray-500 mt-1">No rounds yet</p>
         <div className="text-gray-400 mt-8">Play some rounds to see your analytics.</div>
       </div>
     );
@@ -331,170 +330,191 @@ export function AnalyticsPage({ userId }: { userId: string }) {
       {/* ── Sticky bar ────────────────────────────────────────────────────── */}
       <StickyScoreBar kpis={kpis} />
 
-      {/* ── Page header ────────────────────────────────────────────────────── */}
-      <div className="flex items-center justify-between mb-4 gap-4 flex-wrap">
-        <PageHeader title="Analytics" subtitle="Season overview" />
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-gray-400">Last</span>
+      {/* ── Dynamic Header ────────────────────────────────────────────────── */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-6">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-gray-900">Analytics</h1>
+          <p className="text-sm text-gray-500 mt-1">
+            Last <span className="font-semibold text-gray-700">{limit}</span> rounds
+          </p>
+        </div>
+        <div className="flex items-center bg-gray-100/80 p-1 rounded-xl gap-0.5 self-start sm:self-auto">
           {LIMIT_OPTIONS.map((n) => (
             <button
               key={n}
               onClick={() => setLimit(n)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                 limit === n
-                  ? "bg-primary text-white shadow-sm"
-                  : "bg-white border border-gray-200 text-gray-600 hover:border-gray-300"
+                  ? "bg-white shadow-sm text-gray-900"
+                  : "text-gray-500 hover:text-gray-700"
               }`}
             >
               {n}
             </button>
           ))}
-          <span className="text-xs text-gray-400">rounds</span>
         </div>
       </div>
 
-      {/* ── Dashboard-style stat row ──────────────────────────────────────── */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4 mb-4">
-        <StatCard label="Handicap Index"   value={formatHI(kpis.handicap_index)}  icon={Gauge}        highlight />
-        <StatCard label="Total Rounds"     value={kpis.total_rounds}              icon={Hash} />
-        <StatCard label="Scoring Average"  value={kpis.scoring_average}           icon={TrendingDown} />
-        <StatCard
-          label="Best Round"
-          value={bestRound?.total_score ?? null}
-          icon={Trophy}
-          subtitle={
-            (() => {
-              const ev = notable_achievements?.scoring_records_events?.lifetime?.lowest_score;
-              return ev ? ev.course : undefined;
-            })()
-          }
-        />
-        <StatCard label="Avg Putts" value={avgPutts} icon={Target} />
+      {/* ── Panoramic Bento Bar ───────────────────────────────────────────── */}
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm flex flex-wrap divide-y md:divide-y-0 md:divide-x divide-gray-50 overflow-hidden mb-6">
+        {/* Handicap — accent cell */}
+        <div className="flex-1 min-w-[130px] p-4 bg-primary relative overflow-hidden flex flex-col">
+          <div className="absolute -top-5 -right-5 w-20 h-20 rounded-full bg-white/5 blur-2xl pointer-events-none" />
+          <span className="text-[10px] font-bold uppercase tracking-widest text-white/50 mb-2">Handicap Index</span>
+          <span className="text-2xl font-bold text-white">{formatHI(kpis.handicap_index) ?? "—"}</span>
+          <Gauge size={13} className="absolute top-3 right-3 text-white/25" />
+        </div>
+        {/* Regular cells */}
+        {[
+          { label: "Rounds",      value: kpis.total_rounds,            icon: Hash },
+          { label: "Scoring Avg", value: kpis.scoring_average,         icon: TrendingDown },
+          { label: "Best Round",  value: bestRound?.total_score ?? null, icon: Trophy,
+            subtitle: (() => { const ev = notable_achievements?.scoring_records_events?.lifetime?.lowest_score; return ev?.course; })() },
+          { label: "Avg Putts",   value: avgPutts,                     icon: Target },
+        ].map(({ label, value, icon: Icon, subtitle }) => (
+          <div key={label} className="flex-1 min-w-[130px] p-4 flex flex-col relative">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-2">{label}</span>
+            <span className="text-2xl font-bold text-gray-900">{value ?? "—"}</span>
+            {subtitle && <span className="text-xs text-gray-400 mt-1 truncate">{subtitle}</span>}
+            <Icon size={13} className="absolute top-3 right-3 text-gray-200" />
+          </div>
+        ))}
       </div>
 
-      <ScrollSection className="mb-7" delay={0.05}>
+      <ScrollSection className="mb-5" delay={0.05}>
         <BestRoundCard scoreTrend={data.score_trend} netScoreTrend={data.net_score_trend} achievements={notable_achievements} />
       </ScrollSection>
 
-      {/* ╔══════════════════════════════════════════════════════════════════╗ */}
-      {/* ║  SCORING                                                        ║ */}
-      {/* ╚══════════════════════════════════════════════════════════════════╝ */}
-      <div className="analytics-section analytics-section-scoring -mx-8 px-8 py-10 bg-gradient-to-b from-[#eef7f0]/70 to-[#f8faf8]">
-        <ScrollSection>
-          <SectionLabel>Scoring</SectionLabel>
+      {/* ── Unified dense grid ────────────────────────────────────────────── */}
+      <ScrollSection>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
+
+          {/* ── Scoring ── */}
+          <div className="lg:col-span-2 flex items-center gap-3 mt-4 mb-1">
+            <SectionLabel>Scoring</SectionLabel>
+          </div>
 
           {scoringInsights.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-7">
+            <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-3">
               {scoringInsights.slice(0, 2).map((ins, i) => (
                 <NarrativeInsight key={i} text={ins.text} trend={ins.trend} positiveUp={ins.positiveUp} />
               ))}
             </div>
           )}
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-            <ChartCard title="Score Trend" subtitle="5-round rolling average">
-              <ResponsiveContainer width="100%" height={220}>
-                <AreaChart data={scoreTrendWithAvg} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="scoreGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%"  stopColor={trendPrimary} stopOpacity={0.12} />
-                      <stop offset="95%" stopColor={trendPrimary} stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid stroke={gridColor} horizontal={true} vertical={false} />
-                  <XAxis dataKey="round_index" tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
-                  <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} domain={["auto", "auto"]} />
-                  <Tooltip contentStyle={tooltipStyle}
-                    formatter={((v: number, name: string) => [v, name === "rolling_avg" ? "5-Round Avg" : "Score"]) as Fmt}
-                  />
-                  <ReferenceLine y={72} stroke={mutedFill} strokeDasharray="4 2"
-                    label={{ value: "Par 72", fontSize: 10, fill: successColor }}
-                  />
-                  <Area type="monotone" dataKey="total_score" stroke={trendPrimary} strokeWidth={1.5}
-                    fill="url(#scoreGrad)" dot={false} activeDot={{ r: 4, strokeWidth: 0 }}
-                  />
-                  <Area type="monotone" dataKey="rolling_avg" stroke={trendPrimary} strokeWidth={2.5}
-                    fill="none" dot={false} activeDot={{ r: 4, strokeWidth: 0 }} strokeOpacity={0.45}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </ChartCard>
+          <ChartCard title="Score Trend" subtitle="5-round rolling average">
+            <SVGTimeSeriesArea
+              data={scoreTrendWithAvg}
+              valueKey="total_score"
+              rollingAvgKey="rolling_avg"
+              indexKey="round_index"
+              color={trendPrimary}
+              gridColor={gridColor}
+              referenceLine={{ y: 72, label: "Par 72" }}
+              gradientSuffix="score"
+              showDots={false}
+              height={165}
+              tooltipLabel="Score"
+            />
+          </ChartCard>
 
-            <ChartCard title="Net Score Trend" subtitle="Handicap-adjusted score per round">
-              <ResponsiveContainer width="100%" height={220}>
-                <AreaChart data={net_score_trend} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="netScoreGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%"  stopColor={trendPrimary} stopOpacity={0.15} />
-                      <stop offset="95%" stopColor={trendPrimary} stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid stroke={gridColor} horizontal={true} vertical={false} />
-                  <XAxis dataKey="round_index" tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
-                  <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} domain={["auto", "auto"]} />
-                  <Tooltip contentStyle={tooltipStyle}
-                    formatter={((v: number, _n: string, props: { payload: { course_handicap: number | null; gross_score: number | null } }) => {
-                      const hcp = props.payload.course_handicap;
-                      const gross = props.payload.gross_score;
-                      const detail = hcp != null && gross != null
-                        ? ` (gross ${gross}, HCP ${hcp < 0 ? `+${Math.abs(hcp)}` : hcp})`
-                        : "";
-                      return [`${v}${detail}`, "Net Score"];
-                    }) as Fmt}
-                  />
-                  <ReferenceLine y={72} stroke={mutedFill} strokeDasharray="4 2"
-                    label={{ value: "Par 72", fontSize: 10, fill: successColor }}
-                  />
-                  <Area type="monotone" dataKey="net_score" stroke={trendPrimary} strokeWidth={2}
-                    fill="url(#netScoreGrad)" dot={false} activeDot={{ r: 4, strokeWidth: 0 }}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </ChartCard>
+          <ChartCard title="Net Score Trend" subtitle="Handicap-adjusted score per round">
+            <SVGTimeSeriesArea
+              data={net_score_trend}
+              valueKey="net_score"
+              indexKey="round_index"
+              color={trendPrimary}
+              gridColor={gridColor}
+              referenceLine={{ y: 72, label: "Par 72" }}
+              gradientSuffix="netScore"
+              showDots={false}
+              height={165}
+              tooltipLabel="Net Score"
+              renderTooltipExtra={(row) => (
+                <>
+                  {row.course_name && (
+                    <div className="text-[11px] text-gray-400 mt-1 truncate max-w-[160px]">{row.course_name}</div>
+                  )}
+                  <div className="border-t border-gray-100 mt-1.5 pt-1.5 flex flex-col gap-0.5">
+                    {row.to_par != null && (
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-gray-500">To Par</span>
+                        <span className={`font-semibold ${row.to_par < 0 ? "text-emerald-600" : row.to_par > 0 ? "text-red-500" : "text-gray-500"}`}>
+                          {row.to_par > 0 ? `+${row.to_par}` : row.to_par === 0 ? "E" : row.to_par}
+                        </span>
+                      </div>
+                    )}
+                    {row.course_handicap != null && (
+                      <div className="flex items-center justify-between gap-3">
+                        <span className="text-gray-500">Course HCP</span>
+                        <span className="font-semibold text-gray-800">
+                          {row.course_handicap < 0 ? `+${Math.abs(row.course_handicap)}` : row.course_handicap}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+            />
+          </ChartCard>
+
+          {/* ── Ball Striking ── */}
+          <div className="lg:col-span-2 flex items-center gap-3 mt-4 mb-1">
+            <SectionLabel>Ball Striking</SectionLabel>
           </div>
-        </ScrollSection>
-      </div>
-
-      {/* ╔══════════════════════════════════════════════════════════════════╗ */}
-      {/* ║  BALL STRIKING & SCORE MIX                                      ║ */}
-      {/* ╚══════════════════════════════════════════════════════════════════╝ */}
-      <div className="analytics-section analytics-section-ball -mx-8 px-8 py-10 bg-white">
-        <ScrollSection>
-          <SectionLabel>Ball Striking</SectionLabel>
 
           {girInsights.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-7">
+            <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-3">
               {girInsights.map((ins, i) => (
                 <NarrativeInsight key={i} text={ins.text} trend={ins.trend} positiveUp={ins.positiveUp} />
               ))}
             </div>
           )}
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-            <ChartCard title="GIR % per Round" subtitle={girData.length < (data?.gir_trend ?? []).length ? "Rounds without GIR data excluded" : undefined}>
-              <ResponsiveContainer width="100%" height={220}>
-                <AreaChart data={girData} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="girGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%"  stopColor={successColor} stopOpacity={0.15} />
-                      <stop offset="95%" stopColor={successColor} stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid stroke={gridColor} horizontal={true} vertical={false} />
-                  <XAxis dataKey="round_index" tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
-                  <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} domain={[0, 100]} unit="%" />
-                  <Tooltip contentStyle={tooltipStyle}
-                    formatter={((v: number) => [`${v?.toFixed(1)}%`, "GIR %"]) as Fmt}
-                  />
-                  <Area type="monotone" dataKey="gir_percentage" stroke={successColor} strokeWidth={2}
-                    fill="url(#girGrad)" dot={{ r: 3, fill: successColor, strokeWidth: 0 }}
-                    activeDot={{ r: 5, strokeWidth: 0 }}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </ChartCard>
+          <ChartCard title="GIR % per Round" subtitle={girData.length < (data?.gir_trend ?? []).length ? "Rounds without GIR data excluded" : undefined}>
+            <SVGTimeSeriesArea
+              data={girData}
+              valueKey="gir_percentage"
+              unit="%"
+              indexKey="round_index"
+              color={successColor}
+              gridColor={gridColor}
+              yDomain={[0, 100]}
+              gradientSuffix="gir"
+              showDots={girData.length <= 30}
+              height={165}
+              tooltipLabel="GIR %"
+              formatTooltipValue={(v) => `${v.toFixed(1)}%`}
+            />
+          </ChartCard>
 
-            {/* Score Mix Donut */}
+          {(scrambling_trend.length > 0 || up_and_down_trend.length > 0) ? (
+            <ChartCard title="Short Game" subtitle="Scrambling % vs Up & Down % · rounds with GIR misses recorded">
+              <SVGTimeSeriesArea
+                data={scrambling_trend.map((r, i) => ({
+                  ...r,
+                  up_and_down_pct: up_and_down_trend[i]?.percentage ?? null,
+                }))}
+                valueKey="scrambling_percentage"
+                secondaryValueKey="up_and_down_pct"
+                secondaryColor={trendTertiary}
+                indexKey="round_index"
+                unit="%"
+                color={trendSecondary}
+                gridColor={gridColor}
+                yDomain={[0, 100]}
+                tooltipLabel="Scrambling"
+                secondaryTooltipLabel="Up & Down"
+                gradientSuffix="shortGame"
+                showDots={true}
+                height={165}
+                formatTooltipValue={(v) => `${v.toFixed(1)}%`}
+              />
+            </ChartCard>
+          ) : null}
+
+          {/* Score Mix Donut — full width */}
+          <div className="lg:col-span-2">
             <ChartCard title="Score Mix" subtitle="Career breakdown across all rounds">
               <div className="flex items-center gap-6">
                 <div className="relative h-[200px] w-[200px] shrink-0">
@@ -540,18 +560,14 @@ export function AnalyticsPage({ userId }: { userId: string }) {
               </div>
             </ChartCard>
           </div>
-        </ScrollSection>
-      </div>
 
-      {/* ╔══════════════════════════════════════════════════════════════════╗ */}
-      {/* ║  PUTTING                                                        ║ */}
-      {/* ╚══════════════════════════════════════════════════════════════════╝ */}
-      <div className="analytics-section analytics-section-putting -mx-8 px-8 py-10 bg-gradient-to-b from-[#f0f5ff]/50 to-[#f8faf8]">
-        <ScrollSection>
-          <SectionLabel>Putting</SectionLabel>
+          {/* ── Putting ── */}
+          <div className="lg:col-span-2 flex items-center gap-3 mt-4 mb-1">
+            <SectionLabel>Putting</SectionLabel>
+          </div>
 
           {puttingInsights.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-7">
+            <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-3">
               {puttingInsights.map((ins, i) => (
                 <NarrativeInsight key={i} text={ins.text} trend={ins.trend} positiveUp={ins.positiveUp} />
               ))}
@@ -565,177 +581,100 @@ export function AnalyticsPage({ userId }: { userId: string }) {
             </div>
           )}
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-            <ChartCard title="Total Putts per Round">
-              <ResponsiveContainer width="100%" height={220}>
-                <AreaChart data={putts_trend.filter(r => r.total_putts != null)} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="puttsGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%"  stopColor={neutralColor} stopOpacity={0.12} />
-                      <stop offset="95%" stopColor={neutralColor} stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid stroke={gridColor} horizontal={true} vertical={false} />
-                  <XAxis dataKey="round_index" tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
-                  <YAxis
-                    tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false}
-                    domain={[(min: number) => Math.max(20, min - 2), (max: number) => max + 2]}
-                  />
-                  <Tooltip contentStyle={tooltipStyle}
-                    formatter={((v: number) => [v, "Putts"]) as Fmt}
-                  />
-                  <ReferenceLine y={36} stroke={mutedFill} strokeDasharray="4 2"
-                    label={{ value: "36", fontSize: 10, fill: "#9ca3af" }}
-                  />
-                  <Area type="monotone" dataKey="total_putts" stroke={neutralColor} strokeWidth={2}
-                    fill="url(#puttsGrad)" dot={{ r: 3, fill: neutralColor, strokeWidth: 0 }}
-                    activeDot={{ r: 5, strokeWidth: 0 }}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </ChartCard>
+          <ChartCard title="Total Putts per Round">
+            <SVGTimeSeriesArea
+              data={putts_trend.filter((r) => r.total_putts != null)}
+              valueKey="total_putts"
+              indexKey="round_index"
+              color={neutralColor}
+              gridColor={gridColor}
+              referenceLine={{ y: 36, label: "36" }}
+              gradientSuffix="putts"
+              showDots={true}
+              height={165}
+              tooltipLabel="Putts"
+            />
+          </ChartCard>
 
-            {threePuttsData.length > 0 && (
-              <ChartCard title="3-Putts per Round" subtitle="Number of holes with 3 or more putts">
-                <ResponsiveContainer width="100%" height={220}>
-                  <AreaChart data={threePuttsData} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
-                    <defs>
-                      <linearGradient id="threePuttGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%"  stopColor={dangerColor} stopOpacity={0.15} />
-                        <stop offset="95%" stopColor={dangerColor} stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid stroke={gridColor} horizontal={true} vertical={false} />
-                    <XAxis dataKey="round_index" tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
-                    <YAxis
-                      tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false}
-                      domain={[0, (max: number) => Math.max(6, max + 1)]}
-                      allowDecimals={false}
-                    />
-                    <Tooltip contentStyle={tooltipStyle}
-                      formatter={((v: number) => [v, "3-Putts"]) as Fmt}
-                    />
-                    <ReferenceLine y={2} stroke={mutedFill} strokeDasharray="4 2"
-                      label={{ value: "2", fontSize: 10, fill: "#9ca3af" }}
-                    />
-                    <Area type="monotone" dataKey="three_putt_count" stroke={dangerColor} strokeWidth={2}
-                      fill="url(#threePuttGrad)" dot={{ r: 3, fill: dangerColor, strokeWidth: 0 }}
-                      activeDot={{ r: 5, strokeWidth: 0 }}
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </ChartCard>
-            )}
+          {threePuttsData.length > 0 && (
+            <ChartCard title="3-Putts per Round" subtitle="Number of holes with 3 or more putts">
+              <SVGTimeSeriesArea
+                data={threePuttsData}
+                valueKey="three_putt_count"
+                indexKey="round_index"
+                color={dangerColor}
+                gridColor={gridColor}
+                yDomain={[0, "auto"]}
+                referenceLine={{ y: 2, label: "2" }}
+                gradientSuffix="threePutts"
+                showDots={true}
+                height={165}
+                tooltipLabel="3-Putts"
+              />
+            </ChartCard>
+          )}
+
+          {/* ── Performance Profile ── */}
+          <div className="lg:col-span-2 flex items-center gap-3 mt-4 mb-1">
+            <SectionLabel>Performance Profile</SectionLabel>
           </div>
-        </ScrollSection>
-      </div>
 
-      {/* ╔══════════════════════════════════════════════════════════════════╗ */}
-      {/* ║  SHORT GAME                                                     ║ */}
-      {/* ╚══════════════════════════════════════════════════════════════════╝ */}
-      {(scrambling_trend.length > 0 || up_and_down_trend.length > 0) && (
-        <div className="analytics-section analytics-section-shortgame -mx-8 px-8 py-10 bg-gradient-to-b from-[#fdf4ff]/50 to-[#f8faf8]">
-          <ScrollSection delay={0.1}>
-            <SectionLabel>Short Game</SectionLabel>
-            <ChartCard
-              title="Short Game"
-              subtitle="Scrambling % vs Up & Down % · rounds with GIR misses recorded"
-            >
-              <ResponsiveContainer width="100%" height={240}>
-                <ComposedChart
-                  data={scrambling_trend.map((r, i) => ({
-                    ...r,
-                    up_and_down_pct: up_and_down_trend[i]?.percentage ?? null,
-                  }))}
-                  margin={{ top: 8, right: 16, left: -16, bottom: 0 }}
-                >
-                  <CartesianGrid stroke={gridColor} vertical={false} />
-                  <XAxis dataKey="round_index" tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
-                  <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false}
-                    tickFormatter={(v) => `${v}%`} />
-                  <Tooltip
-                    contentStyle={tooltipStyle}
-                    formatter={((v: number, name: string) => {
-                      if (name === "scrambling_percentage") return [`${v.toFixed(1)}%`, "Scrambling"];
-                      if (name === "up_and_down_pct") return [`${v.toFixed(1)}%`, "Up & Down"];
-                      return [v, name];
-                    }) as Fmt}
-                  />
-                  <Line type="monotone" dataKey="scrambling_percentage" stroke={trendSecondary}
-                    strokeWidth={2} dot={{ r: 3, fill: trendSecondary, strokeWidth: 0 }} connectNulls />
-                  <Line type="monotone" dataKey="up_and_down_pct" stroke={trendTertiary}
-                    strokeWidth={2} dot={{ r: 3, fill: trendTertiary, strokeWidth: 0 }} connectNulls={false} />
-                </ComposedChart>
-              </ResponsiveContainer>
-            </ChartCard>
-          </ScrollSection>
-        </div>
-      )}
+          <ChartCard title="Avg Score to Par by Hole Par">
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={scoring_by_par} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+                <CartesianGrid stroke={gridColor} vertical={false} />
+                <XAxis dataKey="par" tick={{ fontSize: 12, fill: "#6b7280" }} tickLine={false} axisLine={false}
+                  tickFormatter={(v) => `Par ${v}`}
+                />
+                <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false}
+                  tickFormatter={(v) => (v > 0 ? `+${v}` : v)}
+                />
+                <Tooltip contentStyle={tooltipStyle}
+                  formatter={((v: number) => [v > 0 ? `+${v.toFixed(2)}` : v.toFixed(2), "Avg to Par"]) as Fmt}
+                />
+                <ReferenceLine y={0} stroke={mutedFill} />
+                <Bar dataKey="average_to_par" radius={[6, 6, 0, 0]}>
+                  {scoring_by_par.map((row) => (
+                    <Cell key={row.par} fill={row.average_to_par <= 0 ? successColor : dangerColor} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </ChartCard>
 
-      {/* ╔══════════════════════════════════════════════════════════════════╗ */}
-      {/* ║  PERFORMANCE PROFILE                                            ║ */}
-      {/* ╚══════════════════════════════════════════════════════════════════╝ */}
-      <div className="analytics-section analytics-section-profile -mx-8 px-8 py-10">
-        <ScrollSection>
-          <SectionLabel>Performance Profile</SectionLabel>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
-            <ChartCard title="Avg Score to Par by Hole Par">
-              <ResponsiveContainer width="100%" height={220}>
-                <BarChart data={scoring_by_par} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
-                  <CartesianGrid stroke={gridColor} vertical={false} />
-                  <XAxis dataKey="par" tick={{ fontSize: 12, fill: "#6b7280" }} tickLine={false} axisLine={false}
-                    tickFormatter={(v) => `Par ${v}`}
-                  />
-                  <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false}
-                    tickFormatter={(v) => (v > 0 ? `+${v}` : v)}
-                  />
-                  <Tooltip contentStyle={tooltipStyle}
-                    formatter={((v: number) => [v > 0 ? `+${v.toFixed(2)}` : v.toFixed(2), "Avg to Par"]) as Fmt}
-                  />
-                  <ReferenceLine y={0} stroke={mutedFill} />
-                  <Bar dataKey="average_to_par" radius={[6, 6, 0, 0]}>
-                    {scoring_by_par.map((row) => (
-                      <Cell key={row.par} fill={row.average_to_par <= 0 ? successColor : dangerColor} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </ChartCard>
-
-            <ChartCard title="Avg Score by Hole Difficulty" subtitle="Handicap 1 (hardest) → 18 (easiest)">
-              <ResponsiveContainer width="100%" height={220}>
-                <BarChart data={scoring_by_handicap} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
-                  <CartesianGrid stroke={gridColor} vertical={false} />
-                  <XAxis dataKey="handicap" tick={{ fontSize: 10, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
-                  <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false}
-                    tickFormatter={(v) => (v > 0 ? `+${v}` : v)}
-                  />
-                  <Tooltip contentStyle={tooltipStyle}
-                    formatter={((v: number, _: unknown, props: { payload: { sample_size: number } }) => [
-                      `${v > 0 ? "+" : ""}${v.toFixed(2)} (${props.payload.sample_size} holes)`,
-                      "Avg to Par",
-                    ]) as Fmt}
-                    labelFormatter={(l) => `Hcp ${l}`}
-                  />
-                  <ReferenceLine y={0} stroke={mutedFill} />
-                  <Bar dataKey="average_to_par" radius={[4, 4, 0, 0]}>
-                    {scoring_by_handicap.map((row) => (
-                      <Cell key={row.handicap} fill={row.average_to_par <= 0 ? successColor : dangerColor} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </ChartCard>
-          </div>
+          <ChartCard title="Avg Score by Hole Difficulty" subtitle="Handicap 1 (hardest) → 18 (easiest)">
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={scoring_by_handicap} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+                <CartesianGrid stroke={gridColor} vertical={false} />
+                <XAxis dataKey="handicap" tick={{ fontSize: 10, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
+                <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false}
+                  tickFormatter={(v) => (v > 0 ? `+${v}` : v)}
+                />
+                <Tooltip contentStyle={tooltipStyle}
+                  formatter={((v: number, _: unknown, props: { payload: { sample_size: number } }) => [
+                    `${v > 0 ? "+" : ""}${v.toFixed(2)} (${props.payload.sample_size} holes)`,
+                    "Avg to Par",
+                  ]) as Fmt}
+                  labelFormatter={(l) => `Hcp ${l}`}
+                />
+                <ReferenceLine y={0} stroke={mutedFill} />
+                <Bar dataKey="average_to_par" radius={[4, 4, 0, 0]}>
+                  {scoring_by_handicap.map((row) => (
+                    <Cell key={row.handicap} fill={row.average_to_par <= 0 ? successColor : dangerColor} />
+                  ))}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </ChartCard>
 
           {scoring_by_yardage.length > 0 && (
-            <div className="mb-5">
+            <div className="lg:col-span-2">
               <ParMatrixGrid rows={scoring_by_yardage} />
             </div>
           )}
 
           {gir_vs_non_gir.length > 0 && (
-            <ScrollSection delay={0.1}>
+            <div className="lg:col-span-2">
               <ChartCard title="GIR vs No-GIR Score Distribution"
                 subtitle="Where your scores come from — on vs off the green in regulation">
                 <ResponsiveContainer width="100%" height={240}>
@@ -755,10 +694,11 @@ export function AnalyticsPage({ userId }: { userId: string }) {
                   </BarChart>
                 </ResponsiveContainer>
               </ChartCard>
-            </ScrollSection>
+            </div>
           )}
-        </ScrollSection>
-      </div>
+
+        </div>
+      </ScrollSection>
     </div>
   );
 }
