@@ -4,11 +4,9 @@ type Fmt = (v: any, name: any, props: any) => any;
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
-  AreaChart, Area,
   PieChart, Pie, Cell,
   RadarChart, Radar, PolarGrid, PolarAngleAxis,
-  XAxis, YAxis,
-  ResponsiveContainer, Tooltip, ReferenceLine,
+  ResponsiveContainer, Tooltip,
 } from "recharts";
 import { api } from "@/lib/api";
 import { getStoredColorBlindMode } from "@/lib/accessibility";
@@ -16,6 +14,7 @@ import { getColorBlindPalette } from "@/lib/chartPalettes";
 import type { AnalyticsData, AnalyticsKPIs, ScoreTypeRow, ScoringByParRow } from "@/types/analytics";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { ScrollSection } from "@/components/analytics/ScrollSection";
+import { SVGHandicapTrend } from "@/components/analytics/SVGHandicapTrend";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -38,6 +37,12 @@ const SCORE_COLORS: Record<string, string> = {
 };
 
 const SCORE_KEYS = ["eagle", "birdie", "par", "bogey", "double_bogey", "triple_bogey", "quad_bogey"] as const;
+
+const SCORE_LABELS: Record<string, string> = {
+  eagle: "Eagle+", birdie: "Birdie", par: "Par",
+  bogey: "Bogey", double_bogey: "Double",
+  triple_bogey: "Triple", quad_bogey: "Quad+",
+};
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -271,44 +276,24 @@ export function CareerPage({ userId }: { userId: string }) {
             subtitle={data.kpis.handicap_index != null ? `Current: ${hiDisplay}` : undefined}
             className="xl:col-span-3"
           >
-            <ResponsiveContainer width="100%" height={220}>
-              <AreaChart data={data.handicap_trend} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="hiGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%"  stopColor={trendPrimary} stopOpacity={0.13} />
-                    <stop offset="95%" stopColor={trendPrimary} stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <XAxis dataKey="round_index" tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
-                <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} domain={["auto", "auto"]} />
-                <Tooltip
-                  contentStyle={tooltipStyle}
-                  formatter={((v: number) => [v?.toFixed(1), "Handicap Index"]) as Fmt}
-                />
-                <ReferenceLine y={0} stroke={mutedFill} strokeDasharray="3 3" />
-                <Area
-                  type="monotone"
-                  dataKey="handicap_index"
-                  stroke={trendPrimary}
-                  strokeWidth={2}
-                  fill="url(#hiGrad)"
-                  dot={false}
-                  activeDot={{ r: 4, strokeWidth: 0 }}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
+            <SVGHandicapTrend
+              data={data.handicap_trend}
+              color={trendPrimary}
+              gridColor={gridColor}
+              height={240}
+            />
           </ChartCard>
 
           {/* ── Score Mix Donut ──────────────────────────────────────────── */}
           <ChartCard title="Career Score Mix">
             <div className="relative">
-              <ResponsiveContainer width="100%" height={200}>
+              <ResponsiveContainer width="100%" height={180}>
                 <PieChart>
                   <Pie
                     data={donutData}
                     dataKey="value"
-                    innerRadius={60}
-                    outerRadius={80}
+                    innerRadius={55}
+                    outerRadius={74}
                     stroke="none"
                     paddingAngle={2}
                   >
@@ -318,7 +303,7 @@ export function CareerPage({ userId }: { userId: string }) {
                   </Pie>
                   <Tooltip
                     contentStyle={tooltipStyle}
-                    formatter={((v: number) => [`${v.toFixed(1)}%`, ""]) as Fmt}
+                    formatter={((v: number, name: string) => [`${v.toFixed(1)}%`, SCORE_LABELS[name] ?? name]) as Fmt}
                   />
                 </PieChart>
               </ResponsiveContainer>
@@ -326,6 +311,15 @@ export function CareerPage({ userId }: { userId: string }) {
                 <div className="text-2xl font-bold text-gray-900">{totalHoles}</div>
                 <div className="text-[10px] text-gray-400 uppercase tracking-wide">holes</div>
               </div>
+            </div>
+            <div className="mt-2 flex flex-col gap-1.5">
+              {donutData.map((d) => (
+                <div key={d.name} className="flex items-center gap-2">
+                  <div className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: scoreColors[d.name] }} />
+                  <span className="text-xs text-gray-500 flex-1">{SCORE_LABELS[d.name] ?? d.name}</span>
+                  <span className="text-xs font-semibold text-gray-700 tabular-nums">{d.value.toFixed(1)}%</span>
+                </div>
+              ))}
             </div>
           </ChartCard>
 
