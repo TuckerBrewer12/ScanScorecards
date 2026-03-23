@@ -24,8 +24,6 @@ from llm.prompts import (
     build_full_extraction_prompt,
     build_scores_only_prompt,
     build_fast_scan_prompt,
-    build_course_identification_prompt,
-    RawCourseIdentification,
     RawFastScanExtraction,
     RawHoleData,
     RawScoreOnlyHoleData,
@@ -33,9 +31,7 @@ from llm.prompts import (
     RawScoresOnlyExtraction,
 )
 from llm.strategies import (
-    CourseRepository,
     ExtractionStrategy,
-    NullCourseRepository,
 )
 
 
@@ -925,40 +921,6 @@ def _extract_fast_scan(
     )
 
 
-def _extract_smart(
-    client: genai.Client,
-    file_part: types.Part,
-    course_repo: CourseRepository,
-    user_context: Optional[str],
-    include_raw_response: bool,
-) -> ExtractionResult:
-    """Strategy 3: Identify course first, then pick full or scores-only."""
-    # Step 1: Lightweight course identification (Flash for speed)
-    prompt = build_course_identification_prompt()
-    course_id_raw = _call_gemini(
-        client, file_part, prompt, RawCourseIdentification,
-        model=GEMINI_MODEL_FAST,
-    )
-
-    # Step 2: Try to find course in DB
-    course_name = course_id_raw.course_name.value
-    course_location = course_id_raw.course_location.value
-    found_course = None
-    if course_name:
-        found_course = course_repo.find_course_by_name(course_name, course_location)
-
-    # Step 3: Dispatch to appropriate strategy
-    if found_course is not None:
-        # SMART auto-detect: no user-confirmed format, LLM will determine
-        return _extract_scores_only(
-            client, file_part, found_course, user_context, include_raw_response,
-        )
-    else:
-        return _extract_full(
-            client, file_part, user_context, include_raw_response,
-        )
-
-
 # --- Public API ---
 
 def extract_scorecard(
@@ -968,7 +930,6 @@ def extract_scorecard(
     include_raw_response: bool = False,
     strategy: ExtractionStrategy = ExtractionStrategy.FULL,
     course: Optional[Course] = None,
-    course_repo: Optional[CourseRepository] = None,
     to_par_scoring: Optional[bool] = None,
     player_name: Optional[str] = None,
 ) -> ExtractionResult:
@@ -984,10 +945,7 @@ def extract_scorecard(
             - FULL: Extract everything from scratch (default, backward-compatible)
             - SCORES_ONLY: Course known; only extract player scores.
               Requires `course` parameter.
-            - SMART: Auto-detect course, use scores-only if found in DB.
-              Uses `course_repo` for lookups (defaults to NullCourseRepository).
         course: Required for SCORES_ONLY strategy. The known Course model.
-        course_repo: Used by SMART strategy. Implements CourseRepository protocol.
 
     Returns:
         ExtractionResult containing the Round model and confidence scores.
@@ -1024,11 +982,4 @@ def extract_scorecard(
             to_par_scoring=to_par_scoring,
         )
 
-    elif strategy == ExtractionStrategy.SMART:
-        repo = course_repo or NullCourseRepository()
-        return _extract_smart(
-            client, file_part, repo, user_context, include_raw_response,
-        )
-
-    else:
-        raise ValueError(f"Unknown strategy: {strategy}")
+    raise ValueError(f"Unknown strategy: {strategy}")

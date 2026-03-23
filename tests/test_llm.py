@@ -12,7 +12,7 @@ from typing import List, Optional
 
 from models import Course, Hole, HoleScore, Round, Tee
 from llm.scorecard_extractor import extract_scorecard, ExtractionResult
-from llm.strategies import ExtractionStrategy, NullCourseRepository
+from llm.strategies import ExtractionStrategy
 
 
 # --- Comparison Models ---
@@ -581,26 +581,6 @@ class TestScorecardExtraction(unittest.TestCase):
             f"Scores-only accuracy {report.accuracy:.0%} below minimum 90%.\n"
             f"Mismatches:\n" + "\n".join(str(m) for m in report.mismatches_only()),
         )
-
-    def test_smart_with_null_repo(self):
-        """Strategy 3 with NullCourseRepository -- should fall back to full extraction."""
-        path = Path("tests/test_scorecards/eaglevins_90.jpg")
-        self.assertTrue(path.exists(), f"Scorecard file not found: {path}")
-
-        result = extract_scorecard(
-            path,
-            user_context="My name is Tucker, scoring is to par, so -1 means birdie, +1 is bogey, 0 is par",
-            strategy=ExtractionStrategy.SMART,
-            course_repo=NullCourseRepository(),
-        )
-
-        # Should produce a valid result with course data (fell back to full)
-        self.assertIsNotNone(result.round.course)
-        self.assertIsNotNone(result.round.course.name)
-        self.assertTrue(len(result.round.hole_scores) > 0)
-        print(f"\nSmart extraction (null repo) - Course: {result.round.course.name}")
-        print(f"Overall confidence: {result.confidence.overall:.2f}")
-
 
 if __name__ == "__main__":
     unittest.main()

@@ -113,6 +113,7 @@ def user_from_row(user_row, rounds: Optional[List[Round]] = None) -> User:
         handicap=float(user_row["handicap_index"]) if user_row["handicap_index"] is not None else None,
         rounds=rounds or [],
         created_at=user_row["created_at"],
+        last_handicap_update=user_row.get("last_handicap_update"),
     )
 
 

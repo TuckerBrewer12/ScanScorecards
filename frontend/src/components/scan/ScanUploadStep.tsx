@@ -63,6 +63,7 @@ export function ScanUploadStep({
   setCourseResults,
 }: ScanUploadStepProps) {
   const showUploadArea = scanMode === "full" || (scanMode === "fast" && !!selectedCourseId && !!scoringFormat);
+  const showCourseSearch = scanMode === "fast" || scanMode === "full";
 
   return (
     <div>
@@ -132,16 +133,25 @@ export function ScanUploadStep({
         </button>
       </div>
 
-      {/* Fast scan: course search */}
-      {scanMode === "fast" && !selectedCourseId && (
+      {/* Fast/full scan: optional course search */}
+      {showCourseSearch && !selectedCourseId && (
         <div className="mb-6">
+          {scanMode === "full" && (
+            <p className="text-sm text-gray-600 mb-2">
+              Optional: pre-select a course to decrease scan speed.
+            </p>
+          )}
           <div className="relative">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
             <input
               type="text"
               value={courseQuery}
               onChange={(e) => onCourseQuery(e.target.value)}
-              placeholder="Search for a course by name..."
+              placeholder={
+                scanMode === "full"
+                  ? "Optional: search course for post-extraction linking..."
+                  : "Search for a course by name..."
+              }
               className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
               autoFocus
             />
@@ -174,10 +184,13 @@ export function ScanUploadStep({
       )}
 
       {/* Selected course chip */}
-      {scanMode === "fast" && selectedCourseId && (
+      {showCourseSearch && selectedCourseId && (
         <div className="mb-4 flex items-center gap-2 px-4 py-3 bg-green-50 border border-green-200 rounded-lg">
           <CheckCircle size={16} className="text-green-600 shrink-0" />
-          <span className="text-sm font-semibold text-green-800 flex-1">{selectedCourseName}</span>
+          <span className="text-sm font-semibold text-green-800 flex-1">
+            {selectedCourseName}
+            {scanMode === "full" ? " (preselected for post-extraction linking)" : ""}
+          </span>
           <button
             onClick={onClearCourse}
             className="text-green-600 hover:text-green-800"

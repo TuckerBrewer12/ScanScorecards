@@ -272,29 +272,6 @@ def build_fast_scan_prompt(player_name: Optional[str] = None) -> str:
 
 
 # ================================================================
-# Strategy 3: Course identification prompt (lightweight first call)
-# ================================================================
-
-_COURSE_ID_JSON_SCHEMA = """{
-  "course_name": {"value": "string or null", "confidence": 0.0},
-  "course_location": {"value": "string or null", "confidence": 0.0}
-}"""
-
-
-def build_course_identification_prompt() -> str:
-    """Build a lightweight prompt to extract just the course name and location."""
-    return (
-        _PREAMBLE
-        + " Look at this golf scorecard and identify ONLY the course name and location. "
-        + "Do not extract any scores, tee data, or other information.\n\n"
-        + "Return a JSON object:\n"
-        + _COURSE_ID_JSON_SCHEMA + "\n\n"
-        + "Confidence: 1.0 if clearly printed, lower if obscured or ambiguous. "
-        + "Use null if you cannot determine the value."
-    )
-
-
-# ================================================================
 # Pydantic models for parsing raw LLM JSON responses
 # ================================================================
 
@@ -398,10 +375,3 @@ class RawFastScanExtraction(BaseModel):
     """Ultra-minimal extraction: 18 raw numbers, nothing else."""
     scores: List[RawFastScanHole] = Field(default_factory=list)
 
-
-# --- Course identification model (Strategy 3 first call) ---
-
-class RawCourseIdentification(BaseModel):
-    """Lightweight response for course-name-only extraction."""
-    course_name: AnnotatedStringField = AnnotatedStringField()
-    course_location: AnnotatedStringField = AnnotatedStringField()

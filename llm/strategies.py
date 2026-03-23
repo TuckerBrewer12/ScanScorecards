@@ -8,7 +8,6 @@ class ExtractionStrategy(str, Enum):
     """Which extraction strategy to use."""
     FULL = "full"                # Extract everything (current behavior)
     SCORES_ONLY = "scores_only"  # Course known; extract only player scores
-    SMART = "smart"              # Auto-detect: identify course, then pick strategy
 
 
 class CourseRepository(Protocol):

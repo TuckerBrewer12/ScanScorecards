@@ -11,6 +11,55 @@ function normalizeCourseQuery(value: string): string {
   return value.trim().replace(/\s+/g, " ");
 }
 
+const CLIENT_UPLOAD_LONG_EDGE = 2000;
+const CLIENT_UPLOAD_QUALITY = 0.8;
+
+async function compressImageForUpload(file: File): Promise<File> {
+  if (!file.type.startsWith("image/")) return file;
+  if (file.type === "image/gif") return file;
+
+  const objectUrl = URL.createObjectURL(file);
+  try {
+    const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const el = new Image();
+      el.onload = () => resolve(el);
+      el.onerror = () => reject(new Error("Failed to decode image"));
+      el.src = objectUrl;
+    });
+
+    const srcW = img.naturalWidth || img.width;
+    const srcH = img.naturalHeight || img.height;
+    if (!srcW || !srcH) return file;
+
+    const longEdge = Math.max(srcW, srcH);
+    const scale = longEdge > CLIENT_UPLOAD_LONG_EDGE ? CLIENT_UPLOAD_LONG_EDGE / longEdge : 1;
+    const outW = Math.max(1, Math.round(srcW * scale));
+    const outH = Math.max(1, Math.round(srcH * scale));
+
+    const canvas = document.createElement("canvas");
+    canvas.width = outW;
+    canvas.height = outH;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return file;
+    ctx.drawImage(img, 0, 0, outW, outH);
+
+    const blob = await new Promise<Blob | null>((resolve) =>
+      canvas.toBlob(resolve, "image/jpeg", CLIENT_UPLOAD_QUALITY)
+    );
+    if (!blob) return file;
+
+    const base = file.name.replace(/\.[^.]+$/, "") || "upload";
+    return new File([blob], `${base}.jpg`, {
+      type: "image/jpeg",
+      lastModified: Date.now(),
+    });
+  } catch {
+    return file;
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
+}
+
 export function useScan(
   userId: string,
   scanState: ScanState,
@@ -104,7 +153,21 @@ export function useScan(
   }, [update]);
 
   const handleFile = useCallback((f: File) => {
-    update({ file: f, preview: URL.createObjectURL(f), error: null });
+    void (async () => {
+      const t0 = performance.now();
+      const processed = await compressImageForUpload(f);
+      const t1 = performance.now();
+      console.info(
+        "[scan] upload preprocess: name=%s in=%d out=%d type_in=%s type_out=%s ms=%.1f",
+        f.name,
+        f.size,
+        processed.size,
+        f.type || "unknown",
+        processed.type || "unknown",
+        t1 - t0,
+      );
+      update({ file: processed, preview: URL.createObjectURL(processed), error: null });
+    })();
   }, [update]);
 
   const handleDrop = useCallback(
@@ -119,15 +182,24 @@ export function useScan(
 
   const handleExtract = useCallback(async () => {
     if (!file) return;
+    if (scanMode === "fast" && !selectedCourseId) {
+      update({ error: "Fast scan requires a pre-selected course.", step: "upload" });
+      return;
+    }
     update({ step: "processing", error: null });
 
     const formData = new FormData();
     formData.append("file", file);
-    if (scanMode === "fast" && selectedCourseId) {
+    if (selectedCourseId) {
       formData.append("course_id", selectedCourseId);
-      if (scoringFormat) formData.append("scoring_format", scoringFormat);
+      if (scanMode === "fast") {
+        formData.append("strategy", "scores_only");
+        if (scoringFormat) formData.append("scoring_format", scoringFormat);
+      } else {
+        formData.append("strategy", "full");
+      }
     } else {
-      formData.append("strategy", "smart");
+      formData.append("strategy", "full");
     }
     if (userContext.trim()) {
       formData.append("user_context", userContext.trim());

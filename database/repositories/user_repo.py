@@ -73,8 +73,11 @@ class UserRepositoryDB:
                 friend_code = data["friend_code"] or self._generate_friend_code()
                 try:
                     row = await conn.fetchrow(
-                        """INSERT INTO users.users (friend_code, name, email, handicap_index, home_course_id, password_hash)
-                           VALUES ($1, $2, $3, $4, $5, $6) RETURNING *""",
+                        """INSERT INTO users.users
+                           (friend_code, name, email, handicap_index, home_course_id, password_hash, last_handicap_update)
+                           VALUES ($1, $2, $3, $4, $5, $6,
+                                   CASE WHEN $4 IS NULL THEN NULL ELSE NOW() END)
+                           RETURNING *""",
                         friend_code,
                         data["name"],
                         data["email"],
@@ -103,13 +106,22 @@ class UserRepositoryDB:
         updates = {k: v for k, v in fields.items() if k in allowed}
         if not updates:
             return await self.get_user(user_id)
+        if "handicap_index" in updates:
+            updates["last_handicap_update"] = "NOW()"
 
         # Convert home_course_id string to UUID if present
         if "home_course_id" in updates and updates["home_course_id"] is not None:
             updates["home_course_id"] = UUID(updates["home_course_id"])
 
-        set_clause = ", ".join(f"{k} = ${i+2}" for i, k in enumerate(updates))
-        values = [UUID(user_id)] + list(updates.values())
+        set_parts = []
+        values = [UUID(user_id)]
+        for k, v in updates.items():
+            if isinstance(v, str) and v == "NOW()" and k == "last_handicap_update":
+                set_parts.append(f"{k} = NOW()")
+            else:
+                values.append(v)
+                set_parts.append(f"{k} = ${len(values)}")
+        set_clause = ", ".join(set_parts)
 
         try:
             async with self._pool.acquire() as conn:

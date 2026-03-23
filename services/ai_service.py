@@ -101,12 +101,17 @@ class AIService:
     async def generate_suggestions(
         self, user_id: str, limit: int = 50, target_handicap: Optional[float] = None
     ) -> AISuggestionsResponse:
+        user = await self._db.users.get_user(user_id)
         rounds_desc = await self._db.rounds.get_rounds_for_user(
             user_id, limit=limit, offset=0
         )
         rounds = list(reversed(rounds_desc))  # chronological order
 
-        hi = hcap.handicap_index(rounds)
+        hi = hcap.handicap_index(
+            rounds,
+            seed_handicap=(user.handicap if user else None),
+            seed_set_at=(user.last_handicap_update if user else None),
+        )
         if target_handicap is not None:
             benchmark, _ = _get_benchmark(target_handicap)
             hi_label = _TARGET_LABELS.get(target_handicap, _get_benchmark(target_handicap)[1])

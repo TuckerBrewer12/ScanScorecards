@@ -86,13 +86,18 @@ export function ScanPage({ userId, scanState, setScanState }: ScanPageProps) {
         onSelectCourse={scan.selectCourse}
         onSelectCourseManual={scan.selectCourseManual}
         onClearCourse={() =>
-          scan.update({
-            selectedCourseId: null,
-            selectedCourseName: null,
-            scoringFormat: null,
-            file: null,
-            preview: null,
-          })
+          scan.scanMode === "fast"
+            ? scan.update({
+                selectedCourseId: null,
+                selectedCourseName: null,
+                scoringFormat: null,
+                file: null,
+                preview: null,
+              })
+            : scan.update({
+                selectedCourseId: null,
+                selectedCourseName: null,
+              })
         }
         onScoringFormat={(fmt) => scan.update({ scoringFormat: fmt })}
         onFile={scan.handleFile}

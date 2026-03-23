@@ -17,3 +17,4 @@ class User(BaseGolfModel):
     handicap: Optional[float] = Field(None, ge=-10, le=54)
     rounds: List["Round"] = Field(default_factory=list)
     created_at: Optional[datetime] = None
+    last_handicap_update: Optional[datetime] = None

@@ -1,5 +1,5 @@
 from .scorecard_extractor import extract_scorecard, ExtractionResult
-from .strategies import ExtractionStrategy, CourseRepository, NullCourseRepository
+from .strategies import ExtractionStrategy
 from .confidence import (
     ExtractionConfidence,
     HoleConfidence,
@@ -12,8 +12,6 @@ __all__ = [
     "extract_scorecard",
     "ExtractionResult",
     "ExtractionStrategy",
-    "CourseRepository",
-    "NullCourseRepository",
     "ExtractionConfidence",
     "HoleConfidence",
     "CourseConfidence",

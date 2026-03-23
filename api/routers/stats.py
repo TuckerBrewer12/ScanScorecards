@@ -68,7 +68,11 @@ async def get_dashboard(
     # Handicap index only needs the last 20 rounds (full model required for differentials)
     hi_rounds_desc = await db.rounds.get_rounds_for_user(user_id, limit=20, offset=0)
     rounds_chrono = list(reversed(hi_rounds_desc))
-    calculated_hi = hcap.handicap_index(rounds_chrono)
+    calculated_hi = hcap.handicap_index(
+        rounds_chrono,
+        seed_handicap=user.handicap,
+        seed_set_at=user.last_handicap_update,
+    )
 
     return DashboardResponse(
         total_rounds=len(summaries),
@@ -266,7 +270,11 @@ async def get_analytics(
     ud_vals = [r["percentage"] for r in ud_rows if r["opportunities"] > 0]
     avg_up_and_down = sum(ud_vals) / len(ud_vals) if ud_vals else None
 
-    current_hi = hcap.handicap_index(rounds)
+    current_hi = hcap.handicap_index(
+        rounds,
+        seed_handicap=user.handicap,
+        seed_set_at=user.last_handicap_update,
+    )
 
     return {
         "kpis": {
@@ -290,7 +298,11 @@ async def get_analytics(
         "scoring_by_yardage": analytics.scoring_by_yardage_buckets(rounds),
         "scoring_by_handicap": analytics.scoring_vs_hole_handicap(rounds),
         "gir_vs_non_gir": analytics.gir_vs_non_gir_score_distribution(rounds),
-        "handicap_trend": hcap.handicap_trend(rounds),
+        "handicap_trend": hcap.handicap_trend(
+            rounds,
+            seed_handicap=user.handicap,
+            seed_set_at=user.last_handicap_update,
+        ),
         "score_differentials": hcap.score_differentials_per_round(rounds),
         "notable_achievements": analytics.notable_achievements(
             rounds,
