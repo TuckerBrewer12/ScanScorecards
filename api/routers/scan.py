@@ -25,6 +25,7 @@ from services.scan_service import ScanService
 router = APIRouter()
 
 OCR_LONG_EDGE_TARGET = 1800
+OCR_JPEG_QUALITY = 75
 
 
 class ScanResponse(BaseModel):
@@ -68,8 +69,9 @@ def _normalize_upload_for_ocr(path: Path) -> Path:
             stripped.save(
                 normalized_path,
                 format="JPEG",
-                quality=80,
+                quality=OCR_JPEG_QUALITY,
                 optimize=True,
+                progressive=True,
                 exif=b"",
                 icc_profile=None,
             )
