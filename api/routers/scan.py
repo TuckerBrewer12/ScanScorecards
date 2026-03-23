@@ -6,6 +6,7 @@ import math
 import logging
 import os
 import tempfile
+import time
 from pathlib import Path
 from typing import Optional
 
@@ -172,11 +173,18 @@ def _normalize_upload_for_ocr(path: Path, upload_digest: str) -> tuple[Path, boo
     """
     cache_path = _get_preprocess_cache_path(upload_digest)
     if cache_path.exists():
+        logger.info(
+            "OCR preprocess cache hit: path=%s size_bytes=%s",
+            cache_path.name,
+            cache_path.stat().st_size if cache_path.exists() else None,
+        )
         return cache_path, True
 
     is_pdf = path.suffix.lower() == ".pdf"
+    t0 = time.perf_counter()
     try:
         with Image.open(path) as img:
+            t_open = time.perf_counter()
             if is_pdf:
                 # First page only for scorecard PDFs.
                 try:
@@ -187,11 +195,14 @@ def _normalize_upload_for_ocr(path: Path, upload_digest: str) -> tuple[Path, boo
             img = ImageOps.exif_transpose(img)
             if img.mode != "RGB":
                 img = img.convert("RGB")
+            t_orient = time.perf_counter()
             original_size = img.size
             img, cropped = _crop_to_scorecard_region(img)
+            t_crop1 = time.perf_counter()
             img, deskewed, deskew_angle = _deskew_scorecard(img)
             if deskewed:
                 img, _ = _crop_to_scorecard_region(img)
+            t_deskew = time.perf_counter()
             # Resize large images before OCR (keep aspect ratio, do not upscale).
             width, height = img.size
             long_edge = max(width, height)
@@ -199,12 +210,14 @@ def _normalize_upload_for_ocr(path: Path, upload_digest: str) -> tuple[Path, boo
                 scale = OCR_LONG_EDGE_TARGET / float(long_edge)
                 new_size = (max(1, int(width * scale)), max(1, int(height * scale)))
                 img = img.resize(new_size, Image.Resampling.LANCZOS)
+            t_resize = time.perf_counter()
             # Adaptive contrast normalization (conservative):
             # grayscale -> autocontrast -> mild contrast boost.
             gray = img.convert("L")
             gray = ImageOps.autocontrast(gray, cutoff=1)
             gray = ImageEnhance.Contrast(gray).enhance(1.15)
             img = gray.convert("RGB")
+            t_contrast = time.perf_counter()
             # Explicitly strip metadata by creating a fresh pixel-only image.
             # This prevents EXIF/ICC/comment payloads from carrying into OCR input.
             stripped = Image.new("RGB", img.size)
@@ -215,8 +228,9 @@ def _normalize_upload_for_ocr(path: Path, upload_digest: str) -> tuple[Path, boo
                 temp_cache_path = Path(out.name)
             _save_jpeg(temp_cache_path, stripped)
             os.replace(temp_cache_path, cache_path)
+            t_save = time.perf_counter()
             logger.info(
-                "OCR preprocess image: source=%s original=%sx%s cropped=%s deskewed=%s angle=%.2f resized_to=%sx%s",
+                "OCR preprocess image: source=%s original=%sx%s cropped=%s deskewed=%s angle=%.2f resized_to=%sx%s in_bytes=%s out_bytes=%s timing_ms(open=%.1f orient=%.1f crop=%.1f deskew=%.1f resize=%.1f contrast=%.1f save=%.1f total=%.1f)",
                 "pdf" if is_pdf else "image",
                 original_size[0],
                 original_size[1],
@@ -225,6 +239,16 @@ def _normalize_upload_for_ocr(path: Path, upload_digest: str) -> tuple[Path, boo
                 deskew_angle,
                 stripped.size[0],
                 stripped.size[1],
+                path.stat().st_size if path.exists() else None,
+                cache_path.stat().st_size if cache_path.exists() else None,
+                (t_open - t0) * 1000.0,
+                (t_orient - t_open) * 1000.0,
+                (t_crop1 - t_orient) * 1000.0,
+                (t_deskew - t_crop1) * 1000.0,
+                (t_resize - t_deskew) * 1000.0,
+                (t_contrast - t_resize) * 1000.0,
+                (t_save - t_contrast) * 1000.0,
+                (t_save - t0) * 1000.0,
             )
             return cache_path, False
     except Exception as e:
@@ -283,6 +307,7 @@ async def extract_scan(
     current_user: User = Depends(get_current_user),
 ):
     """Upload a scorecard image, run LLM extraction, return results for review."""
+    request_t0 = time.perf_counter()
     logger.info(
         "Scan extract request received: filename=%s strategy=%s course_id=%s scoring_format=%s user_id=%s",
         file.filename,
@@ -309,13 +334,16 @@ async def extract_scan(
         original_tmp_path = Path(tmp.name)
     upload_digest = hasher.hexdigest()
 
+    t_pre_start = time.perf_counter()
     ocr_path, cache_hit = _normalize_upload_for_ocr(original_tmp_path, upload_digest)
+    t_pre_end = time.perf_counter()
     logger.info(
-        "Scan preprocessing complete: original=%s ocr_input=%s normalized=%s cache_hit=%s",
+        "Scan preprocessing complete: original=%s ocr_input=%s normalized=%s cache_hit=%s pre_ms=%.1f",
         original_tmp_path.name,
         ocr_path.name,
         ocr_path != original_tmp_path,
         cache_hit,
+        (t_pre_end - t_pre_start) * 1000.0,
     )
 
     bw_fallback_path: Optional[Path] = None
@@ -355,7 +383,15 @@ async def extract_scan(
                 player_name=user_context or None,
             )
 
+        t_extract_start = time.perf_counter()
         result: ExtractionResult = await loop.run_in_executor(None, lambda: run_extract(ocr_path))
+        t_extract_end = time.perf_counter()
+        logger.info(
+            "Scan extraction primary call complete: strategy=%s confidence=%.2f extract_ms=%.1f",
+            str(strat),
+            result.confidence.overall,
+            (t_extract_end - t_extract_start) * 1000.0,
+        )
 
         # Conditional B/W fallback retry only for low-confidence results.
         if result.confidence.overall < BW_FALLBACK_TRIGGER:
@@ -365,24 +401,28 @@ async def extract_scan(
                     "Low confidence %.2f; retrying with B/W fallback image.",
                     result.confidence.overall,
                 )
+                t_fallback_start = time.perf_counter()
                 fallback_result: ExtractionResult = await loop.run_in_executor(
                     None,
                     lambda: run_extract(bw_fallback_path),  # type: ignore[arg-type]
                 )
+                t_fallback_end = time.perf_counter()
                 improvement = fallback_result.confidence.overall - result.confidence.overall
                 if improvement >= BW_FALLBACK_MIN_IMPROVEMENT:
                     logger.info(
-                        "B/W fallback selected: confidence improved by %.2f (%.2f -> %.2f).",
+                        "B/W fallback selected: confidence improved by %.2f (%.2f -> %.2f) fallback_ms=%.1f.",
                         improvement,
                         result.confidence.overall,
                         fallback_result.confidence.overall,
+                        (t_fallback_end - t_fallback_start) * 1000.0,
                     )
                     result = fallback_result
                 else:
                     logger.info(
-                        "B/W fallback discarded: improvement %.2f below threshold %.2f.",
+                        "B/W fallback discarded: improvement %.2f below threshold %.2f fallback_ms=%.1f.",
                         improvement,
                         BW_FALLBACK_MIN_IMPROVEMENT,
+                        (t_fallback_end - t_fallback_start) * 1000.0,
                     )
 
         # Serialize the round and confidence for the frontend
@@ -403,6 +443,10 @@ async def extract_scan(
         logger.exception("Scan extraction error")
         raise HTTPException(500, f"Extraction failed: {type(e).__name__}: {str(e) or repr(e)}")
     finally:
+        logger.info(
+            "Scan extract request complete: total_ms=%.1f",
+            (time.perf_counter() - request_t0) * 1000.0,
+        )
         if bw_fallback_path is not None:
             bw_fallback_path.unlink(missing_ok=True)
         # Keep cached normalized artifacts; remove ephemeral files only.
