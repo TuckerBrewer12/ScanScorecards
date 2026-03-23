@@ -24,6 +24,8 @@ from services.scan_service import ScanService
 
 router = APIRouter()
 
+OCR_LONG_EDGE_TARGET = 1800
+
 
 class ScanResponse(BaseModel):
     """Response from scorecard extraction."""
@@ -49,6 +51,13 @@ def _normalize_upload_for_ocr(path: Path) -> Path:
             img = ImageOps.exif_transpose(img)
             if img.mode != "RGB":
                 img = img.convert("RGB")
+            # Resize large images before OCR (keep aspect ratio, do not upscale).
+            width, height = img.size
+            long_edge = max(width, height)
+            if long_edge > OCR_LONG_EDGE_TARGET:
+                scale = OCR_LONG_EDGE_TARGET / float(long_edge)
+                new_size = (max(1, int(width * scale)), max(1, int(height * scale)))
+                img = img.resize(new_size, Image.Resampling.LANCZOS)
             # Explicitly strip metadata by creating a fresh pixel-only image.
             # This prevents EXIF/ICC/comment payloads from carrying into OCR input.
             stripped = Image.new("RGB", img.size)
