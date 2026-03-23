@@ -9,6 +9,7 @@ from typing import Optional
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from pydantic import BaseModel
+from PIL import Image, ImageOps
 
 logger = logging.getLogger(__name__)
 
@@ -29,6 +30,37 @@ class ScanResponse(BaseModel):
     round: dict
     confidence: dict
     fields_needing_review: list
+
+
+def _normalize_upload_for_ocr(path: Path) -> Path:
+    """
+    Normalize uploaded images to JPEG for faster, consistent OCR payloads.
+
+    Notes:
+    - PDF is kept as-is for now.
+    - If normalization fails (e.g., unsupported HEIC decoder), fall back to original.
+    """
+    if path.suffix.lower() == ".pdf":
+        return path
+
+    try:
+        with Image.open(path) as img:
+            # Honor EXIF orientation before re-encoding.
+            img = ImageOps.exif_transpose(img)
+            if img.mode != "RGB":
+                img = img.convert("RGB")
+
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as out:
+                normalized_path = Path(out.name)
+            img.save(normalized_path, format="JPEG", quality=80, optimize=True)
+            return normalized_path
+    except Exception as e:
+        logger.warning(
+            "Image normalization failed; using original upload. file=%s err=%s",
+            path.name,
+            e,
+        )
+        return path
 
 
 @router.post("/extract")
@@ -59,7 +91,15 @@ async def extract_scan(
     # Save upload to temp file
     with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
         shutil.copyfileobj(file.file, tmp)
-        tmp_path = tmp.name
+        original_tmp_path = Path(tmp.name)
+
+    ocr_path = _normalize_upload_for_ocr(original_tmp_path)
+    logger.info(
+        "Scan preprocessing complete: original=%s ocr_input=%s normalized=%s",
+        original_tmp_path.name,
+        ocr_path.name,
+        ocr_path != original_tmp_path,
+    )
 
     try:
         # Resolve scoring format flag: "to_par" → True, "strokes" → False, else None
@@ -88,7 +128,7 @@ async def extract_scan(
         result: ExtractionResult = await loop.run_in_executor(
             None,
             lambda: extract_scorecard(
-                tmp_path,
+                str(ocr_path),
                 user_context=user_context,
                 include_raw_response=False,
                 strategy=strat,
@@ -117,7 +157,9 @@ async def extract_scan(
         logger.exception("Scan extraction error")
         raise HTTPException(500, f"Extraction failed: {type(e).__name__}: {str(e) or repr(e)}")
     finally:
-        Path(tmp_path).unlink(missing_ok=True)
+        ocr_path.unlink(missing_ok=True)
+        if ocr_path != original_tmp_path:
+            original_tmp_path.unlink(missing_ok=True)
 
 
 @router.post("/save")
