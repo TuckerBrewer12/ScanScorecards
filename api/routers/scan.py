@@ -1,6 +1,7 @@
 """Scorecard scan/upload API endpoints."""
 
 import asyncio
+import math
 import logging
 import shutil
 import tempfile
@@ -34,6 +35,53 @@ class ScanResponse(BaseModel):
     round: dict
     confidence: dict
     fields_needing_review: list
+
+
+def _normalize_angle_deg(angle: float) -> float:
+    """Normalize angle to [-90, 90)."""
+    while angle >= 90.0:
+        angle -= 180.0
+    while angle < -90.0:
+        angle += 180.0
+    return angle
+
+
+def _deskew_scorecard(img: Image.Image) -> tuple[Image.Image, bool, float]:
+    """
+    Conservative deskew using dominant edge orientation.
+
+    Only applies small-angle correction and falls back safely if confidence is low.
+    """
+    gray = np.asarray(img.convert("L"), dtype=np.float32)
+    if gray.shape[0] < 60 or gray.shape[1] < 60:
+        return img, False, 0.0
+
+    gy, gx = np.gradient(gray)
+    mag = np.hypot(gx, gy)
+    thresh = np.percentile(mag, 90)
+    edge_mask = mag > thresh
+    ys, xs = np.where(edge_mask)
+    if ys.size < 500:
+        return img, False, 0.0
+
+    pts = np.stack([xs.astype(np.float64), ys.astype(np.float64)], axis=1)
+    pts -= pts.mean(axis=0, keepdims=True)
+
+    cov = np.cov(pts, rowvar=False)
+    eigvals, eigvecs = np.linalg.eigh(cov)
+    major = eigvecs[:, int(np.argmax(eigvals))]
+    angle = math.degrees(math.atan2(float(major[1]), float(major[0])))
+    angle = _normalize_angle_deg(angle)
+
+    # Snap to nearest cardinal axis and correct only small skew deltas.
+    nearest_axis = round(angle / 90.0) * 90.0
+    delta = _normalize_angle_deg(angle - nearest_axis)
+    if abs(delta) < 0.8 or abs(delta) > 12.0:
+        return img, False, 0.0
+
+    bg = tuple(int(x) for x in np.median(np.asarray(img).reshape(-1, 3), axis=0))
+    rotated = img.rotate(-delta, resample=Image.Resampling.BICUBIC, expand=True, fillcolor=bg)
+    return rotated, True, float(delta)
 
 
 def _crop_to_scorecard_region(img: Image.Image) -> tuple[Image.Image, bool]:
@@ -109,6 +157,9 @@ def _normalize_upload_for_ocr(path: Path) -> Path:
                 img = img.convert("RGB")
             original_size = img.size
             img, cropped = _crop_to_scorecard_region(img)
+            img, deskewed, deskew_angle = _deskew_scorecard(img)
+            if deskewed:
+                img, _ = _crop_to_scorecard_region(img)
             # Resize large images before OCR (keep aspect ratio, do not upscale).
             width, height = img.size
             long_edge = max(width, height)
@@ -133,10 +184,12 @@ def _normalize_upload_for_ocr(path: Path) -> Path:
                 icc_profile=None,
             )
             logger.info(
-                "OCR preprocess image: original=%sx%s cropped=%s resized_to=%sx%s",
+                "OCR preprocess image: original=%sx%s cropped=%s deskewed=%s angle=%.2f resized_to=%sx%s",
                 original_size[0],
                 original_size[1],
                 cropped,
+                deskewed,
+                deskew_angle,
                 stripped.size[0],
                 stripped.size[1],
             )
