@@ -145,14 +145,19 @@ def _normalize_upload_for_ocr(path: Path) -> Path:
     Normalize uploaded images to JPEG for faster, consistent OCR payloads.
 
     Notes:
-    - PDF is kept as-is for now.
+    - PDF: attempts to render page 1 to JPEG, then applies the same preprocessing.
+      Falls back to original PDF if rendering is unavailable.
     - If normalization fails (e.g., unsupported HEIC decoder), fall back to original.
     """
-    if path.suffix.lower() == ".pdf":
-        return path
-
+    is_pdf = path.suffix.lower() == ".pdf"
     try:
         with Image.open(path) as img:
+            if is_pdf:
+                # First page only for scorecard PDFs.
+                try:
+                    img.seek(0)
+                except Exception:
+                    pass
             # Honor EXIF orientation before re-encoding.
             img = ImageOps.exif_transpose(img)
             if img.mode != "RGB":
@@ -192,7 +197,8 @@ def _normalize_upload_for_ocr(path: Path) -> Path:
                 icc_profile=None,
             )
             logger.info(
-                "OCR preprocess image: original=%sx%s cropped=%s deskewed=%s angle=%.2f resized_to=%sx%s",
+                "OCR preprocess image: source=%s original=%sx%s cropped=%s deskewed=%s angle=%.2f resized_to=%sx%s",
+                "pdf" if is_pdf else "image",
                 original_size[0],
                 original_size[1],
                 cropped,
@@ -204,8 +210,9 @@ def _normalize_upload_for_ocr(path: Path) -> Path:
             return normalized_path
     except Exception as e:
         logger.warning(
-            "Image normalization failed; using original upload. file=%s err=%s",
+            "Image normalization failed; using original upload. file=%s source=%s err=%s",
             path.name,
+            "pdf" if is_pdf else "image",
             e,
         )
         return path
