@@ -11,7 +11,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 import numpy as np
 from pydantic import BaseModel
-from PIL import Image, ImageOps
+from PIL import Image, ImageOps, ImageEnhance
 
 logger = logging.getLogger(__name__)
 
@@ -167,6 +167,12 @@ def _normalize_upload_for_ocr(path: Path) -> Path:
                 scale = OCR_LONG_EDGE_TARGET / float(long_edge)
                 new_size = (max(1, int(width * scale)), max(1, int(height * scale)))
                 img = img.resize(new_size, Image.Resampling.LANCZOS)
+            # Adaptive contrast normalization (conservative):
+            # grayscale -> autocontrast -> mild contrast boost.
+            gray = img.convert("L")
+            gray = ImageOps.autocontrast(gray, cutoff=1)
+            gray = ImageEnhance.Contrast(gray).enhance(1.15)
+            img = gray.convert("RGB")
             # Explicitly strip metadata by creating a fresh pixel-only image.
             # This prevents EXIF/ICC/comment payloads from carrying into OCR input.
             stripped = Image.new("RGB", img.size)
