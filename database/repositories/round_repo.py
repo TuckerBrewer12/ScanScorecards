@@ -2,6 +2,7 @@
 
 import asyncpg
 import json
+from datetime import date
 from typing import List, Optional
 from uuid import UUID
 
@@ -132,16 +133,31 @@ class RoundRepositoryDB:
             return [dict(r) for r in rows]
 
     async def get_rounds_for_user(
-        self, user_id: str, *, limit: int = 20, offset: int = 0
+        self, user_id: str, *, limit: int = 20, offset: int = 0,
+        course_id: Optional[str] = None,
+        date_from: Optional[date] = None,
     ) -> List[Round]:
         """Get a user's rounds ordered by date DESC."""
+        conditions = ["user_id = $1"]
+        params: list = [UUID(user_id)]
+        n = 2
+        if course_id is not None:
+            conditions.append(f"course_id = ${n}")
+            params.append(UUID(course_id))
+            n += 1
+        if date_from is not None:
+            conditions.append(f"round_date >= ${n}")
+            params.append(date_from)
+            n += 1
+        where = " AND ".join(conditions)
+        params += [limit, offset]
         async with self._pool.acquire() as conn:
             rows = await conn.fetch(
-                """SELECT * FROM users.rounds
-                   WHERE user_id = $1
+                f"""SELECT * FROM users.rounds
+                   WHERE {where}
                    ORDER BY round_date DESC NULLS LAST
-                   LIMIT $2 OFFSET $3""",
-                UUID(user_id), limit, offset,
+                   LIMIT ${n} OFFSET ${n + 1}""",
+                *params,
             )
             return [await self._assemble_round(conn, r) for r in rows]
 

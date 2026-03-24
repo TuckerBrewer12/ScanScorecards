@@ -52,6 +52,40 @@ const SCORE_LABELS: Record<string, string> = {
 };
 
 
+function ShortGameSparkline({ scrambling, upAndDown }: {
+  scrambling: { round_index: number; scrambling_percentage: number }[];
+  upAndDown: { round_index: number; percentage: number }[];
+}) {
+  const W = 200; const H = 44; const PAD = 4;
+  // Align by round_index — only use rounds present in both
+  const udMap = new Map(upAndDown.map((r) => [r.round_index, r.percentage]));
+  const paired = scrambling
+    .filter((r) => udMap.has(r.round_index))
+    .slice(-12);
+  if (paired.length < 2) return null;
+
+  const xs = paired.map((_, i) => PAD + (i / (paired.length - 1)) * (W - PAD * 2));
+  const toY = (v: number) => H - PAD - ((Math.max(0, Math.min(100, v)) / 100) * (H - PAD * 2));
+  const scrPts = paired.map((r, i) => `${xs[i]},${toY(r.scrambling_percentage)}`).join(" ");
+  const udPts  = paired.map((r, i) => `${xs[i]},${toY(udMap.get(r.round_index)!)}`).join(" ");
+
+  return (
+    <div className="mt-3 px-1">
+      <svg viewBox={`0 0 ${W} ${H}`} width="100%" height={H} overflow="visible">
+        <polyline points={scrPts} fill="none" stroke="#f97316" strokeWidth={1.5} strokeLinejoin="round" strokeLinecap="round" opacity={0.8} />
+        <polyline points={udPts}  fill="none" stroke="#a855f7" strokeWidth={1.5} strokeLinejoin="round" strokeLinecap="round" opacity={0.8} />
+        {/* end dots */}
+        <circle cx={xs[xs.length - 1]} cy={toY(paired[paired.length - 1].scrambling_percentage)} r={2.5} fill="#f97316" />
+        <circle cx={xs[xs.length - 1]} cy={toY(udMap.get(paired[paired.length - 1].round_index)!)} r={2.5} fill="#a855f7" />
+      </svg>
+      <div className="flex items-center gap-3 mt-1.5">
+        <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-orange-400" /><span className="text-[9px] text-gray-400">Scr</span></div>
+        <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-purple-400" /><span className="text-[9px] text-gray-400">U&D</span></div>
+      </div>
+    </div>
+  );
+}
+
 function MiniKpi({ label, value, trend }: {
   label: string; value: string | number | null;
   trend?: "up" | "down" | "flat" | null;
@@ -77,7 +111,7 @@ interface DashboardPageProps {
 export function DashboardPage({ userId }: DashboardPageProps) {
   const { data: fetched, isLoading: loading } = useQuery({
     queryKey: ["dashboard", userId],
-    queryFn: () => Promise.all([api.getDashboard(userId), api.getAnalytics(userId, 20)]),
+    queryFn: () => Promise.all([api.getDashboard(userId), api.getAnalytics(userId, { limit: 20, timeframe: "all", courseId: "all" })]),
   });
   const data = fetched?.[0] ?? null;
   const trends = fetched?.[1] ?? null;
@@ -351,21 +385,27 @@ export function DashboardPage({ userId }: DashboardPageProps) {
 
           {/* 5. Short Game */}
           <BentoCard title="Short Game" subtitle="Last 20 rounds" className="lg:col-span-1 !p-3">
-            <div className="flex items-center justify-around">
+            <div className="flex items-center justify-around mt-6">
               <div className="text-center">
-                <div className="text-2xl font-bold text-gray-900 tracking-tighter">
+                <div className="text-4xl font-bold text-gray-900 tracking-tighter">
                   {scramblingPct != null ? `${scramblingPct.toFixed(0)}%` : "—"}
                 </div>
                 <div className="text-[10px] font-medium text-gray-500 uppercase mt-0.5">Scrambling</div>
               </div>
-              <div className="w-px h-6 bg-gray-100" />
+              <div className="w-px h-8 bg-gray-100" />
               <div className="text-center">
-                <div className="text-2xl font-bold text-gray-900 tracking-tighter">
+                <div className="text-4xl font-bold text-gray-900 tracking-tighter">
                   {upAndDownPct != null ? `${upAndDownPct.toFixed(0)}%` : "—"}
                 </div>
                 <div className="text-[10px] font-medium text-gray-500 uppercase mt-0.5">Up & Down</div>
               </div>
             </div>
+            {trends && (
+              <ShortGameSparkline
+                scrambling={trends.scrambling_trend}
+                upAndDown={trends.up_and_down_trend}
+              />
+            )}
           </BentoCard>
 
           {/* 6. Avg Putts Gauge */}
