@@ -13,15 +13,18 @@ import { api } from "@/lib/api";
 import { getStoredColorBlindMode } from "@/lib/accessibility";
 import { getColorBlindPalette } from "@/lib/chartPalettes";
 import type {
-  AnalyticsData, ScoreTrendRow, ScoreTypeRow, GIRTrendRow, ScoringByParRow, PuttsTrendRow,
+  AnalyticsData, AnalyticsFilters, ScoreTrendRow, ScoreTypeRow, GIRTrendRow, ScoringByParRow, PuttsTrendRow,
 } from "@/types/analytics";
 import { ScrollSection } from "@/components/analytics/ScrollSection";
 import { NarrativeInsight } from "@/components/analytics/NarrativeInsight";
 import { StickyScoreBar } from "@/components/analytics/StickyScoreBar";
 import { BestRoundCard } from "@/components/analytics/BestRoundCard";
 import { ParMatrixGrid } from "@/components/analytics/ParMatrixGrid";
+import { AnalyticsFilterBar } from "@/components/analytics/AnalyticsFilterBar";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
+
+const DEFAULT_FILTERS: AnalyticsFilters = { limit: 50, timeframe: "all", courseId: "all" };
 
 const SCORE_COLORS: Record<string, string> = {
   eagle:        "#f59e0b",
@@ -48,9 +51,6 @@ const tooltipStyle = {
   boxShadow: "0 4px 24px rgba(0,0,0,0.07)",
   background: "rgba(255,255,255,0.97)",
 };
-
-const LIMIT_OPTIONS = [20, 50, 100] as const;
-type Limit = (typeof LIMIT_OPTIONS)[number];
 
 // ─── Data helpers ─────────────────────────────────────────────────────────────
 
@@ -231,10 +231,18 @@ function ChartCard({ title, subtitle, children }: { title: string; subtitle?: st
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export function AnalyticsPage({ userId }: { userId: string }) {
-  const [limit, setLimit] = useState<Limit>(50);
+  const [filters, setFilters] = useState<AnalyticsFilters>(DEFAULT_FILTERS);
   const { data, isLoading: loading } = useQuery({
-    queryKey: ["analytics", userId, limit],
-    queryFn: () => api.getAnalytics(userId, limit),
+    queryKey: ["analytics", userId, filters],
+    queryFn: () => api.getAnalytics(userId, filters),
+  });
+  const { data: playedCourses = [] } = useQuery({
+    queryKey: ["played-courses", userId],
+    queryFn: () => api.getPlayedCourses(userId),
+  });
+  const { data: user } = useQuery({
+    queryKey: ["user", userId],
+    queryFn: () => api.getUser(userId),
   });
   const colorBlindMode = useMemo(() => getStoredColorBlindMode(), []);
   const colorBlindPalette = useMemo(() => getColorBlindPalette(colorBlindMode), [colorBlindMode]);
@@ -309,12 +317,56 @@ export function AnalyticsPage({ userId }: { userId: string }) {
     );
   }
 
-  if (!data || data.kpis.total_rounds === 0) {
-    return (
+  const isEmpty = !data || data.kpis.total_rounds === 0;
+
+  const header = (
+    <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-gray-900">Analytics</h1>
-        <p className="text-sm text-gray-500 mt-1">No rounds yet</p>
-        <div className="text-gray-400 mt-8">Play some rounds to see your analytics.</div>
+        <p className="text-sm text-gray-500 mt-1">
+          {(() => {
+            const parts: string[] = [];
+            parts.push(filters.limit === 500 ? "All rounds" : `Last ${filters.limit} rounds`);
+            if (filters.courseId !== "all") {
+              if (filters.courseId === "home") {
+                parts.push("Home Course");
+              } else {
+                const c = playedCourses.find((pc) => pc.id === filters.courseId);
+                if (c) parts.push(c.name ?? "Selected Course");
+              }
+            }
+            if (filters.timeframe === "ytd") parts.push("YTD");
+            if (filters.timeframe === "1y") parts.push("Last 12 mo");
+            return parts.map((p, i) => (
+              <span key={i}>
+                {i > 0 && <span className="text-gray-300 mx-1">·</span>}
+                <span className="font-semibold text-gray-700">{p}</span>
+              </span>
+            ));
+          })()}
+        </p>
+      </div>
+      <AnalyticsFilterBar
+        filters={filters}
+        onChange={setFilters}
+        playedCourses={playedCourses}
+        hasHomeCourse={!!user?.home_course_id}
+      />
+    </div>
+  );
+
+  if (isEmpty) {
+    const isFiltered = filters.courseId !== "all" || filters.timeframe !== "all";
+    return (
+      <div>
+        {header}
+        <div className="flex flex-col items-center justify-center h-48 text-center">
+          <p className="text-gray-400 text-sm">
+            {isFiltered
+              ? "No rounds found for the selected filters."
+              : "Play some rounds to see your analytics."}
+          </p>
+        </div>
       </div>
     );
   }
@@ -331,29 +383,7 @@ export function AnalyticsPage({ userId }: { userId: string }) {
       <StickyScoreBar kpis={kpis} />
 
       {/* ── Dynamic Header ────────────────────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-gray-900">Analytics</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            Last <span className="font-semibold text-gray-700">{limit}</span> rounds
-          </p>
-        </div>
-        <div className="flex items-center bg-gray-100/80 p-1 rounded-xl gap-0.5 self-start sm:self-auto">
-          {LIMIT_OPTIONS.map((n) => (
-            <button
-              key={n}
-              onClick={() => setLimit(n)}
-              className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                limit === n
-                  ? "bg-white shadow-sm text-gray-900"
-                  : "text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              {n}
-            </button>
-          ))}
-        </div>
-      </div>
+      {header}
 
       {/* ── Panoramic Bento Bar ───────────────────────────────────────────── */}
       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm flex flex-wrap divide-y md:divide-y-0 md:divide-x divide-gray-50 overflow-hidden mb-6">

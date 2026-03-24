@@ -1,3 +1,9 @@
+export interface AnalyticsFilters {
+  limit: number;
+  timeframe: "all" | "ytd" | "1y";
+  courseId: "all" | "home" | string;
+}
+
 export interface AnalyticsKPIs {
   scoring_average: number | null;
   gir_percentage: number | null;

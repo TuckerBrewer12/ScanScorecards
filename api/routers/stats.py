@@ -1,6 +1,7 @@
 """Stats/dashboard API endpoints."""
 
-from datetime import datetime
+from datetime import date, datetime, timedelta
+from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from database.db_manager import DatabaseManager
 from api.dependencies import get_current_user, get_db
@@ -90,7 +91,9 @@ async def get_dashboard(
 @router.get("/analytics/{user_id}")
 async def get_analytics(
     user_id: str,
-    limit: int = Query(default=50, ge=1, le=200),
+    limit: int = Query(default=50, ge=1, le=500),
+    course_id: Optional[str] = Query(default=None),
+    timeframe: Optional[str] = Query(default=None),
     db: DatabaseManager = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -98,8 +101,28 @@ async def get_analytics(
     if not user:
         raise HTTPException(404, "User not found")
 
+    # Resolve course_id filter
+    resolved_course_id: Optional[str] = None
+    if course_id and course_id not in ("all", ""):
+        if course_id == "home":
+            resolved_course_id = str(user.home_course_id) if user.home_course_id else None
+        else:
+            resolved_course_id = course_id
+
+    # Resolve date_from filter
+    date_from: Optional[date] = None
+    today = date.today()
+    if timeframe == "ytd":
+        date_from = date(today.year, 1, 1)
+    elif timeframe == "1y":
+        date_from = today - timedelta(days=365)
+
     # DB returns newest-first; reverse for chronological trend ordering
-    rounds_desc = await db.rounds.get_rounds_for_user(user_id, limit=limit, offset=0)
+    rounds_desc = await db.rounds.get_rounds_for_user(
+        user_id, limit=limit, offset=0,
+        course_id=resolved_course_id,
+        date_from=date_from,
+    )
     rounds = list(reversed(rounds_desc))
 
     if not rounds:
@@ -309,6 +332,26 @@ async def get_analytics(
             home_course_id=user.home_course_id,
         ),
     }
+
+
+@router.get("/{user_id}/played-courses")
+async def get_played_courses(
+    user_id: str,
+    db: DatabaseManager = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Return distinct courses the user has rounds linked to."""
+    from uuid import UUID
+    async with db.rounds._pool.acquire() as conn:
+        rows = await conn.fetch(
+            """SELECT DISTINCT c.id, c.name, c.location
+               FROM users.rounds r
+               JOIN courses.courses c ON r.course_id = c.id
+               WHERE r.user_id = $1
+               ORDER BY c.name""",
+            UUID(user_id),
+        )
+    return [{"id": str(r["id"]), "name": r["name"], "location": r["location"]} for r in rows]
 
 
 @router.get("/compare/{user_id}/{round_id}")

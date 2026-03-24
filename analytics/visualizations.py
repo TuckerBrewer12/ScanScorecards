@@ -17,7 +17,7 @@ from .stats import (
     overall_putts_per_gir,
     gir_vs_non_gir_score_distribution,
     gir_comparison,
-    putts_per_gir,
+    putts_per_gir, 
     putts_per_gir_comparison,
     putts_per_round,
     putts_comparison,
