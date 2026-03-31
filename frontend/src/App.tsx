@@ -10,6 +10,7 @@ import { ScanPage } from "./pages/ScanPage";
 import { AnalyticsPage } from "./pages/AnalyticsPage";
 import { CareerPage } from "./pages/CareerPage";
 import { SuggestionsPage } from "./pages/SuggestionsPage";
+import { GoalsPage } from "./pages/GoalsPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { FriendsInboxPage } from "./pages/FriendsInboxPage";
 import { SocialPage } from "./pages/SocialPage";
@@ -64,6 +65,7 @@ function AppRoutes() {
         <Route path="/courses" element={<CoursesPage userId={userId} />} />
         <Route path="/scan" element={<ScanPage userId={userId} scanState={scanState} setScanState={setScanState} />} />
         <Route path="/analytics" element={<AnalyticsPage userId={userId} />} />
+        <Route path="/goals" element={<GoalsPage userId={userId} />} />
         <Route path="/suggestions" element={<SuggestionsPage userId={userId} />} />
         <Route path="/social" element={<SocialPage />} />
         <Route path="/career" element={<CareerPage userId={userId} />} />

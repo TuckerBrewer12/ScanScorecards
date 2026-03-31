@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { LayoutDashboard, ListOrdered, MapPin, ScanLine, BarChart2, Trophy, LogOut, Settings, Flag, ChevronsUpDown, Sparkles, Users } from "lucide-react";
+import { LayoutDashboard, ListOrdered, MapPin, ScanLine, BarChart2, Trophy, LogOut, Settings, Flag, ChevronsUpDown, Sparkles, Users, Target } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
 const navItems = [
@@ -8,6 +8,7 @@ const navItems = [
   { to: "/rounds", label: "Rounds", icon: ListOrdered },
   { to: "/courses", label: "Courses", icon: MapPin },
   { to: "/analytics", label: "Analytics", icon: BarChart2 },
+  { to: "/goals", label: "Goals", icon: Target },
   { to: "/suggestions", label: "Peer Comparison", icon: Sparkles },
   { to: "/career", label: "Career", icon: Trophy },
   { to: "/social", label: "Social", icon: Users },

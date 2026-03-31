@@ -7,6 +7,7 @@ import {
   CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContainer,
 } from "recharts";
 import { SVGScoreHandicapTrend } from "@/components/dashboard/SVGScoreHandicapTrend";
+import { ScoreHeroBanner } from "@/components/dashboard/ScoreHeroBanner";
 import { api } from "@/lib/api";
 import { getStoredColorBlindMode } from "@/lib/accessibility";
 import { getColorBlindPalette } from "@/lib/chartPalettes";
@@ -314,16 +315,12 @@ export function DashboardPage({ userId }: DashboardPageProps) {
 
   return (
     <div>
-      <div className="flex items-start justify-between mb-4">
-        <div>
-          <h1 className="text-2xl font-extrabold tracking-tight text-gray-900">Good morning, Golfer</h1>
-          <p className="text-sm text-gray-400 mt-0.5">Recent form</p>
-        </div>
-        <div className="flex items-center gap-2 bg-primary/8 rounded-full px-4 py-1.5">
-          <span className="text-xs font-bold text-primary uppercase tracking-widest">HI</span>
-          <span className="text-sm font-black text-primary">{formatHI(data?.handicap_index)}</span>
-        </div>
-      </div>
+      <ScoreHeroBanner
+        scoreTrend={trends?.score_trend ?? []}
+        scoringAverage={data.scoring_average}
+        totalRounds={data.total_rounds}
+        bestScore={data.best_round}
+      />
 
       <ScrollSection>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5 auto-rows-min mt-4">
@@ -331,11 +328,8 @@ export function DashboardPage({ userId }: DashboardPageProps) {
           {/* 1. KPI Stack */}
           <BentoCard className="lg:col-span-1">
             <div className="flex flex-col gap-5 h-full justify-between">
-              <div className="pb-4 border-b border-gray-100">
-                <div className="text-[10px] uppercase tracking-widest text-gray-400 font-bold mb-1">Handicap Index</div>
-                <div className="text-4xl font-black text-primary">{formatHI(data.handicap_index)}</div>
-              </div>
-              <MiniKpi label="Scoring Avg" value={data.scoring_average} trend={hiTrend} />
+              <MiniKpi label="Scoring Avg" value={data.scoring_average != null ? data.scoring_average.toFixed(1) : null} trend={hiTrend} />
+              <MiniKpi label="Best Round" value={data.best_round ?? "—"} />
               <MiniKpi label="Total Rounds" value={data.total_rounds} />
             </div>
           </BentoCard>
