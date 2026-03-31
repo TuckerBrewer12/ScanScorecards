@@ -362,6 +362,24 @@ export interface CourseScoreVarianceRow {
   variance_rank: number;
 }
 
+export interface GoalSaver {
+  type: "three_putt_bleed" | "blowup_holes" | "achilles_heel" | "home_course_demon" | "gir_opportunity" | "scrambling_opportunity" | "par5_opportunity";
+  strokes_saved: number;
+  percentage_of_gap: number;
+  headline: string;
+  detail: string;
+  data: Record<string, unknown>;
+}
+
+export interface GoalReport {
+  scoring_average: number | null;
+  best_score: number | null;
+  scoring_goal: number;
+  gap: number;
+  on_track: boolean;
+  savers: GoalSaver[];
+}
+
 export interface CourseAnalyticsData {
   course_id: string;
   rounds_played: number;

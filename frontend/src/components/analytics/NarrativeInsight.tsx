@@ -31,7 +31,7 @@ export function NarrativeInsight({ text, trend, positiveUp = true }: NarrativeIn
       initial={{ opacity: 0, x: -12 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.5, ease: "easeOut" }}
-      className="analytics-insight-card flex items-start gap-3 py-3 px-4 rounded-xl bg-primary/5 border border-transparent"
+      className="analytics-insight-card flex items-start gap-3 py-2 px-3 rounded-xl bg-primary/5 border border-transparent"
     >
       {trend && <Icon size={15} className={`mt-0.5 shrink-0 ${iconColor}`} />}
       <p className="analytics-insight-text text-sm text-gray-600 leading-relaxed">{text}</p>

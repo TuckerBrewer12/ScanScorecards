@@ -354,6 +354,32 @@ async def get_played_courses(
     return [{"id": str(r["id"]), "name": r["name"], "location": r["location"]} for r in rows]
 
 
+@router.get("/{user_id}/goal-report")
+async def get_goal_report(
+    user_id: str,
+    limit: int = Query(default=50, ge=1, le=500),
+    db: DatabaseManager = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    user = await db.users.get_user(user_id)
+    if not user or not user.scoring_goal:
+        raise HTTPException(400, "No scoring goal set")
+
+    rounds_desc = await db.rounds.get_rounds_for_user(user_id, limit=limit)
+    rounds = list(reversed(rounds_desc))
+
+    home_course_rounds = None
+    if user.home_course_id:
+        home_rounds_desc = await db.rounds.get_rounds_for_user(
+            user_id, limit=500, course_id=user.home_course_id
+        )
+        if home_rounds_desc:
+            home_course_rounds = list(reversed(home_rounds_desc))
+
+    from analytics.goals import goal_report
+    return goal_report(rounds, user.scoring_goal, home_course_rounds)
+
+
 @router.get("/compare/{user_id}/{round_id}")
 async def get_round_comparison(
     user_id: str,

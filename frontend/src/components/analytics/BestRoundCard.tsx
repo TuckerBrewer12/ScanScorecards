@@ -45,7 +45,7 @@ function MiniScorecard({ round, palette }: { round: Round; palette?: ChartPalett
   const rows = [holes.slice(0, 9), holes.slice(9, 18)].filter((r) => r.length > 0);
 
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className="flex flex-col gap-1">
       {rows.map((nine, rowIdx) => (
         <div key={rowIdx} className="flex gap-1">
           {nine.map((h, i) => {
@@ -56,7 +56,7 @@ function MiniScorecard({ round, palette }: { round: Round; palette?: ChartPalett
               <div
                 key={i}
                 className="flex-1 flex items-center justify-center rounded"
-                style={{ height: 28, background: bg, minWidth: 18 }}
+                style={{ height: 22, background: bg, minWidth: 18 }}
               >
                 <span className="text-[10px] font-bold leading-none" style={{ color: fg }}>
                   {h.strokes ?? "·"}
@@ -67,7 +67,7 @@ function MiniScorecard({ round, palette }: { round: Round; palette?: ChartPalett
         </div>
       ))}
       {/* Legend */}
-      <div className="flex items-center gap-3 mt-1">
+      <div className="flex items-center gap-3 mt-0.5">
         {[
           { color: palette?.score.eagle ?? "#fbbf24", label: "Eagle+" },
           { color: palette?.score.birdie ?? "#34d399", label: "Birdie" },
@@ -115,19 +115,19 @@ export function BestRoundCard({ scoreTrend, netScoreTrend, achievements }: BestR
     <motion.div
       whileHover={{ scale: 1.008 }}
       transition={{ type: "spring", stiffness: 350, damping: 28 }}
-      className="relative overflow-hidden rounded-2xl bg-white border border-gray-100 text-gray-900 p-6 shadow-sm"
+      className="relative overflow-hidden rounded-2xl bg-white border border-gray-100 text-gray-900 p-4 shadow-sm"
     >
 
-      <div className="flex items-start justify-between gap-6">
+      <div className="flex items-start justify-between gap-4">
         {/* Left — score info */}
         <div className="shrink-0">
-          <div className="flex items-center gap-2 mb-3">
+          <div className="flex items-center gap-2 mb-2">
             <Trophy size={13} className="text-amber-400" />
             <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">
               Best Round
             </span>
           </div>
-          <div className="text-6xl font-black tracking-tight leading-none">
+          <div className="text-5xl font-black tracking-tight leading-none">
             {best.total_score}
           </div>
           <div className="mt-1.5 flex items-baseline gap-2.5">
@@ -156,7 +156,7 @@ export function BestRoundCard({ scoreTrend, netScoreTrend, achievements }: BestR
           {best.round_id && (
             <Link
               to={`/rounds/${best.round_id}`}
-              className="inline-flex items-center gap-1.5 mt-5 text-xs font-semibold text-gray-400 hover:text-primary transition-colors"
+              className="inline-flex items-center gap-1.5 mt-3 text-xs font-semibold text-gray-400 hover:text-primary transition-colors"
             >
               View scorecard <ArrowRight size={11} />
             </Link>
@@ -168,14 +168,14 @@ export function BestRoundCard({ scoreTrend, netScoreTrend, achievements }: BestR
           {roundDetail ? (
             <MiniScorecard round={roundDetail} palette={colorBlindPalette} />
           ) : (
-            <div className="flex flex-col gap-1.5">
+            <div className="flex flex-col gap-1">
               {[0, 1].map((row) => (
                 <div key={row} className="flex gap-1">
                   {Array.from({ length: 9 }).map((_, i) => (
                     <div
                       key={i}
                       className="flex-1 rounded animate-pulse"
-                      style={{ height: 28, background: "#f3f4f6" }}
+                      style={{ height: 22, background: "#f3f4f6" }}
                     />
                   ))}
                 </div>

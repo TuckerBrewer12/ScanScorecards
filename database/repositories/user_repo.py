@@ -102,7 +102,7 @@ class UserRepositoryDB:
 
     async def update_user(self, user_id: str, **fields) -> Optional[User]:
         """Update user fields (name, email, handicap_index, home_course_id, preferences)."""
-        allowed = {"name", "email", "handicap_index", "home_course_id", "preferences"}
+        allowed = {"name", "email", "handicap_index", "home_course_id", "preferences", "scoring_goal"}
         updates = {k: v for k, v in fields.items() if k in allowed}
         if not updates:
             return await self.get_user(user_id)

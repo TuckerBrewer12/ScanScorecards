@@ -57,7 +57,7 @@ All models inherit from `BaseGolfModel` (in `base.py`), which provides `validate
 - **HoleScore** — one player's score on a hole: strokes, putts, fairway/GIR stats. Validates putts ≤ strokes. Has `to_par(par=None)` and `get_score_type()` — both fall back to `self.par_played` when no par is passed
 - **Round** — complete round: references an optional Course + tee_box color string. Contains ordered HoleScores. Has `get_par()` (sums `par_played` when no course), `get_hole_par(n)`, `total_to_par()`, and score-type calculation methods
 - **UserTee** — user-owned tee config linked to an optional master course (`models/user_tee.py`)
-- **User** — golfer: handicap (-10 to 54), contains Rounds
+- **User** — golfer: handicap (-10 to 54), `scoring_goal` (optional integer target score), contains Rounds
 
 **Key design decisions:**
 - All fields are `Optional` to handle incomplete/partial scanned data
@@ -89,8 +89,8 @@ Key files:
 - `routers/scan.py` — `POST /api/scan/extract` and `POST /api/scan/save`. Save flow: looks up existing course; if not found, saves round without a course (no auto-creation). Populates `par_played` from `course_holes` param.
 - `routers/courses.py` — GET/POST/PUT + clone endpoint. `user_id IS NULL` = master/global course; `user_id IS NOT NULL` = user-owned custom course.
 - `routers/rounds.py` — GET/PUT/DELETE for rounds and hole scores
-- `routers/users.py` — user management + user tee CRUD (`/api/users/{id}/tees`)
-- `routers/stats.py` — player analytics endpoints
+- `routers/users.py` — user management + user tee CRUD (`/api/users/{id}/tees`); `UpdateUserRequest` accepts `scoring_goal`
+- `routers/stats.py` — player analytics endpoints; includes `GET /{user_id}/goal-report`
 - `api/request_models.py` — shared Pydantic request/response models
 
 **API endpoints:**
@@ -102,6 +102,7 @@ Key files:
 - `GET/PUT/DELETE /api/rounds/{id}` — round CRUD; PUT recalculates `total_score`
 - `GET/POST /api/users/{id}/tees` — list/create user tees
 - `PUT/DELETE /api/users/{id}/tees/{tee_id}` — update/delete user tees
+- `GET /api/stats/{user_id}/goal-report?limit=` — goal gap analysis + ranked savers
 
 ### `database/` — Async PostgreSQL layer (asyncpg)
 
@@ -117,7 +118,10 @@ Two DB schemas: `courses` (courses, holes, tees, tee_yardages) and `users` (user
 - `repositories/user_tee_repo.py` — CRUD for `users.user_tees`
 
 **Schema source of truth:** `database/schema.sql`
-**Migrations:** `database/migrations/` (incremental SQL files; 001 and 002 applied)
+**Migrations:** `database/migrations/` (incremental SQL files; 001, 002, 003 applied)
+- 001: `user_id` on `courses.courses`
+- 002: `par_played`, `handicap_played`, `course_name_played`, `user_tee_id`, nullable `hole_id`
+- 003: `scoring_goal SMALLINT` on `users.users`
 
 **Custom course design:**
 - `user_id IS NULL` = master/global course (read-only for regular users)
@@ -275,18 +279,31 @@ Implemented via `:root.dark` in `index.css`. Card bg: `#18191A`, borders: `#2a2d
 
 Key files:
 - `src/App.tsx` — routing + scan state (lifted here to persist across navigation)
-- `src/lib/api.ts` — API client (`updateRound`, `cloneCourse`, `getCourses`, `searchCourses`, etc.)
+- `src/lib/api.ts` — API client (`updateRound`, `cloneCourse`, `getCourses`, `searchCourses`, `getGoalReport`, `updateUser` with `scoring_goal`, etc.)
 - `src/types/scan.ts` — shared scan types/constants (kept out of ScanPage to avoid Fast Refresh warning)
+- `src/types/analytics.ts` — analytics types including `GoalReport` and `GoalSaver`
 - `src/pages/ScanPage.tsx` — upload → process → review scan flow; passes `result.round.course?.holes` as `course_holes` on save
 - `src/pages/RoundDetailPage.tsx` — round detail view with editing
 - `src/pages/CoursesPage.tsx` — course browser with clone/edit
+- `src/pages/SuggestionsPage.tsx` — Peer Comparison page; hosts Goal Selector (7 thresholds: 100/95/90/85/80/75/72), GoalReportSection (saver bento grid), and peer comparison stats. Goals section is below the comparison UI.
+- `src/pages/DashboardPage.tsx` — dashboard bento grid; includes goal widget (`lg:col-span-2`) showing progress bar + top saver insight
 - `src/components/round-detail/ScorecardGrid.tsx` — horizontal scorecard with To Par row; uses `effectivePar = hole?.par ?? score?.par_played`
+- `src/components/goals/GoalSaverCard.tsx` — bento card for a single goal saver (icon, stroke savings, gap%, headline, detail)
 
 **Confidence display:** only `strokes` fields count as actionable review items (not putts/fairway/gir). Null putts shows N/A when putts weren't recorded on the card.
+
+**Goal Engine design:**
+- `scoring_goal` is stored as the threshold value (e.g. `89` means "break 90")
+- "Achieved" = any single round with score ≤ `scoring_goal` (not average-based)
+- `goal_report` returns `gap` (avg - goal), `on_track` bool, and ranked `savers[]`
+- Each saver has: `type`, `strokes_saved`, `percentage_of_gap`, `headline`, `detail`, `data`
 
 ### `analytics/` — Player stats and visualizations
 
 Implemented. Exposes per-player analytics via `api/routers/stats.py`.
+
+- `analytics/stats.py` — all per-player stat functions (GIR, putting, scrambling, yardage buckets, score type distribution, course difficulty profile, etc.)
+- `analytics/goals.py` — `goal_report(rounds, scoring_goal, home_course_rounds)` — computes gap to goal and ranks highest-ROI improvement areas ("savers"): three-putt bleed, blowup holes, achilles heel yardage zone, home course demon hole, GIR opportunity, scrambling opportunity, par 5 opportunity
 
 ## Imports
 

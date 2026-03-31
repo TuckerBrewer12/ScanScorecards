@@ -1,5 +1,5 @@
 import type { DashboardData, RoundSummary, Round, CourseSummary, Course, User, Milestone, Friendship } from "@/types/golf";
-import type { AnalyticsData, AnalyticsFilters, CourseAnalyticsData, RoundComparison } from "@/types/analytics";
+import type { AnalyticsData, AnalyticsFilters, CourseAnalyticsData, RoundComparison, GoalReport } from "@/types/analytics";
 import { getToken } from "@/lib/auth";
 
 const BASE_URL = "/api";
@@ -114,8 +114,11 @@ export const api = {
   getUser: (userId: string) =>
     fetchJSON<User>(`/users/${userId}`),
 
-  updateUser: (userId: string, body: { home_course_id?: string | null; handicap?: number | null }) =>
+  updateUser: (userId: string, body: { home_course_id?: string | null; handicap?: number | null; scoring_goal?: number | null }) =>
     patchJSON<User>(`/users/${userId}`, body),
+
+  getGoalReport: (userId: string, limit = 50) =>
+    fetchJSON<GoalReport>(`/stats/${userId}/goal-report?limit=${limit}`),
 
   cloneCourse: (courseId: string, userId: string) =>
     postJSON<CourseSummary>(`/courses/${courseId}/clone?user_id=${encodeURIComponent(userId)}`, {}),
