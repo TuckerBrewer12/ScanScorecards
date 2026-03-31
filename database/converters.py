@@ -114,6 +114,7 @@ def user_from_row(user_row, rounds: Optional[List[Round]] = None) -> User:
         rounds=rounds or [],
         created_at=user_row["created_at"],
         last_handicap_update=user_row.get("last_handicap_update"),
+        scoring_goal=user_row.get("scoring_goal"),
     )
 
 

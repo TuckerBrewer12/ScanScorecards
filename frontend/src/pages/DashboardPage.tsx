@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { TrendingDown, TrendingUp, Minus } from "lucide-react";
 import {
   BarChart, Bar, PieChart, Pie, Cell,
@@ -24,9 +24,11 @@ type Fmt = (v: any, name: any, props: any) => any;
 const tooltipStyle = {
   fontSize: 12,
   borderRadius: 12,
-  border: "1px solid #f1f5f9",
-  boxShadow: "0 4px 24px rgba(0,0,0,0.07)",
-  background: "rgba(255,255,255,0.97)",
+  border: "1px solid rgba(255,255,255,0.6)",
+  boxShadow: "0 8px 32px rgba(0,0,0,0.08)",
+  background: "rgba(255,255,255,0.75)",
+  backdropFilter: "blur(16px)",
+  WebkitBackdropFilter: "blur(16px)",
 };
 
 function formatHI(hi: number | null | undefined): string {
@@ -95,8 +97,8 @@ function MiniKpi({ label, value, trend }: {
   return (
     <div className="flex items-center justify-between">
       <div>
-        <div className="text-[10px] uppercase tracking-widest text-gray-400 font-semibold">{label}</div>
-        <div className="text-2xl font-bold text-gray-900 leading-tight">{value ?? "—"}</div>
+        <div className="text-[10px] uppercase tracking-widest text-gray-400 font-bold">{label}</div>
+        <div className="text-4xl font-semibold tracking-tighter text-gray-900 leading-tight">{value ?? "—"}</div>
       </div>
       {trend && <Icon size={16} className={trendColor} />}
     </div>
@@ -109,9 +111,20 @@ interface DashboardPageProps {
 }
 
 export function DashboardPage({ userId }: DashboardPageProps) {
+  const navigate = useNavigate();
   const { data: fetched, isLoading: loading } = useQuery({
     queryKey: ["dashboard", userId],
     queryFn: () => Promise.all([api.getDashboard(userId), api.getAnalytics(userId, { limit: 20, timeframe: "all", courseId: "all" })]),
+  });
+  const { data: user } = useQuery({
+    queryKey: ["user", userId],
+    queryFn: () => api.getUser(userId),
+  });
+  const { data: goalReport } = useQuery({
+    queryKey: ["goal-report", userId],
+    queryFn: () => api.getGoalReport(userId, 20),
+    enabled: !!user?.scoring_goal,
+    retry: false,
   });
   const data = fetched?.[0] ?? null;
   const trends = fetched?.[1] ?? null;
@@ -319,7 +332,7 @@ export function DashboardPage({ userId }: DashboardPageProps) {
           <BentoCard className="lg:col-span-1">
             <div className="flex flex-col gap-5 h-full justify-between">
               <div className="pb-4 border-b border-gray-100">
-                <div className="text-[10px] uppercase tracking-widest text-gray-400 font-semibold mb-1">Handicap Index</div>
+                <div className="text-[10px] uppercase tracking-widest text-gray-400 font-bold mb-1">Handicap Index</div>
                 <div className="text-4xl font-black text-primary">{formatHI(data.handicap_index)}</div>
               </div>
               <MiniKpi label="Scoring Avg" value={data.scoring_average} trend={hiTrend} />
@@ -351,8 +364,8 @@ export function DashboardPage({ userId }: DashboardPageProps) {
                 </PieChart>
               </ResponsiveContainer>
               <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                <div className="text-2xl font-bold text-gray-900">{girPct.toFixed(0)}%</div>
-                <div className="text-[10px] text-gray-400 uppercase tracking-wide">GIR</div>
+                <div className="text-4xl font-semibold tracking-tighter text-gray-900">{girPct.toFixed(0)}%</div>
+                <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">GIR</div>
               </div>
             </div>
             <div className="text-center text-xs text-gray-400 mt-1">
@@ -387,17 +400,17 @@ export function DashboardPage({ userId }: DashboardPageProps) {
           <BentoCard title="Short Game" subtitle="Last 20 rounds" className="lg:col-span-1 !p-3">
             <div className="flex items-center justify-around mt-6">
               <div className="text-center">
-                <div className="text-4xl font-bold text-gray-900 tracking-tighter">
+                <div className="text-4xl font-semibold text-gray-900 tracking-tighter">
                   {scramblingPct != null ? `${scramblingPct.toFixed(0)}%` : "—"}
                 </div>
-                <div className="text-[10px] font-medium text-gray-500 uppercase mt-0.5">Scrambling</div>
+                <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">Scrambling</div>
               </div>
               <div className="w-px h-8 bg-gray-100" />
               <div className="text-center">
-                <div className="text-4xl font-bold text-gray-900 tracking-tighter">
+                <div className="text-4xl font-semibold text-gray-900 tracking-tighter">
                   {upAndDownPct != null ? `${upAndDownPct.toFixed(0)}%` : "—"}
                 </div>
-                <div className="text-[10px] font-medium text-gray-500 uppercase mt-0.5">Up & Down</div>
+                <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">Up & Down</div>
               </div>
             </div>
             {trends && (
@@ -408,7 +421,62 @@ export function DashboardPage({ userId }: DashboardPageProps) {
             )}
           </BentoCard>
 
-          {/* 6. Avg Putts Gauge */}
+          {/* 6. Goal Widget */}
+          <BentoCard className="lg:col-span-2 !p-4" interactive onClick={() => navigate("/suggestions")}>
+            {user?.scoring_goal && goalReport ? (
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <div>
+                    <div className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-0.5">Scoring Goal</div>
+                    <div className="text-sm font-bold text-gray-900">
+                      Target: Break {user.scoring_goal + 1}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => navigate("/suggestions")}
+                    className="text-[11px] font-semibold text-primary hover:underline"
+                  >
+                    Goals →
+                  </button>
+                </div>
+                {/* Progress bar */}
+                <div className="mb-3">
+                  <div className="flex justify-between text-[10px] text-gray-400 mb-1">
+                    <span>Avg {goalReport.scoring_average?.toFixed(1)}</span>
+                    <span>Goal {user.scoring_goal + 1}</span>
+                  </div>
+                  <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all"
+                      style={{
+                        width: `${Math.min(100, Math.max(5, goalReport.on_track ? 100 : (1 - goalReport.gap / Math.max(goalReport.scoring_average ?? 1, 1)) * 100))}%`,
+                        background: goalReport.on_track ? "#059669" : "linear-gradient(90deg, #2d7a3a, #9ca3af)",
+                      }}
+                    />
+                  </div>
+                </div>
+                {goalReport.savers[0] && (
+                  <p className="text-[11px] text-gray-500 leading-relaxed">
+                    <span className="font-semibold text-gray-700">Focus: </span>
+                    {goalReport.savers[0].headline}
+                  </p>
+                )}
+              </div>
+            ) : (
+              <div className="flex flex-col items-start justify-center h-full gap-2">
+                <div className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Scoring Goal</div>
+                <p className="text-sm text-gray-500">Set a scoring goal to track your progress.</p>
+                <button
+                  onClick={() => navigate("/suggestions")}
+                  className="text-xs font-semibold text-primary hover:underline"
+                >
+                  Set a goal →
+                </button>
+              </div>
+            )}
+          </BentoCard>
+
+          {/* 8. Avg Putts Gauge */}
           <BentoCard title="Avg Putts" subtitle="Per round" className="lg:col-span-1 !p-3">
             <div className="mx-auto w-full max-w-[260px]">
               <div className="relative" style={{ height: 72 }}>
@@ -436,7 +504,7 @@ export function DashboardPage({ userId }: DashboardPageProps) {
             </div>
           </BentoCard>
 
-          {/* 7. Right Sidebar — row-span-2 */}
+          {/* 9. Right Sidebar — row-span-2 */}
           <div className="lg:col-span-1 lg:row-span-2 flex flex-col gap-4">
             <BentoCard title="Recent Milestones" className="overflow-hidden flex-1">
               <MilestoneFeed milestones={recentMilestones} />
@@ -448,8 +516,8 @@ export function DashboardPage({ userId }: DashboardPageProps) {
             )}
           </div>
 
-          {/* 8. Recent Rounds — cols 2–3 of last row */}
-          <BentoCard title="Recent Rounds" className="md:col-span-2 lg:col-span-2 overflow-hidden">
+          {/* 10. Recent Rounds — cols 2–3 of last row */}
+          <BentoCard title="Recent Rounds" className="md:col-span-2 lg:col-span-2 overflow-hidden" interactive>
             <RecentRoundsTable rounds={data.recent_rounds.slice(0, 2)} />
             <div className="mt-4 flex gap-3">
               <Link to="/rounds" className="px-4 py-2 bg-primary text-white rounded-xl text-xs font-semibold hover:opacity-90 transition-opacity shadow-sm">

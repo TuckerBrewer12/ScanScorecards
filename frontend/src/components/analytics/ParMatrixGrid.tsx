@@ -18,12 +18,12 @@ export function ParMatrixGrid({ rows }: ParMatrixGridProps) {
     .sort((a, b) => a.bucket_order - b.bucket_order);
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
       <div className="text-sm font-bold text-gray-900 mb-0.5">Range View</div>
-      <div className="text-xs text-gray-400 mb-5">Performance by yardage and par</div>
+      <div className="text-xs text-gray-400 mb-3">Performance by yardage and par</div>
 
       {/* Segmented control */}
-      <div className="flex gap-1.5 mb-5">
+      <div className="flex gap-1.5 mb-3">
         {([3, 4, 5] as const).map((par) => {
           const isActive = activePar === par;
           const hasData = availablePars.has(par);
@@ -47,7 +47,7 @@ export function ParMatrixGrid({ rows }: ParMatrixGridProps) {
 
       {/* Card grid */}
       {filteredRows.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           {filteredRows.map(row => (
             <YardageAnalysisCard key={`${row.par}-${row.bucket_label}`} row={row} />
           ))}

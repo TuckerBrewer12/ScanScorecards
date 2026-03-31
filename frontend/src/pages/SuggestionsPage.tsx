@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { motion, AnimatePresence } from "framer-motion";
-import { Sparkles, ChevronDown, Dumbbell, Target, Pin, TrendingUp, TrendingDown } from "lucide-react";
+import { motion } from "framer-motion";
+import { Sparkles, TrendingUp, TrendingDown } from "lucide-react";
 import { api } from "@/lib/api";
 import { getStoredColorBlindMode } from "@/lib/accessibility";
 import { getColorBlindPalette } from "@/lib/chartPalettes";
@@ -9,7 +9,7 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { StatComparisonBar } from "@/components/suggestions/StatComparisonBar";
 import { ComparisonTargetToggle } from "@/components/suggestions/ComparisonTargetToggle";
 import { BentoCard } from "@/components/ui/BentoCard";
-import type { AISuggestionsResponse, AIInsightItem, AIComparisonItem } from "@/types/suggestions";
+import type { AISuggestionsResponse, AIComparisonItem } from "@/types/suggestions";
 
 const COMPARISON_CATEGORIES = ["Ball Striking", "Short Game", "Putting"] as const;
 
@@ -19,11 +19,6 @@ const CATEGORY_STYLES: Record<string, { dot: string; heading: string }> = {
   "Putting": { dot: "#10B981", heading: "#047857" },
 };
 
-const GROUP_ICONS: Record<string, React.ElementType> = {
-  "Ball Striking": Target,
-  "Short Game": Dumbbell,
-  "Putting": Pin,
-};
 
 interface SuggestionsPageProps {
   userId: string;
@@ -46,86 +41,6 @@ function LoadingSkeleton() {
   );
 }
 
-function InsightCard({
-  insight,
-  index,
-  accentColor,
-}: {
-  insight: AIInsightItem;
-  index: number;
-  accentColor: string;
-}) {
-  const [open, setOpen] = useState(false);
-  const Icon = GROUP_ICONS[insight.category_group] ?? Target;
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.07, duration: 0.35 }}
-    >
-      <BentoCard className="overflow-hidden p-0">
-      <div className="p-4">
-        <div className="flex items-start gap-3">
-          <div className="p-2 rounded-xl bg-gray-50 shrink-0">
-            <Icon size={15} className="text-gray-500" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center justify-between gap-2 mb-1">
-              <p className="text-sm font-bold text-gray-900 leading-snug">{insight.title}</p>
-              <span className="text-[11px] font-bold text-white bg-primary rounded-full px-2 py-0.5 shrink-0">
-                P{Math.round(insight.priority_score)}
-              </span>
-            </div>
-            <p className="text-xs text-gray-500 leading-relaxed">{insight.description}</p>
-
-            {insight.what_if && (
-              <div className="mt-2.5 bg-gray-50 border border-gray-100 rounded-lg px-3 py-2">
-                <p className="text-[11px] font-semibold leading-snug" style={{ color: accentColor }}>
-                  {insight.what_if}
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Drill tips toggle */}
-        <button
-          onClick={() => setOpen((v) => !v)}
-          className="mt-3 ml-11 flex items-center gap-1.5 text-[11px] font-semibold text-gray-400 hover:text-gray-600 transition-colors"
-        >
-          <Dumbbell size={11} />
-          Practice drills
-          <motion.span animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.18 }}>
-            <ChevronDown size={11} />
-          </motion.span>
-        </button>
-      </div>
-
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="overflow-hidden border-t border-gray-50"
-          >
-            <ul className="px-4 py-3 space-y-1.5">
-              {insight.drill_tips.map((tip, i) => (
-                <li key={i} className="flex gap-2 text-xs text-gray-600">
-                  <span className="font-bold shrink-0" style={{ color: accentColor }}>{i + 1}.</span>
-                  {tip}
-                </li>
-              ))}
-            </ul>
-          </motion.div>
-        )}
-      </AnimatePresence>
-      </BentoCard>
-    </motion.div>
-  );
-}
 
 function ComparisonCategory({
   category,
@@ -291,24 +206,42 @@ export function SuggestionsPage({ userId }: SuggestionsPageProps) {
 
           {/* Comparison grid */}
           {data.comparisons.length > 0 ? (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              {COMPARISON_CATEGORIES.map((cat, i) => {
-                const items = data.comparisons.filter((c) => c.category === cat);
-                if (!items.length) return null;
-                return (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {/* Ball Striking — left column */}
+              {(() => {
+                const items = data.comparisons.filter((c) => c.category === "Ball Striking");
+                return items.length > 0 ? (
                   <ComparisonCategory
-                    key={cat}
-                    category={cat}
+                    category="Ball Striking"
                     items={items}
                     benchmarkLabel="Avg"
-                    globalIndex={i}
+                    globalIndex={0}
                     goodColor={goodColor}
                     badColor={badColor}
                     benchmarkColor={benchmarkColor}
                     categoryStyles={categoryStyles}
                   />
-                );
-              })}
+                ) : null;
+              })()}
+              {/* Short Game + Putting — right column */}
+              <div className="flex flex-col gap-4">
+                {["Short Game", "Putting"].map((cat, i) => {
+                  const items = data.comparisons.filter((c) => c.category === cat);
+                  return items.length > 0 ? (
+                    <ComparisonCategory
+                      key={cat}
+                      category={cat}
+                      items={items}
+                      benchmarkLabel="Avg"
+                      globalIndex={i + 1}
+                      goodColor={goodColor}
+                      badColor={badColor}
+                      benchmarkColor={benchmarkColor}
+                      categoryStyles={categoryStyles}
+                    />
+                  ) : null;
+                })}
+              </div>
             </div>
           ) : (
             <div className="text-center py-12">
@@ -350,17 +283,6 @@ export function SuggestionsPage({ userId }: SuggestionsPageProps) {
             </section>
           )}
 
-          {/* Focus areas */}
-          {data.insights.length > 0 && (
-            <section>
-              <h2 className="text-base font-bold text-gray-900 mb-3">Top Focus Areas</h2>
-              <div className="space-y-3">
-                {data.insights.map((insight, i) => (
-                  <InsightCard key={i} insight={insight} index={i} accentColor={accentColor} />
-                ))}
-              </div>
-            </section>
-          )}
         </>
       )}
     </div>

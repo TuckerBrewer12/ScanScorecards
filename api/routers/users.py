@@ -30,6 +30,7 @@ class UpdateUserTeeRequest(BaseModel):
 class UpdateUserRequest(BaseModel):
     home_course_id: Optional[str] = None
     handicap: Optional[float] = Field(default=None, ge=-10, le=54)
+    scoring_goal: Optional[int] = None
 
 
 class SendFriendRequest(BaseModel):

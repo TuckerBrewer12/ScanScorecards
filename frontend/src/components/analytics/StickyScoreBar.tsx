@@ -48,7 +48,7 @@ export function StickyScoreBar({ kpis, triggerAt = 300 }: StickyScoreBarProps) {
           transition={{ duration: 0.28, ease: "easeInOut" }}
           className="sticky-score-bar fixed top-0 left-56 right-0 z-40 bg-white/85 backdrop-blur-md border-b border-gray-100 shadow-sm"
         >
-          <div className="px-8 py-2.5 flex items-center gap-8">
+          <div className="px-8 py-2 flex items-center gap-8">
             <span className="text-[10px] font-bold text-gray-300 uppercase tracking-widest">
               Your Stats
             </span>
