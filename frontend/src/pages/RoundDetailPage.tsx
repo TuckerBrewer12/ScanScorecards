@@ -14,6 +14,7 @@ import { formatToPar, calcCourseHandicap, calcNetScore } from "@/types/golf";
 import type { RoundComparison, ComparisonRow } from "@/types/analytics";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { ScorecardGrid } from "@/components/round-detail/ScorecardGrid";
+import { RoundStory } from "@/components/round-detail/RoundStory";
 import { RoundFlowTimeline } from "@/components/analytics/RoundFlowTimeline";
 
 const tooltipStyle = {
@@ -448,21 +449,26 @@ export function RoundDetailPage({ userId }: { userId: string }) {
         </div>
       )}
 
-      <ScorecardGrid
-        round={round}
-        editMode={editMode}
-        editedScores={editedScores}
-        editedTeeBox={editedTeeBox}
-        availableTees={availableTees}
-        onScoreChange={handleScoreChange}
-        onTeeBoxChange={setEditedTeeBox}
-        onGirChange={handleGirChange}
-      />
+      {/* Story view (normal) / Scorecard grid (edit) */}
+      {!editMode && <RoundStory round={round} />}
 
-      {/* Round Flow Timeline */}
+      <div className={!editMode ? "mt-5" : ""}>
+        <ScorecardGrid
+          round={round}
+          editMode={editMode}
+          editedScores={editedScores}
+          editedTeeBox={editedTeeBox}
+          availableTees={availableTees}
+          onScoreChange={handleScoreChange}
+          onTeeBoxChange={setEditedTeeBox}
+          onGirChange={handleGirChange}
+        />
+      </div>
+
+      {/* Round Flow */}
       {round.hole_scores.filter((s) => s.strokes != null).length >= 3 && (
         <div className="mt-6">
-          <SectionLabel>Round Flow</SectionLabel>
+          <SectionLabel>Momentum</SectionLabel>
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
             <RoundFlowTimeline round={round} />
           </div>

@@ -140,18 +140,18 @@ export function ScoreHeroBanner({
       className="-mx-6 mb-6 relative overflow-hidden border-b border-gray-100"
       style={{ background: "linear-gradient(160deg, #f8faf8 0%, #f0f7f1 50%, #f8faf8 100%)" }}
     >
-      <div className="relative flex items-stretch gap-0 px-8 pt-8 pb-0">
+      <div className="relative flex flex-col md:flex-row items-stretch gap-0 px-6 md:px-8 pt-6 md:pt-8 pb-0">
 
         {/* ── Left: dominant scoring average + secondary stats ── */}
-        <div className="flex-shrink-0 flex flex-col justify-between pb-8" style={{ width: 220 }}>
+        <div className="flex-shrink-0 flex flex-col justify-between pb-4 md:pb-8 md:w-[220px]">
           <div>
             <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-gray-400 mb-1">
               Scoring Average
             </p>
 
             <motion.div
-              className="font-black leading-none tracking-tighter"
-              style={{ fontSize: 96, color: "#2d7a3a" }}
+              className="font-black leading-none tracking-tighter text-[72px] md:text-[96px]"
+              style={{ color: "#2d7a3a" }}
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, ease: "easeOut" }}

@@ -26,7 +26,7 @@ export function PageHeader({ title, subtitle }: PageHeaderProps) {
 
   return (
     <motion.header
-      className="fixed top-0 left-64 right-0 z-40 flex items-center px-8 py-3"
+      className="fixed top-0 left-0 md:left-64 right-0 z-40 flex items-center px-4 md:px-8 py-3"
       style={{
         backgroundColor: bgColor,
         borderBottomWidth: 1,

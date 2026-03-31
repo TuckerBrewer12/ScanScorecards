@@ -22,7 +22,7 @@ export function Sidebar() {
     : "?";
 
   return (
-    <aside className="fixed left-0 top-0 h-full w-64 flex flex-col" style={{ background: "linear-gradient(180deg, #1e3d25 0%, #152d1b 100%)" }}>
+    <aside className="hidden md:flex fixed left-0 top-0 h-full w-64 flex-col" style={{ background: "linear-gradient(180deg, #1e3d25 0%, #152d1b 100%)" }}>
       <div className="p-4">
         <button className="w-full flex items-center gap-2.5 px-3 py-2.5 hover:bg-white/10 rounded-xl transition-colors duration-150">
           <div className="w-7 h-7 rounded-lg bg-white/15 flex items-center justify-center flex-shrink-0">
