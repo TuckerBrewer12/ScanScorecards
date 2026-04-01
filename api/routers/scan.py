@@ -358,10 +358,18 @@ async def extract_scan(
         # - scores_only requires a selected course_id (fast scan path)
         # - full can run with or without course_id
         course_model = None
+        t_course_lookup_start = time.perf_counter()
         if course_id:
             course_model = await db.courses.get_course(course_id)
             if course_model is None:
                 raise HTTPException(404, f"Course {course_id} not found")
+        t_course_lookup_end = time.perf_counter()
+        logger.info(
+            "Scan stage complete: stage=course_lookup has_course_id=%s found=%s lookup_ms=%.1f",
+            bool(course_id),
+            course_model is not None,
+            (t_course_lookup_end - t_course_lookup_start) * 1000.0,
+        )
         if strategy == "scores_only":
             if course_model is None:
                 raise HTTPException(400, "scores_only strategy requires course_id")
@@ -429,8 +437,15 @@ async def extract_scan(
                     )
 
         # Serialize the round and confidence for the frontend
+        t_serialize_start = time.perf_counter()
         round_data = result.round.model_dump(mode="json")
         confidence_data = result.confidence.model_dump(mode="json")
+        t_serialize_end = time.perf_counter()
+        logger.info(
+            "Scan stage complete: stage=serialize_response serialize_ms=%.1f fields_to_review=%d",
+            (t_serialize_end - t_serialize_start) * 1000.0,
+            len(result.confidence.fields_needing_review),
+        )
 
         return ScanResponse(
             round=round_data,
