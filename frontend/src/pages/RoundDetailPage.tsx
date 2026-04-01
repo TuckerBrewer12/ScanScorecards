@@ -300,19 +300,14 @@ export function RoundDetailPage({ userId }: { userId: string }) {
         <PageHeader
           title={round.course?.name ?? round.course_name_played ?? "Unknown Course"}
           subtitle={
-            [
-              round.date
-                ? new Date(round.date).toLocaleDateString("en-US", {
-                    weekday: "long",
-                    year: "numeric",
-                    month: "long",
-                    day: "numeric",
-                  })
-                : null,
-              round.notes,
-            ]
-              .filter(Boolean)
-              .join(" — ")
+            round.date
+              ? new Date(round.date).toLocaleDateString("en-US", {
+                  weekday: "long",
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric",
+                })
+              : undefined
           }
         />
 

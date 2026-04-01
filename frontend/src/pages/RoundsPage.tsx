@@ -200,7 +200,7 @@ export function RoundsPage({ userId }: RoundsPageProps) {
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
           <input
             type="text"
-            placeholder="Search by course or tournament..."
+            placeholder="Search by course..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm bg-white/80 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary shadow-sm"
@@ -226,7 +226,6 @@ export function RoundsPage({ userId }: RoundsPageProps) {
                 <SortHeader label="Score" field="total_score" sortKey={sortKey} sortAsc={sortAsc} onSort={handleSort} />
                 <SortHeader label="To Par" field="to_par" sortKey={sortKey} sortAsc={sortAsc} onSort={handleSort} />
                 <th className="px-6 py-3 text-[10px] font-bold text-gray-400 uppercase tracking-widest text-center">Putts</th>
-                <th className="px-6 py-3 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Tournament</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
@@ -317,9 +316,6 @@ export function RoundsPage({ userId }: RoundsPageProps) {
                     <td className="px-6 py-3.5 text-sm text-center text-gray-400">
                       {r.total_putts ?? "—"}
                     </td>
-                    <td className="px-6 py-3.5 text-sm text-gray-400">
-                      {r.notes ?? "—"}
-                    </td>
                   </motion.tr>
 
                   {/* Inline link-course panel */}
@@ -331,7 +327,7 @@ export function RoundsPage({ userId }: RoundsPageProps) {
                       exit={{ opacity: 0, height: 0 }}
                       transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
                     >
-                      <td colSpan={8} className="px-6 py-4 bg-blue-50/60 border-b border-blue-100">
+                      <td colSpan={7} className="px-6 py-4 bg-blue-50/60 border-b border-blue-100">
                         <CourseLinkSearch
                           title={`Link "${r.course_name ?? "this round"}" to a saved course`}
                           query={linkQuery}
