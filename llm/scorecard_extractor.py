@@ -51,7 +51,7 @@ MIME_TYPES = {
 }
 
 T = TypeVar("T", bound=BaseModel)
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("uvicorn.error")
 
 
 # --- File Loading ---

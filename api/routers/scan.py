@@ -15,7 +15,7 @@ import numpy as np
 from pydantic import BaseModel
 from PIL import Image, ImageOps, ImageEnhance
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("uvicorn.error")
 
 from database.db_manager import DatabaseManager
 from api.dependencies import get_current_user, get_db
