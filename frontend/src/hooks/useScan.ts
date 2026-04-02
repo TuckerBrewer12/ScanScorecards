@@ -66,7 +66,7 @@ export function useScan(
   setScanState: React.Dispatch<React.SetStateAction<ScanState>>
 ) {
   const navigate = useNavigate();
-  const { step, scanMode, selectedCourseId, selectedCourseName, file, result, editedScores, editedDate, editedTeeBox, userContext, reviewCourseId, reviewExternalCourseId, reviewCourseName, manualCourseHoles, manualCourseTees } = scanState;
+  const { step, scanMode, selectedCourseId, selectedCourseName, file, result, editedScores, editedDate, editedTeeBox, userContext, prefetchedOcrText, reviewCourseId, reviewExternalCourseId, reviewCourseName, manualCourseHoles, manualCourseTees } = scanState;
 
   const update = useCallback(
     (patch: Partial<ScanState>) => setScanState((prev) => ({ ...prev, ...patch })),
@@ -166,7 +166,29 @@ export function useScan(
         processed.type || "unknown",
         t1 - t0,
       );
-      update({ file: processed, preview: URL.createObjectURL(processed), error: null });
+      update({ file: processed, preview: URL.createObjectURL(processed), error: null, prefetchedOcrText: null });
+
+      // Kick off OCR immediately in the background so it's ready when user hits Extract
+      void (async () => {
+        try {
+          const token = getToken();
+          const ocrForm = new FormData();
+          ocrForm.append("file", processed);
+          const res = await fetch("/api/scan/ocr", {
+            method: "POST",
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
+            body: ocrForm,
+          });
+          if (res.ok) {
+            const { ocr_text } = await res.json() as { ocr_text: string };
+            update({ prefetchedOcrText: ocr_text });
+            console.info("[scan] OCR prefetch complete: chars=%d", ocr_text.length);
+          }
+        } catch {
+          // Prefetch failed silently — extract will fall back to running OCR itself
+          console.info("[scan] OCR prefetch failed, will retry on extract");
+        }
+      })();
     })();
   }, [update]);
 
@@ -191,6 +213,9 @@ export function useScan(
     }
     if (userContext.trim()) {
       formData.append("user_context", userContext.trim());
+    }
+    if (prefetchedOcrText) {
+      formData.append("ocr_text", prefetchedOcrText);
     }
 
     try {
@@ -243,7 +268,7 @@ export function useScan(
     } catch (err) {
       update({ error: err instanceof Error ? err.message : "Extraction failed", step: "upload" });
     }
-  }, [file, selectedCourseId, userContext, update, userId, handleReviewCourseQuery]);
+  }, [file, selectedCourseId, userContext, prefetchedOcrText, update, userId, handleReviewCourseQuery]);
 
   const handleScoreChange = useCallback((index: number, field: keyof ExtractedHoleScore, value: string) => {
     const next = [...editedScores];

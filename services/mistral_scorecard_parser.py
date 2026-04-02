@@ -41,6 +41,8 @@ _COURSE_RE = re.compile(r"^[A-Z0-9 '&.-]{3,}$")
 _NAME_RE = re.compile(r"\bmy name is\s+([a-z][a-z '\-]{1,40})\b", re.IGNORECASE)
 _ROW_NAME_RE = re.compile(r"\b(?:scan|read|use)\s+([a-z][a-z '\-]{1,40})\s+row\b", re.IGNORECASE)
 _TO_PAR_TOKEN_RE = re.compile(r"[+\-−]?\d+|[①❶➀⓿⓪]|[eE]")
+_NAME_ON_ROW_RE = re.compile(r"name on (shots?(?: to green)?|putts?|score)\s+row", re.IGNORECASE)
+_SIMPLE_ROW_ORDER_RE = re.compile(r"row order:\s*([a-z ,]+?)(?:\.|$)", re.IGNORECASE)
 
 _CIRCLED_TO_DIGIT = {
     "⓪": "0",
@@ -95,6 +97,15 @@ def parse_mistral_scorecard_rows(
         _apply_field_suppression(parsed, row_hints)
         return parsed
 
+    # Name-based row mapping: user told us which data row their name appears on.
+    # This takes priority — we know exactly which OCR line is which.
+    name_on_row = _parse_name_on_row(user_context or "")
+    simple_row_order = _parse_simple_row_order(user_context or "")
+    if name_on_row and simple_row_order:
+        _apply_name_based_mapping(parsed, lines, anchor_idx, name_on_row, simple_row_order, row_hints)
+        _apply_field_suppression(parsed, row_hints)
+        return parsed
+
     # Context-aware row mapping:
     # e.g. "first row shots onto green, second row putts, third row final score (to par)"
     if row_hints["row_order_explicit"]:
@@ -145,6 +156,112 @@ def parse_mistral_scorecard_rows(
 
     _apply_field_suppression(parsed, row_hints)
     return parsed
+
+
+def _parse_name_on_row(ctx: str) -> Optional[str]:
+    """Return which row type the player's name appears on ('score', 'putts', 'shots')."""
+    m = _NAME_ON_ROW_RE.search(ctx)
+    if not m:
+        return None
+    raw = m.group(1).lower()
+    if "shot" in raw or "green" in raw:
+        return "shots"
+    if "putt" in raw:
+        return "putts"
+    return "score"
+
+
+def _parse_simple_row_order(ctx: str) -> List[str]:
+    """Parse 'row order: shots to green, putts, score' into ['shots', 'putts', 'score']."""
+    m = _SIMPLE_ROW_ORDER_RE.search(ctx)
+    if not m:
+        return []
+    result = []
+    for part in m.group(1).split(","):
+        p = part.strip().lower()
+        if "shot" in p or "green" in p:
+            result.append("shots")
+        elif "putt" in p:
+            result.append("putts")
+        elif "score" in p:
+            result.append("score")
+    return result
+
+
+def _extract_row_at(lines: List[str], line_idx: int, *, max_abs: int) -> List[int]:
+    """Extract integers from the line at line_idx, searching ±1 lines for OCR jitter."""
+    for delta in (0, 1, -1, 2, -2):
+        i = line_idx + delta
+        if 0 <= i < len(lines):
+            nums = _line_ints(lines[i], max_abs=max_abs)
+            normalized = _normalize_hole_values(nums)
+            if len(normalized) >= 9:
+                return normalized[:18]
+    return []
+
+
+def _extract_to_par_at(lines: List[str], line_idx: int) -> List[int]:
+    """Extract to-par values from the line at line_idx, searching ±1 lines."""
+    for delta in (0, 1, -1, 2, -2):
+        i = line_idx + delta
+        if 0 <= i < len(lines):
+            vals = _line_to_par_values(lines[i])
+            normalized = _normalize_hole_values(vals)
+            if len(normalized) >= 9:
+                return normalized[:18]
+    return []
+
+
+def _apply_name_based_mapping(
+    parsed: "ParsedScorecardRows",
+    lines: List[str],
+    name_line_idx: int,
+    name_on_row: str,
+    row_order: List[str],
+    row_hints: dict,
+) -> None:
+    """Map OCR lines to data rows using the player name line as a positional anchor.
+
+    name_line_idx: the OCR line index that contains the player's name text.
+    name_on_row:   which data type that line holds ('score', 'putts', 'shots').
+    row_order:     ordered list of data types top-to-bottom, e.g. ['shots', 'putts', 'score'].
+    """
+    if name_on_row not in row_order:
+        parsed.warnings.append(f"Name row type '{name_on_row}' missing from row order {row_order}")
+        return
+
+    name_pos = row_order.index(name_on_row)
+
+    def line_for(row_type: str) -> Optional[int]:
+        if row_type not in row_order:
+            return None
+        return name_line_idx + (row_order.index(row_type) - name_pos)
+
+    score_line = line_for("score")
+    putts_line = line_for("putts")
+    shots_line = line_for("shots")
+
+    if score_line is not None:
+        if row_hints.get("score_to_par"):
+            vals = _extract_to_par_at(lines, score_line)
+        else:
+            vals = _extract_row_at(lines, score_line, max_abs=15)
+        if vals:
+            parsed.score_row = _coerce_18_ints(vals, max_abs=15)
+            if row_hints.get("score_to_par"):
+                parsed.score_to_par_hint = True
+        else:
+            parsed.warnings.append(f"Could not extract score row at expected OCR line {score_line}")
+
+    if putts_line is not None and not row_hints.get("suppress_putts"):
+        vals = _extract_row_at(lines, putts_line, max_abs=6)
+        if vals:
+            parsed.putts_row = _coerce_18_ints(vals, max_abs=6)
+
+    if shots_line is not None:
+        vals = _extract_row_at(lines, shots_line, max_abs=10)
+        if vals:
+            parsed.shots_to_green_row = _coerce_18_ints(vals, max_abs=10)
 
 
 def _normalize_lines(text: str) -> List[str]:

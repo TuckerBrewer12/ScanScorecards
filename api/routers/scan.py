@@ -1,5 +1,6 @@
 """Scorecard scan/upload API endpoints."""
 
+import contextlib
 import hashlib
 import math
 import logging
@@ -531,11 +532,53 @@ def _build_bw_fallback_variant(path: Path) -> Optional[Path]:
         return None
 
 
+@router.post("/ocr")
+async def prefetch_ocr(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+):
+    """Run OCR on an uploaded image and return the raw markdown text.
+
+    Called immediately on file selection so the slow OCR step is already
+    complete by the time the user clicks Extract.
+    """
+    suffix = Path(file.filename or "upload.jpg").suffix.lower()
+    allowed = {".jpg", ".jpeg", ".png", ".webp", ".heic", ".pdf"}
+    if suffix not in allowed:
+        raise HTTPException(400, f"Unsupported file type: {suffix}")
+
+    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+        hasher = hashlib.sha256()
+        while True:
+            chunk = file.file.read(1024 * 1024)
+            if not chunk:
+                break
+            tmp.write(chunk)
+            hasher.update(chunk)
+        original_tmp_path = Path(tmp.name)
+    upload_digest = hasher.hexdigest()
+
+    try:
+        ocr_path, _ = _normalize_upload_for_ocr(original_tmp_path, upload_digest)
+        ocr_client = MistralOCRService(model=MISTRAL_OCR_MODEL)
+        ocr_response = await ocr_client.ocr_file(ocr_path)
+        markdown_text = MistralOCRService.extract_markdown_text(ocr_response)
+        logger.info("Prefetch OCR complete: user=%s chars=%d", current_user.id, len(markdown_text))
+        return {"ocr_text": markdown_text}
+    except Exception as e:
+        logger.exception("Prefetch OCR failed")
+        raise HTTPException(500, f"OCR failed: {type(e).__name__}: {str(e)}")
+    finally:
+        with contextlib.suppress(OSError):
+            original_tmp_path.unlink()
+
+
 @router.post("/extract")
 async def extract_scan(
     file: UploadFile = File(...),
     user_context: Optional[str] = Form(None),
     course_id: Optional[str] = Form(None),
+    ocr_text: Optional[str] = Form(None),
     db: DatabaseManager = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -595,18 +638,21 @@ async def extract_scan(
             course_model is not None,
             (t_course_lookup_end - t_course_lookup_start) * 1000.0,
         )
-        ocr_client = MistralOCRService(model=MISTRAL_OCR_MODEL)
         t_extract_start = time.perf_counter()
-        ocr_response = await ocr_client.ocr_file(ocr_path)
-        t_extract_end = time.perf_counter()
-        logger.info(
-            "Scan extraction primary call complete: provider=mistral model=%s extract_ms=%.1f",
-            MISTRAL_OCR_MODEL,
-            (t_extract_end - t_extract_start) * 1000.0,
-        )
+        if ocr_text:
+            markdown_text = ocr_text
+            logger.info("Scan using prefetched OCR text: chars=%d", len(markdown_text))
+        else:
+            ocr_client = MistralOCRService(model=MISTRAL_OCR_MODEL)
+            ocr_response = await ocr_client.ocr_file(ocr_path)
+            markdown_text = MistralOCRService.extract_markdown_text(ocr_response)
+            logger.info(
+                "Scan extraction primary call complete: provider=mistral model=%s extract_ms=%.1f",
+                MISTRAL_OCR_MODEL,
+                (time.perf_counter() - t_extract_start) * 1000.0,
+            )
 
         t_parse_start = time.perf_counter()
-        markdown_text = MistralOCRService.extract_markdown_text(ocr_response)
         parsed_rows = parse_mistral_scorecard_rows(markdown_text, user_context=user_context)
         round_data, fields_needing_review = _build_round_from_parsed_rows(
             parsed_rows,
