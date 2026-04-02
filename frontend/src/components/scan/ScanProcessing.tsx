@@ -10,20 +10,14 @@ const PHASES_FULL = [
   { label: "Calculating confidence…", sub: "Flagging fields that may need review" },
 ];
 
-const PHASES_FAST = [
-  { label: "Locating score rows…", sub: "Scanning for your name on the card" },
-  { label: "Reading hole scores…", sub: "Extracting strokes hole by hole" },
-  { label: "Verifying totals…", sub: "Double-checking the numbers" },
-];
-
 export function ScanProcessing({ scanMode }: { scanMode: ScanState["scanMode"] }) {
-  const phases = scanMode === "fast" ? PHASES_FAST : PHASES_FULL;
+  const phases = PHASES_FULL;
   const [phaseIdx, setPhaseIdx] = useState(0);
 
   useEffect(() => {
     const interval = setInterval(() => {
       setPhaseIdx((i) => Math.min(i + 1, phases.length - 1));
-    }, scanMode === "fast" ? 2500 : 3500);
+    }, 3500);
     return () => clearInterval(interval);
   }, [phases.length, scanMode]);
 

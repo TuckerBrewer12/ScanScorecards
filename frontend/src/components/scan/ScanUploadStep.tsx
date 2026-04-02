@@ -1,4 +1,4 @@
-import { Camera, AlertTriangle, X, Zap, Search, ScanLine, MapPin, CheckCircle, Loader2, PenLine } from "lucide-react";
+import { Camera, AlertTriangle, X, Search, ScanLine, MapPin, CheckCircle, Loader2, PenLine } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { PageHeader } from "@/components/layout/PageHeader";
 import type { ScanState } from "@/types/scan";
@@ -8,7 +8,6 @@ interface ScanUploadStepProps {
   scanMode: ScanState["scanMode"];
   selectedCourseId: string | null;
   selectedCourseName: string | null;
-  scoringFormat: ScanState["scoringFormat"];
   file: File | null;
   preview: string | null;
   error: string | null;
@@ -23,21 +22,17 @@ interface ScanUploadStepProps {
   onSelectCourse: (course: CourseSummary) => void;
   onSelectCourseManual: (course: CourseSummary) => void;
   onClearCourse: () => void;
-  onScoringFormat: (fmt: "strokes" | "to_par") => void;
   onFile: (f: File) => void;
   onDrop: (e: React.DragEvent) => void;
   onDragOver: (over: boolean) => void;
   onUpdate: (patch: Partial<ScanState>) => void;
   onExtract: () => void;
-  setCourseQuery: (q: string) => void;
-  setCourseResults: (r: CourseSummary[]) => void;
 }
 
 export function ScanUploadStep({
   scanMode,
   selectedCourseId,
   selectedCourseName,
-  scoringFormat,
   file,
   preview,
   error,
@@ -50,17 +45,14 @@ export function ScanUploadStep({
   onCourseQuery,
   onSelectCourse,
   onClearCourse,
-  onScoringFormat,
   onFile,
   onDrop,
   onDragOver,
   onUpdate,
   onExtract,
-  setCourseQuery,
-  setCourseResults,
 }: ScanUploadStepProps) {
-  const showUploadArea = scanMode === "full" || (scanMode === "fast" && !!selectedCourseId && !!scoringFormat);
-  const showCourseSearch = scanMode === "fast" || scanMode === "full";
+  const showUploadArea = scanMode === "full";
+  const showCourseSearch = scanMode === "full";
   const hasFile = !!preview && !!file;
 
   return (
@@ -75,10 +67,9 @@ export function ScanUploadStep({
       )}
 
       {/* Mode selector */}
-      <div className="grid grid-cols-3 gap-3 mb-6">
+      <div className="grid grid-cols-2 gap-3 mb-6">
         {([
           { mode: "full" as const, icon: ScanLine, label: "Capture Card", sub: "Extracts course, tees & scores", time: "~1–2 min" },
-          { mode: "fast" as const, icon: Zap,      label: "Fast Scan",    sub: "Select a course, scores only",  time: "~10 sec" },
           { mode: "manual" as const, icon: PenLine, label: "Manual Entry", sub: "Enter scores by hand",          time: "No image" },
         ] as const).map(({ mode, icon: Icon, label, sub, time }) => (
           <button
@@ -153,30 +144,6 @@ export function ScanUploadStep({
           <button onClick={onClearCourse} className="text-green-600 hover:text-green-800">
             <X size={14} />
           </button>
-        </div>
-      )}
-
-      {/* Scoring format — fast scan only */}
-      {scanMode === "fast" && selectedCourseId && (
-        <div className="mb-5">
-          <p className="text-sm font-medium text-gray-700 mb-2">How are scores written on this card?</p>
-          <div className="grid grid-cols-2 gap-3">
-            {([
-              { fmt: "strokes" as const, label: "Total Strokes", eg: "e.g. 4, 5, 6" },
-              { fmt: "to_par" as const,  label: "Score to Par",  eg: "e.g. +1, −1, E" },
-            ]).map(({ fmt, label, eg }) => (
-              <button
-                key={fmt}
-                onClick={() => onScoringFormat(fmt)}
-                className={`px-4 py-3 rounded-xl border-2 text-left transition-all ${
-                  scoringFormat === fmt ? "border-primary bg-primary/5" : "border-gray-200 bg-white hover:border-gray-300"
-                }`}
-              >
-                <div className={`text-sm font-semibold ${scoringFormat === fmt ? "text-primary" : "text-gray-700"}`}>{label}</div>
-                <div className="text-xs text-gray-400 mt-0.5">{eg}</div>
-              </button>
-            ))}
-          </div>
         </div>
       )}
 
@@ -277,44 +244,23 @@ export function ScanUploadStep({
 
             {/* Context input + extract */}
             <div className="p-5">
-              {scanMode === "fast" ? (
-                <>
-                  <label className="text-sm font-medium text-gray-700">
-                    Your name on the card
-                    <span className="font-normal text-gray-400 ml-1">(optional — helps pick the right row)</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={userContext}
-                    onChange={(e) => onUpdate({ userContext: e.target.value })}
-                    placeholder='e.g. "Tucker"'
-                    className="w-full mt-1.5 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
-                  />
-                </>
-              ) : (
-                <>
-                  <label className="text-sm font-medium text-gray-700">
-                    Context for AI
-                    <span className="font-normal text-gray-400 ml-1">(optional)</span>
-                  </label>
-                  <textarea
-                    value={userContext}
-                    onChange={(e) => onUpdate({ userContext: e.target.value })}
-                    placeholder='e.g. "My name is Tucker", "scores written to par", "no putts recorded"'
-                    className="w-full mt-1.5 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary resize-none"
-                    rows={2}
-                  />
-                </>
-              )}
+              <label className="text-sm font-medium text-gray-700">
+                Context for AI
+                <span className="font-normal text-gray-400 ml-1">(optional)</span>
+              </label>
+              <textarea
+                value={userContext}
+                onChange={(e) => onUpdate({ userContext: e.target.value })}
+                placeholder='e.g. "My name is Tucker", "scores written to par", "no putts recorded"'
+                className="w-full mt-1.5 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary resize-none"
+                rows={2}
+              />
 
               <button
                 onClick={onExtract}
                 className="mt-4 w-full flex items-center justify-center gap-2 px-5 py-3.5 bg-primary text-white rounded-xl font-semibold hover:opacity-90 transition-opacity shadow-sm"
               >
-                {scanMode === "fast"
-                  ? <><Zap size={17} />Fast Scan</>
-                  : <><ScanLine size={17} />Extract Scorecard</>
-                }
+                <><ScanLine size={17} />Extract Scorecard</>
               </button>
             </div>
           </motion.div>

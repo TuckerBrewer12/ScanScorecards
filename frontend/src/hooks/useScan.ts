@@ -7,7 +7,7 @@ import { initialScanState } from "@/types/scan";
 import { api } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 
-function normalizeCourseQuery(value: string): string {
+function normalizeCourseQueryForSearch(value: string): string {
   return value.trim().replace(/\s+/g, " ");
 }
 
@@ -66,7 +66,7 @@ export function useScan(
   setScanState: React.Dispatch<React.SetStateAction<ScanState>>
 ) {
   const navigate = useNavigate();
-  const { step, scanMode, selectedCourseId, selectedCourseName, scoringFormat, file, result, editedScores, editedDate, editedTeeBox, userContext, reviewCourseId, reviewExternalCourseId, reviewCourseName, manualCourseHoles, manualCourseTees } = scanState;
+  const { step, scanMode, selectedCourseId, selectedCourseName, file, result, editedScores, editedDate, editedTeeBox, userContext, reviewCourseId, reviewExternalCourseId, reviewCourseName, manualCourseHoles, manualCourseTees } = scanState;
 
   const update = useCallback(
     (patch: Partial<ScanState>) => setScanState((prev) => ({ ...prev, ...patch })),
@@ -95,9 +95,9 @@ export function useScan(
   const reviewSearchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleReviewCourseQuery = useCallback((q: string) => {
-    const normalized = normalizeCourseQuery(q);
-    setReviewCourseQuery(normalized);
+    setReviewCourseQuery(q);
     if (reviewSearchTimer.current) clearTimeout(reviewSearchTimer.current);
+    const normalized = normalizeCourseQueryForSearch(q);
     if (!userId || normalized.length < 2) { setReviewCourseResults([]); return; }
     reviewSearchTimer.current = setTimeout(async () => {
       setReviewSearching(true);
@@ -125,16 +125,16 @@ export function useScan(
     setReviewCourseResults([]);
   }, [update]);
 
-  // Course search state (fast scan / manual)
+  // Course search state (upload/manual)
   const [courseQuery, setCourseQuery] = useState("");
   const [courseResults, setCourseResults] = useState<CourseSummary[]>([]);
   const [searching, setSearching] = useState(false);
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleCourseQuery = useCallback((q: string) => {
-    const normalized = normalizeCourseQuery(q);
-    setCourseQuery(normalized);
+    setCourseQuery(q);
     if (searchTimer.current) clearTimeout(searchTimer.current);
+    const normalized = normalizeCourseQueryForSearch(q);
     if (!userId || normalized.length < 2) { setCourseResults([]); return; }
     searchTimer.current = setTimeout(async () => {
       setSearching(true);
@@ -182,24 +182,12 @@ export function useScan(
 
   const handleExtract = useCallback(async () => {
     if (!file) return;
-    if (scanMode === "fast" && !selectedCourseId) {
-      update({ error: "Fast scan requires a pre-selected course.", step: "upload" });
-      return;
-    }
     update({ step: "processing", error: null });
 
     const formData = new FormData();
     formData.append("file", file);
     if (selectedCourseId) {
       formData.append("course_id", selectedCourseId);
-      if (scanMode === "fast") {
-        formData.append("strategy", "scores_only");
-        if (scoringFormat) formData.append("scoring_format", scoringFormat);
-      } else {
-        formData.append("strategy", "full");
-      }
-    } else {
-      formData.append("strategy", "full");
     }
     if (userContext.trim()) {
       formData.append("user_context", userContext.trim());
@@ -239,16 +227,23 @@ export function useScan(
         reviewCourseName: data.round.course?.name ?? null,
         step: "review",
       });
-      // Pre-fill the review search box with whatever the LLM extracted
-      const extractedCourseName = normalizeCourseQuery(data.round.course?.name ?? "");
-      setReviewCourseQuery(extractedCourseName);
-      if (extractedCourseName.length >= 2) {
-        handleReviewCourseQuery(extractedCourseName);
+      // For new-course full scans (no preselected course), keep review course search empty.
+      // OCR course names are often noisy and should not auto-populate the search box.
+      const shouldPrefillReviewSearch = Boolean(selectedCourseId);
+      if (shouldPrefillReviewSearch) {
+        const extractedCourseName = normalizeCourseQueryForSearch(data.round.course?.name ?? "");
+        setReviewCourseQuery(extractedCourseName);
+        if (extractedCourseName.length >= 2) {
+          handleReviewCourseQuery(extractedCourseName);
+        }
+      } else {
+        setReviewCourseQuery("");
+        setReviewCourseResults([]);
       }
     } catch (err) {
       update({ error: err instanceof Error ? err.message : "Extraction failed", step: "upload" });
     }
-  }, [file, scanMode, selectedCourseId, scoringFormat, userContext, update, userId, handleReviewCourseQuery]);
+  }, [file, selectedCourseId, userContext, update, userId, handleReviewCourseQuery]);
 
   const handleScoreChange = useCallback((index: number, field: keyof ExtractedHoleScore, value: string) => {
     const next = [...editedScores];
@@ -414,7 +409,6 @@ export function useScan(
     scanMode,
     selectedCourseId,
     selectedCourseName,
-    scoringFormat,
     file,
     result,
     editedScores,

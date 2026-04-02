@@ -54,7 +54,6 @@ export function ScanPage({ userId }: { userId: string }) {
         scanMode={scan.scanMode}
         selectedCourseId={scan.selectedCourseId}
         selectedCourseName={scan.selectedCourseName}
-        scoringFormat={scan.scoringFormat}
         file={scan.file}
         preview={scan.preview}
         error={scan.error}
@@ -69,7 +68,6 @@ export function ScanPage({ userId }: { userId: string }) {
             scanMode: mode,
             selectedCourseId: null,
             selectedCourseName: null,
-            scoringFormat: null,
             file: null,
             preview: null,
             manualCourseHoles: [],
@@ -80,27 +78,16 @@ export function ScanPage({ userId }: { userId: string }) {
         onSelectCourse={scan.selectCourse}
         onSelectCourseManual={scan.selectCourseManual}
         onClearCourse={() =>
-          scan.scanMode === "fast"
-            ? scan.update({
-                selectedCourseId: null,
-                selectedCourseName: null,
-                scoringFormat: null,
-                file: null,
-                preview: null,
-              })
-            : scan.update({
-                selectedCourseId: null,
-                selectedCourseName: null,
-              })
+          scan.update({
+            selectedCourseId: null,
+            selectedCourseName: null,
+          })
         }
-        onScoringFormat={(fmt) => scan.update({ scoringFormat: fmt })}
         onFile={scan.handleFile}
         onDrop={scan.handleDrop}
         onDragOver={scan.setDragOver}
         onUpdate={scan.update}
         onExtract={scan.handleExtract}
-        setCourseQuery={scan.setCourseQuery}
-        setCourseResults={scan.setCourseResults}
       />
 
       {scan.scanMode === "manual" && (

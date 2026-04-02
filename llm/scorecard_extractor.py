@@ -1,5 +1,6 @@
-import logging
 import os
+import time
+import logging
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Type, TypeVar
@@ -34,8 +35,6 @@ from llm.prompts import (
 from llm.strategies import (
     ExtractionStrategy,
 )
-from llm.ocr_preprocessor import TranscriptionError  # retained for fallback typing
-from llm.ocr_engine import ocr_to_pipe_table
 
 
 # --- Configuration ---
@@ -52,6 +51,7 @@ MIME_TYPES = {
 }
 
 T = TypeVar("T", bound=BaseModel)
+logger = logging.getLogger("uvicorn.error")
 
 
 # --- File Loading ---
@@ -91,8 +91,10 @@ def _call_gemini(
     prompt: str,
     response_model: Type[T],
     model: str = GEMINI_MODEL,
+    stage: str = "unknown",
 ) -> T:
     """Generic Gemini call: send prompt + image, parse into response_model."""
+    t_api_start = time.perf_counter()
     response = client.models.generate_content(
         model=model,
         contents=[file_part, prompt],
@@ -101,25 +103,22 @@ def _call_gemini(
             response_json_schema=response_model.model_json_schema(),
         ),
     )
-    return response_model.model_validate_json(response.text)
-
-
-def _call_gemini_text_only(
-    client: genai.Client,
-    prompt: str,
-    response_model: Type[T],
-    model: str = GEMINI_MODEL_FAST,
-) -> T:
-    """Pass 2: text-only Gemini call (no image). Used in two-pass fast scan."""
-    response = client.models.generate_content(
-        model=model,
-        contents=[prompt],
-        config=types.GenerateContentConfig(
-            response_mime_type="application/json",
-            response_json_schema=response_model.model_json_schema(),
-        ),
+    t_api_end = time.perf_counter()
+    response_text = response.text or ""
+    t_parse_start = time.perf_counter()
+    parsed = response_model.model_validate_json(response_text)
+    t_parse_end = time.perf_counter()
+    logger.info(
+        "Gemini stage complete: stage=%s model=%s prompt_chars=%d response_chars=%d api_ms=%.1f parse_ms=%.1f total_ms=%.1f",
+        stage,
+        model,
+        len(prompt),
+        len(response_text),
+        (t_api_end - t_api_start) * 1000.0,
+        (t_parse_end - t_parse_start) * 1000.0,
+        (t_parse_end - t_api_start) * 1000.0,
     )
-    return response_model.model_validate_json(response.text)
+    return parsed
 
 
 # --- Transformation: Raw LLM output -> Domain Models ---
@@ -823,10 +822,31 @@ def _extract_full(
     include_raw_response: bool,
 ) -> ExtractionResult:
     """Strategy 1: Full extraction (course + scores)."""
+    t_prompt_start = time.perf_counter()
     prompt = build_full_extraction_prompt(user_context)
-    raw = _call_gemini(client, file_part, prompt, RawScorecardExtraction)
+    t_prompt_end = time.perf_counter()
+    logger.info(
+        "Extractor stage: mode=full step=prompt_build ms=%.1f prompt_chars=%d",
+        (t_prompt_end - t_prompt_start) * 1000.0,
+        len(prompt),
+    )
+    raw = _call_gemini(
+        client,
+        file_part,
+        prompt,
+        RawScorecardExtraction,
+        stage="full_main",
+    )
+    t_post_start = time.perf_counter()
     round_data = _build_round(raw)
     confidence = _build_extraction_confidence(raw)
+    t_post_end = time.perf_counter()
+    logger.info(
+        "Extractor stage: mode=full step=postprocess ms=%.1f holes=%d tees=%d",
+        (t_post_end - t_post_start) * 1000.0,
+        len(round_data.hole_scores),
+        len(round_data.course.tees) if round_data.course and round_data.course.tees else 0,
+    )
     return ExtractionResult(
         round=round_data,
         confidence=confidence,
@@ -849,10 +869,31 @@ def _extract_scores_only(
             and passed directly to the prompt + conversion logic. If None, the LLM
             auto-detects the format.
     """
+    t_prompt_start = time.perf_counter()
     prompt = build_scores_only_prompt(course, user_context, to_par_scoring=to_par_scoring)
-    raw = _call_gemini(client, file_part, prompt, RawScoresOnlyExtraction, model=GEMINI_MODEL_FAST)
+    t_prompt_end = time.perf_counter()
+    logger.info(
+        "Extractor stage: mode=scores_only step=prompt_build ms=%.1f prompt_chars=%d",
+        (t_prompt_end - t_prompt_start) * 1000.0,
+        len(prompt),
+    )
+    raw = _call_gemini(
+        client,
+        file_part,
+        prompt,
+        RawScoresOnlyExtraction,
+        model=GEMINI_MODEL_FAST,
+        stage="scores_only_main",
+    )
+    t_post_start = time.perf_counter()
     round_data = _build_round_from_scores(raw, course, to_par_scoring=to_par_scoring)
     confidence = _build_scores_only_confidence(raw, course, to_par_scoring=to_par_scoring)
+    t_post_end = time.perf_counter()
+    logger.info(
+        "Extractor stage: mode=scores_only step=postprocess ms=%.1f holes=%d",
+        (t_post_end - t_post_start) * 1000.0,
+        len(round_data.hole_scores),
+    )
     return ExtractionResult(
         round=round_data,
         confidence=confidence,
@@ -860,23 +901,32 @@ def _extract_scores_only(
     )
 
 
-def _build_fast_scan_result(
-    raw: RawFastScanExtraction,
+def _extract_fast_scan(
+    client: genai.Client,
+    file_part: types.Part,
     course: Course,
     to_par_scoring: bool,
+    player_name: Optional[str],
     include_raw_response: bool,
 ) -> ExtractionResult:
-    """Shared result builder for both single-pass and two-pass fast scan.
-
-    Takes a RawFastScanExtraction (however it was produced) and builds the
-    full ExtractionResult with hole scores, confidence, and round data.
-    """
-    _log = logging.getLogger(__name__)
-    _log.info(
-        "[fast-scan] Raw scores from Flash (to_par=%s): %s",
-        to_par_scoring,
-        [(h.score, round(h.confidence, 2)) for h in raw.scores],
+    """Fast scan: Flash reads 18 raw numbers only. Backend does all conversion."""
+    t_prompt_start = time.perf_counter()
+    prompt = build_fast_scan_prompt(player_name)
+    t_prompt_end = time.perf_counter()
+    logger.info(
+        "Extractor stage: mode=fast_scan step=prompt_build ms=%.1f prompt_chars=%d",
+        (t_prompt_end - t_prompt_start) * 1000.0,
+        len(prompt),
     )
+    raw = _call_gemini(
+        client,
+        file_part,
+        prompt,
+        RawFastScanExtraction,
+        model=GEMINI_MODEL_FAST,
+        stage="fast_scan_main",
+    )
+    t_post_start = time.perf_counter()
 
     hole_scores: List[HoleScore] = []
     hole_confidences: List[HoleConfidence] = []
@@ -886,7 +936,8 @@ def _build_fast_scan_result(
         known_hole = course.get_hole(hole_num)
         known_par = known_hole.par if known_hole else None
 
-        strokes = _convert_score_to_strokes(entry.score, known_par, to_par_scoring)
+        raw_score = entry.score
+        strokes = _convert_score_to_strokes(raw_score, known_par, to_par_scoring)
 
         hole_scores.append(HoleScore(
             hole_number=hole_num,
@@ -894,6 +945,7 @@ def _build_fast_scan_result(
             putts=None,
         ))
 
+        # Validation: flag strokes outside plausible range
         val_flags: List[str] = []
         val_conf = 1.0
         if strokes is not None:
@@ -915,6 +967,8 @@ def _build_fast_scan_result(
     all_finals = [hc.overall for hc in hole_confidences]
     overall = min(all_finals) if all_finals else 0.0
 
+    fields_needing_review = _collect_fields_needing_review(hole_confidences, {}, {})
+
     confidence = ExtractionConfidence(
         hole_scores=hole_confidences,
         course=CourseConfidence(
@@ -926,85 +980,28 @@ def _build_fast_scan_result(
         overall=overall,
         level=FieldConfidence.to_level(overall),
         total_fields_extracted=len(hole_scores),
-        fields_needing_review=_collect_fields_needing_review(hole_confidences, {}, {}),
+        fields_needing_review=fields_needing_review,
+    )
+
+    round_data = Round(
+        course=course,
+        tee_box=None,
+        date=None,
+        hole_scores=hole_scores,
+        total_putts=None,
+    )
+    t_post_end = time.perf_counter()
+    logger.info(
+        "Extractor stage: mode=fast_scan step=postprocess ms=%.1f holes=%d",
+        (t_post_end - t_post_start) * 1000.0,
+        len(round_data.hole_scores),
     )
 
     return ExtractionResult(
-        round=Round(course=course, tee_box=None, date=None, hole_scores=hole_scores, total_putts=None),
+        round=round_data,
         confidence=confidence,
         raw_response=raw.model_dump() if include_raw_response else None,
     )
-
-
-def _extract_fast_scan(
-    client: genai.Client,
-    file_part: types.Part,
-    course: Course,
-    to_par_scoring: bool,
-    player_name: Optional[str],
-    include_raw_response: bool,
-) -> ExtractionResult:
-    """Single-pass fast scan: Flash reads the image directly at temperature=0."""
-    logger = logging.getLogger(__name__)
-    prompt = build_fast_scan_prompt(player_name, to_par_scoring=to_par_scoring)
-    logger.info("[fast-scan] Prompt:\n%s", prompt)
-    response = client.models.generate_content(
-        model=GEMINI_MODEL_FAST,
-        contents=[file_part, prompt],
-        config=types.GenerateContentConfig(
-            response_mime_type="application/json",
-            response_json_schema=RawFastScanExtraction.model_json_schema(),
-            temperature=0.0,
-        ),
-    )
-    raw = RawFastScanExtraction.model_validate_json(response.text)
-    return _build_fast_scan_result(raw, course, to_par_scoring, include_raw_response)
-
-
-def _extract_fast_scan_two_pass(
-    client: genai.Client,
-    file_part: types.Part,
-    course: Course,
-    to_par_scoring: bool,
-    player_name: Optional[str],
-    include_raw_response: bool,
-    image_path: Optional[str] = None,
-) -> ExtractionResult:
-    """Two-pass fast scan: Pass 1 uses local EasyOCR (no API call) to transcribe
-    the image to a plain-text table, Pass 2 parses it with pure Python.
-
-    Falls back to single-pass Gemini Flash if OCR or parsing fails.
-    """
-    logger = logging.getLogger(__name__)
-    logger.info(
-        "=== Two-pass fast scan START — course=%r  to_par=%s  player=%r ===",
-        course.name if course else None, to_par_scoring, player_name,
-    )
-
-    # Pass 1: EasyOCR → pipe table (local, no API call)
-    try:
-        table = ocr_to_pipe_table(image_path)
-    except Exception as exc:
-        logger.warning("Two-pass OCR FAILED (%s) — falling back to single-pass Gemini", exc)
-        return _extract_fast_scan(client, file_part, course, to_par_scoring, player_name, include_raw_response)
-
-    # Pass 2: Flash text-only interprets the table structure (fast, no image, no hanging)
-    hole_pars = {
-        h.number: h.par
-        for h in course.holes
-        if h.number is not None and h.par is not None
-    }
-    logger.info("Course hole pars: %s", sorted(hole_pars.keys()))
-    prompt = build_text_fast_scan_prompt(table, hole_pars, player_name, to_par_scoring)
-    logger.info("[Pass 2] Calling Flash text-only for structure interpretation...")
-    try:
-        raw = _call_gemini_text_only(client, prompt, RawFastScanExtraction)
-    except Exception as exc:
-        logger.warning("Two-pass Flash text FAILED (%s) — falling back to single-pass Gemini", exc)
-        return _extract_fast_scan(client, file_part, course, to_par_scoring, player_name, include_raw_response)
-
-    logger.info("=== Two-pass fast scan COMPLETE (OCR + Flash text) ===")
-    return _build_fast_scan_result(raw, course, to_par_scoring, include_raw_response)
 
 
 # --- Public API ---
@@ -1057,15 +1054,11 @@ def extract_scorecard(
                 "SCORES_ONLY strategy requires the `course` parameter. "
                 "Pass the known Course model from your database."
             )
-        # Fast path: scoring format confirmed by user → Flash only
+        # Fast path: scoring format confirmed by user → minimal prompt, Flash only
         if to_par_scoring is not None:
-            use_two_pass = os.environ.get("TWO_PASS_FAST_SCAN", "").lower() in ("1", "true", "yes")
-            if use_two_pass:
-                return _extract_fast_scan_two_pass(
-                    client, file_part, course, to_par_scoring, player_name,
-                    include_raw_response, image_path=str(path),
-                )
-            return _extract_fast_scan(client, file_part, course, to_par_scoring, player_name, include_raw_response)
+            return _extract_fast_scan(
+                client, file_part, course, to_par_scoring, player_name, include_raw_response,
+            )
         # Fallback: auto-detect format via existing scores-only flow
         return _extract_scores_only(
             client, file_part, course, user_context, include_raw_response,

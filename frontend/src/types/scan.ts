@@ -54,10 +54,9 @@ export interface ManualTee {
 
 export interface ScanState {
   step: Step;
-  scanMode: "full" | "fast" | "manual";
+  scanMode: "full" | "manual";
   selectedCourseId: string | null;
   selectedCourseName: string | null;
-  scoringFormat: "strokes" | "to_par" | null;
   file: File | null;
   preview: string | null;
   result: ScanResult | null;
@@ -80,7 +79,6 @@ export const initialScanState: ScanState = {
   scanMode: "full",
   selectedCourseId: null,
   selectedCourseName: null,
-  scoringFormat: null,
   file: null,
   preview: null,
   result: null,
