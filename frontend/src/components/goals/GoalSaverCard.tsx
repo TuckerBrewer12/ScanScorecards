@@ -3,51 +3,59 @@ import type { GoalSaver } from "@/types/analytics";
 
 const TYPE_CONFIG: Record<GoalSaver["type"], {
   icon: React.ElementType;
-  borderColor: string;
+  accentColor: string;
   iconBg: string;
   iconColor: string;
+  label: string;
 }> = {
   three_putt_bleed: {
     icon: Target,
-    borderColor: "#059669",
+    accentColor: "#059669",
     iconBg: "#ecfdf5",
     iconColor: "#059669",
+    label: "3-Putts",
   },
   blowup_holes: {
     icon: Flame,
-    borderColor: "#ef4444",
+    accentColor: "#ef4444",
     iconBg: "#fef2f2",
     iconColor: "#ef4444",
+    label: "Blow-ups",
   },
   achilles_heel: {
     icon: Ruler,
-    borderColor: "#60a5fa",
+    accentColor: "#3b82f6",
     iconBg: "#eff6ff",
     iconColor: "#3b82f6",
+    label: "Trouble Distance",
   },
   home_course_demon: {
     icon: Home,
-    borderColor: "#a78bfa",
+    accentColor: "#7c3aed",
     iconBg: "#f5f3ff",
     iconColor: "#7c3aed",
+    label: "Home Course",
   },
   gir_opportunity: {
     icon: Crosshair,
-    borderColor: "#059669",
+    accentColor: "#059669",
     iconBg: "#ecfdf5",
     iconColor: "#059669",
+    label: "Greens in Reg.",
   },
   scrambling_opportunity: {
     icon: Shuffle,
-    borderColor: "#f59e0b",
+    accentColor: "#d97706",
     iconBg: "#fffbeb",
     iconColor: "#d97706",
+    label: "Scrambling",
   },
   par5_opportunity: {
     icon: TrendingUp,
-    borderColor: "#2d7a3a",
+    accentColor: "#2d7a3a",
     iconBg: "#f0fdf4",
     iconColor: "#2d7a3a",
+    label: "Par 5s",
   },
 };
 
@@ -58,46 +66,45 @@ interface GoalSaverCardProps {
 export function GoalSaverCard({ saver }: GoalSaverCardProps) {
   const config = TYPE_CONFIG[saver.type];
   const Icon = config.icon;
-  const isSignificant = saver.strokes_saved >= 0.5;
+  const pct = Math.min(100, saver.percentage_of_gap);
 
   return (
-    <div
-      className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3 flex flex-col gap-2 relative overflow-hidden"
-      style={{ borderLeftWidth: 3, borderLeftColor: config.borderColor }}
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex flex-col gap-3 overflow-hidden"
+      style={{ borderLeftWidth: 3, borderLeftColor: config.accentColor }}
     >
-      <div className="flex items-start gap-2">
-        <div
-          className="p-1.5 rounded-lg shrink-0"
-          style={{ backgroundColor: config.iconBg }}
-        >
-          <Icon size={14} style={{ color: config.iconColor }} />
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="p-1.5 rounded-lg shrink-0" style={{ backgroundColor: config.iconBg }}>
+            <Icon size={13} style={{ color: config.iconColor }} />
+          </div>
+          <span className="text-[11px] font-bold uppercase tracking-wider text-gray-400">
+            {config.label}
+          </span>
         </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-xs font-bold text-gray-900 leading-snug">{saver.headline}</p>
-        </div>
-        <div className="shrink-0 flex flex-col items-end gap-1">
-          <span
-            className="text-lg font-black leading-none"
-            style={{ color: isSignificant ? "#2d7a3a" : "#9ca3af" }}
-          >
+        <div className="flex items-baseline gap-1">
+          <span className="text-xl font-black leading-none" style={{ color: config.accentColor }}>
             −{saver.strokes_saved.toFixed(1)}
           </span>
-          <span className="text-[9px] font-semibold text-gray-400 uppercase tracking-wide">strokes</span>
+          <span className="text-[10px] text-gray-400 font-medium">strokes</span>
         </div>
       </div>
 
-      <p className="text-[11px] text-gray-500 leading-relaxed">{saver.detail}</p>
+      {/* Headline — actual stat, no AI fluff */}
+      <p className="text-[13px] font-semibold text-gray-800 leading-snug">{saver.headline}</p>
 
-      <div className="flex items-center gap-2">
-        <span
-          className="text-[10px] font-bold px-2 py-0.5 rounded-full"
-          style={{
-            backgroundColor: saver.percentage_of_gap >= 30 ? "#fef3c7" : "#f3f4f6",
-            color: saver.percentage_of_gap >= 30 ? "#b45309" : "#6b7280",
-          }}
-        >
-          {saver.percentage_of_gap.toFixed(0)}% of your gap
-        </span>
+      {/* Gap bar */}
+      <div>
+        <div className="flex justify-between text-[10px] mb-1.5">
+          <span className="text-gray-400">share of your gap</span>
+          <span className="font-bold text-gray-600">{pct.toFixed(0)}%</span>
+        </div>
+        <div className="h-1 bg-gray-100 rounded-full overflow-hidden">
+          <div
+            className="h-full rounded-full"
+            style={{ width: `${pct}%`, backgroundColor: config.accentColor }}
+          />
+        </div>
       </div>
     </div>
   );

@@ -322,7 +322,7 @@ export function AnalyticsPage({ userId }: { userId: string }) {
   const header = (
     <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-gray-900">Analytics</h1>
+        <h1 className="text-3xl font-extrabold tracking-tight text-gray-900">Analytics</h1>
         <p className="text-sm text-gray-500 mt-1">
           {(() => {
             const parts: string[] = [];

@@ -34,10 +34,13 @@ function getScoreLabel(toPar: number): string {
 }
 
 function getDotColor(toPar: number): string {
-  if (toPar <= -2) return "#f59e0b";
-  if (toPar === -1) return "#059669";
-  if (toPar === 0) return "#9ca3af";
-  return "#ef4444";
+  if (toPar <= -2) return "#f59e0b";   // eagle+: amber
+  if (toPar === -1) return "#059669";  // birdie: emerald
+  if (toPar === 0)  return "#9ca3af";  // par: gray
+  if (toPar === 1)  return "#ef4444";  // bogey: red
+  if (toPar === 2)  return "#60a5fa";  // double: blue
+  if (toPar === 3)  return "#a78bfa";  // triple: purple
+  return "#6d28d9";                    // quad+: deep purple
 }
 
 function getYAxisColor(v: number): string {

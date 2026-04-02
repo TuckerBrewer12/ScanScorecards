@@ -1,5 +1,14 @@
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useLocation, useNavigationType } from "react-router-dom";
 import { useEffect, useState } from "react";
+
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  const navType = useNavigationType();
+  useEffect(() => {
+    if (navType !== "POP") window.scrollTo(0, 0);
+  }, [pathname, navType]);
+  return null;
+}
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { AppLayout } from "./components/layout/AppLayout";
 import { DashboardPage } from "./pages/DashboardPage";
@@ -10,7 +19,7 @@ import { ScanPage } from "./pages/ScanPage";
 import { AnalyticsPage } from "./pages/AnalyticsPage";
 import { CareerPage } from "./pages/CareerPage";
 import { SuggestionsPage } from "./pages/SuggestionsPage";
-import { GoalsPage } from "./pages/GoalsPage";
+import { TheLabPage } from "./pages/TheLabPage";
 import { SettingsPage } from "./pages/SettingsPage";
 import { FriendsInboxPage } from "./pages/FriendsInboxPage";
 import { SocialPage } from "./pages/SocialPage";
@@ -65,8 +74,8 @@ function AppRoutes() {
         <Route path="/courses" element={<CoursesPage userId={userId} />} />
         <Route path="/scan" element={<ScanPage userId={userId} scanState={scanState} setScanState={setScanState} />} />
         <Route path="/analytics" element={<AnalyticsPage userId={userId} />} />
-        <Route path="/goals" element={<GoalsPage userId={userId} />} />
         <Route path="/suggestions" element={<SuggestionsPage userId={userId} />} />
+        <Route path="/the-lab" element={<TheLabPage userId={userId} />} />
         <Route path="/social" element={<SocialPage />} />
         <Route path="/career" element={<CareerPage userId={userId} />} />
         <Route path="/inbox" element={<FriendsInboxPage userId={userId} />} />
@@ -81,6 +90,7 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
+        <ScrollToTop />
         <AppRoutes />
       </AuthProvider>
     </BrowserRouter>

@@ -3,26 +3,30 @@ import { useScroll, useTransform, motion } from "framer-motion";
 interface PageHeaderProps {
   title: string;
   subtitle?: string;
+  scrollThreshold?: number;
 }
 
-export function PageHeader({ title, subtitle }: PageHeaderProps) {
+export function PageHeader({ title, subtitle, scrollThreshold = 40 }: PageHeaderProps) {
   const { scrollY } = useScroll();
+  const start = Math.max(0, scrollThreshold - 30);
+  const end = scrollThreshold;
 
   const bgColor = useTransform(
     scrollY,
-    [0, 40],
+    [start, end],
     ["rgba(248,250,248,0)", "rgba(248,250,248,0.92)"],
   );
   const borderColor = useTransform(
     scrollY,
-    [0, 40],
+    [start, end],
     ["rgba(241,245,249,0)", "rgba(241,245,249,1)"],
   );
   const boxShadow = useTransform(
     scrollY,
-    [0, 40],
+    [start, end],
     ["0 1px 0 rgba(0,0,0,0)", "0 1px 0 rgba(0,0,0,0.05)"],
   );
+  const opacity = useTransform(scrollY, [start, end], [0, 1]);
 
   return (
     <motion.header
@@ -33,6 +37,7 @@ export function PageHeader({ title, subtitle }: PageHeaderProps) {
         borderBottomStyle: "solid",
         borderBottomColor: borderColor,
         boxShadow,
+        opacity,
         backdropFilter: "blur(20px)",
         WebkitBackdropFilter: "blur(20px)",
       }}

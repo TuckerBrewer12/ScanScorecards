@@ -460,14 +460,6 @@ export function CourseDetailPanel({ courseId, userId, onBack }: CourseDetailPane
 
   const hasPerformance = analytics != null && analytics.rounds_played > 0;
 
-  // Holes sorted for "Own" and "Watch Out" sections
-  const holesSortedBest = analytics
-    ? [...analytics.average_score_relative_to_par_by_hole].sort((a, b) => a.average_to_par - b.average_to_par).slice(0, 3)
-    : [];
-  const holesSortedWorst = analytics
-    ? [...analytics.average_score_relative_to_par_by_hole].sort((a, b) => b.average_to_par - a.average_to_par).slice(0, 3)
-    : [];
-
   return (
     <div>
       {/* Back button */}
@@ -615,64 +607,7 @@ export function CourseDetailPanel({ courseId, userId, onBack }: CourseDetailPane
               </div>
             </div>
 
-            {/* B. Holes You Own / Watch Out */}
-            {analytics.average_score_relative_to_par_by_hole.length > 0 && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Holes You Own */}
-                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-                  <div className="px-5 py-3 bg-emerald-50 border-b border-emerald-100">
-                    <span className="text-sm font-semibold text-emerald-700">Holes You Own</span>
-                  </div>
-                  <div className="divide-y divide-gray-50">
-                    {holesSortedBest.map((row) => (
-                      <div key={row.hole_number} className="flex items-center justify-between px-5 py-3">
-                        <div className="flex items-center gap-3">
-                          <span className="text-xl font-bold text-gray-900">{row.hole_number}</span>
-                          <span className="text-xs text-gray-400">Par {row.par}</span>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <span
-                            className="text-sm font-semibold"
-                            style={{ color: row.average_to_par <= 0 ? "#059669" : "#ef4444" }}
-                          >
-                            {formatToPar(row.average_to_par)}
-                          </span>
-                          <span className="text-xs text-gray-400">{row.average_score.toFixed(1)} avg</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Watch Out */}
-                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-                  <div className="px-5 py-3 bg-red-50 border-b border-red-100">
-                    <span className="text-sm font-semibold text-red-600">Watch Out</span>
-                  </div>
-                  <div className="divide-y divide-gray-50">
-                    {holesSortedWorst.map((row) => (
-                      <div key={row.hole_number} className="flex items-center justify-between px-5 py-3">
-                        <div className="flex items-center gap-3">
-                          <span className="text-xl font-bold text-gray-900">{row.hole_number}</span>
-                          <span className="text-xs text-gray-400">Par {row.par}</span>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <span
-                            className="text-sm font-semibold"
-                            style={{ color: row.average_to_par <= 0 ? "#059669" : "#ef4444" }}
-                          >
-                            {formatToPar(row.average_to_par)}
-                          </span>
-                          <span className="text-xs text-gray-400">{row.average_score.toFixed(1)} avg</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* C. Score trend chart */}
+            {/* B. Score trend chart */}
             <div>
               <SectionLabel>Score Trend</SectionLabel>
               <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">

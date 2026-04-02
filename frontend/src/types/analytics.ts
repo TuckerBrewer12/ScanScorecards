@@ -375,7 +375,7 @@ export interface GoalReport {
   scoring_average: number | null;
   best_score: number | null;
   scoring_goal: number;
-  gap: number;
+  gap: number | null;
   on_track: boolean;
   savers: GoalSaver[];
 }

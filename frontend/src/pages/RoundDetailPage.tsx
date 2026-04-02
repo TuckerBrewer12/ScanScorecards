@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Pencil, Trash2, Link2 } from "lucide-react";
+import { ArrowLeft, Pencil, Trash2, Link2, CalendarDays } from "lucide-react";
 import type { CourseSummary } from "@/types/golf";
 import { CourseLinkSearch } from "@/components/CourseLinkSearch";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell } from "recharts";
@@ -118,10 +118,11 @@ export function RoundDetailPage({ userId }: { userId: string }) {
   const colorBlindMode = useMemo(() => getStoredColorBlindMode(), []);
   const colorBlindPalette = useMemo(() => getColorBlindPalette(colorBlindMode), [colorBlindMode]);
 
-  const { data: round, isLoading: loading } = useQuery({
+  const { data: round } = useQuery({
     queryKey: ["round", roundId],
     queryFn: () => api.getRound(roundId!),
     enabled: !!roundId,
+    staleTime: 5 * 60 * 1000,
   });
   const { data: comparison } = useQuery({
     queryKey: ["round-comparison", userId, roundId],
@@ -260,15 +261,13 @@ export function RoundDetailPage({ userId }: { userId: string }) {
     }
   }, [roundId]);
 
-  if (loading) {
+  if (!round) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-gray-400">Loading round...</div>
       </div>
     );
   }
-
-  if (!round) return <div>Round not found</div>;
 
   // Totals: use edited strokes in edit mode for live feedback.
   // Use key-existence so explicitly cleared scores (null) don't fall back to original.
@@ -296,74 +295,113 @@ export function RoundDetailPage({ userId }: { userId: string }) {
         Back to Rounds
       </Link>
 
-      <div className="flex items-start justify-between mb-2">
-        <PageHeader
-          title={round.course?.name ?? round.course_name_played ?? "Unknown Course"}
-          subtitle={
-            round.date
-              ? new Date(round.date).toLocaleDateString("en-US", {
-                  weekday: "long",
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                })
-              : undefined
-          }
-        />
+      <PageHeader
+        title={round.course?.name ?? round.course_name_played ?? "Unknown Course"}
+        subtitle={
+          round.date
+            ? new Date(round.date).toLocaleDateString("en-US", {
+                weekday: "long",
+                year: "numeric",
+                month: "long",
+                day: "numeric",
+              })
+            : undefined
+        }
+      />
 
-        <div className="flex items-center gap-2 mt-1 shrink-0">
-          {!editMode ? (
-            <>
-              <button
-                onClick={enterEditMode}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50"
-              >
-                <Pencil size={14} />
-                Edit
-              </button>
-              {!confirmDelete ? (
-                <button
-                  onClick={() => setConfirmDelete(true)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-red-600 bg-white border border-red-200 rounded-lg hover:bg-red-50"
-                >
-                  <Trash2 size={14} />
-                  Delete
-                </button>
-              ) : (
-                <div className="flex items-center gap-2 px-3 py-1.5 bg-red-50 border border-red-200 rounded-lg">
-                  <span className="text-sm text-red-700 font-medium">Delete this round?</span>
-                  <button
-                    onClick={handleDelete}
-                    className="text-sm font-semibold text-red-700 hover:text-red-900"
-                  >
-                    Yes
-                  </button>
-                  <button
-                    onClick={() => setConfirmDelete(false)}
-                    className="text-sm text-gray-500 hover:text-gray-700"
-                  >
-                    Cancel
-                  </button>
+      {/* ── Inline Hero Header ── */}
+      <div className="py-2 mb-4">
+        <div className="flex items-start justify-between gap-4">
+          {/* Left: identity */}
+          <div className="min-w-0">
+            <h1 className="text-4xl font-extrabold tracking-tight text-gray-900 leading-tight truncate">
+              {round.course?.name ?? round.course_name_played ?? "Unknown Course"}
+            </h1>
+            <div className="flex items-center gap-3 mt-1.5 flex-wrap">
+              {round.date && (
+                <div className="flex items-center gap-1.5 text-sm text-gray-400">
+                  <CalendarDays size={13} />
+                  <span>
+                    {new Date(round.date).toLocaleDateString("en-US", {
+                      weekday: "long",
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                    })}
+                  </span>
                 </div>
               )}
-            </>
-          ) : (
-            <>
-              <button
-                onClick={handleSave}
-                disabled={saving}
-                className="px-3 py-1.5 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary/90 disabled:opacity-50"
-              >
-                {saving ? "Saving…" : "Save"}
-              </button>
-              <button
-                onClick={cancelEdit}
-                className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50"
-              >
-                Cancel
-              </button>
-            </>
-          )}
+              {!round.course && !showLinkCourse && (
+                <button
+                  onClick={() => setShowLinkCourse(true)}
+                  className="inline-flex items-center gap-1 text-xs text-gray-400 hover:text-primary transition-colors"
+                >
+                  <Link2 size={12} />
+                  Link course
+                </button>
+              )}
+            </div>
+            {showLinkCourse && (
+              <div className="mt-3">
+                <CourseLinkSearch
+                  title="Link to a saved course"
+                  query={linkQuery}
+                  results={linkResults}
+                  searching={linkSearching}
+                  linking={linking}
+                  onQueryChange={handleLinkQuery}
+                  onSelectCourse={handleSelectCourse}
+                  onClose={() => { setShowLinkCourse(false); setLinkQuery(""); setLinkResults([]); }}
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Right: action buttons */}
+          <div className="flex items-center gap-2 shrink-0">
+            {!editMode ? (
+              <>
+                <button
+                  onClick={enterEditMode}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50"
+                >
+                  <Pencil size={14} />
+                  Edit
+                </button>
+                {!confirmDelete ? (
+                  <button
+                    onClick={() => setConfirmDelete(true)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-red-600 bg-white border border-red-200 rounded-lg hover:bg-red-50"
+                  >
+                    <Trash2 size={14} />
+                    Delete
+                  </button>
+                ) : (
+                  <div className="flex items-center gap-2 px-3 py-1.5 bg-red-50 border border-red-200 rounded-lg">
+                    <span className="text-sm text-red-700 font-medium">Delete this round?</span>
+                    <button onClick={handleDelete} className="text-sm font-semibold text-red-700 hover:text-red-900">Yes</button>
+                    <button onClick={() => setConfirmDelete(false)} className="text-sm text-gray-500 hover:text-gray-700">Cancel</button>
+                  </div>
+                )}
+              </>
+            ) : (
+              <>
+                <button
+                  onClick={handleSave}
+                  disabled={saving}
+                  className="px-3 py-1.5 text-sm font-medium text-white bg-primary rounded-lg hover:bg-primary/90 disabled:opacity-50"
+                >
+                  {saving ? "Saving…" : "Save"}
+                </button>
+                <button
+                  onClick={cancelEdit}
+                  className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+              </>
+            )}
+          </div>
         </div>
       </div>
 
@@ -384,65 +422,39 @@ export function RoundDetailPage({ userId }: { userId: string }) {
           : null;
 
         return (
-          <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-6">
-            <div className="bg-white rounded-xl border border-gray-200 border-l-4 border-l-primary p-4 text-center shadow-sm">
-              <div className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">Score</div>
-              <div className="text-4xl font-bold text-gray-900">{totalScore || "-"}</div>
-            </div>
-            <div
-              className={`bg-white rounded-xl border border-gray-200 border-l-4 p-4 text-center shadow-sm ${
-                toPar !== null && toPar < 0 ? "border-l-birdie" : toPar !== null && toPar > 0 ? "border-l-bogey" : "border-l-gray-300"
-              }`}
-            >
-              <div className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">To Par</div>
-              <div className={`text-4xl font-bold ${toPar !== null && toPar < 0 ? "text-birdie" : toPar !== null && toPar > 0 ? "text-bogey" : "text-gray-900"}`}>
-                {formatToPar(toPar)}
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm mb-6">
+            <div className="flex items-stretch divide-x divide-gray-100">
+              <div className="flex-1 flex flex-col items-center justify-center px-4 py-4">
+                <div className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-1">Score</div>
+                <div className="text-4xl font-bold text-gray-900">{totalScore || "–"}</div>
               </div>
-            </div>
-            <div className={`bg-white rounded-xl border border-gray-200 border-l-4 p-4 text-center shadow-sm ${netScore != null && coursePar != null ? netScore <= coursePar ? "border-l-birdie" : "border-l-bogey" : "border-l-gray-300"}`}>
-              <div className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">Net Score</div>
-              <div className={`text-4xl font-bold ${netScore != null && coursePar != null ? netScore <= coursePar ? "text-birdie" : "text-bogey" : "text-gray-900"}`}>{netScore ?? "-"}</div>
-              {courseHandicap != null && (
-                <div className="text-xs text-gray-400 mt-0.5">HCP {courseHandicap < 0 ? `+${Math.abs(courseHandicap)}` : courseHandicap}</div>
-              )}
-            </div>
-            <div className="bg-white rounded-xl border border-gray-200 p-4 text-center shadow-sm">
-              <div className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">Tee</div>
-              <div className="text-xl font-semibold text-gray-900">{activeTeeBox || "-"}</div>
-            </div>
-            <div className="bg-white rounded-xl border border-gray-200 p-4 text-center shadow-sm">
-              <div className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">Course Par</div>
-              <div className="text-xl font-semibold text-gray-900">{coursePar ?? "-"}</div>
+              <div className="flex-1 flex flex-col items-center justify-center px-4 py-4">
+                <div className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-1">To Par</div>
+                <div className={`text-4xl font-bold ${toPar !== null && toPar < 0 ? "text-emerald-600" : toPar !== null && toPar > 0 ? "text-red-500" : "text-gray-900"}`}>
+                  {formatToPar(toPar)}
+                </div>
+              </div>
+              <div className="flex-1 flex flex-col items-center justify-center px-4 py-4">
+                <div className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-1">Net</div>
+                <div className={`text-4xl font-bold ${netScore != null && coursePar != null ? netScore <= coursePar ? "text-emerald-600" : "text-red-500" : "text-gray-900"}`}>
+                  {netScore ?? "–"}
+                </div>
+                {courseHandicap != null && (
+                  <div className="text-[11px] text-gray-400 mt-0.5">HCP {courseHandicap < 0 ? `+${Math.abs(courseHandicap)}` : courseHandicap}</div>
+                )}
+              </div>
+              <div className="flex-1 flex flex-col items-center justify-center px-4 py-4">
+                <div className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-1">Tee</div>
+                <div className="text-4xl font-bold text-gray-900">{activeTeeBox || "–"}</div>
+              </div>
+              <div className="flex-1 flex flex-col items-center justify-center px-4 py-4">
+                <div className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-1">Par</div>
+                <div className="text-4xl font-bold text-gray-900">{coursePar ?? "–"}</div>
+              </div>
             </div>
           </div>
         );
       })()}
-
-      {/* Link-course banner — only for rounds with no linked course */}
-      {!round.course && (
-        <div className="mb-4">
-          {!showLinkCourse ? (
-            <button
-              onClick={() => setShowLinkCourse(true)}
-              className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-primary transition-colors"
-            >
-              <Link2 size={14} />
-              Link to a saved course
-            </button>
-          ) : (
-            <CourseLinkSearch
-              title="Link to a saved course"
-              query={linkQuery}
-              results={linkResults}
-              searching={linkSearching}
-              linking={linking}
-              onQueryChange={handleLinkQuery}
-              onSelectCourse={handleSelectCourse}
-              onClose={() => { setShowLinkCourse(false); setLinkQuery(""); setLinkResults([]); }}
-            />
-          )}
-        </div>
-      )}
 
       {/* Story view (normal) / Scorecard grid (edit) */}
       {!editMode && <RoundStory round={round} />}

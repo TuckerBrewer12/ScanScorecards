@@ -190,9 +190,11 @@ export function RoundsPage({ userId }: RoundsPageProps) {
       <PageHeader
         title="Rounds"
         subtitle={`${rounds.length} rounds played`}
+        scrollThreshold={100}
       />
 
       <ScrollSection>
+        <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 mb-5">Rounds</h1>
         {/* Search bar */}
         <div className="mb-5 relative max-w-sm">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />

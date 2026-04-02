@@ -249,7 +249,8 @@ export function CareerPage({ userId }: { userId: string }) {
   return (
     <div>
       <div className="mb-6">
-        <PageHeader title="Career" subtitle="Player achievement records" />
+        <PageHeader title="Career" subtitle="Player achievement records" scrollThreshold={100} />
+        <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 mb-4">Career</h1>
         <div className="flex gap-2">
           {(["lifetime", "one_year"] as TimeWindow[]).map((tw) => (
             <button
