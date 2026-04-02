@@ -785,7 +785,7 @@ def scrambling_per_round(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
                     if score.strokes <= hole.par:
                         successes += 1
 
-        percentage = (successes / opportunities * 100.0) if opportunities else 0.0
+        percentage = (successes / opportunities * 100.0) if opportunities else None
         results.append(
             {
                 "round_index": index,
@@ -816,13 +816,13 @@ def up_and_down_trend(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
                 opportunities += 1
                 if score.putts <= 1:
                     successes += 1
-        percentage = (successes / opportunities * 100.0) if opportunities else 0.0
+        percentage = (successes / opportunities * 100.0) if opportunities else None
         results.append({
             "round_index": index,
             "round_id": round_obj.id,
             "opportunities": opportunities,
             "successes": successes,
-            "percentage": round(percentage, 1),
+            "percentage": round(percentage, 1) if percentage is not None else None,
         })
     return results
 

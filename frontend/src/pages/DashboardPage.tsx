@@ -261,11 +261,17 @@ export function DashboardPage({ userId }: DashboardPageProps) {
   return (
     <div>
       <ScrollSection>
-        {user?.name && (
-          <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 mb-5">
-            Hello, {user.name.split(" ")[0]}
+        <div className="flex items-center justify-between mb-5">
+          <h1 className="text-3xl font-extrabold tracking-tight text-gray-900">
+            {user?.name ? `Hello, ${user.name.split(" ")[0]}` : "Dashboard"}
           </h1>
-        )}
+          {data.handicap_index != null && (
+            <div className="flex flex-col items-end">
+              <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Handicap</span>
+              <span className="text-2xl font-bold text-gray-900 leading-tight">{formatHI(data.handicap_index)}</span>
+            </div>
+          )}
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5 auto-rows-min mt-4">
 
           {/* 1. KPI Stack */}

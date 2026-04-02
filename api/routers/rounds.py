@@ -211,6 +211,5 @@ async def delete_round(
     db: DatabaseManager = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    deleted = await db.rounds.delete_round(round_id)
-    if not deleted:
-        raise HTTPException(404, "Round not found")
+    await db.rounds.delete_round(round_id)
+    # Idempotent: already-deleted rounds return 204 too
