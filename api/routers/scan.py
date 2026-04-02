@@ -188,6 +188,23 @@ def _build_round_from_parsed_rows(
     hole_scores: List[Dict] = []
     for i in range(1, hole_count + 1):
         raw_score = score_vals[i - 1]
+        if (
+            effective_to_par is True
+            and raw_score == 1
+            and shots_vals[i - 1] is not None
+            and putt_vals[i - 1] is not None
+            and hole_par_lookup.get(i) is not None
+        ):
+            # OCR can miss the minus sign and read "-1" as "1".
+            # Use shots+putts vs par to disambiguate when possible.
+            est = (shots_vals[i - 1] + putt_vals[i - 1]) - hole_par_lookup[i]  # type: ignore[index]
+            if est in (-1, 1):
+                if est != raw_score:
+                    fields_needing_review.append(
+                        f"Hole {i} adjusted to-par sign using shots+putts consistency"
+                    )
+                raw_score = est
+
         strokes: Optional[int]
         if raw_score is None:
             strokes = None
