@@ -38,6 +38,7 @@ _INT_RE = re.compile(r"(?<!\d)-?\d{1,4}(?!\d)")
 _ROMAN_RE = re.compile(r"^(?:i|ii|iii|iv|v|vi|vii|viii|ix|x)$", re.IGNORECASE)
 _COURSE_RE = re.compile(r"^[A-Z0-9 '&.-]{3,}$")
 _NAME_RE = re.compile(r"\bmy name is\s+([a-z][a-z '\-]{1,40})\b", re.IGNORECASE)
+_TO_PAR_TOKEN_RE = re.compile(r"[+\-−]?\d+|[①❶➀⓿⓪]|[eE]")
 
 _CIRCLED_TO_DIGIT = {
     "⓪": "0",
@@ -93,7 +94,10 @@ def parse_mistral_scorecard_rows(
     if row_hints["row_order_explicit"]:
         parsed.shots_to_green_row = _coerce_18_ints(anchor_vals, max_abs=10)
         putts_vals = _extract_next_small_int_row(lines, anchor_idx + 1, max_abs=6)
-        score_vals = _extract_next_small_int_row(lines, anchor_idx + 2, max_abs=15)
+        if row_hints["score_to_par"]:
+            score_vals = _extract_next_to_par_row(lines, anchor_idx + 2)
+        else:
+            score_vals = _extract_next_small_int_row(lines, anchor_idx + 2, max_abs=15)
         if putts_vals:
             parsed.putts_row = _coerce_18_ints(putts_vals, max_abs=6)
         if score_vals:
@@ -280,6 +284,14 @@ def _extract_next_small_int_row(lines: List[str], start_idx: int, *, max_abs: in
     return []
 
 
+def _extract_next_to_par_row(lines: List[str], start_idx: int) -> List[int]:
+    for i in range(max(0, start_idx), min(len(lines), start_idx + 6)):
+        vals = _line_to_par_values(lines[i])
+        if len(vals) >= 9:
+            return vals[:18]
+    return []
+
+
 def _extract_next_gir_like_row(lines: List[str], start_idx: int) -> List[Optional[bool]]:
     for i in range(max(0, start_idx), min(len(lines), start_idx + 8)):
         line = lines[i]
@@ -311,6 +323,33 @@ def _coerce_18_bools(values: List[Optional[bool]]) -> List[Optional[bool]]:
     while len(out) < 18:
         out.append(None)
     return out
+
+
+def _line_to_par_values(line: str) -> List[int]:
+    """Parse a score-to-par row while preserving signs and circled symbols.
+
+    Rules:
+    - Circled 1 variants are treated as -1 (common birdie notation on cards).
+    - Circled 0 / E are treated as 0.
+    - Signed ints are preserved.
+    """
+    raw = line.replace("−", "-")
+    tokens = _TO_PAR_TOKEN_RE.findall(raw)
+    vals: List[int] = []
+    for tok in tokens:
+        if tok in {"①", "❶", "➀"}:
+            vals.append(-1)
+            continue
+        if tok in {"⓿", "⓪", "E", "e"}:
+            vals.append(0)
+            continue
+        try:
+            n = int(tok)
+        except ValueError:
+            continue
+        if -9 <= n <= 9:
+            vals.append(n)
+    return vals
 
 
 def _looks_like_to_par_row(values: List[Optional[int]]) -> bool:
