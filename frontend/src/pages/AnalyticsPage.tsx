@@ -13,15 +13,18 @@ import { api } from "@/lib/api";
 import { getStoredColorBlindMode } from "@/lib/accessibility";
 import { getColorBlindPalette } from "@/lib/chartPalettes";
 import type {
-  AnalyticsData, ScoreTrendRow, ScoreTypeRow, GIRTrendRow, ScoringByParRow, PuttsTrendRow,
+  AnalyticsData, AnalyticsFilters, ScoreTrendRow, ScoreTypeRow, GIRTrendRow, ScoringByParRow, PuttsTrendRow,
 } from "@/types/analytics";
 import { ScrollSection } from "@/components/analytics/ScrollSection";
 import { NarrativeInsight } from "@/components/analytics/NarrativeInsight";
 import { StickyScoreBar } from "@/components/analytics/StickyScoreBar";
 import { BestRoundCard } from "@/components/analytics/BestRoundCard";
 import { ParMatrixGrid } from "@/components/analytics/ParMatrixGrid";
+import { AnalyticsFilterBar } from "@/components/analytics/AnalyticsFilterBar";
 
 // ─── Constants ───────────────────────────────────────────────────────────────
+
+const DEFAULT_FILTERS: AnalyticsFilters = { limit: 50, timeframe: "all", courseId: "all" };
 
 const SCORE_COLORS: Record<string, string> = {
   eagle:        "#f59e0b",
@@ -48,9 +51,6 @@ const tooltipStyle = {
   boxShadow: "0 4px 24px rgba(0,0,0,0.07)",
   background: "rgba(255,255,255,0.97)",
 };
-
-const LIMIT_OPTIONS = [20, 50, 100] as const;
-type Limit = (typeof LIMIT_OPTIONS)[number];
 
 // ─── Data helpers ─────────────────────────────────────────────────────────────
 
@@ -209,17 +209,17 @@ function formatHI(hi: number | null | undefined): string | null {
 
 function SectionLabel({ children }: { children: string }) {
   return (
-    <div className="flex items-center gap-3">
-      <div className="h-px w-8 bg-primary/30 rounded-full" />
-      <span className="text-[11px] font-bold text-primary/50 uppercase tracking-[0.18em]">{children}</span>
+    <div className="flex items-center gap-3 w-full">
+      <span className="text-[11px] font-bold text-primary uppercase tracking-[0.18em] whitespace-nowrap">{children}</span>
+      <div className="h-px flex-1 bg-primary/15 rounded-full" />
     </div>
   );
 }
 
 function ChartCard({ title, subtitle, children }: { title: string; subtitle?: string; children: React.ReactNode }) {
   return (
-    <div className="analytics-chart-card bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
-      <div className="mb-3">
+    <div className="analytics-chart-card bg-white rounded-2xl border border-gray-100 shadow-sm p-3">
+      <div className="mb-2">
         <div className="text-sm font-semibold text-gray-800">{title}</div>
         {subtitle && <div className="text-xs text-gray-400 mt-0.5">{subtitle}</div>}
       </div>
@@ -231,10 +231,18 @@ function ChartCard({ title, subtitle, children }: { title: string; subtitle?: st
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
 export function AnalyticsPage({ userId }: { userId: string }) {
-  const [limit, setLimit] = useState<Limit>(50);
+  const [filters, setFilters] = useState<AnalyticsFilters>(DEFAULT_FILTERS);
   const { data, isLoading: loading } = useQuery({
-    queryKey: ["analytics", userId, limit],
-    queryFn: () => api.getAnalytics(userId, limit),
+    queryKey: ["analytics", userId, filters],
+    queryFn: () => api.getAnalytics(userId, filters),
+  });
+  const { data: playedCourses = [] } = useQuery({
+    queryKey: ["played-courses", userId],
+    queryFn: () => api.getPlayedCourses(userId),
+  });
+  const { data: user } = useQuery({
+    queryKey: ["user", userId],
+    queryFn: () => api.getUser(userId),
   });
   const colorBlindMode = useMemo(() => getStoredColorBlindMode(), []);
   const colorBlindPalette = useMemo(() => getColorBlindPalette(colorBlindMode), [colorBlindMode]);
@@ -309,12 +317,56 @@ export function AnalyticsPage({ userId }: { userId: string }) {
     );
   }
 
-  if (!data || data.kpis.total_rounds === 0) {
+  const isEmpty = !data || data.kpis.total_rounds === 0;
+
+  const header = (
+    <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-6">
+      <div>
+        <h1 className="text-3xl font-extrabold tracking-tight text-gray-900">Analytics</h1>
+        <p className="text-sm text-gray-500 mt-1">
+          {(() => {
+            const parts: string[] = [];
+            parts.push(filters.limit === 500 ? "All rounds" : `Last ${filters.limit} rounds`);
+            if (filters.courseId !== "all") {
+              if (filters.courseId === "home") {
+                parts.push("Home Course");
+              } else {
+                const c = playedCourses.find((pc) => pc.id === filters.courseId);
+                if (c) parts.push(c.name ?? "Selected Course");
+              }
+            }
+            if (filters.timeframe === "ytd") parts.push("YTD");
+            if (filters.timeframe === "1y") parts.push("Last 12 mo");
+            return parts.map((p, i) => (
+              <span key={i}>
+                {i > 0 && <span className="text-gray-300 mx-1">·</span>}
+                <span className="font-semibold text-gray-700">{p}</span>
+              </span>
+            ));
+          })()}
+        </p>
+      </div>
+      <AnalyticsFilterBar
+        filters={filters}
+        onChange={setFilters}
+        playedCourses={playedCourses}
+        hasHomeCourse={!!user?.home_course_id}
+      />
+    </div>
+  );
+
+  if (isEmpty) {
+    const isFiltered = filters.courseId !== "all" || filters.timeframe !== "all";
     return (
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-gray-900">Analytics</h1>
-        <p className="text-sm text-gray-500 mt-1">No rounds yet</p>
-        <div className="text-gray-400 mt-8">Play some rounds to see your analytics.</div>
+        {header}
+        <div className="flex flex-col items-center justify-center h-48 text-center">
+          <p className="text-gray-400 text-sm">
+            {isFiltered
+              ? "No rounds found for the selected filters."
+              : "Play some rounds to see your analytics."}
+          </p>
+        </div>
       </div>
     );
   }
@@ -331,37 +383,15 @@ export function AnalyticsPage({ userId }: { userId: string }) {
       <StickyScoreBar kpis={kpis} />
 
       {/* ── Dynamic Header ────────────────────────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-6">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-gray-900">Analytics</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            Last <span className="font-semibold text-gray-700">{limit}</span> rounds
-          </p>
-        </div>
-        <div className="flex items-center bg-gray-100/80 p-1 rounded-xl gap-0.5 self-start sm:self-auto">
-          {LIMIT_OPTIONS.map((n) => (
-            <button
-              key={n}
-              onClick={() => setLimit(n)}
-              className={`px-4 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                limit === n
-                  ? "bg-white shadow-sm text-gray-900"
-                  : "text-gray-500 hover:text-gray-700"
-              }`}
-            >
-              {n}
-            </button>
-          ))}
-        </div>
-      </div>
+      {header}
 
       {/* ── Panoramic Bento Bar ───────────────────────────────────────────── */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm flex flex-wrap divide-y md:divide-y-0 md:divide-x divide-gray-50 overflow-hidden mb-6">
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm flex flex-wrap divide-y md:divide-y-0 md:divide-x divide-gray-50 overflow-hidden mb-4">
         {/* Handicap — accent cell */}
-        <div className="flex-1 min-w-[130px] p-4 bg-primary relative overflow-hidden flex flex-col">
+        <div className="flex-1 min-w-[110px] p-3 bg-primary relative overflow-hidden flex flex-col">
           <div className="absolute -top-5 -right-5 w-20 h-20 rounded-full bg-white/5 blur-2xl pointer-events-none" />
-          <span className="text-[10px] font-bold uppercase tracking-widest text-white/50 mb-2">Handicap Index</span>
-          <span className="text-2xl font-bold text-white">{formatHI(kpis.handicap_index) ?? "—"}</span>
+          <span className="text-[10px] font-bold uppercase tracking-widest text-white/50 mb-1">Handicap Index</span>
+          <span className="text-xl font-bold text-white">{formatHI(kpis.handicap_index) ?? "—"}</span>
           <Gauge size={13} className="absolute top-3 right-3 text-white/25" />
         </div>
         {/* Regular cells */}
@@ -372,30 +402,30 @@ export function AnalyticsPage({ userId }: { userId: string }) {
             subtitle: (() => { const ev = notable_achievements?.scoring_records_events?.lifetime?.lowest_score; return ev?.course; })() },
           { label: "Avg Putts",   value: avgPutts,                     icon: Target },
         ].map(({ label, value, icon: Icon, subtitle }) => (
-          <div key={label} className="flex-1 min-w-[130px] p-4 flex flex-col relative">
-            <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-2">{label}</span>
-            <span className="text-2xl font-bold text-gray-900">{value ?? "—"}</span>
-            {subtitle && <span className="text-xs text-gray-400 mt-1 truncate">{subtitle}</span>}
+          <div key={label} className="flex-1 min-w-[110px] p-3 flex flex-col relative">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1">{label}</span>
+            <span className="text-xl font-bold text-gray-900">{value ?? "—"}</span>
+            {subtitle && <span className="text-xs text-gray-400 mt-0.5 truncate">{subtitle}</span>}
             <Icon size={13} className="absolute top-3 right-3 text-gray-200" />
           </div>
         ))}
       </div>
 
-      <ScrollSection className="mb-5" delay={0.05}>
-        <BestRoundCard scoreTrend={data.score_trend} netScoreTrend={data.net_score_trend} achievements={notable_achievements} />
-      </ScrollSection>
-
       {/* ── Unified dense grid ────────────────────────────────────────────── */}
       <ScrollSection>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mt-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
 
           {/* ── Scoring ── */}
-          <div className="lg:col-span-2 flex items-center gap-3 mt-4 mb-1">
+          <div className="lg:col-span-2 flex items-center gap-3 mt-2 mb-0">
             <SectionLabel>Scoring</SectionLabel>
           </div>
 
+          <div className="lg:col-span-2">
+            <BestRoundCard scoreTrend={data.score_trend} netScoreTrend={data.net_score_trend} achievements={notable_achievements} />
+          </div>
+
           {scoringInsights.length > 0 && (
-            <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-2">
               {scoringInsights.slice(0, 2).map((ins, i) => (
                 <NarrativeInsight key={i} text={ins.text} trend={ins.trend} positiveUp={ins.positiveUp} />
               ))}
@@ -413,7 +443,7 @@ export function AnalyticsPage({ userId }: { userId: string }) {
               referenceLine={{ y: 72, label: "Par 72" }}
               gradientSuffix="score"
               showDots={false}
-              height={165}
+              height={130}
               tooltipLabel="Score"
             />
           </ChartCard>
@@ -428,7 +458,7 @@ export function AnalyticsPage({ userId }: { userId: string }) {
               referenceLine={{ y: 72, label: "Par 72" }}
               gradientSuffix="netScore"
               showDots={false}
-              height={165}
+              height={130}
               tooltipLabel="Net Score"
               renderTooltipExtra={(row) => (
                 <>
@@ -459,12 +489,12 @@ export function AnalyticsPage({ userId }: { userId: string }) {
           </ChartCard>
 
           {/* ── Ball Striking ── */}
-          <div className="lg:col-span-2 flex items-center gap-3 mt-4 mb-1">
+          <div className="lg:col-span-2 flex items-center gap-3 mt-2 mb-0">
             <SectionLabel>Ball Striking</SectionLabel>
           </div>
 
           {girInsights.length > 0 && (
-            <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-2">
               {girInsights.map((ins, i) => (
                 <NarrativeInsight key={i} text={ins.text} trend={ins.trend} positiveUp={ins.positiveUp} />
               ))}
@@ -482,14 +512,14 @@ export function AnalyticsPage({ userId }: { userId: string }) {
               yDomain={[0, 100]}
               gradientSuffix="gir"
               showDots={girData.length <= 30}
-              height={165}
+              height={130}
               tooltipLabel="GIR %"
               formatTooltipValue={(v) => `${v.toFixed(1)}%`}
             />
           </ChartCard>
 
           {(scrambling_trend.length > 0 || up_and_down_trend.length > 0) ? (
-            <ChartCard title="Short Game" subtitle="Scrambling % vs Up & Down % · rounds with GIR misses recorded">
+            <ChartCard title="Short Game" subtitle="Scrambling % vs Up & Down %">
               <SVGTimeSeriesArea
                 data={scrambling_trend.map((r, i) => ({
                   ...r,
@@ -507,25 +537,25 @@ export function AnalyticsPage({ userId }: { userId: string }) {
                 secondaryTooltipLabel="Up & Down"
                 gradientSuffix="shortGame"
                 showDots={true}
-                height={165}
+                height={130}
                 formatTooltipValue={(v) => `${v.toFixed(1)}%`}
               />
             </ChartCard>
           ) : null}
 
-          {/* Score Mix Donut — full width */}
-          <div className="lg:col-span-2">
+          {/* Score Mix Donut */}
+          <div>
             <ChartCard title="Score Mix" subtitle="Career breakdown across all rounds">
-              <div className="flex items-center gap-6">
-                <div className="relative h-[200px] w-[200px] shrink-0">
-                  <ResponsiveContainer width={200} height={200}>
+              <div className="flex items-center gap-4">
+                <div className="relative h-[160px] w-[160px] shrink-0">
+                  <ResponsiveContainer width={160} height={160}>
                     <PieChart>
                       <Pie
                         data={donutData}
                         cx="50%"
                         cy="50%"
-                        innerRadius={58}
-                        outerRadius={82}
+                        innerRadius={46}
+                        outerRadius={66}
                         paddingAngle={2}
                         dataKey="value"
                         stroke="none"
@@ -542,16 +572,16 @@ export function AnalyticsPage({ userId }: { userId: string }) {
                   <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                     {birdiePct != null && (
                       <>
-                        <div className="text-2xl font-black text-gray-800">{birdiePct.toFixed(0)}%</div>
+                        <div className="text-xl font-black text-gray-800">{birdiePct.toFixed(0)}%</div>
                         <div className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: successColor }}>birdies</div>
                       </>
                     )}
                   </div>
                 </div>
-                <div className="flex flex-col gap-2 min-w-0">
+                <div className="flex flex-col gap-1.5 min-w-0">
                   {donutData.map((d) => (
-                    <div key={d.name} className="flex items-center gap-2.5">
-                      <div className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: scoreColors[d.name] }} />
+                    <div key={d.name} className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-sm shrink-0" style={{ background: scoreColors[d.name] }} />
                       <span className="text-xs text-gray-500 flex-1 truncate">{SCORE_LABELS[d.name] ?? d.name}</span>
                       <span className="text-xs font-semibold text-gray-700 tabular-nums">{d.value.toFixed(1)}%</span>
                     </div>
@@ -562,12 +592,12 @@ export function AnalyticsPage({ userId }: { userId: string }) {
           </div>
 
           {/* ── Putting ── */}
-          <div className="lg:col-span-2 flex items-center gap-3 mt-4 mb-1">
+          <div className="lg:col-span-2 flex items-center gap-3 mt-2 mb-0">
             <SectionLabel>Putting</SectionLabel>
           </div>
 
           {puttingInsights.length > 0 && (
-            <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-2">
               {puttingInsights.map((ins, i) => (
                 <NarrativeInsight key={i} text={ins.text} trend={ins.trend} positiveUp={ins.positiveUp} />
               ))}
@@ -591,13 +621,13 @@ export function AnalyticsPage({ userId }: { userId: string }) {
               referenceLine={{ y: 36, label: "36" }}
               gradientSuffix="putts"
               showDots={true}
-              height={165}
+              height={130}
               tooltipLabel="Putts"
             />
           </ChartCard>
 
           {threePuttsData.length > 0 && (
-            <ChartCard title="3-Putts per Round" subtitle="Number of holes with 3 or more putts">
+            <ChartCard title="3-Putts per Round" subtitle="Holes with 3+ putts">
               <SVGTimeSeriesArea
                 data={threePuttsData}
                 valueKey="three_putt_count"
@@ -608,19 +638,19 @@ export function AnalyticsPage({ userId }: { userId: string }) {
                 referenceLine={{ y: 2, label: "2" }}
                 gradientSuffix="threePutts"
                 showDots={true}
-                height={165}
+                height={130}
                 tooltipLabel="3-Putts"
               />
             </ChartCard>
           )}
 
           {/* ── Performance Profile ── */}
-          <div className="lg:col-span-2 flex items-center gap-3 mt-4 mb-1">
+          <div className="lg:col-span-2 flex items-center gap-3 mt-2 mb-0">
             <SectionLabel>Performance Profile</SectionLabel>
           </div>
 
           <ChartCard title="Avg Score to Par by Hole Par">
-            <ResponsiveContainer width="100%" height={220}>
+            <ResponsiveContainer width="100%" height={160}>
               <BarChart data={scoring_by_par} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
                 <CartesianGrid stroke={gridColor} vertical={false} />
                 <XAxis dataKey="par" tick={{ fontSize: 12, fill: "#6b7280" }} tickLine={false} axisLine={false}
@@ -643,7 +673,7 @@ export function AnalyticsPage({ userId }: { userId: string }) {
           </ChartCard>
 
           <ChartCard title="Avg Score by Hole Difficulty" subtitle="Handicap 1 (hardest) → 18 (easiest)">
-            <ResponsiveContainer width="100%" height={220}>
+            <ResponsiveContainer width="100%" height={160}>
               <BarChart data={scoring_by_handicap} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
                 <CartesianGrid stroke={gridColor} vertical={false} />
                 <XAxis dataKey="handicap" tick={{ fontSize: 10, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
@@ -676,8 +706,8 @@ export function AnalyticsPage({ userId }: { userId: string }) {
           {gir_vs_non_gir.length > 0 && (
             <div className="lg:col-span-2">
               <ChartCard title="GIR vs No-GIR Score Distribution"
-                subtitle="Where your scores come from — on vs off the green in regulation">
-                <ResponsiveContainer width="100%" height={240}>
+                subtitle="On vs off the green in regulation">
+                <ResponsiveContainer width="100%" height={180}>
                   <BarChart data={gir_vs_non_gir} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
                     <CartesianGrid stroke={gridColor} vertical={false} />
                     <XAxis dataKey="bucket" tick={{ fontSize: 12, fill: "#6b7280" }} tickLine={false} axisLine={false} />

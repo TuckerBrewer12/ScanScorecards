@@ -1,5 +1,5 @@
 import type { DashboardData, RoundSummary, Round, CourseSummary, Course, User, Milestone, Friendship } from "@/types/golf";
-import type { AnalyticsData, CourseAnalyticsData, RoundComparison } from "@/types/analytics";
+import type { AnalyticsData, AnalyticsFilters, CourseAnalyticsData, RoundComparison, GoalReport } from "@/types/analytics";
 import { getToken } from "@/lib/auth";
 
 const BASE_URL = "/api";
@@ -114,8 +114,11 @@ export const api = {
   getUser: (userId: string) =>
     fetchJSON<User>(`/users/${userId}`),
 
-  updateUser: (userId: string, body: { home_course_id?: string | null; handicap?: number | null }) =>
+  updateUser: (userId: string, body: { home_course_id?: string | null; handicap?: number | null; scoring_goal?: number | null }) =>
     patchJSON<User>(`/users/${userId}`, body),
+
+  getGoalReport: (userId: string, limit = 50) =>
+    fetchJSON<GoalReport>(`/stats/${userId}/goal-report?limit=${limit}`),
 
   cloneCourse: (courseId: string, userId: string) =>
     postJSON<CourseSummary>(`/courses/${courseId}/clone?user_id=${encodeURIComponent(userId)}`, {}),
@@ -123,8 +126,20 @@ export const api = {
   getUserHandicap: (userId: string) =>
     fetchJSON<{ handicap_index: number | null }>(`/users/${userId}/handicap`),
 
-  getAnalytics: (userId: string, limit = 50) =>
-    fetchJSON<AnalyticsData>(`/stats/analytics/${userId}?limit=${limit}`),
+  getAnalytics: (userId: string, filters: AnalyticsFilters | number = 50) => {
+    const f: AnalyticsFilters = typeof filters === "number"
+      ? { limit: filters, timeframe: "all", courseId: "all" }
+      : filters;
+    const p = new URLSearchParams({ limit: String(f.limit) });
+    if (f.timeframe !== "all") p.set("timeframe", f.timeframe);
+    if (f.courseId !== "all") p.set("course_id", f.courseId);
+    return fetchJSON<AnalyticsData>(`/stats/analytics/${userId}?${p}`);
+  },
+
+  getPlayedCourses: (userId: string) =>
+    fetchJSON<{ id: string; name: string | null; location: string | null }[]>(
+      `/stats/${userId}/played-courses`
+    ),
 
   getRoundComparison: (userId: string, roundId: string) =>
     fetchJSON<RoundComparison>(`/stats/compare/${userId}/${roundId}`),

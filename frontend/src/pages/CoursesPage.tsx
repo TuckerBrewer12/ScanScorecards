@@ -52,9 +52,11 @@ export function CoursesPage({ userId }: { userId: string }) {
       <PageHeader
         title="Courses"
         subtitle={`${courses.length} courses`}
+        scrollThreshold={100}
       />
 
       <ScrollSection>
+        <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 mb-5">Courses</h1>
         {/* Search */}
         <div className="mb-6 relative max-w-sm">
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />

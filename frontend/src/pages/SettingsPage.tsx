@@ -181,7 +181,8 @@ export function SettingsPage({ userId }: { userId: string }) {
 
   return (
     <div>
-      <PageHeader title="Settings" subtitle="Manage account preferences" />
+      <PageHeader title="Settings" subtitle="Manage account preferences" scrollThreshold={100} />
+      <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 mb-5">Settings</h1>
       <div className="max-w-3xl space-y-5">
         <section className="bg-white rounded-xl border border-gray-200 shadow-sm p-5 space-y-3">
           <h2 className="text-sm font-semibold text-gray-700">Friend Code</h2>

@@ -1,4 +1,5 @@
 import { CheckCircle, AlertTriangle, Loader2, X } from "lucide-react";
+import { motion } from "framer-motion";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { CourseLinkSearch, CourseLinkChip } from "@/components/CourseLinkSearch";
 import { formatToPar, calcCourseHandicap, calcNetScore } from "@/types/golf";
@@ -10,7 +11,6 @@ interface ScanReviewStepProps {
   result: ScanResult;
   scanMode: ScanState["scanMode"];
   editedScores: ExtractedHoleScore[];
-  editedNotes: string;
   editedDate: string;
   editedTeeBox: string | null;
   error: string | null;
@@ -69,7 +69,6 @@ export function ScanReviewStep({
   result,
   scanMode,
   editedScores,
-  editedNotes,
   editedDate,
   editedTeeBox,
   error,
@@ -193,18 +192,28 @@ export function ScanReviewStep({
               const holeNum = hs.hole_number ?? startIdx + si + 1;
               const par = rd.course?.holes.find((h) => h.number === holeNum)?.par ?? null;
               const sc = getFieldConfidence(hs.hole_number, origIdx, "strokes");
+              const isLowConf = sc !== null && (sc.level === "low" || sc.final_confidence < 0.7);
               return (
                 <td key={si} className="px-1 py-1 text-center">
-                  <input
-                    type="number" min="1" max="15"
-                    value={hs.strokes ?? ""}
-                    onChange={(e) => onScoreChange(origIdx, "strokes", e.target.value)}
-                    className={`w-9 text-center px-0.5 py-0.5 border rounded text-sm font-semibold ${getScoreColorClass(hs.strokes, par)}`}
-                  />
-                  {sc && (
-                    <div className="text-[9px] text-gray-400 leading-none mt-0.5">
-                      {Math.round(sc.final_confidence * 100)}%
-                    </div>
+                  <div className="relative inline-block">
+                    <input
+                      type="number" min="1" max="15"
+                      value={hs.strokes ?? ""}
+                      onChange={(e) => onScoreChange(origIdx, "strokes", e.target.value)}
+                      className={`w-9 text-center px-0.5 py-0.5 border rounded text-sm font-semibold relative z-10 ${
+                        isLowConf ? "border-amber-400 bg-amber-50 text-amber-900" : getScoreColorClass(hs.strokes, par)
+                      }`}
+                    />
+                    {isLowConf && (
+                      <motion.div
+                        className="absolute inset-0 rounded border-2 border-amber-400 pointer-events-none"
+                        animate={{ opacity: [1, 0.2, 1] }}
+                        transition={{ duration: 1.4, repeat: Infinity, ease: "easeInOut" }}
+                      />
+                    )}
+                  </div>
+                  {isLowConf && (
+                    <div className="text-[8px] font-bold text-amber-500 leading-none mt-0.5 uppercase tracking-wide">check</div>
                   )}
                 </td>
               );
@@ -247,7 +256,6 @@ export function ScanReviewStep({
               <td className="px-3 py-1.5 font-medium">Putts</td>
               {slice.map((hs, si) => {
                 const origIdx = startIdx + si;
-                const pc = getFieldConfidence(hs.hole_number, origIdx, "putts");
                 return (
                   <td key={si} className="px-1 py-1 text-center">
                     <input
@@ -256,11 +264,6 @@ export function ScanReviewStep({
                       onChange={(e) => onScoreChange(origIdx, "putts", e.target.value)}
                       className="w-9 text-center px-0.5 py-0.5 border border-gray-200 rounded text-sm"
                     />
-                    {pc && (
-                      <div className="text-[9px] text-gray-400 leading-none mt-0.5">
-                        {Math.round(pc.final_confidence * 100)}%
-                      </div>
-                    )}
                   </td>
                 );
               })}
@@ -475,22 +478,12 @@ export function ScanReviewStep({
             )}
           </div>
 
-          {/* Date + Notes */}
+          {/* Date */}
           <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-xs text-gray-500">Date</label>
-                <input type="date" value={editedDate}
-                  onChange={(e) => onUpdate({ editedDate: e.target.value })}
-                  className="w-full mt-1 px-3 py-1.5 border border-gray-200 rounded-lg text-sm" />
-              </div>
-              <div>
-                <label className="text-xs text-gray-500">Notes</label>
-                <input type="text" value={editedNotes}
-                  onChange={(e) => onUpdate({ editedNotes: e.target.value })}
-                  className="w-full mt-1 px-3 py-1.5 border border-gray-200 rounded-lg text-sm" />
-              </div>
-            </div>
+            <label className="text-xs text-gray-500">Date</label>
+            <input type="date" value={editedDate}
+              onChange={(e) => onUpdate({ editedDate: e.target.value })}
+              className="w-full mt-1 px-3 py-1.5 border border-gray-200 rounded-lg text-sm" />
           </div>
 
           {/* Actions */}

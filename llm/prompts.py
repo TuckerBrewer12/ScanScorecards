@@ -252,22 +252,40 @@ def build_scores_only_prompt(
 # Fast scan prompt (ultra-minimal: 18 raw numbers only)
 # ================================================================
 
-def build_fast_scan_prompt(player_name: Optional[str] = None) -> str:
+def build_fast_scan_prompt(
+    player_name: Optional[str] = None,
+    to_par_scoring: Optional[bool] = None,
+) -> str:
     """Build the minimal prompt for fast scan extraction.
 
     The LLM's only job: read 18 numbers off the card in hole order.
-    No course info, no format detection, no date, no putts.
+    No course info, no date, no putts.
     Everything else is handled by the backend using known course data.
     """
     player = f'for "{player_name}"' if player_name else "for the first player listed"
+
+    if to_par_scoring is True:
+        format_line = (
+            "Scores are written relative to par (+1, -1, E, 0). "
+            "Return each as a signed integer. E or 'even' = 0. Do NOT convert to total strokes."
+        )
+    elif to_par_scoring is False:
+        format_line = (
+            "Scores are written as total strokes (4, 5, 3). "
+            "Return each as a positive integer exactly as written."
+        )
+    else:
+        format_line = "Return each score exactly as written on the card. E or 'even' = 0."
+
     return (
-        f'Read this golf scorecard. Return the 18 hole scores {player} as a JSON object.\n\n'
+        f"Read this golf scorecard. Extract the hole-by-hole scores {player}.\n\n"
+        f"{format_line}\n\n"
         '{"scores": [{"score": <int or null>, "confidence": <0.0-1.0>}, ...]}\n\n'
-        "Rules:\n"
-        "- score: the exact number written on the card. E or even = 0. null if unreadable.\n"
-        "- confidence: 1.0 if clearly printed/written, lower if hard to read.\n"
-        "- Return exactly 18 entries in order from hole 1 to hole 18.\n"
-        "- Do nothing else. No totals, no course info, no other fields."
+        "- Return exactly 18 entries in hole order (1 through 18).\n"
+        "- score: number written on the card, or null if missing/unreadable.\n"
+        "- Return null rather than guessing.\n"
+        "- confidence: 1.0 if clearly readable, lower if ambiguous.\n"
+        "- Ignore totals, par rows, handicap rows. No other fields."
     )
 
 

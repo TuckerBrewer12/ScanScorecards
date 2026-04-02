@@ -118,6 +118,7 @@ CREATE TABLE IF NOT EXISTS users.users (
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW(),
     last_handicap_update TIMESTAMP,
+    scoring_goal SMALLINT,
     preferences JSONB
 );
 

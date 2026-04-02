@@ -62,7 +62,6 @@ export interface ScanState {
   preview: string | null;
   result: ScanResult | null;
   editedScores: ExtractedHoleScore[];
-  editedNotes: string;
   editedDate: string;
   editedTeeBox: string | null;
   error: string | null;
@@ -86,7 +85,6 @@ export const initialScanState: ScanState = {
   preview: null,
   result: null,
   editedScores: [],
-  editedNotes: "",
   editedDate: "",
   editedTeeBox: null,
   error: null,

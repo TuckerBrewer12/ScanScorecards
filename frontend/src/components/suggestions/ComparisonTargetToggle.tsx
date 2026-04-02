@@ -13,11 +13,12 @@ const TARGETS: { label: string; value: number | null }[] = [
 interface ComparisonTargetToggleProps {
   value: number | null;
   onChange: (v: number | null) => void;
+  vertical?: boolean;
 }
 
-export function ComparisonTargetToggle({ value, onChange }: ComparisonTargetToggleProps) {
+export function ComparisonTargetToggle({ value, onChange, vertical = false }: ComparisonTargetToggleProps) {
   return (
-    <div className="inline-flex bg-gray-100 rounded-xl p-1 gap-1 overflow-x-auto scrollbar-none w-full">
+    <div className={`bg-gray-100 rounded-xl p-0.5 gap-0.5 ${vertical ? "flex flex-col" : "inline-flex overflow-x-auto scrollbar-none w-full p-1 gap-1"}`}>
       {TARGETS.map((t) => {
         const active = t.value === value;
         return (
@@ -26,7 +27,9 @@ export function ComparisonTargetToggle({ value, onChange }: ComparisonTargetTogg
             whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.97 }}
             onClick={() => onChange(t.value)}
-            className={`shrink-0 rounded-lg px-3 py-1 text-xs transition-colors ${
+            className={`rounded-lg text-xs transition-colors ${
+              vertical ? "px-2.5 py-1.5 text-left" : "shrink-0 px-3 py-1"
+            } ${
               active
                 ? "bg-white shadow-sm text-gray-900 font-semibold"
                 : "text-gray-500 hover:text-gray-700"

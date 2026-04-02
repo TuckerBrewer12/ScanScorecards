@@ -66,7 +66,7 @@ export function useScan(
   setScanState: React.Dispatch<React.SetStateAction<ScanState>>
 ) {
   const navigate = useNavigate();
-  const { step, scanMode, selectedCourseId, selectedCourseName, scoringFormat, file, result, editedScores, editedNotes, editedDate, editedTeeBox, userContext, reviewCourseId, reviewExternalCourseId, reviewCourseName, manualCourseHoles, manualCourseTees } = scanState;
+  const { step, scanMode, selectedCourseId, selectedCourseName, scoringFormat, file, result, editedScores, editedDate, editedTeeBox, userContext, reviewCourseId, reviewExternalCourseId, reviewCourseName, manualCourseHoles, manualCourseTees } = scanState;
 
   const update = useCallback(
     (patch: Partial<ScanState>) => setScanState((prev) => ({ ...prev, ...patch })),
@@ -230,7 +230,6 @@ export function useScan(
       update({
         result: data,
         editedScores: data.round.hole_scores.map((s) => ({ ...s })),
-        editedNotes: data.round.notes ?? "",
         editedDate: data.round.date
           ? data.round.date.substring(0, 10)
           : new Date().toISOString().substring(0, 10),
@@ -323,7 +322,6 @@ export function useScan(
     update({
       result: syntheticResult,
       editedScores: emptyScores,
-      editedNotes: "",
       editedDate: manualDate,
       editedTeeBox: manualTeeBox || null,
       reviewCourseId: selectedCourseId,
@@ -375,7 +373,6 @@ export function useScan(
               : {};
           })(),
           date: editedDate,
-          notes: editedNotes,
           hole_scores: editedScores,
           course_holes: result.round.course?.holes?.map((h) => ({
             hole_number: h.number,
@@ -409,7 +406,7 @@ export function useScan(
       update({ error: err instanceof Error ? err.message : "Save failed" });
       setSaving(false);
     }
-  }, [result, userId, reviewCourseId, reviewExternalCourseId, reviewCourseName, editedTeeBox, editedDate, editedNotes, editedScores, update, setScanState, navigate]);
+  }, [result, userId, reviewCourseId, reviewExternalCourseId, reviewCourseName, editedTeeBox, editedDate, editedScores, update, setScanState, navigate]);
 
   return {
     // Derived state from scanState
@@ -421,7 +418,6 @@ export function useScan(
     file,
     result,
     editedScores,
-    editedNotes,
     editedDate,
     editedTeeBox,
     userContext,

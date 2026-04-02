@@ -111,6 +111,7 @@ export interface User {
   home_course_id: string | null;
   handicap: number | null;
   created_at: string | null;
+  scoring_goal?: number | null;
 }
 
 export interface Friendship {

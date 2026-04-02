@@ -3,16 +3,11 @@ import { ScanUploadStep } from "@/components/scan/ScanUploadStep";
 import { ScanManualSetup } from "@/components/scan/ScanManualSetup";
 import { ScanProcessing } from "@/components/scan/ScanProcessing";
 import { ScanReviewStep } from "@/components/scan/ScanReviewStep";
-import type { ScanState } from "@/types/scan";
 import { initialScanState } from "@/types/scan";
+import { useScanState } from "@/context/ScanContext";
 
-interface ScanPageProps {
-  userId: string;
-  scanState: ScanState;
-  setScanState: React.Dispatch<React.SetStateAction<ScanState>>;
-}
-
-export function ScanPage({ userId, scanState, setScanState }: ScanPageProps) {
+export function ScanPage({ userId }: { userId: string }) {
+  const { scanState, setScanState } = useScanState();
   const scan = useScan(userId, scanState, setScanState);
 
   if (scan.step === "processing") {
@@ -26,7 +21,6 @@ export function ScanPage({ userId, scanState, setScanState }: ScanPageProps) {
         result={scan.result}
         scanMode={scan.scanMode}
         editedScores={scan.editedScores}
-        editedNotes={scan.editedNotes}
         editedDate={scan.editedDate}
         editedTeeBox={scan.editedTeeBox}
         error={scan.error}

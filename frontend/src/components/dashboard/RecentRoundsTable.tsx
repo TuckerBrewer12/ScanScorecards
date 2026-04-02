@@ -1,10 +1,13 @@
 import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 import type { RoundSummary } from "@/types/golf";
 import { formatToPar } from "@/types/golf";
 
 interface RecentRoundsTableProps {
   rounds: RoundSummary[];
 }
+
+const rowSpring = { type: "spring" as const, stiffness: 400, damping: 17 };
 
 export function RecentRoundsTable({ rounds }: RecentRoundsTableProps) {
   const navigate = useNavigate();
@@ -30,10 +33,13 @@ export function RecentRoundsTable({ rounds }: RecentRoundsTableProps) {
         </thead>
         <tbody className="divide-y divide-gray-50">
           {rounds.map((r) => (
-            <tr
+            <motion.tr
               key={r.id}
               onClick={() => navigate(`/rounds/${r.id}`)}
-              className="cursor-pointer hover:bg-gray-50 transition-colors"
+              className="cursor-pointer"
+              whileHover={{ scale: 1.01, backgroundColor: "rgba(249,250,251,1)" }}
+              whileTap={{ scale: 0.99 }}
+              transition={rowSpring}
             >
               <td className="px-3 py-3.5 text-sm text-gray-400 whitespace-nowrap">
                 {r.date
@@ -62,7 +68,7 @@ export function RecentRoundsTable({ rounds }: RecentRoundsTableProps) {
               <td className="px-3 py-3.5 text-sm text-center text-gray-400">
                 {r.total_putts ?? "—"}
               </td>
-            </tr>
+            </motion.tr>
           ))}
         </tbody>
       </table>

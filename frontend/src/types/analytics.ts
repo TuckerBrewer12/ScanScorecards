@@ -1,3 +1,9 @@
+export interface AnalyticsFilters {
+  limit: number;
+  timeframe: "all" | "ytd" | "1y";
+  courseId: "all" | "home" | string;
+}
+
 export interface AnalyticsKPIs {
   scoring_average: number | null;
   gir_percentage: number | null;
@@ -354,6 +360,24 @@ export interface CourseScoreVarianceRow {
   score_variance: number | null;
   score_std_dev: number | null;
   variance_rank: number;
+}
+
+export interface GoalSaver {
+  type: "three_putt_bleed" | "blowup_holes" | "achilles_heel" | "home_course_demon" | "gir_opportunity" | "scrambling_opportunity" | "par5_opportunity";
+  strokes_saved: number;
+  percentage_of_gap: number;
+  headline: string;
+  detail: string;
+  data: Record<string, unknown>;
+}
+
+export interface GoalReport {
+  scoring_average: number | null;
+  best_score: number | null;
+  scoring_goal: number;
+  gap: number | null;
+  on_track: boolean;
+  savers: GoalSaver[];
 }
 
 export interface CourseAnalyticsData {

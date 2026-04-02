@@ -37,7 +37,7 @@ export function YardageAnalysisCard({ row }: YardageAnalysisCardProps) {
   })).filter(s => s.pct > 0);
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
       {/* Header */}
       <div className="flex items-baseline justify-between mb-3">
         <div>
@@ -55,9 +55,9 @@ export function YardageAnalysisCard({ row }: YardageAnalysisCardProps) {
       <YardageTargetScatter rawScores={row.raw_scores} bucketLabel={row.bucket_label} />
 
       {/* Divider */}
-      <div className="border-t border-gray-50 mt-4 pt-4">
+      <div className="border-t border-gray-50 mt-3 pt-3">
         {/* 3-col metrics */}
-        <div className="grid grid-cols-3 gap-2 mb-3">
+        <div className="grid grid-cols-3 gap-2 mb-2">
           <div className="text-center">
             <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-0.5">GIR%</div>
             <div className="text-sm font-bold text-gray-800">

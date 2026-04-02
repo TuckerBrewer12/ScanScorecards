@@ -1,4 +1,5 @@
-import { Upload, Camera, AlertTriangle, X, Zap, Search, ScanLine, MapPin, CheckCircle, Loader2, PenLine } from "lucide-react";
+import { Camera, AlertTriangle, X, Zap, Search, ScanLine, MapPin, CheckCircle, Loader2, PenLine } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { PageHeader } from "@/components/layout/PageHeader";
 import type { ScanState } from "@/types/scan";
 import type { CourseSummary } from "@/types/golf";
@@ -13,12 +14,10 @@ interface ScanUploadStepProps {
   error: string | null;
   userContext: string;
   dragOver: boolean;
-  // Course search (fast + manual)
   courseQuery: string;
   courseResults: CourseSummary[];
   searching: boolean;
   loadingCourse: boolean;
-  // Handlers
   onModeChange: (mode: ScanState["scanMode"]) => void;
   onCourseQuery: (q: string) => void;
   onSelectCourse: (course: CourseSummary) => void;
@@ -47,11 +46,9 @@ export function ScanUploadStep({
   courseQuery,
   courseResults,
   searching,
-  loadingCourse,
   onModeChange,
   onCourseQuery,
   onSelectCourse,
-  onSelectCourseManual,
   onClearCourse,
   onScoringFormat,
   onFile,
@@ -64,6 +61,7 @@ export function ScanUploadStep({
 }: ScanUploadStepProps) {
   const showUploadArea = scanMode === "full" || (scanMode === "fast" && !!selectedCourseId && !!scoringFormat);
   const showCourseSearch = scanMode === "fast" || scanMode === "full";
+  const hasFile = !!preview && !!file;
 
   return (
     <div>
@@ -78,68 +76,35 @@ export function ScanUploadStep({
 
       {/* Mode selector */}
       <div className="grid grid-cols-3 gap-3 mb-6">
-        <button
-          onClick={() => onModeChange("full")}
-          className={`flex flex-col items-center justify-center gap-3 p-4 rounded-xl border-2 text-center transition-all ${
-            scanMode === "full"
-              ? "border-primary bg-primary/5 shadow-sm"
-              : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50"
-          }`}
-        >
-          <ScanLine size={28} className={scanMode === "full" ? "text-primary" : "text-gray-400"} />
-          <div>
-            <div className={`font-semibold text-sm ${scanMode === "full" ? "text-primary" : "text-gray-700"}`}>
-              Capture Card
+        {([
+          { mode: "full" as const, icon: ScanLine, label: "Capture Card", sub: "Extracts course, tees & scores", time: "~1–2 min" },
+          { mode: "fast" as const, icon: Zap,      label: "Fast Scan",    sub: "Select a course, scores only",  time: "~10 sec" },
+          { mode: "manual" as const, icon: PenLine, label: "Manual Entry", sub: "Enter scores by hand",          time: "No image" },
+        ] as const).map(({ mode, icon: Icon, label, sub, time }) => (
+          <button
+            key={mode}
+            onClick={() => onModeChange(mode)}
+            className={`flex flex-col items-center justify-center gap-3 p-4 rounded-xl border-2 text-center transition-all ${
+              scanMode === mode
+                ? "border-primary bg-primary/5 shadow-sm"
+                : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50"
+            }`}
+          >
+            <Icon size={26} className={scanMode === mode ? "text-primary" : "text-gray-400"} />
+            <div>
+              <div className={`font-semibold text-sm ${scanMode === mode ? "text-primary" : "text-gray-700"}`}>{label}</div>
+              <div className="text-xs text-gray-500 mt-1">{sub}</div>
+              <div className="text-xs text-gray-400 mt-0.5">{time}</div>
             </div>
-            <div className="text-xs text-gray-500 mt-1">Extracts course, tees &amp; scores</div>
-            <div className="text-xs text-gray-400 mt-0.5">~1–2 minutes</div>
-          </div>
-        </button>
-
-        <button
-          onClick={() => onModeChange("fast")}
-          className={`flex flex-col items-center justify-center gap-3 p-4 rounded-xl border-2 text-center transition-all ${
-            scanMode === "fast"
-              ? "border-primary bg-primary/5 shadow-sm"
-              : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50"
-          }`}
-        >
-          <Zap size={28} className={scanMode === "fast" ? "text-primary" : "text-gray-400"} />
-          <div>
-            <div className={`font-semibold text-sm ${scanMode === "fast" ? "text-primary" : "text-gray-700"}`}>
-              Fast Scan
-            </div>
-            <div className="text-xs text-gray-500 mt-1">Select a saved course, scores only</div>
-            <div className="text-xs text-gray-400 mt-0.5">~10 seconds</div>
-          </div>
-        </button>
-
-        <button
-          onClick={() => onModeChange("manual")}
-          className={`flex flex-col items-center justify-center gap-3 p-4 rounded-xl border-2 text-center transition-all ${
-            scanMode === "manual"
-              ? "border-primary bg-primary/5 shadow-sm"
-              : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50"
-          }`}
-        >
-          <PenLine size={28} className={scanMode === "manual" ? "text-primary" : "text-gray-400"} />
-          <div>
-            <div className={`font-semibold text-sm ${scanMode === "manual" ? "text-primary" : "text-gray-700"}`}>
-              Manual Entry
-            </div>
-            <div className="text-xs text-gray-500 mt-1">Enter scores by hand</div>
-            <div className="text-xs text-gray-400 mt-0.5">No image needed</div>
-          </div>
-        </button>
+          </button>
+        ))}
       </div>
 
-      {/* Fast/full scan: optional course search */}
+      {/* Course search */}
       {showCourseSearch && !selectedCourseId && (
         <div className="mb-6">
           {scanMode === "full" && (
-            <p className="text-sm text-gray-600 mb-2">
-              Optional: pre-select a course to decrease scan speed.
-            </p>
+            <p className="text-sm text-gray-500 mb-2">Optional: pre-select a course to speed up extraction.</p>
           )}
           <div className="relative">
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
@@ -147,17 +112,11 @@ export function ScanUploadStep({
               type="text"
               value={courseQuery}
               onChange={(e) => onCourseQuery(e.target.value)}
-              placeholder={
-                scanMode === "full"
-                  ? "Optional: search course for post-extraction linking..."
-                  : "Search for a course by name..."
-              }
+              placeholder={scanMode === "full" ? "Optional: search course…" : "Search for a course by name…"}
               className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
               autoFocus
             />
-            {searching && (
-              <Loader2 size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 animate-spin" />
-            )}
+            {searching && <Loader2 size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 animate-spin" />}
           </div>
           {courseResults.length > 0 && (
             <ul className="mt-1 bg-white border border-gray-200 rounded-lg shadow-md overflow-hidden divide-y divide-gray-100">
@@ -178,7 +137,7 @@ export function ScanUploadStep({
             </ul>
           )}
           {courseQuery.trim().length >= 2 && !searching && courseResults.length === 0 && (
-            <p className="mt-2 text-sm text-gray-400 text-center">No courses found — try a different name</p>
+            <p className="mt-2 text-sm text-gray-400 text-center">No courses found</p>
           )}
         </div>
       )}
@@ -189,104 +148,135 @@ export function ScanUploadStep({
           <CheckCircle size={16} className="text-green-600 shrink-0" />
           <span className="text-sm font-semibold text-green-800 flex-1">
             {selectedCourseName}
-            {scanMode === "full" ? " (preselected for post-extraction linking)" : ""}
+            {scanMode === "full" ? " (preselected)" : ""}
           </span>
-          <button
-            onClick={onClearCourse}
-            className="text-green-600 hover:text-green-800"
-          >
+          <button onClick={onClearCourse} className="text-green-600 hover:text-green-800">
             <X size={14} />
           </button>
         </div>
       )}
 
-      {/* Scoring format toggle — fast scan only, after course selected */}
+      {/* Scoring format — fast scan only */}
       {scanMode === "fast" && selectedCourseId && (
         <div className="mb-5">
           <p className="text-sm font-medium text-gray-700 mb-2">How are scores written on this card?</p>
           <div className="grid grid-cols-2 gap-3">
-            <button
-              onClick={() => onScoringFormat("strokes")}
-              className={`px-4 py-3 rounded-xl border-2 text-left transition-all ${
-                scoringFormat === "strokes"
-                  ? "border-primary bg-primary/5"
-                  : "border-gray-200 bg-white hover:border-gray-300"
-              }`}
-            >
-              <div className={`text-sm font-semibold ${scoringFormat === "strokes" ? "text-primary" : "text-gray-700"}`}>
-                Total Strokes
-              </div>
-              <div className="text-xs text-gray-400 mt-0.5">e.g. 4, 5, 6</div>
-            </button>
-            <button
-              onClick={() => onScoringFormat("to_par")}
-              className={`px-4 py-3 rounded-xl border-2 text-left transition-all ${
-                scoringFormat === "to_par"
-                  ? "border-primary bg-primary/5"
-                  : "border-gray-200 bg-white hover:border-gray-300"
-              }`}
-            >
-              <div className={`text-sm font-semibold ${scoringFormat === "to_par" ? "text-primary" : "text-gray-700"}`}>
-                Score to Par
-              </div>
-              <div className="text-xs text-gray-400 mt-0.5">e.g. +1, −1, E</div>
-            </button>
+            {([
+              { fmt: "strokes" as const, label: "Total Strokes", eg: "e.g. 4, 5, 6" },
+              { fmt: "to_par" as const,  label: "Score to Par",  eg: "e.g. +1, −1, E" },
+            ]).map(({ fmt, label, eg }) => (
+              <button
+                key={fmt}
+                onClick={() => onScoringFormat(fmt)}
+                className={`px-4 py-3 rounded-xl border-2 text-left transition-all ${
+                  scoringFormat === fmt ? "border-primary bg-primary/5" : "border-gray-200 bg-white hover:border-gray-300"
+                }`}
+              >
+                <div className={`text-sm font-semibold ${scoringFormat === fmt ? "text-primary" : "text-gray-700"}`}>{label}</div>
+                <div className="text-xs text-gray-400 mt-0.5">{eg}</div>
+              </button>
+            ))}
           </div>
         </div>
       )}
 
-      {/* File upload drop zone */}
-      {showUploadArea && (
-        <div
-          className={`border-2 border-dashed rounded-xl p-16 text-center transition-colors ${
-            dragOver
-              ? "border-primary bg-primary/5"
-              : "border-gray-300 hover:border-primary"
-          }`}
+      {/* Drop zone — hidden once a file is selected */}
+      {showUploadArea && !hasFile && (
+        <motion.div
+          className="relative border-2 border-dashed rounded-2xl overflow-hidden cursor-pointer"
+          style={{ minHeight: 260 }}
+          animate={{
+            borderColor: dragOver ? "#2d7a3a" : "#d1d5db",
+            backgroundColor: dragOver ? "rgba(45,122,58,0.03)" : "rgba(249,250,249,0.6)",
+            scale: dragOver ? 1.008 : 1,
+          }}
+          transition={{ duration: 0.18 }}
           onDragOver={(e) => { e.preventDefault(); onDragOver(true); }}
           onDragLeave={() => onDragOver(false)}
-          onDrop={onDrop}
+          onDrop={(e) => { onDragOver(false); onDrop(e); }}
         >
-          <Upload size={48} className="mx-auto text-gray-400 mb-4" />
-          <p className="text-gray-600 mb-2">Drag and drop your scorecard image here</p>
-          <p className="text-sm text-gray-400 mb-4">or</p>
-          <label className="inline-block px-5 py-2.5 bg-primary text-white rounded-lg text-sm font-medium cursor-pointer hover:opacity-90 transition-opacity">
-            <Camera size={16} className="inline mr-2" />
-            Choose File
-            <input
-              type="file"
-              accept="image/*,.pdf"
-              className="hidden"
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) onFile(f);
-              }}
-            />
-          </label>
-          <p className="text-xs text-gray-400 mt-4">
-            Supports JPG, PNG, WEBP, HEIC, PDF
-          </p>
-        </div>
+          {/* Radial glow on drag */}
+          <AnimatePresence>
+            {dragOver && (
+              <motion.div
+                className="absolute inset-0 pointer-events-none"
+                style={{ background: "radial-gradient(ellipse at 50% 50%, rgba(45,122,58,0.09) 0%, transparent 68%)" }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.2 }}
+              />
+            )}
+          </AnimatePresence>
+
+          <div className="flex flex-col items-center justify-center h-full py-14 px-8 text-center">
+            {/* Icon */}
+            <motion.div
+              animate={{ y: dragOver ? -8 : 0 }}
+              transition={{ type: "spring", stiffness: 340, damping: 22 }}
+              className="mb-6"
+            >
+              <div
+                className="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto transition-colors duration-200"
+                style={{
+                  background: dragOver ? "rgba(45,122,58,0.08)" : "#f3f4f6",
+                  border: `1.5px solid ${dragOver ? "rgba(45,122,58,0.3)" : "#e5e7eb"}`,
+                }}
+              >
+                <ScanLine size={36} className="transition-colors duration-200" style={{ color: dragOver ? "#2d7a3a" : "#9ca3af" }} />
+              </div>
+            </motion.div>
+
+            <p className={`text-base font-semibold mb-1 transition-colors duration-200 ${dragOver ? "text-primary" : "text-gray-700"}`}>
+              {dragOver ? "Drop to scan" : "Drop your scorecard here"}
+            </p>
+            <p className="text-sm text-gray-400 mb-6">or browse to upload</p>
+
+            <label className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-xl text-sm font-semibold cursor-pointer hover:opacity-90 transition-opacity shadow-sm">
+              <Camera size={16} />
+              Choose File
+              <input
+                type="file"
+                accept="image/*,.pdf"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) onFile(f);
+                }}
+              />
+            </label>
+
+            <p className="text-xs text-gray-400 mt-5">JPG, PNG, WEBP, HEIC, PDF</p>
+          </div>
+        </motion.div>
       )}
 
-      {preview && file && (
-        <div className="mt-6">
-          <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
-            <div className="flex items-center justify-between mb-3">
-              <span className="text-sm font-medium text-gray-700">{file.name}</span>
+      {/* File preview — full-width premium card */}
+      <AnimatePresence>
+        {hasFile && (
+          <motion.div
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 8 }}
+            transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+            className="bg-white rounded-2xl border border-gray-100 shadow-md overflow-hidden"
+          >
+            {/* Image */}
+            <div className="relative bg-gray-50">
+              <img src={preview!} alt="Scorecard preview" className="w-full max-h-[420px] object-contain" />
               <button
                 onClick={() => onUpdate({ file: null, preview: null })}
-                className="text-gray-400 hover:text-gray-600"
+                className="absolute top-3 right-3 w-8 h-8 rounded-full bg-black/30 hover:bg-black/50 flex items-center justify-center text-white transition-colors"
               >
-                <X size={16} />
+                <X size={15} />
               </button>
+              <div className="absolute bottom-3 left-3 bg-black/35 backdrop-blur-sm rounded-lg px-3 py-1">
+                <span className="text-white text-xs font-medium">{file!.name}</span>
+              </div>
             </div>
-            <img
-              src={preview}
-              alt="Scorecard preview"
-              className="max-h-64 rounded-lg mx-auto"
-            />
-            <div className="mt-4">
+
+            {/* Context input + extract */}
+            <div className="p-5">
               {scanMode === "fast" ? (
                 <>
                   <label className="text-sm font-medium text-gray-700">
@@ -298,7 +288,7 @@ export function ScanUploadStep({
                     value={userContext}
                     onChange={(e) => onUpdate({ userContext: e.target.value })}
                     placeholder='e.g. "Tucker"'
-                    className="w-full mt-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+                    className="w-full mt-1.5 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
                   />
                 </>
               ) : (
@@ -310,22 +300,26 @@ export function ScanUploadStep({
                   <textarea
                     value={userContext}
                     onChange={(e) => onUpdate({ userContext: e.target.value })}
-                    placeholder='e.g. "My name is Tucker", "I write scores as +1/-1/E (to par)", "No putts recorded", "Only front 9"'
-                    className="w-full mt-1 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary resize-none"
+                    placeholder='e.g. "My name is Tucker", "scores written to par", "no putts recorded"'
+                    className="w-full mt-1.5 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary resize-none"
                     rows={2}
                   />
                 </>
               )}
+
+              <button
+                onClick={onExtract}
+                className="mt-4 w-full flex items-center justify-center gap-2 px-5 py-3.5 bg-primary text-white rounded-xl font-semibold hover:opacity-90 transition-opacity shadow-sm"
+              >
+                {scanMode === "fast"
+                  ? <><Zap size={17} />Fast Scan</>
+                  : <><ScanLine size={17} />Extract Scorecard</>
+                }
+              </button>
             </div>
-            <button
-              onClick={onExtract}
-              className="mt-3 w-full px-5 py-3 bg-primary text-white rounded-lg font-medium hover:opacity-90 transition-opacity"
-            >
-              {scanMode === "fast" ? "Fast Scan" : "Extract Scorecard"}
-            </button>
-          </div>
-        </div>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

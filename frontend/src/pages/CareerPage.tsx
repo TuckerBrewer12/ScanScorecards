@@ -5,13 +5,13 @@ import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   PieChart, Pie, Cell,
-  RadarChart, Radar, PolarGrid, PolarAngleAxis,
   ResponsiveContainer, Tooltip,
 } from "recharts";
+import { UserRadarChart } from "@/components/analytics/UserRadarChart";
 import { api } from "@/lib/api";
 import { getStoredColorBlindMode } from "@/lib/accessibility";
 import { getColorBlindPalette } from "@/lib/chartPalettes";
-import type { AnalyticsData, AnalyticsKPIs, ScoreTypeRow, ScoringByParRow } from "@/types/analytics";
+import type { ScoreTypeRow } from "@/types/analytics";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { ScrollSection } from "@/components/analytics/ScrollSection";
 import { SVGHandicapTrend } from "@/components/analytics/SVGHandicapTrend";
@@ -63,19 +63,6 @@ function aggregateDonut(dist: ScoreTypeRow[]) {
   })).filter((d) => d.value > 0);
 }
 
-function buildRadarData(kpis: AnalyticsKPIs, scoringByPar: ScoringByParRow[]) {
-  const clamp = (v: number) => Math.max(0, Math.min(100, v));
-  const parAvg = (par: number) =>
-    scoringByPar.find((r) => r.par === par)?.average_to_par ?? 0;
-  return [
-    { axis: "GIR",        value: clamp(kpis.gir_percentage ?? 0) },
-    { axis: "Scrambling", value: clamp(kpis.scrambling_percentage ?? 0) },
-    { axis: "Putting",    value: clamp((2.5 - (kpis.putts_per_gir ?? 2.0)) / 1.0 * 100) },
-    { axis: "Par 3s",     value: clamp(50 + (-parAvg(3)) * 10) },
-    { axis: "Par 4s",     value: clamp(50 + (-parAvg(4)) * 10) },
-    { axis: "Par 5s",     value: clamp(50 + (-parAvg(5)) * 10) },
-  ];
-}
 
 function eventMeta(event: { date: string; course: string } | null | undefined): string | null {
   if (!event) return null;
@@ -198,7 +185,6 @@ export function CareerPage({ userId }: { userId: string }) {
   const w = timeWindow;
 
   const totalHoles = career_totals.lifetime.total_holes_played ?? 0;
-  const radarData = buildRadarData(data.kpis, data.scoring_by_par);
 
   const hi = Math.max(0, Math.min(36, data.kpis.handicap_index ?? 18));
   const gaugeData = [{ value: hi }, { value: 36 - hi }];
@@ -249,7 +235,8 @@ export function CareerPage({ userId }: { userId: string }) {
   return (
     <div>
       <div className="mb-6">
-        <PageHeader title="Career" subtitle="Player achievement records" />
+        <PageHeader title="Career" subtitle="Player achievement records" scrollThreshold={100} />
+        <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 mb-4">Career</h1>
         <div className="flex gap-2">
           {(["lifetime", "one_year"] as TimeWindow[]).map((tw) => (
             <button
@@ -325,19 +312,15 @@ export function CareerPage({ userId }: { userId: string }) {
 
           {/* ── Player Profile Radar ─────────────────────────────────────── */}
           <ChartCard title="Player Profile">
-            <ResponsiveContainer width="100%" height={220}>
-              <RadarChart data={radarData} outerRadius={80}>
-                <PolarGrid stroke={gridColor} />
-                <PolarAngleAxis dataKey="axis" tick={{ fontSize: 11, fill: neutralColor }} />
-                <Radar
-                  dataKey="value"
-                  stroke={trendPrimary}
-                  fill={trendPrimary}
-                  fillOpacity={0.15}
-                  strokeWidth={2}
-                />
-              </RadarChart>
-            </ResponsiveContainer>
+            <UserRadarChart
+              kpis={data.kpis}
+              scoringByPar={data.scoring_by_par}
+              height={220}
+              outerRadius={80}
+              primaryColor={trendPrimary}
+              gridColor={gridColor}
+              axisColor={neutralColor}
+            />
           </ChartCard>
 
           {/* ── Round Records Table ──────────────────────────────────────── */}

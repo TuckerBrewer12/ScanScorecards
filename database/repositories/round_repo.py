@@ -2,11 +2,13 @@
 
 import asyncpg
 import json
+from collections import defaultdict
+from datetime import date
 from typing import List, Optional
 from uuid import UUID
 
 from models import HoleScore, Round
-from database.converters import round_from_rows, round_to_row, hole_score_to_row, user_tee_from_row
+from database.converters import round_from_rows, round_to_row, hole_score_to_row, user_tee_from_row, course_from_rows
 from database.exceptions import DuplicateError, IntegrityError, NotFoundError
 from database.repositories.course_repo import CourseRepositoryDB
 
@@ -81,6 +83,86 @@ class RoundRepositoryDB:
 
         return round_from_rows(round_row, score_rows, course, tee_color, user_tee)
 
+    async def _get_rounds_bulk(self, conn, round_rows) -> List[Round]:
+        """Assemble N rounds in O(6) queries instead of O(N*4)."""
+        if not round_rows:
+            return []
+
+        round_ids  = [r["id"] for r in round_rows]
+        course_ids = list({r["course_id"] for r in round_rows if r["course_id"]})
+        ut_ids     = list({r["user_tee_id"] for r in round_rows if r["user_tee_id"]})
+        tee_id_lookup = list({r["tee_id"] for r in round_rows if not r["tee_box_played"] and r["tee_id"]})
+
+        # Query 1: all hole scores
+        score_rows = await conn.fetch(
+            "SELECT * FROM users.hole_scores WHERE round_id = ANY($1::uuid[]) ORDER BY hole_number",
+            round_ids,
+        )
+        scores_by_round: dict = defaultdict(list)
+        for s in score_rows:
+            scores_by_round[str(s["round_id"])].append(s)
+
+        # Queries 2–5: courses (deduplicated)
+        courses_by_id: dict = {}
+        if course_ids:
+            c_rows = await conn.fetch("SELECT * FROM courses.courses WHERE id = ANY($1::uuid[])", course_ids)
+            h_rows = await conn.fetch(
+                "SELECT * FROM courses.holes WHERE course_id = ANY($1::uuid[]) ORDER BY hole_number", course_ids
+            )
+            t_rows = await conn.fetch("SELECT * FROM courses.tees WHERE course_id = ANY($1::uuid[])", course_ids)
+            tee_ids = [t["id"] for t in t_rows]
+            y_rows = await conn.fetch(
+                "SELECT * FROM courses.tee_yardages WHERE tee_id = ANY($1::uuid[])", tee_ids
+            ) if tee_ids else []
+
+            holes_by_course: dict = defaultdict(list)
+            for h in h_rows:
+                holes_by_course[str(h["course_id"])].append(h)
+            tees_by_course: dict = defaultdict(list)
+            for t in t_rows:
+                tees_by_course[str(t["course_id"])].append(t)
+            yardages_by_tee: dict = defaultdict(list)
+            for y in y_rows:
+                yardages_by_tee[str(y["tee_id"])].append(y)
+
+            for c_row in c_rows:
+                cid = str(c_row["id"])
+                ctees = tees_by_course[cid]
+                courses_by_id[cid] = course_from_rows(
+                    c_row,
+                    holes_by_course[cid],
+                    ctees,
+                    {str(t["id"]): yardages_by_tee[str(t["id"])] for t in ctees},
+                )
+
+        # Query 6: user_tees
+        user_tees_by_id: dict = {}
+        if ut_ids:
+            ut_rows = await conn.fetch("SELECT * FROM users.user_tees WHERE id = ANY($1::uuid[])", ut_ids)
+            for r in ut_rows:
+                user_tees_by_id[str(r["id"])] = user_tee_from_row(r)
+
+        # Query 7 (conditional): batch-resolve missing tee colors
+        tee_colors_by_id: dict = {}
+        if tee_id_lookup:
+            tc_rows = await conn.fetch(
+                "SELECT id, color FROM courses.tees WHERE id = ANY($1::uuid[])", tee_id_lookup
+            )
+            tee_colors_by_id = {str(r["id"]): r["color"] for r in tc_rows}
+
+        # Assemble in memory
+        rounds = []
+        for row in round_rows:
+            rid = str(row["id"])
+            cid = str(row["course_id"]) if row["course_id"] else None
+            tee_color = row["tee_box_played"] or (
+                tee_colors_by_id.get(str(row["tee_id"])) if row["tee_id"] else None
+            )
+            user_tee = user_tees_by_id.get(str(row["user_tee_id"])) if row["user_tee_id"] else None
+            rounds.append(round_from_rows(row, scores_by_round[rid], courses_by_id.get(cid), tee_color, user_tee))
+
+        return rounds
+
     # ================================================================
     # Read
     # ================================================================
@@ -132,18 +214,33 @@ class RoundRepositoryDB:
             return [dict(r) for r in rows]
 
     async def get_rounds_for_user(
-        self, user_id: str, *, limit: int = 20, offset: int = 0
+        self, user_id: str, *, limit: int = 20, offset: int = 0,
+        course_id: Optional[str] = None,
+        date_from: Optional[date] = None,
     ) -> List[Round]:
         """Get a user's rounds ordered by date DESC."""
+        conditions = ["user_id = $1"]
+        params: list = [UUID(user_id)]
+        n = 2
+        if course_id is not None:
+            conditions.append(f"course_id = ${n}")
+            params.append(UUID(course_id))
+            n += 1
+        if date_from is not None:
+            conditions.append(f"round_date >= ${n}")
+            params.append(date_from)
+            n += 1
+        where = " AND ".join(conditions)
+        params += [limit, offset]
         async with self._pool.acquire() as conn:
             rows = await conn.fetch(
-                """SELECT * FROM users.rounds
-                   WHERE user_id = $1
+                f"""SELECT * FROM users.rounds
+                   WHERE {where}
                    ORDER BY round_date DESC NULLS LAST
-                   LIMIT $2 OFFSET $3""",
-                UUID(user_id), limit, offset,
+                   LIMIT ${n} OFFSET ${n + 1}""",
+                *params,
             )
-            return [await self._assemble_round(conn, r) for r in rows]
+            return await self._get_rounds_bulk(conn, rows)
 
     # ================================================================
     # Create

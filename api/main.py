@@ -1,10 +1,18 @@
 """FastAPI application for the Golf Scorecard API."""
 
+import logging
 import os
 from contextlib import asynccontextmanager
 
 from dotenv import load_dotenv
 from fastapi import FastAPI
+
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(levelname)s [%(name)s] %(message)s",
+)
+# Show all llm pipeline logs at DEBUG level
+logging.getLogger("llm").setLevel(logging.DEBUG)
 
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), "..", ".env"))
 from fastapi.middleware.cors import CORSMiddleware
