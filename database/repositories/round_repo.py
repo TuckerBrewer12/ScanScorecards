@@ -132,7 +132,7 @@ class RoundRepositoryDB:
                     c_row,
                     holes_by_course[cid],
                     ctees,
-                    {str(t["id"]): yardages_by_tee[str(t["id"])] for t in ctees},
+                    {t["id"]: yardages_by_tee[str(t["id"])] for t in ctees},
                 )
 
         # Query 6: user_tees
