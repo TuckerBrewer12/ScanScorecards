@@ -23,6 +23,7 @@ class ParsedScorecardRows(BaseGolfModel):
     course_name: Optional[str] = None
     hole_numbers: List[int] = Field(default_factory=list)
     tee_rows: List[ParsedTeeRow] = Field(default_factory=list)
+    par_row: List[Optional[int]] = Field(default_factory=list)
     handicap_row: List[Optional[int]] = Field(default_factory=list)
     player_name: Optional[str] = None
     score_to_par_hint: Optional[bool] = None
@@ -38,6 +39,7 @@ _INT_RE = re.compile(r"(?<!\d)-?\d{1,4}(?!\d)")
 _ROMAN_RE = re.compile(r"^(?:i|ii|iii|iv|v|vi|vii|viii|ix|x)$", re.IGNORECASE)
 _COURSE_RE = re.compile(r"^[A-Z0-9 '&.-]{3,}$")
 _NAME_RE = re.compile(r"\bmy name is\s+([a-z][a-z '\-]{1,40})\b", re.IGNORECASE)
+_ROW_NAME_RE = re.compile(r"\b(?:scan|read|use)\s+([a-z][a-z '\-]{1,40})\s+row\b", re.IGNORECASE)
 _TO_PAR_TOKEN_RE = re.compile(r"[+\-−]?\d+|[①❶➀⓿⓪]|[eE]")
 
 _CIRCLED_TO_DIGIT = {
@@ -76,6 +78,9 @@ def parse_mistral_scorecard_rows(
     parsed.hole_numbers = _extract_hole_numbers(lines)
     if len(parsed.hole_numbers) < 9:
         parsed.warnings.append("Could not confidently detect hole header row")
+    par_vals = _extract_par_row(lines)
+    if par_vals:
+        parsed.par_row = _coerce_18_ints(par_vals, max_abs=10)
 
     handicap_idx, handicap_vals = _extract_handicap_row(lines)
     if handicap_vals:
@@ -87,6 +92,7 @@ def parse_mistral_scorecard_rows(
     anchor_idx, anchor_vals = _extract_score_row(lines, parsed.player_name, tee_rows, handicap_idx)
     if anchor_idx is None:
         parsed.warnings.append("Could not detect player score row")
+        _apply_field_suppression(parsed, row_hints)
         return parsed
 
     # Context-aware row mapping:
@@ -105,16 +111,25 @@ def parse_mistral_scorecard_rows(
         else:
             parsed.warnings.append("Could not detect final score row at expected third row")
         # Try to derive GIR from shots-to-green when hole pars are known later.
+        _apply_field_suppression(parsed, row_hints)
+        return parsed
+
+    # Explicit single-row score card hint: treat anchor as score only.
+    if row_hints["single_score_row"]:
+        parsed.score_row = _coerce_18_ints(anchor_vals, max_abs=15)
+        _apply_field_suppression(parsed, row_hints)
         return parsed
 
     # Default mapping: anchor row is score.
     parsed.score_row = _coerce_18_ints(anchor_vals, max_abs=15)
-    putts_vals = _extract_next_small_int_row(lines, anchor_idx + 1, max_abs=6)
-    if putts_vals:
-        parsed.putts_row = _coerce_18_ints(putts_vals, max_abs=6)
-    gir_vals = _extract_next_gir_like_row(lines, anchor_idx + 2)
-    if gir_vals:
-        parsed.gir_row = _coerce_18_bools(gir_vals)
+    if not row_hints["suppress_putts"]:
+        putts_vals = _extract_next_small_int_row(lines, anchor_idx + 1, max_abs=6)
+        if putts_vals:
+            parsed.putts_row = _coerce_18_ints(putts_vals, max_abs=6)
+    if not row_hints["suppress_gir"]:
+        gir_vals = _extract_next_gir_like_row(lines, anchor_idx + 2)
+        if gir_vals:
+            parsed.gir_row = _coerce_18_bools(gir_vals)
 
     # Heuristic correction: if anchor looks like shots-to-green and third row looks like to-par scores,
     # remap to [shots, putts, score].
@@ -128,6 +143,7 @@ def parse_mistral_scorecard_rows(
             parsed.score_to_par_hint = True
             parsed.warnings.append("Row remap applied: interpreted third row as to-par scores")
 
+    _apply_field_suppression(parsed, row_hints)
     return parsed
 
 
@@ -152,14 +168,30 @@ def _extract_player_name_hint(user_context: Optional[str]) -> Optional[str]:
         return None
     m = _NAME_RE.search(ctx)
     if not m:
+        m = _ROW_NAME_RE.search(ctx)
+    if not m:
         return None
     return " ".join(w.capitalize() for w in m.group(1).split())
 
 
 def _extract_row_hints(user_context: Optional[str]) -> dict:
     ctx = (user_context or "").lower()
+    single_score_row = any(
+        phrase in ctx
+        for phrase in (
+            "only one row",
+            "one row only",
+            "single row",
+            "row only",
+            "final score only",
+            "only final score",
+            "final scores only",
+        )
+    )
     return {
         "row_order_explicit": (
+            not single_score_row
+            and
             ("first row" in ctx or "first is" in ctx)
             and ("second row" in ctx or "second is" in ctx)
             and ("third row" in ctx or "third is" in ctx)
@@ -168,7 +200,36 @@ def _extract_row_hints(user_context: Optional[str]) -> dict:
             and ("score" in ctx or "final score" in ctx)
         ),
         "score_to_par": ("to par" in ctx) or ("scored to par" in ctx) or ("score-to-par" in ctx),
+        "single_score_row": single_score_row,
+        "suppress_putts": any(
+            phrase in ctx
+            for phrase in (
+                "no putting",
+                "no putts",
+                "without putting",
+                "without putts",
+                "no putt data",
+            )
+        ),
+        "suppress_gir": any(
+            phrase in ctx
+            for phrase in (
+                "no gir",
+                "without gir",
+                "no g.i.r",
+                "without g.i.r",
+                "no greens in regulation",
+                "without greens in regulation",
+            )
+        ),
     }
+
+
+def _apply_field_suppression(parsed: ParsedScorecardRows, row_hints: dict) -> None:
+    if row_hints.get("suppress_putts"):
+        parsed.putts_row = []
+    if row_hints.get("suppress_gir"):
+        parsed.gir_row = []
 
 
 def _extract_course_name(lines: List[str]) -> Optional[str]:
@@ -209,6 +270,20 @@ def _extract_hole_numbers(lines: List[str]) -> List[int]:
     return dedup[:18]
 
 
+def _extract_par_row(lines: List[str]) -> List[int]:
+    for line in lines:
+        lower = line.lower()
+        if "par" not in lower:
+            continue
+        nums = _line_ints(line, max_abs=15)
+        normalized = _normalize_hole_values(nums)
+        # Hole pars should be mostly 3/4/5.
+        hole_like = [n for n in normalized if 3 <= n <= 6]
+        if len(hole_like) >= 9:
+            return normalized[:18]
+    return []
+
+
 def _extract_handicap_row(lines: List[str]) -> Tuple[Optional[int], List[int]]:
     for i, line in enumerate(lines):
         if "handicap" in line.lower() or "hdcp" in line.lower():
@@ -221,13 +296,14 @@ def _extract_tee_rows(lines: List[str]) -> List[Tuple[str, List[int]]]:
     rows: List[Tuple[str, List[int]]] = []
     for line in lines:
         lower = line.lower()
-        if "handicap" in lower or "hole" in lower or "derek" in lower:
+        if "handicap" in lower or "hole" in lower:
             continue
         parts = line.split()
         if not parts:
             continue
         label = parts[0]
         nums = _line_ints(line)
+        nums = _normalize_hole_values(nums)
         large = [n for n in nums if n >= 80]
         label_is_tee = _ROMAN_RE.match(label) is not None or "combo" in lower or label.lower() in {
             "blue",
@@ -258,8 +334,9 @@ def _extract_score_row(
             line = lines[i]
             if preferred_name in line.lower():
                 nums = _line_ints(line, max_abs=15)
-                if len(nums) >= 9:
-                    return i, nums[:18]
+                normalized = _normalize_hole_values(nums)
+                if len(normalized) >= 9:
+                    return i, normalized[:18]
 
     # Pass 2: first small-number row after handicap that doesn't look like tee row.
     for i in range(start, len(lines)):
@@ -268,27 +345,30 @@ def _extract_score_row(
         first = lower.split(" ", 1)[0]
         if first in tee_labels:
             continue
-        if "handicap" in lower or "hole" in lower or "par" in lower:
+        if "handicap" in lower or "hdcp" in lower or "hcp" in lower or "hole" in lower or "par" in lower:
             continue
         nums = _line_ints(line, max_abs=15)
-        if len(nums) >= 9:
-            return i, nums[:18]
+        normalized = _normalize_hole_values(nums)
+        if len(normalized) >= 9:
+            return i, normalized[:18]
     return None, []
 
 
 def _extract_next_small_int_row(lines: List[str], start_idx: int, *, max_abs: int) -> List[int]:
     for i in range(max(0, start_idx), min(len(lines), start_idx + 6)):
         nums = _line_ints(lines[i], max_abs=max_abs)
-        if len(nums) >= 9:
-            return nums[:18]
+        normalized = _normalize_hole_values(nums)
+        if len(normalized) >= 9:
+            return normalized[:18]
     return []
 
 
 def _extract_next_to_par_row(lines: List[str], start_idx: int) -> List[int]:
     for i in range(max(0, start_idx), min(len(lines), start_idx + 6)):
         vals = _line_to_par_values(lines[i])
-        if len(vals) >= 9:
-            return vals[:18]
+        normalized = _normalize_hole_values(vals)
+        if len(normalized) >= 9:
+            return normalized[:18]
     return []
 
 
@@ -350,6 +430,23 @@ def _line_to_par_values(line: str) -> List[int]:
         if -9 <= n <= 9:
             vals.append(n)
     return vals
+
+
+def _normalize_hole_values(values: List[int]) -> List[int]:
+    """Best-effort normalize a row to 18 hole cells, dropping subtotal columns.
+
+    Common table layout in OCR:
+    [h1..h9, OUT, h10..h18, IN, TOT]
+    """
+    if len(values) <= 18:
+        return values
+
+    if len(values) >= 19:
+        candidate = values[:9] + values[10:19]
+        if len(candidate) == 18:
+            return candidate
+
+    return values[:18]
 
 
 def _looks_like_to_par_row(values: List[Optional[int]]) -> bool:
