@@ -7,7 +7,7 @@ import { initialScanState } from "@/types/scan";
 import { api } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 
-function normalizeCourseQuery(value: string): string {
+function normalizeCourseQueryForSearch(value: string): string {
   return value.trim().replace(/\s+/g, " ");
 }
 
@@ -95,9 +95,9 @@ export function useScan(
   const reviewSearchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleReviewCourseQuery = useCallback((q: string) => {
-    const normalized = normalizeCourseQuery(q);
-    setReviewCourseQuery(normalized);
+    setReviewCourseQuery(q);
     if (reviewSearchTimer.current) clearTimeout(reviewSearchTimer.current);
+    const normalized = normalizeCourseQueryForSearch(q);
     if (!userId || normalized.length < 2) { setReviewCourseResults([]); return; }
     reviewSearchTimer.current = setTimeout(async () => {
       setReviewSearching(true);
@@ -132,9 +132,9 @@ export function useScan(
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleCourseQuery = useCallback((q: string) => {
-    const normalized = normalizeCourseQuery(q);
-    setCourseQuery(normalized);
+    setCourseQuery(q);
     if (searchTimer.current) clearTimeout(searchTimer.current);
+    const normalized = normalizeCourseQueryForSearch(q);
     if (!userId || normalized.length < 2) { setCourseResults([]); return; }
     searchTimer.current = setTimeout(async () => {
       setSearching(true);
@@ -240,7 +240,7 @@ export function useScan(
         step: "review",
       });
       // Pre-fill the review search box with whatever the LLM extracted
-      const extractedCourseName = normalizeCourseQuery(data.round.course?.name ?? "");
+      const extractedCourseName = normalizeCourseQueryForSearch(data.round.course?.name ?? "");
       setReviewCourseQuery(extractedCourseName);
       if (extractedCourseName.length >= 2) {
         handleReviewCourseQuery(extractedCourseName);
