@@ -57,7 +57,6 @@ export function ScanPage({ userId }: { userId: string }) {
         file={scan.file}
         preview={scan.preview}
         error={scan.error}
-        userContext={scan.userContext}
         dragOver={scan.dragOver}
         courseQuery={scan.courseQuery}
         courseResults={scan.courseResults}

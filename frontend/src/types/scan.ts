@@ -65,6 +65,7 @@ export interface ScanState {
   editedTeeBox: string | null;
   error: string | null;
   userContext: string;
+  prefetchedOcrText: string | null;
   // Review step: user-selected course override
   reviewCourseId: string | null;
   reviewExternalCourseId: string | null;
@@ -87,6 +88,7 @@ export const initialScanState: ScanState = {
   editedTeeBox: null,
   error: null,
   userContext: "",
+  prefetchedOcrText: null,
   reviewCourseId: null,
   reviewExternalCourseId: null,
   reviewCourseName: null,

@@ -276,6 +276,21 @@ class ScanService:
                     hs_dict["par_played"] = par_by_hole.get(hole_num)
                 if not hs_dict.get("handicap_played"):
                     hs_dict["handicap_played"] = handicap_by_hole.get(hole_num)
+            # Guard against putts > strokes (can occur when score row is to-par
+            # and the to-par→absolute conversion didn't happen at extract time).
+            strokes = hs_dict.get("strokes")
+            putts = hs_dict.get("putts")
+            if strokes is not None and putts is not None and putts > strokes:
+                par_played = hs_dict.get("par_played")
+                if par_played is not None:
+                    # Try interpreting strokes as a to-par value and convert.
+                    absolute = par_played + strokes
+                    if 1 <= absolute <= 15 and putts <= absolute:
+                        hs_dict["strokes"] = absolute
+                    else:
+                        hs_dict["putts"] = None
+                else:
+                    hs_dict["putts"] = None
             hole_scores.append(HoleScore(**hs_dict))
         return hole_scores
 

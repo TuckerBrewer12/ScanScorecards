@@ -1,4 +1,5 @@
 import { Camera, AlertTriangle, X, Search, ScanLine, MapPin, CheckCircle, Loader2, PenLine } from "lucide-react";
+import { ScorecardLayoutPicker } from "./ScorecardLayoutPicker";
 import { motion, AnimatePresence } from "framer-motion";
 import { PageHeader } from "@/components/layout/PageHeader";
 import type { ScanState } from "@/types/scan";
@@ -11,7 +12,6 @@ interface ScanUploadStepProps {
   file: File | null;
   preview: string | null;
   error: string | null;
-  userContext: string;
   dragOver: boolean;
   courseQuery: string;
   courseResults: CourseSummary[];
@@ -36,7 +36,6 @@ export function ScanUploadStep({
   file,
   preview,
   error,
-  userContext,
   dragOver,
   courseQuery,
   courseResults,
@@ -242,18 +241,13 @@ export function ScanUploadStep({
               </div>
             </div>
 
-            {/* Context input + extract */}
+            {/* Card layout + extract */}
             <div className="p-5">
-              <label className="text-sm font-medium text-gray-700">
-                Context for AI
-                <span className="font-normal text-gray-400 ml-1">(optional)</span>
-              </label>
-              <textarea
-                value={userContext}
-                onChange={(e) => onUpdate({ userContext: e.target.value })}
-                placeholder='e.g. "My name is Tucker", "scores written to par", "no putts recorded"'
-                className="w-full mt-1.5 px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary resize-none"
-                rows={2}
+              <p className="text-sm font-medium text-gray-700 mb-3">
+                What's on your card?
+              </p>
+              <ScorecardLayoutPicker
+                onContextChange={(ctx) => onUpdate({ userContext: ctx })}
               />
 
               <button
