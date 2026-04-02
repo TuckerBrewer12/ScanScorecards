@@ -239,11 +239,18 @@ export function useScan(
         reviewCourseName: data.round.course?.name ?? null,
         step: "review",
       });
-      // Pre-fill the review search box with whatever the LLM extracted
-      const extractedCourseName = normalizeCourseQueryForSearch(data.round.course?.name ?? "");
-      setReviewCourseQuery(extractedCourseName);
-      if (extractedCourseName.length >= 2) {
-        handleReviewCourseQuery(extractedCourseName);
+      // For new-course full scans (no preselected course), keep review course search empty.
+      // OCR course names are often noisy and should not auto-populate the search box.
+      const shouldPrefillReviewSearch = Boolean(selectedCourseId) || scanMode === "fast";
+      if (shouldPrefillReviewSearch) {
+        const extractedCourseName = normalizeCourseQueryForSearch(data.round.course?.name ?? "");
+        setReviewCourseQuery(extractedCourseName);
+        if (extractedCourseName.length >= 2) {
+          handleReviewCourseQuery(extractedCourseName);
+        }
+      } else {
+        setReviewCourseQuery("");
+        setReviewCourseResults([]);
       }
     } catch (err) {
       update({ error: err instanceof Error ? err.message : "Extraction failed", step: "upload" });
