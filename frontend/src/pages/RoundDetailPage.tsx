@@ -105,6 +105,8 @@ export function RoundDetailPage({ userId }: { userId: string }) {
   const queryClient = useQueryClient();
   const [editMode, setEditMode] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const deletingRef = useRef(false);
   const [saving, setSaving] = useState(false);
   const [editedScores, setEditedScores] = useState<EditedScores>({});
   const [editedTeeBox, setEditedTeeBox] = useState("");
@@ -206,10 +208,18 @@ export function RoundDetailPage({ userId }: { userId: string }) {
   }, [round, roundId, editedScores, editedTeeBox]);
 
   const handleDelete = useCallback(async () => {
-    if (!roundId) return;
-    await api.deleteRound(roundId);
+    if (!roundId || deletingRef.current) return;
+    deletingRef.current = true;
+    setDeleting(true);
+    try {
+      await api.deleteRound(roundId);
+    } catch {
+      // already deleted — treat as success
+    }
+    queryClient.invalidateQueries({ queryKey: ["rounds", userId] });
+    queryClient.invalidateQueries({ queryKey: ["dashboard", userId] });
     navigate("/rounds");
-  }, [roundId, navigate]);
+  }, [roundId, userId, queryClient, navigate]);
 
   const handleScoreChange = useCallback(
     (holeNumber: number, field: "strokes" | "putts", value: number | null) => {
@@ -379,7 +389,9 @@ export function RoundDetailPage({ userId }: { userId: string }) {
                 ) : (
                   <div className="flex items-center gap-2 px-3 py-1.5 bg-red-50 border border-red-200 rounded-lg">
                     <span className="text-sm text-red-700 font-medium">Delete this round?</span>
-                    <button onClick={handleDelete} className="text-sm font-semibold text-red-700 hover:text-red-900">Yes</button>
+                    <button onClick={handleDelete} disabled={deleting} className="text-sm font-semibold text-red-700 hover:text-red-900 disabled:opacity-50">
+                      {deleting ? "Deleting…" : "Yes"}
+                    </button>
                     <button onClick={() => setConfirmDelete(false)} className="text-sm text-gray-500 hover:text-gray-700">Cancel</button>
                   </div>
                 )}
