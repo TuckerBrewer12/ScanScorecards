@@ -106,8 +106,8 @@ export function ScanReviewStep({
 
   const confidenceIsOk = strokesReviewFields.length === 0;
   const confidenceBannerClass = confidenceIsOk
-    ? "text-green-700 bg-green-50 border border-green-200"
-    : "text-amber-700 bg-amber-50 border border-amber-200";
+    ? "text-white bg-[#2d7a3a] border border-[#2d7a3a]"
+    : "text-white bg-amber-500 border border-amber-500";
 
   function getFieldConfidence(holeNumber: number | null, index: number, field: string): FieldConfidence | null {
     const num = holeNumber ?? index + 1;
