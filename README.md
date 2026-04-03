@@ -1,29 +1,42 @@
 # ScanScorecards
 
-Golf scorecard app that scans physical scorecards and tracks rounds, courses, and player stats.
+Snap a photo of your scorecard. Get a full round breakdown, your stats over time, and personalized tips to shoot lower.
+
+---
+
+## What It Does
+
+**Scan** — Take a picture of any physical scorecard after your round. The app uses an LLM to pull out your scores, course info, hole pars, and shot stats automatically. Review the extraction and fix anything before saving.
+
+**Track** — Every round is stored with hole-by-hole detail: strokes, putts, fairways, greens in regulation. The scorecard view shows your score against par for each hole and your front/back/total.
+
+**Analyze** — The analytics dashboard breaks down your game across all your rounds:
+- Score type distribution (eagles through quad bogeys)
+- GIR and putting averages
+- Scoring by hole distance and par type
+- Worst and best holes
+- Handicap trend over time
+
+**Improve** — Set a scoring goal (break 90, 85, 80, etc.) and the app identifies your highest-ROI improvement areas: three-putt bleed, blowup holes, weak yardage zones, GIR opportunities, and more. Each insight is ranked by how many strokes it's worth.
+
+---
 
 ## Running the App
 
-You need two terminals running at the same time.
+Two terminals.
 
-### Terminal 1 — Backend
-
+**Terminal 1 — Backend**
 ```bash
-cd golf_scorecard_app/ScanScorecards
 source .venv/bin/activate
 uvicorn api.main:app --reload
 ```
 
-Runs on http://localhost:8000
-
-### Terminal 2 — Frontend
-
+**Terminal 2 — Frontend**
 ```bash
 cd frontend
-npm install   # first time only
 npm run dev
 ```
 
-Runs on http://localhost:5173
+Open [http://localhost:5173](http://localhost:5173). Backend runs on port 8000; the frontend proxies to it automatically.
 
-Open http://localhost:5173 in your browser. The frontend proxies API requests to the backend automatically.
+Requires a `.env` file with `GOOGLE_API_KEY` for LLM scorecard extraction.
