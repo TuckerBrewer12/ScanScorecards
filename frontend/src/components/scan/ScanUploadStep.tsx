@@ -153,10 +153,10 @@ export function ScanUploadStep({
           className="relative border-2 border-dashed rounded-2xl overflow-hidden cursor-pointer"
           style={{ minHeight: 260 }}
           animate={{
-            borderColor: dragOver ? "#2d7a3a" : (isDark ? "#334155" : "#d1d5db"),
+            borderColor: dragOver ? "#2d7a3a" : (isDark ? "#2a2d30" : "#d1d5db"),
             backgroundColor: dragOver
               ? (isDark ? "rgba(45,122,58,0.14)" : "rgba(45,122,58,0.03)")
-              : (isDark ? "rgba(15,23,42,0.55)" : "rgba(249,250,249,0.6)"),
+              : (isDark ? "rgba(24,25,26,0.92)" : "rgba(249,250,249,0.6)"),
             scale: dragOver ? 1.008 : 1,
           }}
           transition={{ duration: 0.18 }}
@@ -188,8 +188,8 @@ export function ScanUploadStep({
               <div
                 className="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto transition-colors duration-200"
                 style={{
-                  background: dragOver ? "rgba(45,122,58,0.08)" : (isDark ? "rgba(30,41,59,0.85)" : "#f3f4f6"),
-                  border: `1.5px solid ${dragOver ? "rgba(45,122,58,0.3)" : (isDark ? "#334155" : "#e5e7eb")}`,
+                  background: dragOver ? "rgba(45,122,58,0.08)" : (isDark ? "#222426" : "#f3f4f6"),
+                  border: `1.5px solid ${dragOver ? "rgba(45,122,58,0.3)" : (isDark ? "#2a2d30" : "#e5e7eb")}`,
                 }}
               >
                 <ScanLine size={36} className="transition-colors duration-200" style={{ color: dragOver ? "#2d7a3a" : (isDark ? "#94a3b8" : "#9ca3af") }} />

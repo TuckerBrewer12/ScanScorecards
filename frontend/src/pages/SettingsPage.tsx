@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Moon, Sun } from "lucide-react";
-import { useBlocker, useBeforeUnload } from "react-router-dom";
+import { useBeforeUnload, useLocation } from "react-router-dom";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { api } from "@/lib/api";
 import { applyTheme, getStoredTheme, setStoredTheme } from "@/lib/theme";
@@ -19,6 +19,7 @@ const COLORBLIND_MODES: Array<{ key: ColorBlindMode; label: string }> = [
 ];
 
 export function SettingsPage({ userId }: { userId: string }) {
+  const location = useLocation();
   const [homeCourseQuery, setHomeCourseQuery] = useState<string>("");
   const [searchResults, setSearchResults] = useState<CourseSummary[]>([]);
   const [showResults, setShowResults] = useState(false);
@@ -31,9 +32,9 @@ export function SettingsPage({ userId }: { userId: string }) {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string>("");
   const [showUnsavedModal, setShowUnsavedModal] = useState(false);
-  const [blockerActionRunning, setBlockerActionRunning] = useState(false);
   const initializedRef = useRef(false);
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const bypassGuardRef = useRef(false);
   const baselineRef = useRef<{
     homeCourseId: string;
     homeCourseQuery: string;
@@ -109,21 +110,61 @@ export function SettingsPage({ userId }: { userId: string }) {
     );
   })();
 
-  const blocker = useBlocker(hasUnsavedChanges && !blockerActionRunning);
-
-  useEffect(() => {
-    if (blocker.state === "blocked") {
-      setShowUnsavedModal(true);
-    } else {
-      setShowUnsavedModal(false);
-    }
-  }, [blocker.state]);
-
   useBeforeUnload((event) => {
     if (!hasUnsavedChanges) return;
     event.preventDefault();
     event.returnValue = "";
   });
+
+  // In-app navigation guard (works with BrowserRouter + NavLink)
+  useEffect(() => {
+    const onClickCapture = (event: MouseEvent) => {
+      if (!hasUnsavedChanges || bypassGuardRef.current) return;
+      if (event.defaultPrevented || event.button !== 0) return;
+      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+
+      const target = event.target as Element | null;
+      const anchor = target?.closest("a[href]") as HTMLAnchorElement | null;
+      if (!anchor) return;
+      if (anchor.target && anchor.target !== "_self") return;
+
+      let nextPath = "";
+      try {
+        const url = new URL(anchor.href, window.location.origin);
+        if (url.origin !== window.location.origin) return;
+        nextPath = `${url.pathname}${url.search}${url.hash}`;
+      } catch {
+        return;
+      }
+
+      const currentPath = `${location.pathname}${location.search}${location.hash}`;
+      if (!nextPath || nextPath === currentPath) return;
+
+      event.preventDefault();
+      event.stopPropagation();
+      setShowUnsavedModal(true);
+    };
+
+    document.addEventListener("click", onClickCapture, true);
+    return () => document.removeEventListener("click", onClickCapture, true);
+  }, [hasUnsavedChanges, location.pathname, location.search, location.hash]);
+
+  // Browser Back/Forward guard
+  useEffect(() => {
+    const onPopState = () => {
+      if (!hasUnsavedChanges || bypassGuardRef.current) return;
+      const nextPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+      const currentPath = `${location.pathname}${location.search}${location.hash}`;
+      if (nextPath === currentPath) return;
+
+      // Restore current URL immediately, then ask for confirmation.
+      window.history.pushState(null, "", currentPath);
+      setShowUnsavedModal(true);
+    };
+
+    window.addEventListener("popstate", onPopState);
+    return () => window.removeEventListener("popstate", onPopState);
+  }, [hasUnsavedChanges, location.pathname, location.search, location.hash]);
 
   const handleHomeCourseQueryChange = (value: string) => {
     setHomeCourseQuery(value);
@@ -241,25 +282,30 @@ export function SettingsPage({ userId }: { userId: string }) {
     await persistSettings();
   };
 
+  const resetToBaseline = () => {
+    const baseline = baselineRef.current;
+    if (!baseline) return;
+    setHomeCourseId(baseline.homeCourseId);
+    setHomeCourseQuery(baseline.homeCourseQuery);
+    setHandicapInput(baseline.handicapInput);
+    setGetUpdates(baseline.getUpdates);
+    setTheme(baseline.theme);
+    setColorBlindMode(baseline.colorBlindMode);
+    applyTheme(baseline.theme);
+    setSearchResults([]);
+    setShowResults(false);
+  };
+
   const handleConfirmAndSave = async () => {
-    if (blocker.state !== "blocked") return;
-    setBlockerActionRunning(true);
     const ok = await persistSettings();
     if (ok) {
-      blocker.proceed();
-    } else {
-      blocker.reset();
-      setBlockerActionRunning(false);
+      setShowUnsavedModal(false);
     }
   };
 
   const handleDiscardAndLeave = () => {
-    if (blocker.state !== "blocked") return;
-    const storedTheme = getStoredTheme();
-    applyTheme(storedTheme);
-    setTheme(storedTheme);
-    setColorBlindMode(getStoredColorBlindMode());
-    blocker.proceed();
+    resetToBaseline();
+    setShowUnsavedModal(false);
   };
 
   if (loading) {
