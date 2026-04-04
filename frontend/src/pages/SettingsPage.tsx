@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Moon, Sun } from "lucide-react";
+import { useBlocker, useBeforeUnload } from "react-router-dom";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { api } from "@/lib/api";
 import { applyTheme, getStoredTheme, setStoredTheme } from "@/lib/theme";
@@ -29,8 +30,18 @@ export function SettingsPage({ userId }: { userId: string }) {
   const [colorBlindMode, setColorBlindMode] = useState<ColorBlindMode>(() => getStoredColorBlindMode());
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string>("");
+  const [showUnsavedModal, setShowUnsavedModal] = useState(false);
+  const [blockerActionRunning, setBlockerActionRunning] = useState(false);
   const initializedRef = useRef(false);
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const baselineRef = useRef<{
+    homeCourseId: string;
+    homeCourseQuery: string;
+    handicapInput: string;
+    getUpdates: boolean;
+    theme: AppTheme;
+    colorBlindMode: ColorBlindMode;
+  } | null>(null);
 
   const { data: settingsData, isLoading: loading } = useQuery({
     queryKey: ["settings", userId],
@@ -63,12 +74,56 @@ export function SettingsPage({ userId }: { userId: string }) {
     if (!settingsData || initializedRef.current) return;
     initializedRef.current = true;
     const savedUpdates = localStorage.getItem(UPDATES_PREF_KEY);
-    if (savedUpdates !== null) setGetUpdates(savedUpdates === "true");
-    setHomeCourseId(settingsData.user.home_course_id ?? "");
-    setHandicapInput(settingsData.user.handicap != null ? String(settingsData.user.handicap) : "");
+    const updatesPref = savedUpdates !== null ? savedUpdates === "true" : true;
+    const initialHomeCourseId = settingsData.user.home_course_id ?? "";
+    const initialHandicap = settingsData.user.handicap != null ? String(settingsData.user.handicap) : "";
+    const initialTheme = getStoredTheme();
+    const initialColorBlind = getStoredColorBlindMode();
+    setGetUpdates(updatesPref);
+    setHomeCourseId(initialHomeCourseId);
+    setHandicapInput(initialHandicap);
     setFriendCode(settingsData.user.friend_code ?? "");
     setHomeCourseQuery(settingsData.homeCourseQueryDefault);
+    setTheme(initialTheme);
+    setColorBlindMode(initialColorBlind);
+    baselineRef.current = {
+      homeCourseId: initialHomeCourseId,
+      homeCourseQuery: settingsData.homeCourseQueryDefault,
+      handicapInput: initialHandicap,
+      getUpdates: updatesPref,
+      theme: initialTheme,
+      colorBlindMode: initialColorBlind,
+    };
   }, [settingsData]);
+
+  const hasUnsavedChanges = (() => {
+    const baseline = baselineRef.current;
+    if (!baseline) return false;
+    return (
+      baseline.homeCourseId !== homeCourseId ||
+      baseline.homeCourseQuery !== homeCourseQuery ||
+      baseline.handicapInput !== handicapInput ||
+      baseline.getUpdates !== getUpdates ||
+      baseline.theme !== theme ||
+      baseline.colorBlindMode !== colorBlindMode
+    );
+  })();
+
+  const blocker = useBlocker(hasUnsavedChanges && !blockerActionRunning);
+
+  useEffect(() => {
+    if (blocker.state === "blocked") {
+      setShowUnsavedModal(true);
+    } else {
+      setShowUnsavedModal(false);
+    }
+  }, [blocker.state]);
+
+  useBeforeUnload((event) => {
+    if (!hasUnsavedChanges) return;
+    event.preventDefault();
+    event.returnValue = "";
+  });
 
   const handleHomeCourseQueryChange = (value: string) => {
     setHomeCourseQuery(value);
@@ -97,11 +152,11 @@ export function SettingsPage({ userId }: { userId: string }) {
 
   const setThemePreference = (nextTheme: AppTheme) => {
     setTheme(nextTheme);
+    applyTheme(nextTheme); // live preview without persisting until Save
   };
 
   const setColorBlindPreference = (mode: ColorBlindMode) => {
     setColorBlindMode(mode);
-    setStoredColorBlindMode(mode);
   };
 
   const colorBlindIndex = COLORBLIND_MODES.findIndex((m) => m.key === colorBlindMode);
@@ -112,7 +167,7 @@ export function SettingsPage({ userId }: { userId: string }) {
     setColorBlindPreference(COLORBLIND_MODES[next].key);
   };
 
-  const saveSettings = async () => {
+  const persistSettings = async (): Promise<boolean> => {
     const courses = settingsData?.allCourses ?? [];
     setSaving(true);
     setMessage("");
@@ -125,8 +180,7 @@ export function SettingsPage({ userId }: { userId: string }) {
           selectedHomeCourseId = exact.id;
         } else {
           setMessage("Select a home course from the suggestions, or clear it.");
-          setSaving(false);
-          return;
+          return false;
         }
       }
 
@@ -138,8 +192,7 @@ export function SettingsPage({ userId }: { userId: string }) {
         const parsed = Number(trimmed);
         if (!Number.isFinite(parsed) || parsed < -10 || parsed > 54) {
           setMessage("Handicap must be a number between +10 and 54.");
-          setSaving(false);
-          return;
+          return false;
         }
         handicap = Math.round(parsed * 10) / 10;
       }
@@ -149,6 +202,7 @@ export function SettingsPage({ userId }: { userId: string }) {
         handicap,
       });
       setStoredTheme(theme);
+      setStoredColorBlindMode(colorBlindMode);
       applyTheme(theme);
       const refreshedUser = await api.getUser(userId);
 
@@ -162,13 +216,50 @@ export function SettingsPage({ userId }: { userId: string }) {
         setHomeCourseQuery("");
       }
       localStorage.setItem(UPDATES_PREF_KEY, String(getUpdates));
+      baselineRef.current = {
+        homeCourseId: refreshedUser.home_course_id ?? "",
+        homeCourseQuery: refreshedUser.home_course_id
+          ? ((settingsData?.allCourses ?? []).find((course) => course.id === refreshedUser.home_course_id)?.name ?? homeCourseQuery)
+          : "",
+        handicapInput: refreshedUser.handicap != null ? String(refreshedUser.handicap) : "",
+        getUpdates,
+        theme,
+        colorBlindMode,
+      };
       setMessage("Settings saved.");
+      return true;
     } catch (error) {
       const text = error instanceof Error ? error.message : "Failed to save settings.";
       setMessage(text);
+      return false;
     } finally {
       setSaving(false);
     }
+  };
+
+  const saveSettings = async () => {
+    await persistSettings();
+  };
+
+  const handleConfirmAndSave = async () => {
+    if (blocker.state !== "blocked") return;
+    setBlockerActionRunning(true);
+    const ok = await persistSettings();
+    if (ok) {
+      blocker.proceed();
+    } else {
+      blocker.reset();
+      setBlockerActionRunning(false);
+    }
+  };
+
+  const handleDiscardAndLeave = () => {
+    if (blocker.state !== "blocked") return;
+    const storedTheme = getStoredTheme();
+    applyTheme(storedTheme);
+    setTheme(storedTheme);
+    setColorBlindMode(getStoredColorBlindMode());
+    blocker.proceed();
   };
 
   if (loading) {
@@ -375,6 +466,35 @@ export function SettingsPage({ userId }: { userId: string }) {
           {message ? <span className="text-sm text-gray-600">{message}</span> : null}
         </div>
       </div>
+
+      {showUnsavedModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="w-full max-w-md rounded-xl border border-gray-200 bg-white shadow-xl p-5">
+            <h3 className="text-base font-semibold text-gray-900">Unsaved changes detected</h3>
+            <p className="mt-2 text-sm text-gray-600">
+              There are unsaved changes made in Settings. Do you want to confirm these changes before leaving this page?
+              If you choose not to confirm, your pending edits will be discarded.
+            </p>
+            <div className="mt-4 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={handleConfirmAndSave}
+                disabled={saving}
+                className="rounded-lg bg-gray-900 text-white px-3.5 py-2 text-sm font-medium disabled:opacity-60"
+              >
+                {saving ? "Saving..." : "Yes, confirm changes"}
+              </button>
+              <button
+                type="button"
+                onClick={handleDiscardAndLeave}
+                className="rounded-lg border border-gray-300 bg-white text-gray-700 px-3.5 py-2 text-sm font-medium hover:bg-gray-50"
+              >
+                No, don&apos;t confirm changes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
