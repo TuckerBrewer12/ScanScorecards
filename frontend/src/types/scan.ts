@@ -2,6 +2,7 @@ export interface ExtractedHoleScore {
   hole_number: number | null;
   strokes: number | null;
   putts: number | null;
+  shots_to_green: number | null;
   fairway_hit: boolean | null;
   green_in_regulation: boolean | null;
 }

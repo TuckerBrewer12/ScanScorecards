@@ -317,6 +317,7 @@ export function useScan(
       hole_number: h.number,
       strokes: null,
       putts: null,
+      shots_to_green: null,
       fairway_hit: null,
       green_in_regulation: null,
     }));

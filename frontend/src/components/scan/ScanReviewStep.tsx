@@ -279,7 +279,7 @@ export function ScanReviewStep({
           )}
 
           {/* GIR — manual entry only */}
-          {isManual && (
+          {(isManual || slice.some((hs) => hs.green_in_regulation !== null)) && (
             <tr className="text-xs">
               <td className="px-3 py-1.5 font-bold text-green-700">GIR</td>
               {slice.map((hs, si) => {
@@ -289,15 +289,12 @@ export function ScanReviewStep({
                   <td key={si} className="px-1 py-1 text-center">
                     <button
                       onClick={() => onGirChange(origIdx, gir === true ? false : gir === false ? null : true)}
-                      className={`w-9 h-7 rounded border text-xs font-medium transition-colors ${
-                        gir === true
-                          ? "border-green-400 bg-green-50 text-green-700"
-                          : gir === false
-                          ? "border-red-200 bg-red-50 text-red-500"
-                          : "border-gray-200 bg-white text-gray-400"
-                      }`}
+                      className="w-7 h-7 flex items-center justify-center mx-auto rounded-full hover:bg-gray-100 focus:outline-none"
+                      title={gir === true ? "GIR hit — click to mark missed" : gir === false ? "GIR missed — click to clear" : "GIR unknown — click to mark hit"}
                     >
-                      {gir === true ? "Y" : gir === false ? "N" : "–"}
+                      <span style={{ color: gir === true ? "#16a34a" : "#9ca3af" }}>
+                        {gir === true ? "●" : gir === false ? "○" : "–"}
+                      </span>
                     </button>
                   </td>
                 );
