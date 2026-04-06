@@ -27,13 +27,13 @@ export function AnalyticsFilterBar({
   hasHomeCourse,
 }: AnalyticsFilterBarProps) {
   const pillBase = "px-3 py-1.5 rounded-lg text-xs font-semibold transition-all";
-  const pillActive = "bg-white shadow-sm text-gray-900";
-  const pillInactive = "text-gray-500 hover:text-gray-700";
+  const pillActive = "bg-white shadow-sm text-gray-900 dark:bg-[#111213] dark:text-gray-100";
+  const pillInactive = "text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200";
 
   return (
     <div className="flex flex-wrap items-center gap-2">
       {/* Rounds count */}
-      <div className="flex items-center bg-gray-100/80 p-1 rounded-xl gap-0.5">
+      <div className="flex items-center bg-gray-100/80 dark:bg-[#18191A] p-1 rounded-xl gap-0.5 border border-transparent dark:border-[#2a2d30]">
         {LIMIT_OPTIONS.map(({ value, label }) => (
           <button
             key={value}
@@ -46,7 +46,7 @@ export function AnalyticsFilterBar({
       </div>
 
       {/* Timeframe */}
-      <div className="flex items-center bg-gray-100/80 p-1 rounded-xl gap-0.5">
+      <div className="flex items-center bg-gray-100/80 dark:bg-[#18191A] p-1 rounded-xl gap-0.5 border border-transparent dark:border-[#2a2d30]">
         {TIMEFRAME_OPTIONS.map(({ value, label }) => (
           <button
             key={value}
@@ -63,7 +63,7 @@ export function AnalyticsFilterBar({
         <select
           value={filters.courseId}
           onChange={(e) => onChange({ ...filters, courseId: e.target.value })}
-          className="text-xs font-semibold text-gray-700 bg-gray-100/80 border-0 rounded-xl px-3 py-2 pr-7 appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/20"
+          className="text-xs font-semibold text-gray-700 dark:text-gray-100 bg-gray-100/80 dark:bg-[#18191A] border border-transparent dark:border-[#2a2d30] rounded-xl px-3 py-2 pr-7 appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/20"
         >
           <option value="all">All Courses</option>
           {hasHomeCourse && <option value="home">Home Course</option>}
@@ -76,7 +76,7 @@ export function AnalyticsFilterBar({
         {filters.courseId !== "all" && (
           <button
             onClick={() => onChange({ ...filters, courseId: "all" })}
-            className="w-5 h-5 rounded-full bg-gray-200 hover:bg-gray-300 text-gray-500 hover:text-gray-700 flex items-center justify-center text-xs font-bold transition-colors"
+            className="w-5 h-5 rounded-full bg-gray-200 hover:bg-gray-300 dark:bg-[#2a2d30] dark:hover:bg-[#34373b] text-gray-500 hover:text-gray-700 dark:text-gray-200 dark:hover:text-white flex items-center justify-center text-xs font-bold transition-colors"
             aria-label="Clear course filter"
           >
             ×
