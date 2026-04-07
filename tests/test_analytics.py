@@ -389,10 +389,10 @@ def test_score_type_distribution_per_round():
     rounds = _build_rounds()
     rows = score_type_distribution_per_round(rounds)
 
-    # Round 1: all holes are +1 on this synthetic dataset.
-    assert rows[0]["bogey"] == pytest.approx(100.0)
-    assert rows[0]["birdie"] == 0.0
-    assert rows[0]["par"] == 0.0
+    # Round 1: all strokes=4; holes 1-4 par3 (+1 bogey), holes 5-14 par4 (par), holes 15-18 par5 (birdie)
+    assert rows[0]["bogey"] == pytest.approx((4 / 18) * 100)
+    assert rows[0]["par"] == pytest.approx((10 / 18) * 100)
+    assert rows[0]["birdie"] == pytest.approx((4 / 18) * 100)
 
     # Round 2 on this synthetic dataset:
     # holes 1-4 (par3): +2 on odd, +1 on even -> 2 double, 2 bogey

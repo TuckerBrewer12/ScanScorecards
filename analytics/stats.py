@@ -780,9 +780,9 @@ def scrambling_per_round(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
                 if not hole or hole.par is None:
                     continue
 
-                if score.green_in_regulation is False and score.putts is not None:
+                if score.green_in_regulation is False:
                     opportunities += 1
-                    if score.strokes <= hole.par:
+                    if score.strokes == hole.par:
                         successes += 1
 
         percentage = (successes / opportunities * 100.0) if opportunities else None
@@ -990,7 +990,7 @@ def putts_per_gir(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
         gir_count = len(gir_scores)
         putts_on_gir = sum(score.putts for score in gir_scores if score.putts is not None)
         gir_with_putt_data = sum(1 for score in gir_scores if score.putts is not None)
-        metric = (putts_on_gir / gir_count) if gir_count else None
+        metric = (putts_on_gir / gir_with_putt_data) if gir_with_putt_data else None
 
         results.append(
             {
@@ -1513,9 +1513,8 @@ def scoring_by_yardage_buckets(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
                 if lo <= yardage <= hi:
                     key = (hole.par, order)
                     if key not in by_bucket:
-                        by_bucket[key] = {"par": hole.par, "order": order, "label": label, "to_par": [], "yardages": [], "gir": []}
+                        by_bucket[key] = {"par": hole.par, "order": order, "label": label, "to_par": [], "gir": []}
                     by_bucket[key]["to_par"].append(hole_score.strokes - hole.par)
-                    by_bucket[key]["yardages"].append(yardage)
                     if hole_score.green_in_regulation is not None:
                         by_bucket[key]["gir"].append(1 if hole_score.green_in_regulation else 0)
                     break
@@ -1532,7 +1531,6 @@ def scoring_by_yardage_buckets(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
             "average_to_par": sum(to_par_vals) / len(to_par_vals),
             "gir_percentage": (sum(gir_vals) / len(gir_vals) * 100.0) if gir_vals else None,
             "sample_size": len(to_par_vals),
-            "raw_scores": [{"to_par": tp, "yardage": y} for tp, y in zip(to_par_vals, entry["yardages"])],
         })
     return results
 
