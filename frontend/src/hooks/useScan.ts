@@ -152,7 +152,12 @@ export function useScan(
     setCourseResults([]);
   }, [update]);
 
+  const activePrefetch = useRef<string | null>(null);
+
   const handleFile = useCallback((f: File) => {
+    const fileId = `${f.name}-${f.size}-${Date.now()}`;
+    activePrefetch.current = fileId;
+
     void (async () => {
       const t0 = performance.now();
       const processed = await compressImageForUpload(f);
@@ -166,6 +171,10 @@ export function useScan(
         processed.type || "unknown",
         t1 - t0,
       );
+      
+      // Only proceed if this is still the active file
+      if (activePrefetch.current !== fileId) return;
+
       update({ file: processed, preview: URL.createObjectURL(processed), error: null, prefetchedOcrText: null });
 
       // Kick off OCR immediately in the background so it's ready when user hits Extract
@@ -181,8 +190,11 @@ export function useScan(
           });
           if (res.ok) {
             const { ocr_text } = await res.json() as { ocr_text: string };
-            update({ prefetchedOcrText: ocr_text });
-            console.info("[scan] OCR prefetch complete: chars=%d", ocr_text.length);
+            // Ensure we don't set state if the user discarded this file or uploaded a new one
+            if (activePrefetch.current === fileId) {
+                update({ prefetchedOcrText: ocr_text });
+                console.info("[scan] OCR prefetch complete: chars=%d", ocr_text.length);
+            }
           }
         } catch {
           // Prefetch failed silently — extract will fall back to running OCR itself

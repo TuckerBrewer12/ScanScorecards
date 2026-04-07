@@ -735,10 +735,13 @@ def _extract_2d_from_raw_lines(
                 # "White M: 69.1/123". We check cells[0] stripped, and also accept
                 # cells[0] as a prefix like "Tucker (index)".
                 label_cell = cells[0].strip().lower()
+                pref_lower = preferred_name.lower()
                 name_matched = (
-                    label_cell == preferred_name
-                    or label_cell.startswith(preferred_name + " ")
-                    or label_cell.startswith(preferred_name + "(")
+                    label_cell == pref_lower
+                    or label_cell.startswith(pref_lower + " ")
+                    or label_cell.startswith(pref_lower + "(")
+                    or label_cell.endswith(" " + pref_lower)
+                    or f" {pref_lower} " in label_cell
                 )
                 if not name_matched:
                     continue

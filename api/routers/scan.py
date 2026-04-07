@@ -463,12 +463,14 @@ def _normalize_upload_for_ocr(path: Path, upload_digest: str) -> tuple[Path, boo
                 img = img.convert("RGB")
             t_orient = time.perf_counter()
             original_size = img.size
-            img, cropped = _crop_to_scorecard_region(img)
-            t_crop1 = time.perf_counter()
-            img, deskewed, deskew_angle = _deskew_scorecard(img)
-            if deskewed:
-                img, _ = _crop_to_scorecard_region(img)
-            t_deskew = time.perf_counter()
+            
+            # Skip manual cropping, deskewing, blurring, and contrast filters.
+            # Mistral's underlying vision model is robust to natural photos, 
+            # and contrast filters tend to wipe out light pencil marks.
+            cropped, deskewed, deskew_angle = False, False, 0.0
+            
+            t_crop1, t_deskew = t_orient, t_orient
+
             # Resize large images before OCR (keep aspect ratio, do not upscale).
             width, height = img.size
             long_edge = max(width, height)
@@ -477,16 +479,8 @@ def _normalize_upload_for_ocr(path: Path, upload_digest: str) -> tuple[Path, boo
                 new_size = (max(1, int(width * scale)), max(1, int(height * scale)))
                 img = img.resize(new_size, Image.Resampling.LANCZOS)
             t_resize = time.perf_counter()
-            # Blur the center crease to prevent fold from splitting the OCR table.
-            img = _blur_fold_line(img)
-            t_blur = time.perf_counter()
-            # Adaptive contrast normalization (conservative):
-            # grayscale -> autocontrast -> mild contrast boost.
-            gray = img.convert("L")
-            gray = ImageOps.autocontrast(gray, cutoff=1)
-            gray = ImageEnhance.Contrast(gray).enhance(1.15)
-            img = gray.convert("RGB")
-            t_contrast = time.perf_counter()
+            
+            t_blur, t_contrast = t_resize, t_resize
             # Explicitly strip metadata by creating a fresh pixel-only image.
             # This prevents EXIF/ICC/comment payloads from carrying into OCR input.
             stripped = Image.new("RGB", img.size)

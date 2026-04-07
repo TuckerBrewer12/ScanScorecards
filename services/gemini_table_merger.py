@@ -22,7 +22,8 @@ GEMINI_MERGE_MODEL = "gemini-3.1-flash-lite-preview"
 _MERGE_PROMPT = """\
 Your task is to merge the following golf scorecard fragments into a single, comprehensive Markdown table.
 
-⚠️ MOST IMPORTANT RULE: Copy every cell value EXACTLY as it appears in the input — character-for-character. If a cell contains ① copy ①. If a cell contains 1 copy 1. NEVER convert between circled digits (①②③) and regular digits (123) in either direction.
+⚠️ MOST IMPORTANT RULE 1: Copy every cell value EXACTLY as it appears in the input — character-for-character. If a cell contains ① copy ①. If a cell contains 1 copy 1. NEVER convert between circled digits (①②③) and regular digits (123).
+⚠️ MOST IMPORTANT RULE 2: NEVER calculate, invent, or guess a missing score. If a row has fewer values than required, you MUST insert an empty cell `| |`. Do NOT perform addition to find `OUT`, `IN`, or missing hole scores. If a value does not exist in the source text, it MUST be `| |`.
 
 STRICT FORMATTING RULES:
 
@@ -31,6 +32,10 @@ Use exactly 22 columns: [HOLE, 1, 2, 3, 4, 5, 6, 7, 8, 9, OUT, 10, 11, 12, 13, 1
 NO SLASHES: Do not use '394/344' style grouping. Every hole must have its own dedicated column.
 
 ALIGNMENT: Match the 'OUT' values (Holes 1-9) with their corresponding 'IN' values (Holes 10-18) based on the row label. Every data row must have exactly 9 front-nine values and exactly 9 back-nine values.
+
+MISSING CELLS (CRITICAL): OCR often completely drops empty cells, shifting all subsequent numbers to the left. If a row has fewer than 9 score values for a half, you MUST insert empty cells (`| |`) at the correct hole positions to pad it back to 9 values.
+- DO NOT shift 'OUT', 'IN', or 'TOT' values into hole columns!
+- Hint: If 'OUT' is a large total (e.g., 35-50), hole scores are usually 3-6. If scoring is 'to-par', 'OUT' might be a small number (e.g., 8 or 5) representing the sum of to-par scores (e.g., 1, 0, -1). If a row has 9 values for the front nine, and the 9th value mathematically equals the sum of the first 8 values, that 9th value is DEFINITELY the 'OUT' score. Shift it to the 'OUT' column and add an empty cell `| |` for the missing Hole 9. NEVER fabricate a number for the missing hole.
 
 EMPTY CELLS: If a value is missing, leave the cell blank (| |) instead of omitting it.
 

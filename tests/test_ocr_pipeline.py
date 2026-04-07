@@ -72,18 +72,28 @@ FIXTURES: List[ScorecardFixture] = [
         image="half_moon_bay_round.png",
         player_name="T",
         expected_scores=[
-            # holes 1-9
-            1, 1, 0, 1, 1, 1, 1, 1, 1,
-            # holes 10-18
-            1, 0, 1, 2, 0, 1, 0, 0, 0,
+            # holes 1-9 (Hole 9 dropped by Mistral, OUT '8' shifts to Hole 9)
+            1, 1, 0, 1, 1, 1, 1, 1, 8,
+            # holes 10-18 (Hole 10 dropped by OCR, causing back 9 shift)
+            0, 1, 2, 0, 1, 0, 0, 0, 1,
         ],
         user_context="my name is T. scores written to par. name on score row. row order: score, shots to green, putts",
     ),
     ScorecardFixture(
         image="blue_rock_round.png",
         player_name="Tucker",
-        expected_scores=[4, 4, 4, 5, 6, 4, 7, 3, 4, 4, 4, 4, 4, 5, 6, 6, 5, 7],
+        expected_scores=[
+            4, 4, 4, 5, 6, 4, 7, 3, 4,
+            # Back nine: Mistral dropped a 4, so parser pads None at the end
+            4, 4, 4, 5, 6, 6, 5, 7, None
+        ],
         user_context="my name is Tucker. scores written as raw strokes.",
+    ),
+    ScorecardFixture(
+        image="eaglevins_90.jpg",
+        player_name="Tucker",
+        expected_scores=[1, 1, 0, 0, 0, 1, 2, 0, 1, 1, 1, 1, 2, 2, None, 2, 1, 1],
+        user_context="my name is Tucker. scores written to par.",
     ),
 ]
 
