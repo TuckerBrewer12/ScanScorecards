@@ -128,10 +128,10 @@ export function CourseLinkChip({
   onClear: () => void;
 }) {
   return (
-    <div className="flex items-center gap-2 px-3 py-2 bg-green-50 border border-green-200 rounded-lg">
-      <CheckCircle size={14} className="text-green-600 shrink-0" />
-      <span className="text-sm font-medium text-green-800 flex-1">Linked: {name}</span>
-      <button onClick={onClear} className="text-green-600 hover:text-green-800">
+    <div className="flex items-center gap-2 px-3 py-2 bg-[#2d7a3a] border border-[#2d7a3a] rounded-lg">
+      <CheckCircle size={14} className="text-white shrink-0" />
+      <span className="text-sm font-medium text-white flex-1">Linked: {name}</span>
+      <button onClick={onClear} className="text-white/70 hover:text-white">
         <X size={14} />
       </button>
     </div>

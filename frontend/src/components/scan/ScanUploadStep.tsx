@@ -135,13 +135,13 @@ export function ScanUploadStep({
 
       {/* Selected course chip */}
       {showCourseSearch && selectedCourseId && (
-        <div className="mb-4 flex items-center gap-2 px-4 py-3 bg-green-50 dark:bg-green-950/25 border border-green-200 dark:border-green-800 rounded-lg">
+        <div className="mb-4 flex items-center gap-2 px-4 py-3 bg-green-50 border border-green-200 rounded-lg">
           <CheckCircle size={16} className="text-green-600 shrink-0" />
-          <span className="text-sm font-semibold text-green-800 dark:text-green-300 flex-1">
+          <span className="text-sm font-semibold text-green-800 flex-1">
             {selectedCourseName}
             {scanMode === "full" ? " (preselected)" : ""}
           </span>
-          <button onClick={onClearCourse} className="text-green-600 hover:text-green-800">
+          <button onClick={onClearCourse} className="text-white/70 hover:text-white">
             <X size={14} />
           </button>
         </div>

@@ -1,0 +1,80 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.13.0, pytest-9.0.2, pluggy-1.6.0
+rootdir: /Users/tuckerbrewer/golf_scorecard_app/ScanScorecards
+plugins: anyio-4.12.1, asyncio-1.3.0, cov-7.0.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 1 item
+
+tests/test_ocr_pipeline.py 
+=== RAW MARKDOWN (blue_rock_round.png) ===
+| Date: Blue | Scorer: | Attest: |
+| 360 | 176 | 356 | 366 | 488 | 161 | 523 | 141 | 393 | 2964 | 346 | 167 | 355 | 380 | 551 | 413 | 196 | 167 | 412 | 378 | 31986162 | 70.0/127 |
+| White | 343 | 141 | 344 | 358 | 473 | 148 | 502 | 104 | 367 | 2780 | 319 | 130 | 342 | 366 | 542 | 406 | 137 | 391 | 363 | 29965776 | 68.4/121 |  |
+| Gold | 327 | 123 | 325 | 339 | 453 | 120 | 469 | 83 | 342 | 2581 | 288 | 118 | 309 | 342 | 517 | 374 | 128 | 349 | 326 | 27515332 | M 66.4/115 W 72.1/121 |  |
+| Men's Handicap | 9 | 17 | 7 | 3 | 1 | 11 | 13 | 15 | 5 |  | 12 | 16 | 4 | 10 | 18 | 2 | 14 | 6 | 8 |  |  |  |
+| RICK | 5 | ③ | 5 | 6 | ⑤ | ② | 7 | 4 | 6 | 44 | 5 | ③ | 5 | 5 | 7 | 5 | 5 | 5 | 5 | 45 | 89 |  |
+| TUCKER | ④ | 4 | ④ | 5 | 6 | 4 | 7 | ③ | ④ | 41 | ④ | ④ | ④ | ⑤ | 6 | 6 | 5 | 7 | 45 | 86 |  |  |
+| KEN | 6 | 4 | 5 | 5 | ⑤ | 4 | 7 | ③ | 7 | 46 | 6 | ③ | 5 | 5 | 6 | 6 | 4 | 6 | 748 | 94 |  |  |
+| VIC | ④ | ③ | 5 | 5 | 6 | ⑤ | ④ | ③ | 5 | 38 | 5 | ③ | 5 | 5 | ⑤ | 5 | 4 | ④ | 40 | 78 |  |  |
+| HOLE | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | OUT | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | IN | TOT | HCP NET ADJ |
+| Par | 4 | 3 | 4 | 4 | 5 | 3 | 5 | 3 | 4 | 35 | 4 | 3 | 4 | 4 | 5 | 4 | 3 | 4 | 4 | 35 | 70 | Rating/Slope |
+|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
+|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
+|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
+|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
+| Ref | 306 | 103 | 314 | 316 | 420 | 103 | 428 | 65 | 308 | 236 | 243 | 109 | 292 | 316 | 474 | 346 | 99 | 331 | 296 | 25064869 | 68.9/114 |  |
+| Women's Handicap | 9 | 17 | 11 | 5 | 3 | 15 | 1 | 13 | 7 |  | 14 | 6 | 8 | 16 | 2 | 4 | 18 | 10 | 12 |  |  |  |
+=== END ===
+
+────────────────────────────────────────────────────────────
+Image : blue_rock_round.png  Player: Tucker
+Scores: [4, 4, 4, 5, 6, 4, 7, 3, 4, 4, 4, 4, 5, 6, 6, 5, 7, None]
+Putts : [6, 4, 5, 5, 5, 4, None, 3, None, 6, 3, 5, 5, 6, 6, 4, 6, None]
+Mode  : 2d_column  to_par=None
+F
+
+=================================== FAILURES ===================================
+________________ test_ocr_pipeline[blue_rock_round.png:Tucker] _________________
+
+fixture = ScorecardFixture(image='blue_rock_round.png', player_name='Tucker', expected_scores=[4, 4, 4, 5, 6, 4, 7, 3, 4, 4, 4, 4, 4, 5, 6, 6, 5, 7], expected_putts=[], user_context='my name is Tucker. scores written as raw strokes.')
+
+    @pytest.mark.parametrize("fixture", FIXTURES, ids=lambda f: f"{f.image}:{f.player_name}")
+    def test_ocr_pipeline(fixture: ScorecardFixture) -> None:
+        image_path = SCORECARD_DIR / fixture.image
+        assert image_path.exists(), f"Test image not found: {image_path}"
+    
+        # Run Mistral OCR → markdown → parse (cached per image across fixtures)
+        markdown = _get_markdown(fixture.image)
+        assert markdown, f"Mistral OCR returned empty markdown for {fixture.image}"
+    
+        if fixture.image not in _OCR_MARKDOWN_CACHE or len(_OCR_MARKDOWN_CACHE) == 1:
+            print(f"\n=== RAW MARKDOWN ({fixture.image}) ===\n{markdown}\n=== END ===")
+        parsed = parse_mistral_scorecard_rows(markdown, user_context=fixture.build_user_context())
+    
+        # Extend lists to 18 if shorter
+        scores = list(parsed.score_row) + [None] * 18
+        putts = list(parsed.putts_row) + [None] * 18
+    
+        # Print summary for easy debugging
+        print(f"\n{'─' * 60}")
+        print(f"Image : {fixture.image}  Player: {fixture.player_name}")
+        print(f"Scores: {scores[:18]}")
+        print(f"Putts : {putts[:18]}")
+        print(f"Mode  : {parsed.extraction_mode}  to_par={parsed.score_to_par_hint}")
+        if parsed.warnings:
+            print(f"Warns : {parsed.warnings[:5]}")
+    
+        mismatches = _compare(fixture, scores[:18], putts[:18])
+>       assert not mismatches, "\n" + "\n".join(mismatches)
+E       AssertionError: 
+E         Hole 13 score: expected 4, got 5
+E         Hole 14 score: expected 5, got 6
+E         Hole 16 score: expected 6, got 5
+E         Hole 17 score: expected 5, got 7
+E         Hole 18 score: expected 7, got None
+E       assert not ['Hole 13 score: expected 4, got 5', 'Hole 14 score: expected 5, got 6', 'Hole 16 score: expected 6, got 5', 'Hole 17 score: expected 5, got 7', 'Hole 18 score: expected 7, got None']
+
+tests/test_ocr_pipeline.py:167: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_ocr_pipeline.py::test_ocr_pipeline[blue_rock_round.png:Tucker]
+============================== 1 failed in 8.28s ===============================

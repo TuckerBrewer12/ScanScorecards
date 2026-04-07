@@ -5,9 +5,9 @@ import { GripVertical } from "lucide-react";
 type DataRow = "score" | "putts" | "shots";
 
 const ROW_CONFIG: Record<DataRow, { label: string; color: string; bg: string; border: string }> = {
-  score: { label: "Score",          color: "#2d7a3a", bg: "#f0faf1", border: "#2d7a3a40" },
-  putts: { label: "Putts",          color: "#0369a1", bg: "#f0f5ff", border: "#0369a140" },
-  shots: { label: "Shots to Green", color: "#6d28d9", bg: "#f5f3ff", border: "#6d28d940" },
+  score: { label: "Score",          color: "#ffffff", bg: "#2d7a3a", border: "#2d7a3a" },
+  putts: { label: "Putts",          color: "#ffffff", bg: "#0369a1", border: "#0369a1" },
+  shots: { label: "Shots to Green", color: "#ffffff", bg: "#6d28d9", border: "#6d28d9" },
 };
 
 interface ScorecardLayoutPickerProps {
@@ -201,9 +201,9 @@ export function ScorecardLayoutPicker({ onContextChange }: ScorecardLayoutPicker
                             draggable
                             onDragStart={() => { dragging.current = { type: "name" }; }}
                             onDragEnd={() => { dragging.current = null; }}
-                            className="h-full min-h-[38px] flex items-center justify-center rounded-lg border border-dashed border-gray-400 bg-gray-50 cursor-grab active:cursor-grabbing select-none"
+                            className="h-full min-h-[38px] flex items-center justify-center rounded-lg border border-gray-500 bg-gray-600 cursor-grab active:cursor-grabbing select-none"
                           >
-                            <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">
+                            <span className="text-[10px] font-bold text-white uppercase tracking-wide">
                               Name
                             </span>
                           </div>
@@ -221,7 +221,7 @@ export function ScorecardLayoutPicker({ onContextChange }: ScorecardLayoutPicker
                         className="flex-1 flex items-center gap-2 px-3 py-2.5 rounded-lg border cursor-grab active:cursor-grabbing select-none"
                         style={{ backgroundColor: bg, borderColor: border }}
                       >
-                        <GripVertical size={13} className="text-gray-300 shrink-0" />
+                        <GripVertical size={13} className="text-white/50 shrink-0" />
                         <span className="text-xs font-semibold" style={{ color }}>
                           {label}
                         </span>

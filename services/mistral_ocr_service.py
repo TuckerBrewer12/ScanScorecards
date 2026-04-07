@@ -3,12 +3,16 @@
 from __future__ import annotations
 
 import base64
+import logging
 import mimetypes
 import os
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, List, Optional
 
 import httpx
+from bs4 import BeautifulSoup
+
+logger = logging.getLogger(__name__)
 
 
 class MistralOCRService:
@@ -41,7 +45,7 @@ class MistralOCRService:
         file_path: str | Path,
         *,
         pages: Optional[str] = None,
-        include_images: bool = True,
+        include_images: bool = False,
         include_headers: bool = False,
         include_footers: bool = False,
     ) -> Dict[str, Any]:
@@ -58,6 +62,7 @@ class MistralOCRService:
             "model": self._model,
             "document": {"type": "document_url", "document_url": data_url},
             "include_image_base64": include_images,
+            "table_format": "html",
         }
         if pages:
             payload["pages"] = pages
@@ -87,19 +92,54 @@ class MistralOCRService:
 
     @staticmethod
     def extract_markdown_text(ocr_response: Dict[str, Any]) -> str:
-        """Best-effort plain markdown aggregation from OCR JSON response."""
-        pages = ocr_response.get("pages")
-        if isinstance(pages, list):
-            chunks = []
-            for page in pages:
-                if isinstance(page, dict):
-                    text = page.get("markdown") or page.get("text")
-                    if isinstance(text, str) and text.strip():
-                        chunks.append(text.strip())
-            if chunks:
-                return "\n\n".join(chunks)
+        """Convert Mistral OCR HTML tables to markdown for downstream Gemini merge.
 
-        output_text = ocr_response.get("markdown") or ocr_response.get("text")
-        if isinstance(output_text, str):
-            return output_text
-        return ""
+        Each HTML table is converted individually to a markdown pipe table.
+        Gemini handles merging split front/back nine tables.
+        """
+        pages = ocr_response.get("pages")
+        if not isinstance(pages, list):
+            output_text = ocr_response.get("markdown") or ocr_response.get("text")
+            return output_text if isinstance(output_text, str) else ""
+
+        chunks: List[str] = []
+        for page in pages:
+            if not isinstance(page, dict):
+                continue
+
+            tables: List[Dict[str, Any]] = page.get("tables") or []
+            html_tables = [t["content"] for t in tables if isinstance(t.get("content"), str)]
+
+            if html_tables:
+                for html in html_tables:
+                    rows = MistralOCRService._html_to_rows(html)
+                    md = MistralOCRService._rows_to_markdown(rows)
+                    if md:
+                        chunks.append(md)
+                continue
+
+            # Fallback: no HTML tables — use raw markdown text
+            text = page.get("markdown") or page.get("text")
+            if isinstance(text, str) and text.strip():
+                chunks.append(text.strip())
+
+        return "\n\n".join(chunks)
+
+    @staticmethod
+    def _html_to_rows(html: str) -> List[List[str]]:
+        """Parse an HTML table into a list of row cell-lists."""
+        soup = BeautifulSoup(html, "html.parser")
+        return [
+            [td.get_text(" ", strip=True) for td in tr.find_all("td")]
+            for tr in soup.find_all("tr")
+        ]
+
+    @staticmethod
+    def _rows_to_markdown(rows: List[List[str]]) -> str:
+        """Convert a list of rows to a markdown pipe table string."""
+        if not rows:
+            return ""
+        return "\n".join(
+            "| " + " | ".join(cell.replace("|", "/") for cell in row) + " |"
+            for row in rows
+        )

@@ -1,0 +1,92 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.13.0, pytest-9.0.2, pluggy-1.6.0
+rootdir: /Users/tuckerbrewer/golf_scorecard_app/ScanScorecards
+plugins: anyio-4.12.1, asyncio-1.3.0, cov-7.0.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collected 1 item
+
+tests/test_ocr_pipeline.py 
+=== RAW MARKDOWN (half_moon_bay_round.png) ===
+| HOLE | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | OUT | 10 | 11 | 12 | 13 | 14 | 15 | 16 | 17 | 18 | IN | TOT | HCP | NET |
+| Black 72.5/132 | 394 | 344 | 150 | 526 | 465 | 386 | 172 | 526 | 180 | 3143 | 565 | 437 | 220 | 431 | 527 | 411 | 403 | 184 | 533 | 3711 | 6854 |  |  |
+| Handicap | 3 | 9 | 17 | 15 | 1 | 11 | 13 | 5 | 7 |  | 10 | 6 | 8 | 2 | 16 | 14 | 4 | 12 | 18 |  |  |  |  |
+| Blue 70.8/127 | 376 | 332 | 140 | 481 | 431 | 365 | 155 | 500 | 166 | 2946 | 539 | 422 | 195 | 409 | 506 | 385 | 381 | 149 | 527 | 3513 | 6459 |  |  |
+| Handicap | 3 | 9 | 17 | 15 | 1 | 5 | 13 | 7 | 11 |  | 12 | 4 | 8 | 2 | 14 | 10 | 6 | 16 | 18 |  |  |  |  |
+| White M: 69.1/123 W: 74.8/133 | 360 | 297 | 118 | 446 | 408 | 351 | 143 | 475 | 156 | 2754 | 517 | 412 | 164 | 386 | 475 | 357 | 360 | 129 | 527 | 3327 | 6081 |  |  |
+| Handicap | 3 | 7 | 17 | 15 | 1 | 5 | 11 | 13 | 9 |  | 8 | 6 | 16 | 4 | 12 | 14 | 2 | 18 | 10 |  |  |  |  |
+| G | 1 | ① | 0 | 0 | 0 | ① | 0 | 0 | 1 | 0 | 1 | 1 | 1 | 0 | ① | 1 | 2 | 0 | 0 | 5 | 77 |  |  |
+|  | 3 | 2 | 1 | 3 | 2 | 2 | 1 | 3 | 2 |  | 4 | 3 | 2 | 2 | 3 | 2 | 3 | 1 | 3 |  |  |  |  |
+|  | 2 | 1 | 2 | 2 | 2 | 1 | 2 | 2 | 2 |  | 2 | 2 | 2 | 2 | 1 | 3 | 3 | 2 | 2 |  |  |  |  |
+|  | × | √ | √ | √ | √ | √ | √ | √ | √ |  | × | × | × | √ | √ | √ | × | √ | √ |  |  |  |  |
+|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |
+| Par | 4 | 4/3 | 3 | 5 | 4 | 4 | 3 | 5 | 3 | 35/34 |
+| T | 1 | 1 | 0 | 1 | 1 | 1 | 1 | 1 | 8 |  | 5 | 4 | 3 | 4 | 5 | 4 | 4 | 3 | 5 | 37 | 72/71 |
+|  | 3 | 4 | 1 | 4 | 3 | 2 | 1 | 4 | 2 |  | 0 | 1 | 2 | 0 | 1 | 0 | 0 | 0 | 1 | 5 | 85 |
+|  | 2 | 1 | 2 | 2 | 2 | 3 | 3 | 2 | 2 |  | 3 | 3 | 3 | 2 | 3 | 3 | 2 | 1 | 4 |  |  |
+|  | × | × | √ | × | × | × | × | × | × |  | 2 | 2 | 2 | 2 | 1 | 1 | 2 | 2 | 2 |  |  |
+|  |  |  |  |  |  |  |  |  |  |  | √ | × | × | √ | × | × | √ | √ | × |  |  |
+| Gold M: 66.1/117 W: 71.3/124 | 316 | 297 | 101 | 429 | 381 | 311 | 132 | 441 | 137 | 2545 |  |  |  |  |  |  |  |  |  |  |  |
+| Handicap | 7 | 3 | 17 | 13 | 1 | 9 | 11 | 5 | 15 |  |  |  |  |  |  |  |  |  |  |  |  |
+| Red 68.2/117 | 316 | 147 | 82 | 397 | 356 | 272 | 77 | 433 | 121 | 2201 | 468 | 364 | 146 | 328 | 450 | 336 | 316 | 111 | 397 | 2916 | 5461 |
+| Handicap | 5 | 7 | 15 | 9 | 1 | 11 | 17 | 3 | 13 |  | 4 | 2 | 14 | 10 | 6 | 12 | 8 | 16 | 18 |  |  |
+| 421 | 322 | 139 | 328 | 417 | 292 | 281 | 74 | 397 | 2671 | 4872 |
+| 10 | 6 | 14 | 2 | 4 | 12 | 8 | 18 | 16 |  |  |
+=== END ===
+
+────────────────────────────────────────────────────────────
+Image : half_moon_bay_round.png  Player: T
+Scores: [1, 1, 0, 1, 1, 1, 1, 1, 8, 5, 4, 3, 4, 5, 4, 4, 3, 5]
+Putts : [2, 1, 2, 2, 2, 3, 3, 2, 2, 3, 3, 3, 2, 3, 3, 2, 1, 4]
+Mode  : 2d_column  to_par=True
+F
+
+=================================== FAILURES ===================================
+_________________ test_ocr_pipeline[half_moon_bay_round.png:T] _________________
+
+fixture = ScorecardFixture(image='half_moon_bay_round.png', player_name='T', expected_scores=[1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 1...tts=[], user_context='my name is T. scores written to par. name on score row. row order: score, shots to green, putts')
+
+    @pytest.mark.parametrize("fixture", FIXTURES, ids=lambda f: f"{f.image}:{f.player_name}")
+    def test_ocr_pipeline(fixture: ScorecardFixture) -> None:
+        image_path = SCORECARD_DIR / fixture.image
+        assert image_path.exists(), f"Test image not found: {image_path}"
+    
+        # Run Mistral OCR → markdown → parse (cached per image across fixtures)
+        markdown = _get_markdown(fixture.image)
+        assert markdown, f"Mistral OCR returned empty markdown for {fixture.image}"
+    
+        if fixture.image not in _OCR_MARKDOWN_CACHE or len(_OCR_MARKDOWN_CACHE) == 1:
+            print(f"\n=== RAW MARKDOWN ({fixture.image}) ===\n{markdown}\n=== END ===")
+        parsed = parse_mistral_scorecard_rows(markdown, user_context=fixture.build_user_context())
+    
+        # Extend lists to 18 if shorter
+        scores = list(parsed.score_row) + [None] * 18
+        putts = list(parsed.putts_row) + [None] * 18
+    
+        # Print summary for easy debugging
+        print(f"\n{'─' * 60}")
+        print(f"Image : {fixture.image}  Player: {fixture.player_name}")
+        print(f"Scores: {scores[:18]}")
+        print(f"Putts : {putts[:18]}")
+        print(f"Mode  : {parsed.extraction_mode}  to_par={parsed.score_to_par_hint}")
+        if parsed.warnings:
+            print(f"Warns : {parsed.warnings[:5]}")
+    
+        mismatches = _compare(fixture, scores[:18], putts[:18])
+>       assert not mismatches, "\n" + "\n".join(mismatches)
+E       AssertionError: 
+E         Hole 9 score: expected 1, got 8
+E         Hole 10 score: expected 1, got 5
+E         Hole 11 score: expected 0, got 4
+E         Hole 12 score: expected 1, got 3
+E         Hole 13 score: expected 2, got 4
+E         Hole 14 score: expected 0, got 5
+E         Hole 15 score: expected 1, got 4
+E         Hole 16 score: expected 0, got 4
+E         Hole 17 score: expected 0, got 3
+E         Hole 18 score: expected 0, got 5
+E       assert not ['Hole 9 score: expected 1, got 8', 'Hole 10 score: expected 1, got 5', 'Hole 11 score: expected 0, got 4', 'Hole 12 score: expected 1, got 3', 'Hole 13 score: expected 2, got 4', 'Hole 14 score: expected 0, got 5', ...]
+
+tests/test_ocr_pipeline.py:167: AssertionError
+=========================== short test summary info ============================
+FAILED tests/test_ocr_pipeline.py::test_ocr_pipeline[half_moon_bay_round.png:T]
+============================== 1 failed in 9.24s ===============================

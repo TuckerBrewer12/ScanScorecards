@@ -13,7 +13,7 @@ from typing import Dict, List, Optional
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 import numpy as np
 from pydantic import BaseModel
-from PIL import Image, ImageOps, ImageEnhance
+from PIL import Image, ImageFilter, ImageOps, ImageEnhance
 
 logger = logging.getLogger("uvicorn.error")
 
@@ -21,6 +21,7 @@ from database.db_manager import DatabaseManager
 from api.dependencies import get_current_user, get_db
 from api.request_models import SaveRoundRequest
 from models import User
+from services.gemini_table_merger import merge_split_tables
 from services.mistral_ocr_service import MistralOCRService
 from services.mistral_scorecard_parser import ParsedScorecardRows, parse_mistral_scorecard_rows
 from services.scan_service import ScanService
@@ -31,7 +32,7 @@ OCR_LONG_EDGE_TARGET = 1800
 OCR_JPEG_QUALITY = 75
 BW_FALLBACK_TRIGGER = 0.65
 BW_FALLBACK_MIN_IMPROVEMENT = 0.03
-PREPROCESS_CACHE_VERSION = "v1"
+PREPROCESS_CACHE_VERSION = "v2"
 PREPROCESS_CACHE_DIR = Path(tempfile.gettempdir()) / "scanscore_ocr_cache"
 MISTRAL_OCR_MODEL = os.environ.get("MISTRAL_OCR_MODEL") or "mistral-ocr-latest"
 
@@ -216,7 +217,7 @@ def _build_round_from_parsed_rows(
             if est in (-1, 1):
                 if est != raw_score:
                     fields_needing_review.append(
-                        f"Hole {i} adjusted to-par sign using shots+putts consistency"
+                        f"Hole {i} score sign corrected (birdie vs bogey disambiguated)"
                     )
                 raw_score = est
 
@@ -253,11 +254,16 @@ def _build_round_from_parsed_rows(
             if par_i is not None:
                 gir_val = shots_vals[i - 1] <= max(1, par_i - 2)
 
+        shots_val = shots_vals[i - 1]
+        if shots_val is not None and not (1 <= shots_val <= 10):
+            shots_val = None
+
         hole_scores.append(
             {
                 "hole_number": i,
                 "strokes": strokes,
                 "putts": putts,
+                "shots_to_green": shots_val,
                 "fairway_hit": None,
                 "green_in_regulation": gir_val,
             }
@@ -277,6 +283,29 @@ def _build_round_from_parsed_rows(
         "notes": None,
     }
     return round_payload, fields_needing_review
+
+
+async def _run_ocr_pipeline(ocr_path: Path) -> str:
+    """Mistral OCR → Gemini merge → raw markdown string."""
+    svc = MistralOCRService()
+    ocr_resp = await svc.ocr_file(ocr_path)
+    raw_markdown = MistralOCRService.extract_markdown_text(ocr_resp)
+    return await merge_split_tables(raw_markdown)
+
+
+def _blur_fold_line(img: Image.Image) -> Image.Image:
+    """Blur a narrow vertical strip at the center crease to prevent Mistral
+    from reading the fold as a table divider and splitting the OCR output."""
+    width, height = img.size
+    center_x = width // 2
+    blur_width = max(14, int(width * 0.015))
+    x1 = max(0, center_x - blur_width // 2)
+    x2 = min(width, center_x + blur_width // 2)
+    strip = img.crop((x1, 0, x2, height))
+    blurred = strip.filter(ImageFilter.GaussianBlur(radius=10))
+    result = img.copy()
+    result.paste(blurred, (x1, 0))
+    return result
 
 
 def _normalize_angle_deg(angle: float) -> float:
@@ -408,7 +437,8 @@ def _normalize_upload_for_ocr(path: Path, upload_digest: str) -> tuple[Path, boo
     - If normalization fails (e.g., unsupported HEIC decoder), fall back to original.
     """
     cache_path = _get_preprocess_cache_path(upload_digest)
-    if cache_path.exists():
+    # cache disabled for testing — always reprocess
+    if False and cache_path.exists():
         logger.info(
             "OCR preprocess cache hit: path=%s size_bytes=%s",
             cache_path.name,
@@ -433,12 +463,14 @@ def _normalize_upload_for_ocr(path: Path, upload_digest: str) -> tuple[Path, boo
                 img = img.convert("RGB")
             t_orient = time.perf_counter()
             original_size = img.size
-            img, cropped = _crop_to_scorecard_region(img)
-            t_crop1 = time.perf_counter()
-            img, deskewed, deskew_angle = _deskew_scorecard(img)
-            if deskewed:
-                img, _ = _crop_to_scorecard_region(img)
-            t_deskew = time.perf_counter()
+            
+            # Skip manual cropping, deskewing, blurring, and contrast filters.
+            # Mistral's underlying vision model is robust to natural photos, 
+            # and contrast filters tend to wipe out light pencil marks.
+            cropped, deskewed, deskew_angle = False, False, 0.0
+            
+            t_crop1, t_deskew = t_orient, t_orient
+
             # Resize large images before OCR (keep aspect ratio, do not upscale).
             width, height = img.size
             long_edge = max(width, height)
@@ -447,13 +479,8 @@ def _normalize_upload_for_ocr(path: Path, upload_digest: str) -> tuple[Path, boo
                 new_size = (max(1, int(width * scale)), max(1, int(height * scale)))
                 img = img.resize(new_size, Image.Resampling.LANCZOS)
             t_resize = time.perf_counter()
-            # Adaptive contrast normalization (conservative):
-            # grayscale -> autocontrast -> mild contrast boost.
-            gray = img.convert("L")
-            gray = ImageOps.autocontrast(gray, cutoff=1)
-            gray = ImageEnhance.Contrast(gray).enhance(1.15)
-            img = gray.convert("RGB")
-            t_contrast = time.perf_counter()
+            
+            t_blur, t_contrast = t_resize, t_resize
             # Explicitly strip metadata by creating a fresh pixel-only image.
             # This prevents EXIF/ICC/comment payloads from carrying into OCR input.
             stripped = Image.new("RGB", img.size)
@@ -466,7 +493,7 @@ def _normalize_upload_for_ocr(path: Path, upload_digest: str) -> tuple[Path, boo
             os.replace(temp_cache_path, cache_path)
             t_save = time.perf_counter()
             logger.info(
-                "OCR preprocess image: source=%s original=%sx%s cropped=%s deskewed=%s angle=%.2f resized_to=%sx%s in_bytes=%s out_bytes=%s timing_ms(open=%.1f orient=%.1f crop=%.1f deskew=%.1f resize=%.1f contrast=%.1f save=%.1f total=%.1f)",
+                "OCR preprocess image: source=%s original=%sx%s cropped=%s deskewed=%s angle=%.2f resized_to=%sx%s in_bytes=%s out_bytes=%s timing_ms(open=%.1f orient=%.1f crop=%.1f deskew=%.1f resize=%.1f blur=%.1f contrast=%.1f save=%.1f total=%.1f)",
                 "pdf" if is_pdf else "image",
                 original_size[0],
                 original_size[1],
@@ -482,7 +509,8 @@ def _normalize_upload_for_ocr(path: Path, upload_digest: str) -> tuple[Path, boo
                 (t_crop1 - t_orient) * 1000.0,
                 (t_deskew - t_crop1) * 1000.0,
                 (t_resize - t_deskew) * 1000.0,
-                (t_contrast - t_resize) * 1000.0,
+                (t_blur - t_resize) * 1000.0,
+                (t_contrast - t_blur) * 1000.0,
                 (t_save - t_contrast) * 1000.0,
                 (t_save - t0) * 1000.0,
             )
@@ -560,9 +588,7 @@ async def prefetch_ocr(
 
     try:
         ocr_path, _ = _normalize_upload_for_ocr(original_tmp_path, upload_digest)
-        ocr_client = MistralOCRService(model=MISTRAL_OCR_MODEL)
-        ocr_response = await ocr_client.ocr_file(ocr_path)
-        markdown_text = MistralOCRService.extract_markdown_text(ocr_response)
+        markdown_text = await _run_ocr_pipeline(ocr_path)
         logger.info("Prefetch OCR complete: user=%s chars=%d", current_user.id, len(markdown_text))
         return {"ocr_text": markdown_text}
     except Exception as e:
@@ -640,17 +666,18 @@ async def extract_scan(
         )
         t_extract_start = time.perf_counter()
         if ocr_text:
+            # Prefetch already ran OCR + Gemini merge — use it directly.
             markdown_text = ocr_text
             logger.info("Scan using prefetched OCR text: chars=%d", len(markdown_text))
         else:
-            ocr_client = MistralOCRService(model=MISTRAL_OCR_MODEL)
-            ocr_response = await ocr_client.ocr_file(ocr_path)
-            markdown_text = MistralOCRService.extract_markdown_text(ocr_response)
+            markdown_text = await _run_ocr_pipeline(ocr_path)
             logger.info(
-                "Scan extraction primary call complete: provider=mistral model=%s extract_ms=%.1f",
-                MISTRAL_OCR_MODEL,
+                "Scan OCR+merge complete: extract_ms=%.1f chars=%d",
                 (time.perf_counter() - t_extract_start) * 1000.0,
+                len(markdown_text),
             )
+
+        logger.info("=== MERGED MARKDOWN ===\n%s\n=== END MERGED MARKDOWN ===", markdown_text)
 
         t_parse_start = time.perf_counter()
         parsed_rows = parse_mistral_scorecard_rows(markdown_text, user_context=user_context)
@@ -662,7 +689,8 @@ async def extract_scan(
         confidence_data = _build_confidence_payload(round_data.get("hole_scores", []), fields_needing_review)
         t_parse_end = time.perf_counter()
         logger.info(
-            "Scan stage complete: stage=mistral_parse parse_ms=%.1f score_cells=%d putt_cells=%d gir_cells=%d shots_cells=%d to_par_hint=%s warnings=%d",
+            "Scan stage complete: stage=mistral_parse extraction_mode=%s parse_ms=%.1f score_cells=%d putt_cells=%d gir_cells=%d shots_cells=%d to_par_hint=%s warnings=%d",
+            parsed_rows.extraction_mode,
             (t_parse_end - t_parse_start) * 1000.0,
             len([h for h in round_data.get("hole_scores", []) if h.get("strokes") is not None]),
             len([h for h in round_data.get("hole_scores", []) if h.get("putts") is not None]),
