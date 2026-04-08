@@ -76,12 +76,30 @@ class UserRepositoryDB:
         """Return auth fields for a user by email."""
         normalized = self._normalize_email(email)
         async with self._pool.acquire() as conn:
-            row = await conn.fetchrow(
-                """SELECT id, name, email, password_hash, email_verified
-                   FROM users.users
-                   WHERE LOWER(email) = $1""",
-                normalized,
-            )
+            try:
+                row = await conn.fetchrow(
+                    """SELECT id, name, email, password_hash, email_verified
+                       FROM users.users
+                       WHERE LOWER(email) = $1""",
+                    normalized,
+                )
+            except asyncpg.UndefinedColumnError:
+                # Backward-compat for local DBs that have not applied auth hardening migration yet.
+                row = await conn.fetchrow(
+                    """SELECT id, name, email, password_hash
+                       FROM users.users
+                       WHERE LOWER(email) = $1""",
+                    normalized,
+                )
+                if row:
+                    return {
+                        "id": str(row["id"]),
+                        "name": row["name"],
+                        "email": row["email"],
+                        "password_hash": row["password_hash"],
+                        # Legacy schema had no verification flag; treat as verified.
+                        "email_verified": True,
+                    }
             if not row:
                 return None
             return {
