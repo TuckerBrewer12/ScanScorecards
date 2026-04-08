@@ -7,9 +7,9 @@ from .base import BaseGolfModel
 class HoleScore(BaseGolfModel):
     """Represents a player's score on a single hole (raw scanned data)."""
     hole_number: Optional[int] = Field(None, ge=1, le=18)
-    strokes: Optional[int] = Field(None, ge=1, le=15)
-    net_score: Optional[int] = Field(None, ge=-3, le=15)
-    putts: Optional[int] = Field(None, ge=0, le=10)
+    strokes: Optional[int] = Field(None, ge=1, le=50)
+    net_score: Optional[int] = Field(None, ge=-3, le=50)
+    putts: Optional[int] = Field(None, ge=0, le=30)
     shots_to_green: Optional[int] = Field(None, ge=1, le=10)
     fairway_hit: Optional[bool] = None
     green_in_regulation: Optional[bool] = None

@@ -10,7 +10,7 @@ class Tee(BaseGolfModel):
     total_yardage: Optional[int] = Field(None, ge=0)
     hole_yardages: Dict[int, int] = Field(default_factory=dict)
     slope_rating: Optional[float] = Field(None, ge=55, le=155)
-    course_rating: Optional[float] = Field(None, ge=55.0, le=85.0)
+    course_rating: Optional[float] = Field(None, ge=40.0, le=85.0)
 
     @field_validator('hole_yardages')
     @classmethod
