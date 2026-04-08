@@ -289,7 +289,29 @@ async def _run_ocr_pipeline(ocr_path: Path) -> str:
     """Mistral OCR → Gemini merge → raw markdown string."""
     svc = MistralOCRService()
     ocr_resp = await svc.ocr_file(ocr_path)
+
+    pages = ocr_resp.get("pages")
+    if isinstance(pages, list):
+        for page_idx, page in enumerate(pages):
+            if not isinstance(page, dict):
+                continue
+            tables = page.get("tables") or []
+            if not isinstance(tables, list):
+                continue
+            for table_idx, table in enumerate(tables):
+                if not isinstance(table, dict):
+                    continue
+                html_table = table.get("content")
+                if isinstance(html_table, str) and html_table.strip():
+                    logger.info(
+                        "=== MISTRAL HTML TABLE page=%d table=%d ===\n%s\n=== END MISTRAL HTML TABLE ===",
+                        page_idx,
+                        table_idx,
+                        html_table,
+                    )
+
     raw_markdown = MistralOCRService.extract_markdown_text(ocr_resp)
+    logger.info("=== MISTRAL RAW MARKDOWN ===\n%s\n=== END MISTRAL RAW MARKDOWN ===", raw_markdown)
     return await merge_split_tables(raw_markdown)
 
 
