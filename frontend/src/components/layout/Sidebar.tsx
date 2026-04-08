@@ -76,7 +76,9 @@ export function Sidebar() {
           </div>
           <button
             type="button"
-            onClick={logout}
+            onClick={() => {
+              void logout();
+            }}
             title="Log out"
             className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-lg hover:bg-white/10 text-white/40 hover:text-white"
           >

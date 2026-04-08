@@ -2,7 +2,6 @@ export type AppTheme = "light" | "dark";
 
 export const THEME_PREF_KEY = "settings_theme";
 export const PUBLIC_THEME_PREF_KEY = "public_theme";
-const TOKEN_KEY = "golf_jwt";
 
 export function applyTheme(theme: AppTheme): void {
   const root = document.documentElement;
@@ -32,8 +31,7 @@ export function setStoredPublicTheme(theme: AppTheme): void {
 }
 
 export function initTheme(): AppTheme {
-  const hasAuthToken = !!localStorage.getItem(TOKEN_KEY);
-  const theme = hasAuthToken ? getStoredTheme() : getStoredPublicTheme();
+  const theme = getStoredPublicTheme();
   applyTheme(theme);
   return theme;
 }

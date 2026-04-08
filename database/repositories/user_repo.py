@@ -2,6 +2,7 @@
 
 import asyncpg
 import secrets
+from datetime import datetime, timezone
 from typing import Optional
 from uuid import UUID
 
@@ -18,6 +19,10 @@ class UserRepositoryDB:
 
     def __init__(self, pool: asyncpg.Pool):
         self._pool = pool
+
+    @staticmethod
+    def _normalize_email(email: str) -> str:
+        return email.strip().lower()
 
     def _generate_friend_code(self) -> str:
         return "GC" + "".join(
@@ -38,9 +43,10 @@ class UserRepositoryDB:
 
     async def get_user_by_email(self, email: str) -> Optional[User]:
         """Get user by email."""
+        normalized = self._normalize_email(email)
         async with self._pool.acquire() as conn:
             row = await conn.fetchrow(
-                "SELECT * FROM users.users WHERE email = $1", email
+                "SELECT * FROM users.users WHERE LOWER(email) = $1", normalized
             )
             return user_from_row(row) if row else None
 
@@ -59,31 +65,57 @@ class UserRepositoryDB:
 
     async def get_password_hash(self, email: str) -> Optional[str]:
         """Return only the password_hash for the given email (for auth use only)."""
+        normalized = self._normalize_email(email)
         async with self._pool.acquire() as conn:
             row = await conn.fetchrow(
-                "SELECT password_hash FROM users.users WHERE email = $1", email
+                "SELECT password_hash FROM users.users WHERE LOWER(email) = $1", normalized
             )
             return row["password_hash"] if row else None
+
+    async def get_auth_user_by_email(self, email: str) -> Optional[dict]:
+        """Return auth fields for a user by email."""
+        normalized = self._normalize_email(email)
+        async with self._pool.acquire() as conn:
+            row = await conn.fetchrow(
+                """SELECT id, name, email, password_hash, email_verified
+                   FROM users.users
+                   WHERE LOWER(email) = $1""",
+                normalized,
+            )
+            if not row:
+                return None
+            return {
+                "id": str(row["id"]),
+                "name": row["name"],
+                "email": row["email"],
+                "password_hash": row["password_hash"],
+                "email_verified": bool(row["email_verified"]),
+            }
 
     async def create_user(self, user: User, *, password_hash: Optional[str] = None) -> User:
         """Create a new user. Returns User with DB-generated id."""
         data = user_to_row(user)
+        normalized_email = self._normalize_email(data["email"])
         async with self._pool.acquire() as conn:
             for _ in range(10):
                 friend_code = data["friend_code"] or self._generate_friend_code()
                 try:
                     row = await conn.fetchrow(
                         """INSERT INTO users.users
-                           (friend_code, name, email, handicap_index, home_course_id, password_hash, last_handicap_update)
+                           (friend_code, name, email, handicap_index, home_course_id, password_hash,
+                            email_verified, email_verified_at, last_handicap_update)
                            VALUES ($1, $2, $3, $4, $5, $6,
+                                   COALESCE($7, FALSE),
+                                   CASE WHEN COALESCE($7, FALSE) THEN NOW() ELSE NULL END,
                                    CASE WHEN $4 IS NULL THEN NULL ELSE NOW() END)
                            RETURNING *""",
                         friend_code,
                         data["name"],
-                        data["email"],
+                        normalized_email,
                         data["handicap_index"],
                         data["home_course_id"],
                         password_hash,
+                        user.email_verified,
                     )
                     return user_from_row(row)
                 except asyncpg.UniqueViolationError as e:
@@ -144,6 +176,109 @@ class UserRepositoryDB:
             )
             if result == "UPDATE 0":
                 raise NotFoundError(f"User {user_id} not found")
+
+    async def set_password_hash(self, user_id: str, password_hash: str) -> None:
+        """Set a new password hash for the user."""
+        async with self._pool.acquire() as conn:
+            result = await conn.execute(
+                "UPDATE users.users SET password_hash = $2 WHERE id = $1",
+                UUID(user_id),
+                password_hash,
+            )
+            if result == "UPDATE 0":
+                raise NotFoundError(f"User {user_id} not found")
+
+    async def mark_email_verified(self, user_id: str) -> None:
+        """Mark email as verified."""
+        async with self._pool.acquire() as conn:
+            result = await conn.execute(
+                """UPDATE users.users
+                   SET email_verified = TRUE, email_verified_at = NOW()
+                   WHERE id = $1""",
+                UUID(user_id),
+            )
+            if result == "UPDATE 0":
+                raise NotFoundError(f"User {user_id} not found")
+
+    async def create_auth_token(
+        self,
+        user_id: str,
+        token_type: str,
+        token_hash: str,
+        expires_at: datetime,
+    ) -> None:
+        """Insert one-time auth token hash and invalidate older active tokens of the same type."""
+        if expires_at.tzinfo is not None:
+            expires_at = expires_at.astimezone(timezone.utc).replace(tzinfo=None)
+        async with self._pool.acquire() as conn:
+            async with conn.transaction():
+                await conn.execute(
+                    """UPDATE users.auth_tokens
+                       SET used_at = NOW()
+                       WHERE user_id = $1
+                         AND token_type = $2
+                         AND used_at IS NULL""",
+                    UUID(user_id),
+                    token_type,
+                )
+                await conn.execute(
+                    """INSERT INTO users.auth_tokens (user_id, token_type, token_hash, expires_at)
+                       VALUES ($1, $2, $3, $4)""",
+                    UUID(user_id),
+                    token_type,
+                    token_hash,
+                    expires_at,
+                )
+
+    async def consume_auth_token(self, token_type: str, token_hash: str) -> Optional[str]:
+        """Consume token if valid (not expired, not previously used) and return user_id."""
+        async with self._pool.acquire() as conn:
+            row = await conn.fetchrow(
+                """WITH token_row AS (
+                       SELECT id, user_id
+                       FROM users.auth_tokens
+                       WHERE token_type = $1
+                         AND token_hash = $2
+                         AND used_at IS NULL
+                         AND expires_at > NOW()
+                       ORDER BY created_at DESC
+                       LIMIT 1
+                   )
+                   UPDATE users.auth_tokens t
+                   SET used_at = NOW()
+                   FROM token_row
+                   WHERE t.id = token_row.id
+                   RETURNING token_row.user_id AS user_id""",
+                token_type,
+                token_hash,
+            )
+            if not row:
+                return None
+            return str(row["user_id"])
+
+    async def has_recent_auth_token(
+        self,
+        user_id: str,
+        token_type: str,
+        min_created_at: datetime,
+    ) -> bool:
+        """Check for recent token issuance to reduce spammy resends."""
+        if min_created_at.tzinfo is not None:
+            min_created_at = min_created_at.astimezone(timezone.utc).replace(tzinfo=None)
+        async with self._pool.acquire() as conn:
+            row = await conn.fetchrow(
+                """SELECT id
+                   FROM users.auth_tokens
+                   WHERE user_id = $1
+                     AND token_type = $2
+                     AND created_at >= $3
+                   ORDER BY created_at DESC
+                   LIMIT 1""",
+                UUID(user_id),
+                token_type,
+                min_created_at,
+            )
+            return bool(row)
 
     # ================================================================
     # Delete

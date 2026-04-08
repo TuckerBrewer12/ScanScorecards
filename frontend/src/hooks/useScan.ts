@@ -5,7 +5,6 @@ import type { CourseSummary } from "@/types/golf";
 import type { ScanState, ScanResult, ExtractedHoleScore, ManualTee } from "@/types/scan";
 import { initialScanState } from "@/types/scan";
 import { api } from "@/lib/api";
-import { getToken } from "@/lib/auth";
 
 function normalizeCourseQueryForSearch(value: string): string {
   return value.trim().replace(/\s+/g, " ");
@@ -201,12 +200,11 @@ export function useScan(
       // Kick off OCR immediately in the background so it's ready when user hits Extract
       void (async () => {
         try {
-          const token = getToken();
           const ocrForm = new FormData();
           ocrForm.append("file", processed);
           const res = await fetch("/api/scan/ocr", {
             method: "POST",
-            headers: token ? { Authorization: `Bearer ${token}` } : {},
+            credentials: "include",
             body: ocrForm,
           });
           if (res.ok) {
@@ -252,12 +250,9 @@ export function useScan(
     }
 
     try {
-      const token = getToken();
       const res = await fetch("/api/scan/extract", {
         method: "POST",
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
+        credentials: "include",
         body: formData,
       });
       if (!res.ok) {
@@ -392,10 +387,10 @@ export function useScan(
     update({ error: null });
 
     try {
-      const saveToken = getToken();
       const res = await fetch("/api/scan/save", {
         method: "POST",
-        headers: { "Content-Type": "application/json", ...(saveToken ? { Authorization: `Bearer ${saveToken}` } : {}) },
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           user_id: userId,
           ...(reviewCourseId

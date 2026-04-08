@@ -1,11 +1,10 @@
 import { createContext, useContext, useEffect, useState } from "react";
 
-const TOKEN_KEY = "golf_jwt";
-
 interface AuthState {
   userId: string | null;
   name: string | null;
   email: string | null;
+  emailVerified: boolean;
 }
 
 interface AuthContextValue extends AuthState {
@@ -15,16 +14,29 @@ interface AuthContextValue extends AuthState {
     email: string,
     password: string,
     options?: { handicap?: number | null; home_course_id?: string | null },
-  ) => Promise<void>;
-  logout: () => void;
+  ) => Promise<string>;
+  logout: () => Promise<void>;
   loading: boolean;
+}
+
+interface AuthUserPayload {
+  user_id: string;
+  name: string;
+  email: string;
+  email_verified: boolean;
+}
+
+interface RegisterPayload {
+  message: string;
+  requires_email_verification: boolean;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-async function callAuth(path: string, body: object) {
+async function callAuth<T>(path: string, body: object): Promise<T> {
   const res = await fetch(`/api/auth${path}`, {
     method: "POST",
+    credentials: "include",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });
@@ -38,34 +50,43 @@ async function callAuth(path: string, body: object) {
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const initialToken = localStorage.getItem(TOKEN_KEY);
-  const [state, setState] = useState<AuthState>({ userId: null, name: null, email: null });
-  const [loading, setLoading] = useState(Boolean(initialToken));
+  const [state, setState] = useState<AuthState>({
+    userId: null,
+    name: null,
+    email: null,
+    emailVerified: false,
+  });
+  const [loading, setLoading] = useState(true);
 
-  // On mount, try to re-hydrate from stored token
+  // On mount, try to re-hydrate from session cookie.
   useEffect(() => {
-    const token = localStorage.getItem(TOKEN_KEY);
-    if (!token) return;
-    fetch("/api/auth/me", {
-      headers: { Authorization: `Bearer ${token}` },
-    })
+    fetch("/api/auth/me", { credentials: "include" })
       .then((res) => {
-        if (!res.ok) throw new Error("expired");
-        return res.json();
+        if (!res.ok) throw new Error("unauthenticated");
+        return res.json() as Promise<AuthUserPayload>;
       })
       .then((data) => {
-        setState({ userId: data.user_id, name: data.name, email: data.email });
+        setState({
+          userId: data.user_id,
+          name: data.name,
+          email: data.email,
+          emailVerified: !!data.email_verified,
+        });
       })
       .catch(() => {
-        localStorage.removeItem(TOKEN_KEY);
+        setState({ userId: null, name: null, email: null, emailVerified: false });
       })
       .finally(() => setLoading(false));
   }, []);
 
   const login = async (email: string, password: string) => {
-    const data = await callAuth("/login", { email, password });
-    localStorage.setItem(TOKEN_KEY, data.access_token);
-    setState({ userId: data.user_id, name: data.name, email: data.email });
+    const data = await callAuth<AuthUserPayload>("/login", { email, password });
+    setState({
+      userId: data.user_id,
+      name: data.name,
+      email: data.email,
+      emailVerified: !!data.email_verified,
+    });
   };
 
   const register = async (
@@ -74,20 +95,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     password: string,
     options?: { handicap?: number | null; home_course_id?: string | null },
   ) => {
-    const data = await callAuth("/register", {
+    const data = await callAuth<RegisterPayload>("/register", {
       name,
       email,
       password,
       handicap: options?.handicap ?? null,
       home_course_id: options?.home_course_id ?? null,
     });
-    localStorage.setItem(TOKEN_KEY, data.access_token);
-    setState({ userId: data.user_id, name: data.name, email: data.email });
+    return data.message;
   };
 
-  const logout = () => {
-    localStorage.removeItem(TOKEN_KEY);
-    setState({ userId: null, name: null, email: null });
+  const logout = async () => {
+    try {
+      await callAuth<{ message: string }>("/logout", {});
+    } finally {
+      setState({ userId: null, name: null, email: null, emailVerified: false });
+    }
   };
 
   return (
@@ -103,3 +126,4 @@ export function useAuth(): AuthContextValue {
   if (!ctx) throw new Error("useAuth must be used within AuthProvider");
   return ctx;
 }
+

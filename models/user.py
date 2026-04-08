@@ -13,6 +13,8 @@ class User(BaseGolfModel):
     friend_code: Optional[str] = None
     name: Optional[str] = None
     email: Optional[str] = None
+    email_verified: bool = False
+    email_verified_at: Optional[datetime] = None
     home_course_id: Optional[str] = None
     handicap: Optional[float] = Field(None, ge=-10, le=54)
     rounds: List["Round"] = Field(default_factory=list)

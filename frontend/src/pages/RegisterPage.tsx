@@ -79,11 +79,11 @@ export function RegisterPage() {
 
     setLoading(true);
     try {
-      await register(name, email, password, {
+      const message = await register(name, email, password, {
         handicap: parsedHandicap,
         home_course_id: homeCourseId || null,
       });
-      navigate("/");
+      navigate("/login", { state: { flash: message, email } });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registration failed");
     } finally {

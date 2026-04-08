@@ -16,9 +16,34 @@ class LoginRequest(BaseModel):
     password: str
 
 
-class TokenResponse(BaseModel):
-    access_token: str
-    token_type: str = "bearer"
+class AuthUserResponse(BaseModel):
     user_id: str
     name: str
     email: str
+    email_verified: bool = True
+
+
+class RegisterResponse(BaseModel):
+    message: str
+    requires_email_verification: bool = True
+
+
+class VerifyEmailRequest(BaseModel):
+    token: str = Field(..., min_length=20)
+
+
+class ResendVerificationRequest(BaseModel):
+    email: str
+
+
+class ForgotPasswordRequest(BaseModel):
+    email: str
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str = Field(..., min_length=20)
+    new_password: str = Field(..., min_length=8)
+
+
+class MessageResponse(BaseModel):
+    message: str

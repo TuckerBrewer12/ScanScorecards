@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { Flag } from "lucide-react";
 
@@ -17,7 +17,9 @@ function Logo() {
 export function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
+  const location = useLocation();
+  const initialEmail = ((location.state as { email?: string } | null)?.email ?? "").trim();
+  const [email, setEmail] = useState(initialEmail);
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -38,6 +40,11 @@ export function LoginPage() {
 
   const inputClass =
     "w-full px-4 py-3 border border-gray-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary";
+
+  const flashMessage = (() => {
+    const state = location.state as { flash?: string } | null;
+    return state?.flash ?? null;
+  })();
 
   return (
     <div className="min-h-screen grid md:grid-cols-2">
@@ -69,6 +76,11 @@ export function LoginPage() {
           <h2 className="text-3xl font-extrabold tracking-tight text-gray-900 mb-8">Sign In</h2>
 
           <form onSubmit={handleSubmit} className="space-y-5">
+            {flashMessage && (
+              <div role="status" className="bg-emerald-50 border border-emerald-100 text-emerald-700 text-sm rounded-xl px-4 py-3">
+                {flashMessage}
+              </div>
+            )}
             {error && (
               <div role="alert" className="bg-red-50 border border-red-100 text-red-600 text-sm rounded-xl px-4 py-3">
                 {error}

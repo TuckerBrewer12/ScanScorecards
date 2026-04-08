@@ -1,7 +1,7 @@
 from fastapi import Depends, HTTPException, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
-from api.auth_utils import decode_access_token
+from api.auth_utils import decode_access_token, get_access_token_cookie_name
 from database.db_manager import DatabaseManager
 
 bearer_scheme = HTTPBearer(auto_error=False)
@@ -13,13 +13,15 @@ def get_db(request: Request) -> DatabaseManager:
 
 
 async def get_current_user(
+    request: Request,
     credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
     db: DatabaseManager = Depends(get_db),
 ):
     """Decode the Bearer JWT and return the authenticated User."""
-    if not credentials:
+    token = credentials.credentials if credentials else request.cookies.get(get_access_token_cookie_name())
+    if not token:
         raise HTTPException(401, "Not authenticated")
-    payload = decode_access_token(credentials.credentials)
+    payload = decode_access_token(token)
     if not payload:
         raise HTTPException(401, "Invalid or expired token")
     user_id = payload.get("sub")
@@ -30,13 +32,15 @@ async def get_current_user(
 
 
 async def get_optional_current_user(
+    request: Request,
     credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
     db: DatabaseManager = Depends(get_db),
 ):
     """Best-effort auth dependency that returns None when unauthenticated/invalid."""
-    if not credentials:
+    token = credentials.credentials if credentials else request.cookies.get(get_access_token_cookie_name())
+    if not token:
         return None
-    payload = decode_access_token(credentials.credentials)
+    payload = decode_access_token(token)
     if not payload:
         return None
     user_id = payload.get("sub")
