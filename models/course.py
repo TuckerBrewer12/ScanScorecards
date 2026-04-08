@@ -16,7 +16,7 @@ class Course(BaseGolfModel):
     name: Optional[str] = None
     external_course_id: Optional[str] = None
     location: Optional[str] = None
-    par: Optional[int] = Field(None, ge=18, le=80)  # 27 for 9-hole, 80 for 18-hole
+    par: Optional[int] = Field(None, ge=27, le=80)  # 27 for 9-hole, 80 for 18-hole
     holes: List[Hole] = Field(default_factory=list)
     tees: List[Tee] = Field(default_factory=list)
     user_id: Optional[str] = None  # None = master course; set = user-owned custom course

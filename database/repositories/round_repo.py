@@ -170,13 +170,14 @@ class RoundRepositoryDB:
     async def get_round_owner_id(self, round_id: str) -> Optional[str]:
         """Return the user_id that owns a round, or None if not found."""
         try:
-            async with self._pool.acquire() as conn:
-                row = await conn.fetchrow(
-                    "SELECT user_id FROM users.rounds WHERE id = $1", UUID(round_id)
-                )
-                return str(row["user_id"]) if row else None
-        except Exception:
+            rid = UUID(round_id)
+        except (TypeError, ValueError):
             return None
+        async with self._pool.acquire() as conn:
+            row = await conn.fetchrow(
+                "SELECT user_id FROM users.rounds WHERE id = $1", rid
+            )
+            return str(row["user_id"]) if row else None
 
     async def get_played_courses_for_user(self, user_id: str) -> list:
         """Return distinct courses a user has rounds linked to."""

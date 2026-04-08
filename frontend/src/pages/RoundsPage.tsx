@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Link2, Search } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { CourseLinkSearch } from "@/components/CourseLinkSearch";
@@ -68,6 +68,7 @@ function SortHeader({
 }
 
 export function RoundsPage({ userId }: RoundsPageProps) {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { data: rounds = [], isLoading: loading } = useQuery({
     queryKey: ["rounds", userId],
@@ -118,7 +119,7 @@ export function RoundsPage({ userId }: RoundsPageProps) {
     } finally {
       setLinking(false);
     }
-  }, []);
+  }, [queryClient, userId]);
 
   const openLink = useCallback((roundId: string) => {
     setLinkingRoundId(roundId);
@@ -241,6 +242,7 @@ export function RoundsPage({ userId }: RoundsPageProps) {
                     className="cursor-pointer hover:bg-emerald-50/40 border-l-2 border-transparent hover:border-primary/30 transition-all duration-150 group"
                     onClick={() => {
                       if (linkingRoundId === r.id) return;
+                      navigate(`/rounds/${r.id}`);
                     }}
                   >
                     <td className="px-6 py-3.5 text-sm text-gray-400">
