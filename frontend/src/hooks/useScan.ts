@@ -94,10 +94,27 @@ export function useScan(
   const [reviewSearching, setReviewSearching] = useState(false);
   const reviewSearchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const previewUrlRef = useRef<string | null>(null);
   useEffect(() => () => {
     if (reviewSearchTimer.current) clearTimeout(reviewSearchTimer.current);
     if (searchTimer.current) clearTimeout(searchTimer.current);
   }, []);
+  useEffect(() => {
+    const nextPreview = scanState.preview ?? null;
+    const prevPreview = previewUrlRef.current;
+    if (prevPreview && prevPreview !== nextPreview && prevPreview.startsWith("blob:")) {
+      URL.revokeObjectURL(prevPreview);
+    }
+    previewUrlRef.current = nextPreview;
+  }, [scanState.preview]);
+  useEffect(
+    () => () => {
+      if (previewUrlRef.current?.startsWith("blob:")) {
+        URL.revokeObjectURL(previewUrlRef.current);
+      }
+    },
+    []
+  );
 
   const handleReviewCourseQuery = useCallback((q: string) => {
     setReviewCourseQuery(q);

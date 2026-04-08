@@ -31,6 +31,7 @@ OCR_JPEG_QUALITY = 75
 PREPROCESS_CACHE_VERSION = "v2"
 MAX_UPLOAD_BYTES = 20 * 1024 * 1024  # 20 MB
 PREPROCESS_CACHE_DIR = Path(tempfile.gettempdir()) / "scanscore_ocr_cache"
+PREPROCESS_CACHE_ENABLED = False
 MISTRAL_OCR_MODEL = os.environ.get("MISTRAL_OCR_MODEL") or "mistral-ocr-latest"
 
 
@@ -339,7 +340,7 @@ def _normalize_upload_for_ocr(path: Path, upload_digest: str) -> tuple[Path, boo
       Falls back to original PDF if rendering is unavailable.
     - If normalization fails (e.g., unsupported HEIC decoder), fall back to original.
     """
-    cache_path = _get_preprocess_cache_path(upload_digest)
+    cache_path = _get_preprocess_cache_path(upload_digest) if PREPROCESS_CACHE_ENABLED else None
     is_pdf = path.suffix.lower() == ".pdf"
     t0 = time.perf_counter()
     try:
@@ -372,28 +373,35 @@ def _normalize_upload_for_ocr(path: Path, upload_digest: str) -> tuple[Path, boo
             stripped = Image.new("RGB", img.size)
             stripped.paste(img)
 
-            # Save into cache atomically.
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg", dir=PREPROCESS_CACHE_DIR) as out:
-                temp_cache_path = Path(out.name)
-            _save_jpeg(temp_cache_path, stripped)
-            os.replace(temp_cache_path, cache_path)
+            if PREPROCESS_CACHE_ENABLED and cache_path is not None:
+                # Save into cache atomically.
+                with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg", dir=PREPROCESS_CACHE_DIR) as out:
+                    temp_cache_path = Path(out.name)
+                _save_jpeg(temp_cache_path, stripped)
+                os.replace(temp_cache_path, cache_path)
+                output_path = cache_path
+            else:
+                with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as out:
+                    output_path = Path(out.name)
+                _save_jpeg(output_path, stripped)
             t_save = time.perf_counter()
             logger.info(
-                "OCR preprocess image: source=%s original=%sx%s resized_to=%sx%s in_bytes=%s out_bytes=%s timing_ms(open=%.1f orient=%.1f resize=%.1f save=%.1f total=%.1f)",
+                "OCR preprocess image: source=%s cache_enabled=%s original=%sx%s resized_to=%sx%s in_bytes=%s out_bytes=%s timing_ms(open=%.1f orient=%.1f resize=%.1f save=%.1f total=%.1f)",
                 "pdf" if is_pdf else "image",
+                PREPROCESS_CACHE_ENABLED,
                 original_size[0],
                 original_size[1],
                 stripped.size[0],
                 stripped.size[1],
                 path.stat().st_size if path.exists() else None,
-                cache_path.stat().st_size if cache_path.exists() else None,
+                output_path.stat().st_size if output_path.exists() else None,
                 (t_open - t0) * 1000.0,
                 (t_orient - t_open) * 1000.0,
                 (t_resize - t_orient) * 1000.0,
                 (t_save - t_resize) * 1000.0,
                 (t_save - t0) * 1000.0,
             )
-            return cache_path, False
+            return output_path, False
     except Exception as e:
         logger.warning(
             "Image normalization failed; using original upload. file=%s source=%s err=%s",
@@ -435,8 +443,10 @@ async def prefetch_ocr(
         original_tmp_path = Path(tmp.name)
     upload_digest = hasher.hexdigest()
 
+    ocr_path = original_tmp_path
+    cache_hit = False
     try:
-        ocr_path, _ = _normalize_upload_for_ocr(original_tmp_path, upload_digest)
+        ocr_path, cache_hit = _normalize_upload_for_ocr(original_tmp_path, upload_digest)
         markdown_text = await _run_ocr_pipeline(ocr_path)
         logger.info("Prefetch OCR complete: user=%s chars=%d", current_user.id, len(markdown_text))
         return {"ocr_text": markdown_text}
@@ -446,6 +456,9 @@ async def prefetch_ocr(
         logger.exception("Prefetch OCR failed")
         raise HTTPException(500, "OCR failed. Please try again.")
     finally:
+        if ocr_path != original_tmp_path and (not PREPROCESS_CACHE_ENABLED or not cache_hit):
+            with contextlib.suppress(OSError):
+                ocr_path.unlink()
         with contextlib.suppress(OSError):
             original_tmp_path.unlink()
 
@@ -494,10 +507,11 @@ async def extract_scan(
     ocr_path, cache_hit = _normalize_upload_for_ocr(original_tmp_path, upload_digest)
     t_pre_end = time.perf_counter()
     logger.info(
-        "Scan preprocessing complete: original=%s ocr_input=%s normalized=%s cache_hit=%s pre_ms=%.1f",
+        "Scan preprocessing complete: original=%s ocr_input=%s normalized=%s cache_enabled=%s cache_hit=%s pre_ms=%.1f",
         original_tmp_path.name,
         ocr_path.name,
         ocr_path != original_tmp_path,
+        PREPROCESS_CACHE_ENABLED,
         cache_hit,
         (t_pre_end - t_pre_start) * 1000.0,
     )
@@ -576,8 +590,8 @@ async def extract_scan(
             "Scan extract request complete: total_ms=%.1f",
             (time.perf_counter() - request_t0) * 1000.0,
         )
-        # Keep cached normalized artifacts; remove ephemeral files only.
-        if not cache_hit and ocr_path != original_tmp_path:
+        # Cache is disabled by default; remove generated OCR preprocess artifact.
+        if ocr_path != original_tmp_path and (not PREPROCESS_CACHE_ENABLED or not cache_hit):
             ocr_path.unlink(missing_ok=True)
         original_tmp_path.unlink(missing_ok=True)
 
@@ -601,6 +615,8 @@ async def save_round(
         service = ScanService(db)
         saved = await service.save_reviewed_scan(req)
         return {"id": saved.id, "total_score": saved.calculate_total_score()}
+    except ValueError as e:
+        raise HTTPException(400, str(e))
     except Exception:
         logger.exception("Save round error")
         raise HTTPException(500, "Save failed. Please try again.")

@@ -166,8 +166,8 @@ export function ScanReviewStep({
                 const yds = selectedTee.hole_yardages[String(holeNum)];
                 return <td key={si} className="px-1 py-1.5 text-center">{yds ?? "-"}</td>;
               })}
-              <td className="px-2 py-1.5 text-center bg-gray-50 font-bold">{nineYardage || "-"}</td>
-              {showGrandTotal && <td className="px-2 py-1.5 text-center bg-gray-100 font-bold">{totalYardage || "-"}</td>}
+              <td className="px-2 py-1.5 text-center bg-gray-50 font-bold">{nineYardage ?? "-"}</td>
+              {showGrandTotal && <td className="px-2 py-1.5 text-center bg-gray-100 font-bold">{totalYardage ?? "-"}</td>}
             </tr>
           )}
           {/* Par */}
@@ -178,7 +178,7 @@ export function ScanReviewStep({
               const par = rd.course?.holes.find((h) => h.number === holeNum)?.par;
               return <td key={si} className="px-1 py-1.5 text-center">{par ?? "-"}</td>;
             })}
-            <td className="px-2 py-1.5 text-center bg-gray-50 font-bold">{ninePar || "-"}</td>
+            <td className="px-2 py-1.5 text-center bg-gray-50 font-bold">{ninePar ?? "-"}</td>
             {showGrandTotal && <td className="px-2 py-1.5 text-center bg-gray-100 font-bold">{coursePar ?? "-"}</td>}
           </tr>
 
@@ -221,7 +221,7 @@ export function ScanReviewStep({
             </td>
             {showGrandTotal && (
               <td className="px-2 py-1.5 text-center bg-gray-100 font-bold text-base text-gray-900">
-                {totalStrokes || "-"}
+                {totalStrokes ?? "-"}
               </td>
             )}
           </tr>
@@ -266,11 +266,11 @@ export function ScanReviewStep({
                 );
               })}
               <td className="px-2 py-1.5 text-center bg-gray-50">
-                {slice.reduce((s, hs) => s + (hs.putts ?? 0), 0) || "-"}
+                {slice.reduce((s, hs) => s + (hs.putts ?? 0), 0)}
               </td>
               {showGrandTotal && (
                 <td className="px-2 py-1.5 text-center bg-gray-100">
-                  {editedScores.reduce((s, hs) => s + (hs.putts ?? 0), 0) || "-"}
+                  {editedScores.reduce((s, hs) => s + (hs.putts ?? 0), 0)}
                 </td>
               )}
             </tr>
@@ -298,11 +298,11 @@ export function ScanReviewStep({
                 );
               })}
               <td className="px-2 py-1.5 text-center text-green-700 font-semibold bg-gray-50">
-                {slice.filter((hs) => hs.green_in_regulation === true).length || "-"}
+                {slice.filter((hs) => hs.green_in_regulation === true).length}
               </td>
               {showGrandTotal && (
                 <td className="px-2 py-1.5 text-center text-green-700 font-semibold bg-gray-100">
-                  {editedScores.filter((hs) => hs.green_in_regulation === true).length || "-"}
+                  {editedScores.filter((hs) => hs.green_in_regulation === true).length}
                 </td>
               )}
             </tr>
@@ -368,7 +368,7 @@ export function ScanReviewStep({
             </div>
             <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
               <div className="text-xs text-gray-500 mb-1">Total</div>
-              <div className="text-3xl font-bold text-gray-900">{totalStrokes || "-"}</div>
+              <div className="text-3xl font-bold text-gray-900">{totalStrokes ?? "-"}</div>
             </div>
             <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
               <div className="text-xs text-gray-500 mb-1">To Par</div>

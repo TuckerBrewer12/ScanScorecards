@@ -6,11 +6,15 @@ import base64
 import logging
 import mimetypes
 import os
+from html.parser import HTMLParser
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import httpx
-from bs4 import BeautifulSoup
+try:
+    from bs4 import BeautifulSoup
+except Exception:  # noqa: BLE001
+    BeautifulSoup = None
 
 logger = logging.getLogger(__name__)
 
@@ -116,23 +120,67 @@ class MistralOCRService:
                     md = MistralOCRService._rows_to_markdown(rows)
                     if md:
                         chunks.append(md)
-                continue
 
-            # Fallback: no HTML tables — use raw markdown text
             text = page.get("markdown") or page.get("text")
             if isinstance(text, str) and text.strip():
-                chunks.append(text.strip())
+                if html_tables:
+                    # Keep non-table page text (notes/labels) even when table blocks exist.
+                    non_table = MistralOCRService._extract_non_table_text(text)
+                    if non_table:
+                        chunks.append(non_table)
+                else:
+                    chunks.append(text.strip())
 
         return "\n\n".join(chunks)
 
     @staticmethod
     def _html_to_rows(html: str) -> List[List[str]]:
         """Parse an HTML table into a list of row cell-lists."""
-        soup = BeautifulSoup(html, "html.parser")
-        return [
-            [td.get_text(" ", strip=True) for td in tr.find_all("td")]
-            for tr in soup.find_all("tr")
-        ]
+        if BeautifulSoup is not None:
+            soup = BeautifulSoup(html, "html.parser")
+            return [
+                [cell.get_text(" ", strip=True) for cell in tr.find_all(["th", "td"])]
+                for tr in soup.find_all("tr")
+            ]
+
+        class _TableParser(HTMLParser):
+            def __init__(self) -> None:
+                super().__init__(convert_charrefs=True)
+                self.rows: List[List[str]] = []
+                self._in_row = False
+                self._in_cell = False
+                self._cell_parts: List[str] = []
+                self._current_row: List[str] = []
+
+            def handle_starttag(self, tag: str, attrs: List[tuple[str, Optional[str]]]) -> None:
+                lower = tag.lower()
+                if lower == "tr":
+                    self._in_row = True
+                    self._current_row = []
+                elif self._in_row and lower in {"td", "th"}:
+                    self._in_cell = True
+                    self._cell_parts = []
+
+            def handle_data(self, data: str) -> None:
+                if self._in_cell:
+                    self._cell_parts.append(data)
+
+            def handle_endtag(self, tag: str) -> None:
+                lower = tag.lower()
+                if self._in_row and lower in {"td", "th"} and self._in_cell:
+                    text = " ".join("".join(self._cell_parts).split())
+                    self._current_row.append(text)
+                    self._in_cell = False
+                    self._cell_parts = []
+                elif lower == "tr" and self._in_row:
+                    if self._current_row:
+                        self.rows.append(self._current_row)
+                    self._in_row = False
+                    self._current_row = []
+
+        parser = _TableParser()
+        parser.feed(html)
+        return parser.rows
 
     @staticmethod
     def _rows_to_markdown(rows: List[List[str]]) -> str:
@@ -143,3 +191,18 @@ class MistralOCRService:
             "| " + " | ".join(cell.replace("|", "/") for cell in row) + " |"
             for row in rows
         )
+
+    @staticmethod
+    def _extract_non_table_text(text: str) -> str:
+        """Remove markdown table lines and keep surrounding non-table text."""
+        kept_lines: List[str] = []
+        for raw_line in text.splitlines():
+            line = raw_line.strip()
+            if not line:
+                continue
+            if line.startswith("|"):
+                continue
+            if set(line) <= {"-", ":", "|", " "}:
+                continue
+            kept_lines.append(line)
+        return "\n".join(kept_lines).strip()

@@ -52,11 +52,15 @@ class ScanService:
 
         # Tier 0: explicit course_id (user selected from DB — skip fuzzy match)
         if req.course_id:
-            course = await self._db.courses.get_course(req.course_id)
+            try:
+                course = await self._db.courses.get_course(req.course_id)
+            except Exception as exc:  # noqa: BLE001
+                raise ValueError("Selected course_id is invalid.") from exc
             if course:
                 course = await self._maybe_backfill_external_id(course, req)
                 await self._fill_gaps(str(course.id), scan_holes, tees)
                 return course, str(course.id)
+            raise ValueError(f"Selected course not found: {req.course_id}")
 
         # Tier 0.5: confirmed external match from UI
         # Create local row keyed by external_course_id if missing.
@@ -156,8 +160,10 @@ class ScanService:
 
         target = self._normalize_name(req.course_name)
 
-        # Prefer exact-ish normalized name match; fallback to first row with an ID.
+        # Prefer exact-ish normalized name match; avoid weak fallback binds.
         chosen = None
+        best_overlap = 0.0
+        target_tokens = set(target.split())
         for row in rows:
             external_id = row.get("external_course_id")
             if not external_id:
@@ -167,8 +173,13 @@ class ScanService:
             if norm == target or target in norm or norm in target:
                 chosen = row
                 break
-            if chosen is None:
+            row_tokens = set(norm.split())
+            if not target_tokens or not row_tokens:
+                continue
+            overlap = len(target_tokens & row_tokens) / max(len(target_tokens), len(row_tokens))
+            if overlap >= 0.8 and overlap > best_overlap:
                 chosen = row
+                best_overlap = overlap
 
         if chosen and chosen.get("external_course_id"):
             req.external_course_id = chosen["external_course_id"]

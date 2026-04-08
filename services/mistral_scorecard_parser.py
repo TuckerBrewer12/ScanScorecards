@@ -1188,10 +1188,28 @@ def _normalize_hole_values(values: List[int]) -> List[int]:
     if len(values) <= 18:
         return values
 
-    if len(values) >= 19:
+    def looks_like_front_subtotal(subtotal: int, front_nine: List[int]) -> bool:
+        if not front_nine:
+            return False
+        expected = sum(front_nine)
+        if abs(subtotal - expected) <= 2:
+            return True
+        max_hole = max(abs(v) for v in front_nine)
+        return abs(subtotal) >= max_hole + 3
+
+    if len(values) >= 20:
         candidate = values[:9] + values[10:19]
         if len(candidate) == 18:
             return candidate
+        return values[:18]
+
+    if len(values) == 19:
+        if looks_like_front_subtotal(values[9], values[:9]):
+            candidate = values[:9] + values[10:19]
+            if len(candidate) == 18:
+                return candidate
+        # Likely [h1..h18, TOT] (or similar trailing aggregate) — keep first 18 holes.
+        return values[:18]
 
     return values[:18]
 
