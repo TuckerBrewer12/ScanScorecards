@@ -780,9 +780,9 @@ def scrambling_per_round(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
                 if not hole or hole.par is None:
                     continue
 
-                if score.green_in_regulation is False and score.putts is not None:
+                if score.green_in_regulation is False:
                     opportunities += 1
-                    if score.strokes <= hole.par:
+                    if score.strokes == hole.par:
                         successes += 1
 
         percentage = (successes / opportunities * 100.0) if opportunities else None
@@ -990,7 +990,7 @@ def putts_per_gir(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
         gir_count = len(gir_scores)
         putts_on_gir = sum(score.putts for score in gir_scores if score.putts is not None)
         gir_with_putt_data = sum(1 for score in gir_scores if score.putts is not None)
-        metric = (putts_on_gir / gir_count) if gir_count else None
+        metric = (putts_on_gir / gir_with_putt_data) if gir_with_putt_data else None
 
         results.append(
             {

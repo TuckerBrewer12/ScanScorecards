@@ -248,19 +248,18 @@ async def create_course(
 async def update_course(
     course_id: str,
     req: UpdateCourseRequest,
-    user_id: str = Query(..., description="Must be the owner of this custom course"),
     db: DatabaseManager = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """Update a custom course. Only the owner can edit; master courses are protected."""
-    # Verify ownership
     existing = await db.courses.get_course(course_id)
     if not existing:
         raise HTTPException(404, "Course not found")
-    if existing.user_id != user_id:
+    if existing.user_id != str(current_user.id):
         raise HTTPException(403, "Cannot edit a master course. Clone it first.")
 
     updates = {k: v for k, v in req.model_dump().items() if v is not None}
-    updated = await db.courses.update_course(course_id, user_id=user_id, **updates)
+    updated = await db.courses.update_course(course_id, user_id=str(current_user.id), **updates)
     if not updated:
         raise HTTPException(404, "Course not found or not owned by user")
     return _summarize_course(updated)
@@ -269,12 +268,12 @@ async def update_course(
 @router.post("/{course_id}/clone", status_code=201)
 async def clone_course(
     course_id: str,
-    user_id: str = Query(..., description="User ID to clone the course for"),
     db: DatabaseManager = Depends(get_db),
+    current_user: User = Depends(get_current_user),
 ):
     """Clone a master course as a user-owned custom course."""
     try:
-        cloned = await db.courses.clone_course(course_id, user_id)
+        cloned = await db.courses.clone_course(course_id, str(current_user.id))
         return _summarize_course(cloned)
     except NotFoundError:
         raise HTTPException(404, "Source course not found")

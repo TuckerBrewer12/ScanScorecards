@@ -14,8 +14,9 @@ logger = logging.getLogger(__name__)
 
 
 class ScanService:
-    def __init__(self, db: DatabaseManager) -> None:
+    def __init__(self, db: DatabaseManager, course_api: Optional[GolfCourseAPIService] = None) -> None:
         self._db = db
+        self._course_api = course_api or GolfCourseAPIService()
 
     async def save_reviewed_scan(self, req: SaveRoundRequest) -> Round:
         """Top-level orchestrator: resolve course, build scores, create round."""
@@ -146,7 +147,7 @@ class ScanService:
         if req.external_course_id or not req.course_name:
             return
         try:
-            rows = await GolfCourseAPIService().search_external_courses(req.course_name, limit=8)
+            rows = await self._course_api.search_external_courses(req.course_name, limit=8)
         except Exception as exc:  # noqa: BLE001
             logger.info("External lookup skipped for '%s': %s", req.course_name, exc)
             return

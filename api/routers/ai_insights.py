@@ -20,6 +20,8 @@ async def get_ai_suggestions(
     db: DatabaseManager = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    if str(current_user.id) != user_id:
+        raise HTTPException(403, "Forbidden")
     user = await db.users.get_user(user_id)
     if not user:
         raise HTTPException(404, "User not found")

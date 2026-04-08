@@ -98,12 +98,21 @@ async def get_rounds_for_user(
     ]
 
 
+async def _check_round_ownership(round_id: str, current_user: User, db: DatabaseManager):
+    owner_id = await db.rounds.get_round_owner_id(round_id)
+    if owner_id is None:
+        raise HTTPException(404, "Round not found")
+    if owner_id != str(current_user.id):
+        raise HTTPException(403, "Forbidden")
+
+
 @router.get("/{round_id}")
 async def get_round(
     round_id: str,
     db: DatabaseManager = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    await _check_round_ownership(round_id, current_user, db)
     round_ = await db.rounds.get_round(round_id)
     if not round_:
         raise HTTPException(404, "Round not found")
@@ -118,6 +127,7 @@ async def update_round(
     current_user: User = Depends(get_current_user),
 ):
     """Edit an existing round's scores and/or metadata."""
+    await _check_round_ownership(round_id, current_user, db)
     try:
         # Update hole scores if provided
         if req.hole_scores:
@@ -158,9 +168,9 @@ async def update_round(
 
     except NotFoundError:
         raise HTTPException(404, "Round not found")
-    except Exception as e:
+    except Exception:
         logger.exception("Update round error")
-        raise HTTPException(500, f"Update failed: {type(e).__name__}: {str(e)}")
+        raise HTTPException(500, "Update failed. Please try again.")
 
 
 @router.post("/{round_id}/link-course", response_model=RoundSummaryResponse)
@@ -175,6 +185,7 @@ async def link_course_to_round(
     Backfills par_played/handicap_played on hole_scores from the course,
     and fills course holes from any par_played already on the round.
     """
+    await _check_round_ownership(round_id, current_user, db)
     try:
         # Verify course exists
         course = await db.courses.get_course(req.course_id)
@@ -200,9 +211,9 @@ async def link_course_to_round(
         return summarize_round(updated)
     except HTTPException:
         raise
-    except Exception as e:
+    except Exception:
         logger.exception("Link course error")
-        raise HTTPException(500, f"Link failed: {type(e).__name__}: {str(e)}")
+        raise HTTPException(500, "Link failed. Please try again.")
 
 
 @router.delete("/{round_id}", status_code=204)
@@ -211,5 +222,5 @@ async def delete_round(
     db: DatabaseManager = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    await _check_round_ownership(round_id, current_user, db)
     await db.rounds.delete_round(round_id)
-    # Idempotent: already-deleted rounds return 204 too

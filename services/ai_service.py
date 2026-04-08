@@ -193,8 +193,7 @@ class AIService:
             sum(three_putt_counts) / len(three_putt_counts) if three_putt_counts else None
         )
 
-        par_avgs = self._scoring_by_par_played(rounds)
-        par_counts = self._par_hole_counts(rounds)
+        par_avgs, par_counts = self._par_stats(rounds)
 
         putts_rows = analytics.putts_per_round(rounds)
         putts_vals = [r["total_putts"] for r in putts_rows if r.get("total_putts") is not None]
@@ -226,7 +225,9 @@ class AIService:
             "num_rounds": len(rounds),
         }
 
-    def _scoring_by_par_played(self, rounds: list) -> Dict[int, float]:
+    @staticmethod
+    def _par_stats(rounds: list) -> tuple[Dict[int, float], Dict[int, int]]:
+        """Single-pass: returns (avg_to_par_by_par, hole_count_by_par)."""
         by_par: Dict[int, List[float]] = {}
         for r in rounds:
             for hs in r.hole_scores:
@@ -242,27 +243,12 @@ class AIService:
                 if par not in (3, 4, 5):
                     continue
                 by_par.setdefault(par, []).append(float(hs.strokes - par))
-        return {p: sum(vals) / len(vals) for p, vals in by_par.items() if vals}
+        avgs = {p: sum(vals) / len(vals) for p, vals in by_par.items() if vals}
+        counts = {p: len(vals) for p, vals in by_par.items() if vals}
+        return avgs, counts
 
-    def _par_hole_counts(self, rounds: list) -> Dict[int, int]:
-        counts: Dict[int, int] = {}
-        for r in rounds:
-            for hs in r.hole_scores:
-                if hs.strokes is None:
-                    continue
-                par: Optional[int] = None
-                if r.course and hs.hole_number:
-                    hole = r.course.get_hole(hs.hole_number)
-                    if hole and hole.par:
-                        par = hole.par
-                if par is None:
-                    par = hs.par_played
-                if par not in (3, 4, 5):
-                    continue
-                counts[par] = counts.get(par, 0) + 1
-        return counts
-
-    def _putts_per_gir_per_round(self, rounds: list) -> List[Optional[float]]:
+    @staticmethod
+    def _putts_per_gir_per_round(rounds: list) -> List[Optional[float]]:
         results: List[Optional[float]] = []
         for r in rounds:
             gir_scores = [

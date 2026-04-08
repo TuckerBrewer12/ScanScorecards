@@ -55,14 +55,14 @@ class Round(BaseGolfModel):
         return sum(strokes) if strokes else None
 
     def calculate_front_nine(self) -> Optional[int]:
-        """Calculate total strokes for holes 1-9. Assumes hole_scores in order."""
-        front = self.hole_scores[:9]
+        """Calculate total strokes for holes 1-9."""
+        front = [s for s in self.hole_scores if s.hole_number is not None and 1 <= s.hole_number <= 9]
         strokes = [s.strokes for s in front if s.strokes is not None]
         return sum(strokes) if strokes else None
 
     def calculate_back_nine(self) -> Optional[int]:
-        """Calculate total strokes for holes 10-18. Assumes hole_scores in order."""
-        back = self.hole_scores[9:18]
+        """Calculate total strokes for holes 10-18."""
+        back = [s for s in self.hole_scores if s.hole_number is not None and 10 <= s.hole_number <= 18]
         strokes = [s.strokes for s in back if s.strokes is not None]
         return sum(strokes) if strokes else None
 
@@ -75,10 +75,8 @@ class Round(BaseGolfModel):
         return len(valid_scores) == expected
 
     def get_hole_score(self, hole_number: int) -> Optional[HoleScore]:
-        """Get score for a specific hole. Assumes hole_scores in order."""
-        if 1 <= hole_number <= len(self.hole_scores):
-            return self.hole_scores[hole_number - 1]
-        return None
+        """Get score for a specific hole."""
+        return next((s for s in self.hole_scores if s.hole_number == hole_number), None)
 
     def get_hole_par(self, hole_number: int) -> Optional[int]:
         """Get par for a specific hole — from course, or par_played on the hole score."""

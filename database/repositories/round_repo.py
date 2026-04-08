@@ -167,6 +167,30 @@ class RoundRepositoryDB:
     # Read
     # ================================================================
 
+    async def get_round_owner_id(self, round_id: str) -> Optional[str]:
+        """Return the user_id that owns a round, or None if not found."""
+        try:
+            async with self._pool.acquire() as conn:
+                row = await conn.fetchrow(
+                    "SELECT user_id FROM users.rounds WHERE id = $1", UUID(round_id)
+                )
+                return str(row["user_id"]) if row else None
+        except Exception:
+            return None
+
+    async def get_played_courses_for_user(self, user_id: str) -> list:
+        """Return distinct courses a user has rounds linked to."""
+        async with self._pool.acquire() as conn:
+            rows = await conn.fetch(
+                """SELECT DISTINCT c.id, c.name, c.location
+                   FROM users.rounds r
+                   JOIN courses.courses c ON r.course_id = c.id
+                   WHERE r.user_id = $1
+                   ORDER BY c.name""",
+                UUID(user_id),
+            )
+        return [{"id": str(r["id"]), "name": r["name"], "location": r["location"]} for r in rows]
+
     async def get_round(self, round_id: str) -> Optional[Round]:
         """Get a round with hole_scores and course data."""
         async with self._pool.acquire() as conn:

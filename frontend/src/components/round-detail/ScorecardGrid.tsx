@@ -248,7 +248,7 @@ function NineTable({
               ? {
                   backgroundColor: paletteBackground,
                   color: diff === 0 ? "#111827" : "#ffffff",
-                  boxShadow: `0 0 0 ${diff <= -1 ? 2 : 1}px ${paletteBackground}66`,
+                  boxShadow: `0 0 0 ${(diff ?? 0) <= -1 ? 2 : 1}px ${paletteBackground}66`,
                 }
               : undefined;
             return (

@@ -19,6 +19,8 @@ async def get_dashboard(
     db: DatabaseManager = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    if str(current_user.id) != user_id:
+        raise HTTPException(403, "Forbidden")
     user = await db.users.get_user(user_id)
     if not user:
         raise HTTPException(404, "User not found")
@@ -97,6 +99,8 @@ async def get_analytics(
     db: DatabaseManager = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    if str(current_user.id) != user_id:
+        raise HTTPException(403, "Forbidden")
     user = await db.users.get_user(user_id)
     if not user:
         raise HTTPException(404, "User not found")
@@ -341,17 +345,9 @@ async def get_played_courses(
     current_user: User = Depends(get_current_user),
 ):
     """Return distinct courses the user has rounds linked to."""
-    from uuid import UUID
-    async with db.rounds._pool.acquire() as conn:
-        rows = await conn.fetch(
-            """SELECT DISTINCT c.id, c.name, c.location
-               FROM users.rounds r
-               JOIN courses.courses c ON r.course_id = c.id
-               WHERE r.user_id = $1
-               ORDER BY c.name""",
-            UUID(user_id),
-        )
-    return [{"id": str(r["id"]), "name": r["name"], "location": r["location"]} for r in rows]
+    if str(current_user.id) != user_id:
+        raise HTTPException(403, "Forbidden")
+    return await db.rounds.get_played_courses_for_user(user_id)
 
 
 @router.get("/{user_id}/goal-report")
@@ -361,6 +357,8 @@ async def get_goal_report(
     db: DatabaseManager = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    if str(current_user.id) != user_id:
+        raise HTTPException(403, "Forbidden")
     user = await db.users.get_user(user_id)
     if not user or not user.scoring_goal:
         raise HTTPException(400, "No scoring goal set")
@@ -387,6 +385,8 @@ async def get_round_comparison(
     db: DatabaseManager = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    if str(current_user.id) != user_id:
+        raise HTTPException(403, "Forbidden")
     rounds_desc = await db.rounds.get_rounds_for_user(user_id, limit=200, offset=0)
     rounds = list(reversed(rounds_desc))  # chronological order
 
@@ -415,6 +415,8 @@ async def get_milestones(
     current_user: User = Depends(get_current_user),
 ):
     """Return a flat, sorted list of lifetime milestone events for the user."""
+    if str(current_user.id) != user_id:
+        raise HTTPException(403, "Forbidden")
     user = await db.users.get_user(user_id)
     if not user:
         raise HTTPException(404, "User not found")
@@ -510,6 +512,8 @@ async def get_course_analytics(
     db: DatabaseManager = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    if str(current_user.id) != user_id:
+        raise HTTPException(403, "Forbidden")
     user = await db.users.get_user(user_id)
     if not user:
         raise HTTPException(404, "User not found")

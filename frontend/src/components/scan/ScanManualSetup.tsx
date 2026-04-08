@@ -136,6 +136,7 @@ export function ScanManualSetup({
           type="date"
           value={manualDate}
           onChange={(e) => onSetManualDate(e.target.value)}
+          max={new Date().toISOString().substring(0, 10)}
           className="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
         />
       </div>

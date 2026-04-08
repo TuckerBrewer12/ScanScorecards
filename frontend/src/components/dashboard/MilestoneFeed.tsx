@@ -23,15 +23,6 @@ const COLOR_MAP: Record<Milestone["type"], string> = {
   birdie_streak: "bg-fuchsia-50 text-fuchsia-500",
 };
 
-function parseDate(raw: string): string {
-  // raw is "YYYY/M/D"
-  const [y, m, d] = raw.split("/").map(Number);
-  return new Date(y, m - 1, d).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
 
 interface MilestoneFeedProps {
   milestones: Milestone[];

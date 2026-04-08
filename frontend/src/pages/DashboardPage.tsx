@@ -11,8 +11,7 @@ import { MilestoneFeed } from "@/components/dashboard/MilestoneFeed";
 import { api } from "@/lib/api";
 import { getStoredColorBlindMode } from "@/lib/accessibility";
 import { getColorBlindPalette } from "@/lib/chartPalettes";
-import type { DashboardData, Milestone } from "@/types/golf";
-import type { AnalyticsData } from "@/types/analytics";
+import type { Milestone } from "@/types/golf";
 import { RecentRoundsTable } from "@/components/dashboard/RecentRoundsTable";
 import { ScrollSection } from "@/components/analytics/ScrollSection";
 import { BentoCard } from "@/components/ui/BentoCard";
@@ -424,7 +423,7 @@ export function DashboardPage({ userId }: DashboardPageProps) {
                     <div
                       className="h-full rounded-full transition-all"
                       style={{
-                        width: `${Math.min(100, Math.max(5, goalReport.on_track ? 100 : (1 - (goalReport.gap ?? 0) / Math.max(goalReport.scoring_average ?? 1, 1)) * 100))}%`,
+                        width: `${Math.min(100, Math.max(5, goalReport.on_track ? 100 : goalReport.gap == null ? 5 : (1 - goalReport.gap / Math.max(goalReport.scoring_average ?? 1, 1)) * 100))}%`,
                         background: goalReport.on_track ? "#059669" : "linear-gradient(90deg, #2d7a3a, #9ca3af)",
                       }}
                     />

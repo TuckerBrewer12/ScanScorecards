@@ -1,9 +1,8 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { MapPin, Search } from "lucide-react";
 import { motion } from "framer-motion";
 import { api } from "@/lib/api";
-import type { CourseSummary } from "@/types/golf";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { CourseDetailPanel } from "@/components/course-detail/CourseDetailPanel";
 import { ScrollSection } from "@/components/analytics/ScrollSection";
@@ -23,6 +22,7 @@ export function CoursesPage({ userId }: { userId: string }) {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null);
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (debounceTimer.current) clearTimeout(debounceTimer.current); }, []);
 
   const { data: courses = [], isLoading: loading } = useQuery({
     queryKey: ["courses", userId, debouncedSearch],
@@ -88,8 +88,12 @@ export function CoursesPage({ userId }: { userId: string }) {
                 animate="visible"
                 whileHover={{ y: -3, boxShadow: "0 12px 36px rgba(0,0,0,0.10)" }}
                 transition={{ type: "spring", stiffness: 380, damping: 28 }}
+                role="button"
+                tabIndex={0}
                 onClick={() => setSelectedCourseId(c.id)}
-                className="bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-100 p-5 shadow-sm cursor-pointer hover:border-primary/30 transition-colors duration-150"
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSelectedCourseId(c.id); } }}
+                aria-label={`View ${c.name ?? "course"} details`}
+                className="bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-100 p-5 shadow-sm cursor-pointer hover:border-primary/30 transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-primary/40"
               >
                 <h3 className="font-semibold text-gray-900 mb-1 truncate">
                   {c.name ?? "Unknown"}

@@ -71,7 +71,13 @@ def _friendship_row_to_response(row: dict) -> FriendshipResponse:
 
 
 @router.get("/by-email/{email}")
-async def get_user_by_email(email: str, db: DatabaseManager = Depends(get_db)):
+async def get_user_by_email(
+    email: str,
+    db: DatabaseManager = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    if email.lower() != (current_user.email or "").lower():
+        raise HTTPException(403, "Forbidden")
     user = await db.users.get_user_by_email(email)
     if not user:
         raise HTTPException(404, "User not found")
@@ -79,10 +85,16 @@ async def get_user_by_email(email: str, db: DatabaseManager = Depends(get_db)):
 
 
 @router.get("/{user_id}")
-async def get_user(user_id: str, db: DatabaseManager = Depends(get_db)):
+async def get_user(
+    user_id: str,
+    db: DatabaseManager = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
     user = await db.users.get_user(user_id)
     if not user:
         raise HTTPException(404, "User not found")
+    if str(current_user.id) != user_id:
+        return {"id": str(user.id), "name": user.name, "friend_code": user.friend_code}
     return user
 
 
@@ -137,6 +149,8 @@ async def get_user_tees(
     current_user: User = Depends(get_current_user),
 ):
     """List a user's custom tee configurations."""
+    if str(current_user.id) != user_id:
+        raise HTTPException(403, "Forbidden")
     return await db.user_tees.get_user_tees(user_id, course_id=course_id)
 
 
@@ -148,6 +162,8 @@ async def create_user_tee(
     current_user: User = Depends(get_current_user),
 ):
     """Create a user tee configuration."""
+    if str(current_user.id) != user_id:
+        raise HTTPException(403, "Forbidden")
     tee = UserTee(
         user_id=user_id,
         course_id=req.course_id,
@@ -171,6 +187,8 @@ async def update_user_tee(
     current_user: User = Depends(get_current_user),
 ):
     """Update a user tee configuration."""
+    if str(current_user.id) != user_id:
+        raise HTTPException(403, "Forbidden")
     updates = req.model_dump(exclude_none=True)
     if "hole_yardages" in updates and updates["hole_yardages"] is not None:
         updates["hole_yardages"] = {int(k): v for k, v in updates["hole_yardages"].items()}
@@ -188,6 +206,8 @@ async def delete_user_tee(
     current_user: User = Depends(get_current_user),
 ):
     """Delete a user tee configuration."""
+    if str(current_user.id) != user_id:
+        raise HTTPException(403, "Forbidden")
     deleted = await db.user_tees.delete_user_tee(tee_id)
     if not deleted:
         raise HTTPException(404, "User tee not found")

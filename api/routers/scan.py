@@ -2,7 +2,6 @@
 
 import contextlib
 import hashlib
-import math
 import logging
 import os
 import tempfile
@@ -11,9 +10,8 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
-import numpy as np
 from pydantic import BaseModel
-from PIL import Image, ImageFilter, ImageOps, ImageEnhance
+from PIL import Image, ImageOps
 
 logger = logging.getLogger("uvicorn.error")
 
@@ -30,9 +28,8 @@ router = APIRouter()
 
 OCR_LONG_EDGE_TARGET = 1800
 OCR_JPEG_QUALITY = 75
-BW_FALLBACK_TRIGGER = 0.65
-BW_FALLBACK_MIN_IMPROVEMENT = 0.03
 PREPROCESS_CACHE_VERSION = "v2"
+MAX_UPLOAD_BYTES = 20 * 1024 * 1024  # 20 MB
 PREPROCESS_CACHE_DIR = Path(tempfile.gettempdir()) / "scanscore_ocr_cache"
 MISTRAL_OCR_MODEL = os.environ.get("MISTRAL_OCR_MODEL") or "mistral-ocr-latest"
 
@@ -315,30 +312,6 @@ async def _run_ocr_pipeline(ocr_path: Path) -> str:
     return await merge_split_tables(raw_markdown)
 
 
-def _blur_fold_line(img: Image.Image) -> Image.Image:
-    """Blur a narrow vertical strip at the center crease to prevent Mistral
-    from reading the fold as a table divider and splitting the OCR output."""
-    width, height = img.size
-    center_x = width // 2
-    blur_width = max(14, int(width * 0.015))
-    x1 = max(0, center_x - blur_width // 2)
-    x2 = min(width, center_x + blur_width // 2)
-    strip = img.crop((x1, 0, x2, height))
-    blurred = strip.filter(ImageFilter.GaussianBlur(radius=10))
-    result = img.copy()
-    result.paste(blurred, (x1, 0))
-    return result
-
-
-def _normalize_angle_deg(angle: float) -> float:
-    """Normalize angle to [-90, 90)."""
-    while angle >= 90.0:
-        angle -= 180.0
-    while angle < -90.0:
-        angle += 180.0
-    return angle
-
-
 def _get_preprocess_cache_path(upload_digest: str) -> Path:
     PREPROCESS_CACHE_DIR.mkdir(parents=True, exist_ok=True)
     key = f"{PREPROCESS_CACHE_VERSION}_le{OCR_LONG_EDGE_TARGET}_q{OCR_JPEG_QUALITY}_{upload_digest}"
@@ -357,98 +330,6 @@ def _save_jpeg(path: Path, img: Image.Image) -> None:
     )
 
 
-def _deskew_scorecard(img: Image.Image) -> tuple[Image.Image, bool, float]:
-    """
-    Conservative deskew using dominant edge orientation.
-
-    Only applies small-angle correction and falls back safely if confidence is low.
-    """
-    gray = np.asarray(img.convert("L"), dtype=np.float32)
-    if gray.shape[0] < 60 or gray.shape[1] < 60:
-        return img, False, 0.0
-
-    gy, gx = np.gradient(gray)
-    mag = np.hypot(gx, gy)
-    thresh = np.percentile(mag, 90)
-    edge_mask = mag > thresh
-    ys, xs = np.where(edge_mask)
-    if ys.size < 500:
-        return img, False, 0.0
-
-    pts = np.stack([xs.astype(np.float64), ys.astype(np.float64)], axis=1)
-    pts -= pts.mean(axis=0, keepdims=True)
-
-    cov = np.cov(pts, rowvar=False)
-    eigvals, eigvecs = np.linalg.eigh(cov)
-    major = eigvecs[:, int(np.argmax(eigvals))]
-    angle = math.degrees(math.atan2(float(major[1]), float(major[0])))
-    angle = _normalize_angle_deg(angle)
-
-    # Snap to nearest cardinal axis and correct only small skew deltas.
-    nearest_axis = round(angle / 90.0) * 90.0
-    delta = _normalize_angle_deg(angle - nearest_axis)
-    if abs(delta) < 0.8 or abs(delta) > 12.0:
-        return img, False, 0.0
-
-    bg = tuple(int(x) for x in np.median(np.asarray(img).reshape(-1, 3), axis=0))
-    rotated = img.rotate(-delta, resample=Image.Resampling.BICUBIC, expand=True, fillcolor=bg)
-    return rotated, True, float(delta)
-
-
-def _crop_to_scorecard_region(img: Image.Image) -> tuple[Image.Image, bool]:
-    """
-    Conservative background crop:
-    - Estimate background from border pixels.
-    - Find foreground bbox by color distance.
-    - Apply only when crop looks safe; otherwise keep full image.
-    """
-    arr = np.asarray(img)
-    if arr.ndim != 3 or arr.shape[0] < 50 or arr.shape[1] < 50:
-        return img, False
-
-    h, w, _ = arr.shape
-    border = max(4, int(min(h, w) * 0.03))
-    top = arr[:border, :, :]
-    bottom = arr[h - border :, :, :]
-    left = arr[:, :border, :]
-    right = arr[:, w - border :, :]
-    border_pixels = np.concatenate(
-        [top.reshape(-1, 3), bottom.reshape(-1, 3), left.reshape(-1, 3), right.reshape(-1, 3)],
-        axis=0,
-    )
-    bg = np.median(border_pixels, axis=0)
-
-    # Manhattan distance from estimated background color.
-    dist = np.abs(arr.astype(np.int16) - bg.astype(np.int16)).sum(axis=2)
-    mask = dist > 25
-    ys, xs = np.where(mask)
-    if ys.size == 0 or xs.size == 0:
-        return img, False
-
-    x1, x2 = int(xs.min()), int(xs.max())
-    y1, y2 = int(ys.min()), int(ys.max())
-
-    # Add small padding to avoid clipping edges/text near the border.
-    pad_x = max(8, int(w * 0.04))
-    pad_y = max(8, int(h * 0.04))
-    x1 = max(0, x1 - pad_x)
-    y1 = max(0, y1 - pad_y)
-    x2 = min(w - 1, x2 + pad_x)
-    y2 = min(h - 1, y2 + pad_y)
-
-    crop_w = x2 - x1 + 1
-    crop_h = y2 - y1 + 1
-    area_ratio = (crop_w * crop_h) / float(w * h)
-
-    # Safety gates: only keep moderate crops; skip extreme/low-confidence crops.
-    if area_ratio < 0.45 or area_ratio > 0.98:
-        return img, False
-    if crop_w < int(w * 0.6) or crop_h < int(h * 0.6):
-        return img, False
-
-    return img.crop((x1, y1, x2 + 1, y2 + 1)), True
-
-
 def _normalize_upload_for_ocr(path: Path, upload_digest: str) -> tuple[Path, bool]:
     """
     Normalize uploaded images to JPEG for faster, consistent OCR payloads.
@@ -459,15 +340,6 @@ def _normalize_upload_for_ocr(path: Path, upload_digest: str) -> tuple[Path, boo
     - If normalization fails (e.g., unsupported HEIC decoder), fall back to original.
     """
     cache_path = _get_preprocess_cache_path(upload_digest)
-    # cache disabled for testing — always reprocess
-    if False and cache_path.exists():
-        logger.info(
-            "OCR preprocess cache hit: path=%s size_bytes=%s",
-            cache_path.name,
-            cache_path.stat().st_size if cache_path.exists() else None,
-        )
-        return cache_path, True
-
     is_pdf = path.suffix.lower() == ".pdf"
     t0 = time.perf_counter()
     try:
@@ -485,13 +357,6 @@ def _normalize_upload_for_ocr(path: Path, upload_digest: str) -> tuple[Path, boo
                 img = img.convert("RGB")
             t_orient = time.perf_counter()
             original_size = img.size
-            
-            # Skip manual cropping, deskewing, blurring, and contrast filters.
-            # Mistral's underlying vision model is robust to natural photos, 
-            # and contrast filters tend to wipe out light pencil marks.
-            cropped, deskewed, deskew_angle = False, False, 0.0
-            
-            t_crop1, t_deskew = t_orient, t_orient
 
             # Resize large images before OCR (keep aspect ratio, do not upscale).
             width, height = img.size
@@ -501,8 +366,7 @@ def _normalize_upload_for_ocr(path: Path, upload_digest: str) -> tuple[Path, boo
                 new_size = (max(1, int(width * scale)), max(1, int(height * scale)))
                 img = img.resize(new_size, Image.Resampling.LANCZOS)
             t_resize = time.perf_counter()
-            
-            t_blur, t_contrast = t_resize, t_resize
+
             # Explicitly strip metadata by creating a fresh pixel-only image.
             # This prevents EXIF/ICC/comment payloads from carrying into OCR input.
             stripped = Image.new("RGB", img.size)
@@ -515,25 +379,18 @@ def _normalize_upload_for_ocr(path: Path, upload_digest: str) -> tuple[Path, boo
             os.replace(temp_cache_path, cache_path)
             t_save = time.perf_counter()
             logger.info(
-                "OCR preprocess image: source=%s original=%sx%s cropped=%s deskewed=%s angle=%.2f resized_to=%sx%s in_bytes=%s out_bytes=%s timing_ms(open=%.1f orient=%.1f crop=%.1f deskew=%.1f resize=%.1f blur=%.1f contrast=%.1f save=%.1f total=%.1f)",
+                "OCR preprocess image: source=%s original=%sx%s resized_to=%sx%s in_bytes=%s out_bytes=%s timing_ms(open=%.1f orient=%.1f resize=%.1f save=%.1f total=%.1f)",
                 "pdf" if is_pdf else "image",
                 original_size[0],
                 original_size[1],
-                cropped,
-                deskewed,
-                deskew_angle,
                 stripped.size[0],
                 stripped.size[1],
                 path.stat().st_size if path.exists() else None,
                 cache_path.stat().st_size if cache_path.exists() else None,
                 (t_open - t0) * 1000.0,
                 (t_orient - t_open) * 1000.0,
-                (t_crop1 - t_orient) * 1000.0,
-                (t_deskew - t_crop1) * 1000.0,
-                (t_resize - t_deskew) * 1000.0,
-                (t_blur - t_resize) * 1000.0,
-                (t_contrast - t_blur) * 1000.0,
-                (t_save - t_contrast) * 1000.0,
+                (t_resize - t_orient) * 1000.0,
+                (t_save - t_resize) * 1000.0,
                 (t_save - t0) * 1000.0,
             )
             return cache_path, False
@@ -545,41 +402,6 @@ def _normalize_upload_for_ocr(path: Path, upload_digest: str) -> tuple[Path, boo
             e,
         )
         return path, False
-
-
-def _build_bw_fallback_variant(path: Path) -> Optional[Path]:
-    """
-    Build a high-contrast B/W variant for low-confidence retry.
-
-    Returns None if variant generation fails.
-    """
-    if path.suffix.lower() == ".pdf":
-        return None
-
-    try:
-        with Image.open(path) as img:
-            gray = img.convert("L")
-            gray = ImageOps.autocontrast(gray, cutoff=1)
-            arr = np.asarray(gray, dtype=np.uint8)
-            # Simple dynamic threshold around mean intensity.
-            thr = int(np.clip(arr.mean(), 100, 180))
-            bw = gray.point(lambda p: 255 if p >= thr else 0, mode="1").convert("RGB")
-
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as out:
-                out_path = Path(out.name)
-            bw.save(
-                out_path,
-                format="JPEG",
-                quality=OCR_JPEG_QUALITY,
-                optimize=True,
-                progressive=True,
-                exif=b"",
-                icc_profile=None,
-            )
-            return out_path
-    except Exception as e:
-        logger.warning("B/W fallback generation failed; skipping. file=%s err=%s", path.name, e)
-        return None
 
 
 @router.post("/ocr")
@@ -599,10 +421,15 @@ async def prefetch_ocr(
 
     with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
         hasher = hashlib.sha256()
+        total_bytes = 0
         while True:
             chunk = file.file.read(1024 * 1024)
             if not chunk:
                 break
+            total_bytes += len(chunk)
+            if total_bytes > MAX_UPLOAD_BYTES:
+                Path(tmp.name).unlink(missing_ok=True)
+                raise HTTPException(413, "File too large. Maximum size is 20 MB.")
             tmp.write(chunk)
             hasher.update(chunk)
         original_tmp_path = Path(tmp.name)
@@ -613,9 +440,11 @@ async def prefetch_ocr(
         markdown_text = await _run_ocr_pipeline(ocr_path)
         logger.info("Prefetch OCR complete: user=%s chars=%d", current_user.id, len(markdown_text))
         return {"ocr_text": markdown_text}
-    except Exception as e:
+    except HTTPException:
+        raise
+    except Exception:
         logger.exception("Prefetch OCR failed")
-        raise HTTPException(500, f"OCR failed: {type(e).__name__}: {str(e)}")
+        raise HTTPException(500, "OCR failed. Please try again.")
     finally:
         with contextlib.suppress(OSError):
             original_tmp_path.unlink()
@@ -647,10 +476,15 @@ async def extract_scan(
     # Save upload to temp file
     with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
         hasher = hashlib.sha256()
+        total_bytes = 0
         while True:
             chunk = file.file.read(1024 * 1024)
             if not chunk:
                 break
+            total_bytes += len(chunk)
+            if total_bytes > MAX_UPLOAD_BYTES:
+                Path(tmp.name).unlink(missing_ok=True)
+                raise HTTPException(413, "File too large. Maximum size is 20 MB.")
             tmp.write(chunk)
             hasher.update(chunk)
         original_tmp_path = Path(tmp.name)
@@ -722,15 +556,6 @@ async def extract_scan(
             len(fields_needing_review),
         )
 
-        # Serialize the round and confidence for the frontend
-        t_serialize_start = time.perf_counter()
-        t_serialize_end = time.perf_counter()
-        logger.info(
-            "Scan stage complete: stage=serialize_response serialize_ms=%.1f fields_to_review=%d",
-            (t_serialize_end - t_serialize_start) * 1000.0,
-            len(fields_needing_review),
-        )
-
         return ScanResponse(
             round=round_data,
             confidence=confidence_data,
@@ -741,9 +566,11 @@ async def extract_scan(
         raise HTTPException(400, "Uploaded file could not be processed")
     except EnvironmentError as e:
         raise HTTPException(500, str(e))
-    except Exception as e:
+    except HTTPException:
+        raise
+    except Exception:
         logger.exception("Scan extraction error")
-        raise HTTPException(500, f"Extraction failed: {type(e).__name__}: {str(e) or repr(e)}")
+        raise HTTPException(500, "Extraction failed. Please try again.")
     finally:
         logger.info(
             "Scan extract request complete: total_ms=%.1f",
@@ -774,6 +601,6 @@ async def save_round(
         service = ScanService(db)
         saved = await service.save_reviewed_scan(req)
         return {"id": saved.id, "total_score": saved.calculate_total_score()}
-    except Exception as e:
+    except Exception:
         logger.exception("Save round error")
-        raise HTTPException(500, f"Save failed: {type(e).__name__}: {str(e)}")
+        raise HTTPException(500, "Save failed. Please try again.")
