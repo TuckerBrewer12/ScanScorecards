@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import type { CourseSummary } from "@/types/golf";
@@ -93,6 +93,11 @@ export function useScan(
   const [reviewCourseResults, setReviewCourseResults] = useState<CourseSummary[]>([]);
   const [reviewSearching, setReviewSearching] = useState(false);
   const reviewSearchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => {
+    if (reviewSearchTimer.current) clearTimeout(reviewSearchTimer.current);
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+  }, []);
 
   const handleReviewCourseQuery = useCallback((q: string) => {
     setReviewCourseQuery(q);
@@ -129,7 +134,6 @@ export function useScan(
   const [courseQuery, setCourseQuery] = useState("");
   const [courseResults, setCourseResults] = useState<CourseSummary[]>([]);
   const [searching, setSearching] = useState(false);
-  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleCourseQuery = useCallback((q: string) => {
     setCourseQuery(q);
@@ -282,9 +286,10 @@ export function useScan(
     }
   }, [file, selectedCourseId, userContext, prefetchedOcrText, update, userId, handleReviewCourseQuery]);
 
-  const handleScoreChange = useCallback((index: number, field: keyof ExtractedHoleScore, value: string) => {
+  const handleScoreChange = useCallback((index: number, field: "strokes" | "putts" | "hole_number", value: string) => {
     const next = [...editedScores];
-    const parsed = value === "" ? null : parseInt(value);
+    const raw = parseInt(value, 10);
+    const parsed = value === "" ? null : Number.isNaN(raw) ? null : raw;
     if (field === "strokes") next[index] = { ...next[index], strokes: parsed };
     else if (field === "putts") next[index] = { ...next[index], putts: parsed };
     else if (field === "hole_number") next[index] = { ...next[index], hole_number: parsed };
@@ -439,6 +444,8 @@ export function useScan(
       update({ error: err instanceof Error ? err.message : "Save failed" });
       setSaving(false);
     }
+    // Note: setSaving(false) is intentionally omitted on success because we
+    // navigate away immediately; keeping it true prevents double-submit during navigation.
   }, [result, userId, reviewCourseId, reviewExternalCourseId, reviewCourseName, editedTeeBox, editedDate, editedScores, update, setScanState, navigate]);
 
   return {

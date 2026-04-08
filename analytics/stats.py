@@ -1513,8 +1513,9 @@ def scoring_by_yardage_buckets(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
                 if lo <= yardage <= hi:
                     key = (hole.par, order)
                     if key not in by_bucket:
-                        by_bucket[key] = {"par": hole.par, "order": order, "label": label, "to_par": [], "gir": []}
+                        by_bucket[key] = {"par": hole.par, "order": order, "label": label, "to_par": [], "yardages": [], "gir": []}
                     by_bucket[key]["to_par"].append(hole_score.strokes - hole.par)
+                    by_bucket[key]["yardages"].append(yardage)
                     if hole_score.green_in_regulation is not None:
                         by_bucket[key]["gir"].append(1 if hole_score.green_in_regulation else 0)
                     break
@@ -1531,6 +1532,7 @@ def scoring_by_yardage_buckets(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
             "average_to_par": sum(to_par_vals) / len(to_par_vals),
             "gir_percentage": (sum(gir_vals) / len(gir_vals) * 100.0) if gir_vals else None,
             "sample_size": len(to_par_vals),
+            "raw_scores": [{"to_par": tp, "yardage": y} for tp, y in zip(to_par_vals, entry["yardages"])],
         })
     return results
 

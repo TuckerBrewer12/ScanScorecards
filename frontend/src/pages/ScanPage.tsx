@@ -3,7 +3,6 @@ import { ScanUploadStep } from "@/components/scan/ScanUploadStep";
 import { ScanManualSetup } from "@/components/scan/ScanManualSetup";
 import { ScanProcessing } from "@/components/scan/ScanProcessing";
 import { ScanReviewStep } from "@/components/scan/ScanReviewStep";
-import { initialScanState } from "@/types/scan";
 import { useScanState } from "@/context/ScanContext";
 
 export function ScanPage({ userId }: { userId: string }) {
@@ -39,7 +38,6 @@ export function ScanPage({ userId }: { userId: string }) {
         onScoreChange={scan.handleScoreChange}
         onGirChange={scan.handleGirChange}
         onSave={scan.handleSave}
-        onReset={() => setScanState(initialScanState)}
         setReviewCourseQuery={scan.setReviewCourseQuery}
         setReviewCourseResults={scan.setReviewCourseResults}
         setScanState={setScanState}

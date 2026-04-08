@@ -70,14 +70,15 @@ export function LoginPage() {
 
           <form onSubmit={handleSubmit} className="space-y-5">
             {error && (
-              <div className="bg-red-50 border border-red-100 text-red-600 text-sm rounded-xl px-4 py-3">
+              <div role="alert" className="bg-red-50 border border-red-100 text-red-600 text-sm rounded-xl px-4 py-3">
                 {error}
               </div>
             )}
 
             <div>
-              <label className="block text-xs font-semibold text-gray-500 mb-1.5">Email</label>
+              <label htmlFor="login-email" className="block text-xs font-semibold text-gray-500 mb-1.5">Email</label>
               <input
+                id="login-email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -89,8 +90,9 @@ export function LoginPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-gray-500 mb-1.5">Password</label>
+              <label htmlFor="login-password" className="block text-xs font-semibold text-gray-500 mb-1.5">Password</label>
               <input
+                id="login-password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}

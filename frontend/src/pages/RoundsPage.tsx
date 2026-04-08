@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useRef } from "react";
+import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { Link2, Search } from "lucide-react";
@@ -60,7 +60,7 @@ function SortHeader({
       <span className="flex items-center gap-1">
         {label}
         <span className={`text-[10px] transition-opacity ${active ? "opacity-100" : "opacity-0"}`}>
-          {sortAsc ? "↑" : "↓"}
+          {sortAsc ? "↓" : "↑"}
         </span>
       </span>
     </th>
@@ -85,6 +85,7 @@ export function RoundsPage({ userId }: RoundsPageProps) {
   const [linkSearching, setLinkSearching] = useState(false);
   const [linking, setLinking] = useState(false);
   const linkTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (linkTimer.current) clearTimeout(linkTimer.current); }, []);
   const colorBlindMode = useMemo(() => getStoredColorBlindMode(), []);
   const colorBlindPalette = useMemo(() => getColorBlindPalette(colorBlindMode), [colorBlindMode]);
 

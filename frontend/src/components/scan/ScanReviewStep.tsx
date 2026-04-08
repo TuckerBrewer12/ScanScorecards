@@ -1,4 +1,4 @@
-import { CheckCircle, AlertTriangle, Loader2, X } from "lucide-react";
+import { CheckCircle, AlertTriangle, Loader2 } from "lucide-react";
 import { motion } from "framer-motion";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { CourseLinkSearch, CourseLinkChip } from "@/components/CourseLinkSearch";
@@ -30,10 +30,9 @@ interface ScanReviewStepProps {
 
   // Callbacks
   onUpdate: (patch: Partial<ScanState>) => void;
-  onScoreChange: (index: number, field: keyof ExtractedHoleScore, value: string) => void;
+  onScoreChange: (index: number, field: "strokes" | "putts" | "hole_number", value: string) => void;
   onGirChange: (index: number, value: boolean | null) => void;
   onSave: () => void;
-  onReset: () => void;
   setReviewCourseQuery: (q: string) => void;
   setReviewCourseResults: (r: CourseSummary[]) => void;
   setScanState: React.Dispatch<React.SetStateAction<ScanState>>;
@@ -87,7 +86,6 @@ export function ScanReviewStep({
   onScoreChange,
   onGirChange,
   onSave,
-  onReset,
   setReviewCourseQuery,
   setReviewCourseResults,
   setScanState,
@@ -322,7 +320,7 @@ export function ScanReviewStep({
       />
 
       {error && (
-        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+        <div role="alert" className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
           {error}
         </div>
       )}
@@ -480,6 +478,7 @@ export function ScanReviewStep({
             <label className="text-xs text-gray-500">Date</label>
             <input type="date" value={editedDate}
               onChange={(e) => onUpdate({ editedDate: e.target.value })}
+              max={new Date().toISOString().substring(0, 10)}
               className="w-full mt-1 px-3 py-1.5 border border-gray-200 rounded-lg text-sm" />
           </div>
 

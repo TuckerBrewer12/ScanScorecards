@@ -71,7 +71,7 @@ export function RegisterPage() {
     let parsedHandicap: number | null = null;
     if (handicap.trim() !== "") {
       parsedHandicap = Number(handicap);
-      if (Number.isNaN(parsedHandicap) || parsedHandicap < 10 || parsedHandicap > 54) {
+      if (Number.isNaN(parsedHandicap) || parsedHandicap < -10 || parsedHandicap > 54) {
         setError("Handicap must be between +10 and 54.");
         return;
       }
@@ -133,14 +133,15 @@ export function RegisterPage() {
 
           <form onSubmit={handleSubmit} className="space-y-5">
             {error && (
-              <div className="bg-red-50 border border-red-100 text-red-600 text-sm rounded-xl px-4 py-3">
+              <div role="alert" className="bg-red-50 border border-red-100 text-red-600 text-sm rounded-xl px-4 py-3">
                 {error}
               </div>
             )}
 
             <div>
-              <label className="block text-xs font-semibold text-gray-500 mb-1.5">Name</label>
+              <label htmlFor="reg-name" className="block text-xs font-semibold text-gray-500 mb-1.5">Name</label>
               <input
+                id="reg-name"
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
@@ -152,8 +153,9 @@ export function RegisterPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-gray-500 mb-1.5">Email</label>
+              <label htmlFor="reg-email" className="block text-xs font-semibold text-gray-500 mb-1.5">Email</label>
               <input
+                id="reg-email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -165,8 +167,9 @@ export function RegisterPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-gray-500 mb-1.5">Password</label>
+              <label htmlFor="reg-password" className="block text-xs font-semibold text-gray-500 mb-1.5">Password</label>
               <input
+                id="reg-password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -178,8 +181,9 @@ export function RegisterPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-gray-500 mb-1.5">Confirm Password</label>
+              <label htmlFor="reg-confirm" className="block text-xs font-semibold text-gray-500 mb-1.5">Confirm Password</label>
               <input
+                id="reg-confirm"
                 type="password"
                 value={confirm}
                 onChange={(e) => setConfirm(e.target.value)}
@@ -191,12 +195,13 @@ export function RegisterPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-gray-500 mb-1.5">Handicap (optional)</label>
+              <label htmlFor="reg-handicap" className="block text-xs font-semibold text-gray-500 mb-1.5">Handicap (optional)</label>
               <input
+                id="reg-handicap"
                 type="number"
                 value={handicap}
                 onChange={(e) => setHandicap(e.target.value)}
-                min={10}
+                min={-10}
                 max={54}
                 step="0.1"
                 className={inputClass}
@@ -205,8 +210,9 @@ export function RegisterPage() {
             </div>
 
             <div className="relative">
-              <label className="block text-xs font-semibold text-gray-500 mb-1.5">Home Course (optional)</label>
+              <label htmlFor="reg-home-course" className="block text-xs font-semibold text-gray-500 mb-1.5">Home Course (optional)</label>
               <input
+                id="reg-home-course"
                 type="text"
                 value={homeCourseQuery}
                 onChange={(e) => {

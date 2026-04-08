@@ -34,6 +34,7 @@ export function SettingsPage({ userId }: { userId: string }) {
   const [showUnsavedModal, setShowUnsavedModal] = useState(false);
   const initializedRef = useRef(false);
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (searchTimer.current) clearTimeout(searchTimer.current); }, []);
   const bypassGuardRef = useRef(false);
   const baselineRef = useRef<{
     homeCourseId: string;
