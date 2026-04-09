@@ -32,7 +32,7 @@ from api.auth_utils import (
     hash_password,
     verify_password,
 )
-from api.dependencies import get_current_user, get_db
+from api.dependencies import client_ip, get_current_user, get_db
 from api.login_rate_limiter import InMemoryLoginRateLimiter
 from api.security import SlidingWindowRateLimiter
 from database.db_manager import DatabaseManager
@@ -69,13 +69,6 @@ def _normalize_email(email: str) -> str:
 def _email_fingerprint(email: str) -> str:
     normalized = _normalize_email(email)
     return hashlib.sha256(normalized.encode("utf-8")).hexdigest()[:12]
-
-
-def _client_ip(request: Request) -> str:
-    fwd = request.headers.get("x-forwarded-for")
-    if fwd:
-        return fwd.split(",")[0].strip()
-    return request.client.host if request.client else "unknown"
 
 
 def _check_auth_rate_limit(
@@ -162,10 +155,10 @@ async def _issue_verification_token(db: DatabaseManager, user: User, request: Re
 @router.post("/register", response_model=RegisterResponse, status_code=status.HTTP_201_CREATED)
 async def register(req: RegisterRequest, request: Request, db: DatabaseManager = Depends(get_db)):
     normalized_email = _normalize_email(req.email)
-    client_ip = _client_ip(request)
+    request_ip = client_ip(request)
     _check_auth_rate_limit(
         limiter=register_rate_limiter,
-        key=f"register:ip:{client_ip}",
+        key=f"register:ip:{request_ip}",
         limit=_env_int("REGISTER_RATE_LIMIT_MAX_ATTEMPTS", 5),
         window_seconds=_env_int("REGISTER_RATE_LIMIT_WINDOW_SECONDS", 3600),
         detail="Too many account creation attempts. Please try again later.",
@@ -182,7 +175,7 @@ async def register(req: RegisterRequest, request: Request, db: DatabaseManager =
         logger.warning(
             "Auth register rejected (duplicate): email_fp=%s ip=%s",
             _email_fingerprint(normalized_email),
-            client_ip,
+            request_ip,
         )
         raise HTTPException(409, "An account with this email already exists")
 
@@ -211,7 +204,7 @@ async def register(req: RegisterRequest, request: Request, db: DatabaseManager =
         "Auth register success: user_id=%s email_fp=%s ip=%s verification_required=true",
         user.id,
         _email_fingerprint(normalized_email),
-        client_ip,
+        request_ip,
     )
     return RegisterResponse(
         message="Account created. Check your email to verify your account before signing in.",
@@ -249,7 +242,21 @@ async def resend_verification(
     db: DatabaseManager = Depends(get_db),
 ):
     normalized_email = _normalize_email(req.email)
-    client_ip = _client_ip(request)
+    request_ip = client_ip(request)
+    _check_auth_rate_limit(
+        limiter=auth_request_rate_limiter,
+        key=f"resend:req:ip:{request_ip}",
+        limit=_env_int("RESEND_VERIFICATION_RATE_LIMIT_MAX_ATTEMPTS", 10),
+        window_seconds=_env_int("RESEND_VERIFICATION_RATE_LIMIT_WINDOW_SECONDS", 300),
+        detail="Too many verification resend attempts. Please try again later.",
+    )
+    _check_auth_rate_limit(
+        limiter=auth_request_rate_limiter,
+        key=f"resend:req:email:{_email_fingerprint(normalized_email)}",
+        limit=_env_int("RESEND_VERIFICATION_RATE_LIMIT_PER_EMAIL_ATTEMPTS", 5),
+        window_seconds=_env_int("RESEND_VERIFICATION_RATE_LIMIT_PER_EMAIL_WINDOW_SECONDS", 300),
+        detail="Too many verification resend attempts for this email. Please try again later.",
+    )
     user = await db.users.get_user_by_email(normalized_email)
     if user and not user.email_verified:
         cooldown_floor = datetime.now(timezone.utc) - timedelta(seconds=60)
@@ -264,20 +271,20 @@ async def resend_verification(
                 "Auth resend-verification success: user_id=%s email_fp=%s ip=%s",
                 user.id,
                 _email_fingerprint(normalized_email),
-                client_ip,
+                request_ip,
             )
         else:
             logger.warning(
                 "Auth resend-verification throttled: user_id=%s email_fp=%s ip=%s",
                 user.id,
                 _email_fingerprint(normalized_email),
-                client_ip,
+                request_ip,
             )
     else:
         logger.warning(
             "Auth resend-verification no-op: email_fp=%s ip=%s",
             _email_fingerprint(normalized_email),
-            client_ip,
+            request_ip,
         )
     return MessageResponse(message="If this account exists, a verification email has been sent.")
 
@@ -290,16 +297,16 @@ async def login(
     db: DatabaseManager = Depends(get_db),
 ):
     normalized_email = _normalize_email(req.email)
-    client_ip = _client_ip(request)
+    request_ip = client_ip(request)
     _check_auth_rate_limit(
         limiter=auth_request_rate_limiter,
-        key=f"login:req:ip:{client_ip}",
+        key=f"login:req:ip:{request_ip}",
         limit=_env_int("LOGIN_REQUEST_RATE_LIMIT_MAX_ATTEMPTS", 30),
         window_seconds=_env_int("LOGIN_REQUEST_RATE_LIMIT_WINDOW_SECONDS", 60),
         detail="Too many login requests. Please try again shortly.",
     )
 
-    ip_key = f"ip:{client_ip}"
+    ip_key = f"ip:{request_ip}"
     email_key = f"email:{normalized_email}"
     retry_after = max(
         login_rate_limiter.retry_after(ip_key) or 0,
@@ -309,7 +316,7 @@ async def login(
         logger.warning(
             "Auth login rate-limited: email_fp=%s ip=%s retry_after=%s",
             _email_fingerprint(normalized_email),
-            client_ip,
+            request_ip,
             retry_after,
         )
         raise HTTPException(
@@ -327,7 +334,7 @@ async def login(
         logger.warning(
             "Auth login failed: email_fp=%s ip=%s reason=invalid_credentials",
             _email_fingerprint(normalized_email),
-            client_ip,
+            request_ip,
         )
         raise HTTPException(401, "Invalid email or password")
 
@@ -336,7 +343,7 @@ async def login(
             "Auth login failed: user_id=%s email_fp=%s ip=%s reason=email_unverified",
             auth_user["id"],
             _email_fingerprint(normalized_email),
-            client_ip,
+            request_ip,
         )
         raise HTTPException(403, "Email not verified. Please verify your email before signing in.")
 
@@ -349,7 +356,7 @@ async def login(
         "Auth login success: user_id=%s email_fp=%s ip=%s",
         auth_user["id"],
         _email_fingerprint(normalized_email),
-        client_ip,
+        request_ip,
     )
     return AuthUserResponse(
         user_id=auth_user["id"],
@@ -362,7 +369,7 @@ async def login(
 @router.post("/logout", response_model=MessageResponse)
 async def logout(request: Request, response: Response):
     _clear_auth_cookie(response)
-    logger.info("Auth logout: ip=%s", _client_ip(request))
+    logger.info("Auth logout: ip=%s", client_ip(request))
     return MessageResponse(message="Logged out.")
 
 
@@ -373,10 +380,10 @@ async def forgot_password(
     db: DatabaseManager = Depends(get_db),
 ):
     normalized_email = _normalize_email(req.email)
-    client_ip = _client_ip(request)
+    request_ip = client_ip(request)
     _check_auth_rate_limit(
         limiter=auth_request_rate_limiter,
-        key=f"forgot:req:ip:{client_ip}",
+        key=f"forgot:req:ip:{request_ip}",
         limit=_env_int("FORGOT_PASSWORD_RATE_LIMIT_MAX_ATTEMPTS", 10),
         window_seconds=_env_int("FORGOT_PASSWORD_RATE_LIMIT_WINDOW_SECONDS", 300),
         detail="Too many reset attempts. Please try again later.",
@@ -407,26 +414,26 @@ async def forgot_password(
                     "Auth forgot-password email send failed: user_id=%s email_fp=%s ip=%s",
                     user.id,
                     _email_fingerprint(normalized_email),
-                    client_ip,
+                    request_ip,
                 )
             logger.info(
                 "Auth forgot-password success: user_id=%s email_fp=%s ip=%s",
                 user.id,
                 _email_fingerprint(normalized_email),
-                client_ip,
+                request_ip,
             )
         else:
             logger.warning(
                 "Auth forgot-password throttled: user_id=%s email_fp=%s ip=%s",
                 user.id,
                 _email_fingerprint(normalized_email),
-                client_ip,
+                request_ip,
             )
     else:
         logger.warning(
             "Auth forgot-password no-op: email_fp=%s ip=%s",
             _email_fingerprint(normalized_email),
-            client_ip,
+            request_ip,
         )
 
     # Always generic to avoid account enumeration.
@@ -437,12 +444,12 @@ async def forgot_password(
 async def reset_password(req: ResetPasswordRequest, request: Request, db: DatabaseManager = Depends(get_db)):
     user_id = await db.users.consume_auth_token("password_reset", hash_one_time_token(req.token))
     if not user_id:
-        logger.warning("Auth reset-password failed: ip=%s reason=invalid_or_expired_token", _client_ip(request))
+        logger.warning("Auth reset-password failed: ip=%s reason=invalid_or_expired_token", client_ip(request))
         raise HTTPException(400, "Invalid or expired reset token")
 
     new_hash = hash_password(req.new_password)
     await db.users.set_password_hash(user_id, new_hash)
-    logger.info("Auth reset-password success: user_id=%s ip=%s", user_id, _client_ip(request))
+    logger.info("Auth reset-password success: user_id=%s ip=%s", user_id, client_ip(request))
     return MessageResponse(message="Password has been reset. You can now sign in.")
 
 

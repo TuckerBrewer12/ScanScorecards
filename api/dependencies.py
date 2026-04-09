@@ -1,12 +1,46 @@
+import ipaddress
+import os
+
 from fastapi import Depends, HTTPException, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 
+def _env_bool(name: str, default: bool) -> bool:
+    raw = os.environ.get(name)
+    if raw is None:
+        return default
+    return raw.strip().lower() in {"1", "true", "yes", "on"}
+
+
+def _trusted_proxy_networks() -> list[ipaddress.IPv4Network | ipaddress.IPv6Network]:
+    raw = os.environ.get("TRUSTED_PROXY_CIDRS", "127.0.0.1/32,::1/128")
+    out: list = []
+    for part in raw.split(","):
+        cidr = part.strip()
+        if not cidr:
+            continue
+        try:
+            out.append(ipaddress.ip_network(cidr, strict=False))
+        except ValueError:
+            continue
+    return out
+
+
+def _peer_is_trusted_proxy(peer_host: str) -> bool:
+    try:
+        peer_ip = ipaddress.ip_address(peer_host)
+    except ValueError:
+        return False
+    return any(peer_ip in network for network in _trusted_proxy_networks())
+
+
 def client_ip(request: Request) -> str:
+    peer_host = request.client.host if request.client else "unknown"
     fwd = request.headers.get("x-forwarded-for")
-    if fwd:
+    trust_proxy_headers = _env_bool("TRUST_PROXY_HEADERS", False)
+    if fwd and trust_proxy_headers and _peer_is_trusted_proxy(peer_host):
         return fwd.split(",")[0].strip()
-    return request.client.host if request.client else "unknown"
+    return peer_host
 
 from api.auth_utils import decode_access_token, get_access_token_cookie_name
 from database.db_manager import DatabaseManager

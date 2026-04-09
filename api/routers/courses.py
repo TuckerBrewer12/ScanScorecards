@@ -166,6 +166,8 @@ async def search_courses(
     if user_id:
         if not current_user or str(current_user.id) != str(user_id):
             raise HTTPException(403, "Forbidden")
+    if include_external and not current_user:
+        raise HTTPException(401, "Authentication required for external course lookup")
     effective_user_id = str(user_id) if user_id else (str(current_user.id) if current_user else None)
     courses = await db.courses.search_courses(q, user_id=effective_user_id)
     out = [_summarize_course(c) for c in courses]
