@@ -311,8 +311,16 @@ async def get_analytics(
     return {
         "kpis": {
             "scoring_average": round(sum(scores) / len(scores), 1) if scores else None,
-            "gir_percentage": round(gir_data["gir_percentage"], 1) if gir_data["gir_percentage"] else None,
-            "putts_per_gir": round(putts_gir_data["putts_per_gir"], 2) if putts_gir_data["putts_per_gir"] else None,
+            "gir_percentage": (
+                round(gir_data["gir_percentage"], 1)
+                if gir_data["gir_percentage"] is not None
+                else None
+            ),
+            "putts_per_gir": (
+                round(putts_gir_data["putts_per_gir"], 2)
+                if putts_gir_data["putts_per_gir"] is not None
+                else None
+            ),
             "scrambling_percentage": round(avg_scrambling, 1) if avg_scrambling is not None else None,
             "up_and_down_percentage": round(avg_up_and_down, 1) if avg_up_and_down is not None else None,
             "handicap_index": current_hi,
