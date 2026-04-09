@@ -164,7 +164,7 @@ export function TheLabPage({ userId }: TheLabPageProps) {
     if (targetHandicap === 10) return "You vs. Break-85 Shape";
     if (targetHandicap === 15) return "You vs. Break-90 Shape";
     if (targetHandicap === 20) return "You vs. Break-95 Shape";
-    if (targetHandicap === 28) return "You vs. Break-100 Shape";
+    if (targetHandicap === 25) return "You vs. Break-100 Shape";
     return "Your Performance Shape";
   }, [radarMode, targetHandicap, peakInsight]);
 

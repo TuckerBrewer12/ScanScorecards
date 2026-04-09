@@ -7,7 +7,7 @@ const TARGETS: { label: string; value: number | null }[] = [
   { label: "Breaks 85",  value: 10   },
   { label: "Breaks 90",  value: 15   },
   { label: "Breaks 95",  value: 20   },
-  { label: "Breaks 100", value: 28   },
+  { label: "Breaks 100", value: 25   },
 ];
 
 interface ComparisonTargetToggleProps {
