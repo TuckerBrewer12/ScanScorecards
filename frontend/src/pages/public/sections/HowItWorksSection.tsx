@@ -59,7 +59,7 @@ export function HowItWorksSection() {
 
         {/* Live Demo */}
         <ScrollSection delay={0.3}>
-          <div className="mt-20 max-w-2xl mx-auto">
+          <div id="try-it-out" className="mt-20 max-w-2xl mx-auto">
             <PublicScanHero />
           </div>
         </ScrollSection>

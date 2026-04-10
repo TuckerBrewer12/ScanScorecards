@@ -39,11 +39,8 @@ export function PublicNav() {
           <button onClick={() => scrollTo("how-it-works")} className="hover:text-primary transition-colors">
             How It Works
           </button>
-          <button onClick={() => scrollTo("features")} className="hover:text-primary transition-colors">
-            Features
-          </button>
-          <button onClick={() => scrollTo("pricing")} className="hover:text-primary transition-colors">
-            Pricing
+          <button onClick={() => scrollTo("try-it-out")} className="hover:text-primary transition-colors">
+            Try It Out
           </button>
         </div>
 
@@ -58,7 +55,7 @@ export function PublicNav() {
             to="/register"
             className="bg-primary text-white rounded-full px-5 py-2 text-sm font-semibold hover:bg-primary/90 transition-colors"
           >
-            Sign Up Free
+            Sign Up
           </Link>
           <button
             type="button"
@@ -90,16 +87,10 @@ export function PublicNav() {
             How It Works
           </button>
           <button
-            onClick={() => { scrollTo("features"); setOpen(false); }}
+            onClick={() => { scrollTo("try-it-out"); setOpen(false); }}
             className="text-sm font-medium text-gray-700 text-left hover:text-primary transition-colors"
           >
-            Features
-          </button>
-          <button
-            onClick={() => { scrollTo("pricing"); setOpen(false); }}
-            className="text-sm font-medium text-gray-700 text-left hover:text-primary transition-colors"
-          >
-            Pricing
+            Try It Out
           </button>
           <div className="flex flex-col gap-2 pt-2 border-t border-gray-100">
             <button
@@ -121,7 +112,7 @@ export function PublicNav() {
               onClick={() => setOpen(false)}
               className="bg-primary text-white rounded-full px-5 py-2 text-sm font-semibold text-center hover:bg-primary/90 transition-colors"
             >
-              Sign Up Free
+              Sign Up
             </Link>
           </div>
         </div>

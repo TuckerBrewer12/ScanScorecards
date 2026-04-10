@@ -212,11 +212,6 @@ function InteractiveScannerDemo() {
                   </div>
                 </div>
 
-                <div className="mb-1">
-                  <div className="text-[9px] uppercase tracking-wider font-bold text-gray-400 flex items-center gap-1">
-                    Drag rows to match your card
-                  </div>
-                </div>
               </div>
               
               <div className="bg-gray-50/50 p-4 sm:p-5 overflow-hidden">
