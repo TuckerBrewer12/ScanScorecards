@@ -16,6 +16,9 @@ interface AuthContextValue extends AuthState {
     options?: { handicap?: number | null; home_course_id?: string | null },
   ) => Promise<string>;
   resendVerification: (email: string) => Promise<string>;
+  verifyEmail: (token: string) => Promise<string>;
+  forgotPassword: (email: string) => Promise<string>;
+  resetPassword: (token: string, newPassword: string) => Promise<string>;
   logout: () => Promise<void>;
   loading: boolean;
 }
@@ -115,6 +118,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return data.message;
   };
 
+  const verifyEmail = async (token: string) => {
+    const data = await callAuth<MessagePayload>("/verify-email", { token });
+    return data.message;
+  };
+
+  const forgotPassword = async (email: string) => {
+    const data = await callAuth<MessagePayload>("/forgot-password", { email });
+    return data.message;
+  };
+
+  const resetPassword = async (token: string, newPassword: string) => {
+    const data = await callAuth<MessagePayload>("/reset-password", { token, new_password: newPassword });
+    return data.message;
+  };
+
   const logout = async () => {
     try {
       await callAuth<{ message: string }>("/logout", {});
@@ -124,7 +142,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ ...state, login, register, resendVerification, logout, loading }}>
+    <AuthContext.Provider
+      value={{ ...state, login, register, resendVerification, verifyEmail, forgotPassword, resetPassword, logout, loading }}
+    >
       {children}
     </AuthContext.Provider>
   );

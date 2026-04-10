@@ -15,13 +15,15 @@ function Logo() {
 }
 
 export function LoginPage() {
-  const { login } = useAuth();
+  const { login, resendVerification } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const initialEmail = ((location.state as { email?: string } | null)?.email ?? "").trim();
   const [email, setEmail] = useState(initialEmail);
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [resendMessage, setResendMessage] = useState<string | null>(null);
+  const [resendLoading, setResendLoading] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -32,9 +34,29 @@ export function LoginPage() {
       await login(email, password);
       navigate("/");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Login failed");
+      const message = err instanceof Error ? err.message : "Login failed";
+      setError(message);
+      setResendMessage(null);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    const normalizedEmail = email.trim();
+    if (!normalizedEmail) {
+      setError("Enter your email first to resend verification.");
+      return;
+    }
+    setResendLoading(true);
+    setResendMessage(null);
+    try {
+      const message = await resendVerification(normalizedEmail);
+      setResendMessage(message);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not resend verification email.");
+    } finally {
+      setResendLoading(false);
     }
   };
 
@@ -86,6 +108,11 @@ export function LoginPage() {
                 {error}
               </div>
             )}
+            {resendMessage && (
+              <div role="status" className="bg-emerald-50 border border-emerald-100 text-emerald-700 text-sm rounded-xl px-4 py-3">
+                {resendMessage}
+              </div>
+            )}
 
             <div>
               <label htmlFor="login-email" className="block text-xs font-semibold text-gray-500 mb-1.5">Email</label>
@@ -113,6 +140,11 @@ export function LoginPage() {
                 className={inputClass}
                 placeholder="••••••••"
               />
+              <div className="mt-2 text-right">
+                <Link to="/forgot-password" className="text-xs text-primary font-semibold hover:underline">
+                  Forgot password?
+                </Link>
+              </div>
             </div>
 
             <button
@@ -122,6 +154,17 @@ export function LoginPage() {
             >
               {loading ? "Signing in…" : "Sign In"}
             </button>
+
+            {error?.toLowerCase().includes("email not verified") ? (
+              <button
+                type="button"
+                onClick={handleResendVerification}
+                disabled={resendLoading}
+                className="w-full rounded-xl border border-primary text-primary py-3 text-sm font-semibold hover:bg-primary/5 transition-colors disabled:opacity-50"
+              >
+                {resendLoading ? "Sending…" : "Resend Verification Email"}
+              </button>
+            ) : null}
           </form>
 
           <p className="text-center text-sm text-gray-400 mt-6">
