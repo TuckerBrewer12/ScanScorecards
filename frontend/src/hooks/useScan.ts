@@ -5,6 +5,7 @@ import type { CourseSummary } from "@/types/golf";
 import type { ScanState, ScanResult, ExtractedHoleScore, ManualTee } from "@/types/scan";
 import { initialScanState } from "@/types/scan";
 import { api } from "@/lib/api";
+import { initializeScores, countBadScanNulls } from "@/lib/scanUtils";
 
 function normalizeCourseQueryForSearch(value: string): string {
   return value.trim().replace(/\s+/g, " ");
@@ -65,7 +66,7 @@ export function useScan(
   setScanState: React.Dispatch<React.SetStateAction<ScanState>>
 ) {
   const navigate = useNavigate();
-  const { step, scanMode, selectedCourseId, selectedCourseName, file, result, editedScores, editedDate, editedTeeBox, userContext, prefetchedOcrText, reviewCourseId, reviewExternalCourseId, reviewCourseName, manualCourseHoles, manualCourseTees } = scanState;
+  const { step, scanMode, selectedCourseId, selectedCourseName, file, result, editedScores, scoreMetadata, editedDate, editedTeeBox, userContext, prefetchedOcrText, reviewCourseId, reviewExternalCourseId, reviewCourseName, manualCourseHoles, manualCourseTees } = scanState;
 
   const update = useCallback(
     (patch: Partial<ScanState>) => setScanState((prev) => ({ ...prev, ...patch })),
@@ -268,9 +269,15 @@ export function useScan(
       }
 
       const data: ScanResult = await res.json();
+      const { editedScores: initialScores, scoreMetadata: initialMeta } = initializeScores(
+        data.round.hole_scores,
+        data.fields_needing_review,
+        data.round.course?.holes ?? []
+      );
       update({
         result: data,
-        editedScores: data.round.hole_scores.map((s) => ({ ...s })),
+        editedScores: initialScores,
+        scoreMetadata: initialMeta,
         editedDate: data.round.date
           ? data.round.date.substring(0, 10)
           : new Date().toISOString().substring(0, 10),
@@ -305,14 +312,26 @@ export function useScan(
     if (field === "strokes") next[index] = { ...next[index], strokes: parsed };
     else if (field === "putts") next[index] = { ...next[index], putts: parsed };
     else if (field === "hole_number") next[index] = { ...next[index], hole_number: parsed };
-    update({ editedScores: next });
-  }, [update, editedScores]);
+    const patch: Partial<ScanState> = { editedScores: next };
+    if (field === "putts" && scoreMetadata[index]?.putts_estimated) {
+      const nextMeta = [...scoreMetadata];
+      nextMeta[index] = { ...nextMeta[index], putts_estimated: false };
+      patch.scoreMetadata = nextMeta;
+    }
+    update(patch);
+  }, [update, editedScores, scoreMetadata]);
 
   const handleGirChange = useCallback((index: number, value: boolean | null) => {
     const next = [...editedScores];
     next[index] = { ...next[index], green_in_regulation: value };
-    update({ editedScores: next });
-  }, [update, editedScores]);
+    const patch: Partial<ScanState> = { editedScores: next };
+    if (scoreMetadata[index]?.gir_calculated) {
+      const nextMeta = [...scoreMetadata];
+      nextMeta[index] = { ...nextMeta[index], gir_calculated: false };
+      patch.scoreMetadata = nextMeta;
+    }
+    update(patch);
+  }, [update, editedScores, scoreMetadata]);
 
   const selectCourseManual = useCallback(async (course: CourseSummary) => {
     update({ selectedCourseId: course.id, selectedCourseName: course.name ?? course.id });
@@ -369,9 +388,16 @@ export function useScan(
       fields_needing_review: [],
     };
 
+    const { editedScores: initialScores, scoreMetadata: initialMeta } = initializeScores(
+      emptyScores,
+      syntheticResult.fields_needing_review,
+      syntheticResult.round.course?.holes ?? []
+    );
+
     update({
       result: syntheticResult,
-      editedScores: emptyScores,
+      editedScores: initialScores,
+      scoreMetadata: initialMeta,
       editedDate: manualDate,
       editedTeeBox: manualTeeBox || null,
       reviewCourseId: selectedCourseId,
@@ -460,6 +486,8 @@ export function useScan(
     // navigate away immediately; keeping it true prevents double-submit during navigation.
   }, [result, userId, reviewCourseId, reviewExternalCourseId, reviewCourseName, editedTeeBox, editedDate, editedScores, update, setScanState, navigate]);
 
+  const badScanNullCount = countBadScanNulls(editedScores);
+
   return {
     // Derived state from scanState
     step,
@@ -469,6 +497,8 @@ export function useScan(
     file,
     result,
     editedScores,
+    scoreMetadata,
+    badScanNullCount,
     editedDate,
     editedTeeBox,
     userContext,

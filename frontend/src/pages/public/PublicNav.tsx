@@ -36,8 +36,8 @@ export function PublicNav() {
 
         {/* Desktop nav */}
         <div className="hidden md:flex items-center gap-8 text-sm text-gray-600 font-medium">
-          <button onClick={() => scrollTo("how-it-works")} className="hover:text-primary transition-colors">
-            How It Works
+          <button onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} className="hover:text-primary transition-colors">
+            Overview
           </button>
           <button onClick={() => scrollTo("try-it-out")} className="hover:text-primary transition-colors">
             Try It Out
@@ -81,10 +81,10 @@ export function PublicNav() {
       {open && (
         <div className="md:hidden border-t border-gray-100 bg-white px-6 py-4 flex flex-col gap-4">
           <button
-            onClick={() => { scrollTo("how-it-works"); setOpen(false); }}
+            onClick={() => { window.scrollTo({ top: 0, behavior: "smooth" }); setOpen(false); }}
             className="text-sm font-medium text-gray-700 text-left hover:text-primary transition-colors"
           >
-            How It Works
+            Overview
           </button>
           <button
             onClick={() => { scrollTo("try-it-out"); setOpen(false); }}

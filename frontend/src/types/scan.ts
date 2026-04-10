@@ -7,6 +7,15 @@ export interface ExtractedHoleScore {
   green_in_regulation: boolean | null;
 }
 
+export interface ScoreMetadata {
+  putts_estimated: boolean;
+  gir_calculated: boolean;
+}
+
+export function defaultMetadata(): ScoreMetadata {
+  return { putts_estimated: false, gir_calculated: false };
+}
+
 export interface ExtractedRound {
   course: {
     name: string | null;
@@ -62,6 +71,7 @@ export interface ScanState {
   preview: string | null;
   result: ScanResult | null;
   editedScores: ExtractedHoleScore[];
+  scoreMetadata: ScoreMetadata[];
   editedDate: string;
   editedTeeBox: string | null;
   error: string | null;
@@ -85,6 +95,7 @@ export const initialScanState: ScanState = {
   preview: null,
   result: null,
   editedScores: [],
+  scoreMetadata: [],
   editedDate: "",
   editedTeeBox: null,
   error: null,
