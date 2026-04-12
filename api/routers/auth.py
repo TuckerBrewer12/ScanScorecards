@@ -97,6 +97,9 @@ def _build_verification_url(request: Request, token: str) -> str:
     configured = os.environ.get("AUTH_VERIFY_URL_BASE")
     if configured:
         return f"{configured.rstrip('/')}?token={token}"
+    frontend_base = os.environ.get("FRONTEND_URL")
+    if frontend_base:
+        return f"{frontend_base.rstrip('/')}/verify-email?token={token}"
     return f"{request.base_url}api/auth/verify-email?token={token}"
 
 
@@ -212,27 +215,32 @@ async def register(req: RegisterRequest, request: Request, db: DatabaseManager =
     )
 
 
-async def _verify_email_token(token: str, db: DatabaseManager) -> MessageResponse:
+async def _verify_email_token(token: str, db: DatabaseManager) -> str:
     user_id = await db.users.consume_auth_token("email_verify", hash_one_time_token(token))
     if not user_id:
         logger.warning("Auth verify-email failed: reason=invalid_or_expired_token")
         raise HTTPException(400, "Invalid or expired verification token")
     await db.users.mark_email_verified(user_id)
     logger.info("Auth verify-email success: user_id=%s", user_id)
-    return MessageResponse(message="Email verified. You can now sign in.")
+    return user_id
 
 
 @router.post("/verify-email", response_model=MessageResponse)
-async def verify_email(req: VerifyEmailRequest, db: DatabaseManager = Depends(get_db)):
-    return await _verify_email_token(req.token, db)
+async def verify_email(req: VerifyEmailRequest, response: Response, db: DatabaseManager = Depends(get_db)):
+    user_id = await _verify_email_token(req.token, db)
+    _set_auth_cookie(response, create_access_token(user_id))
+    return MessageResponse(message="Email verified. You can now sign in.")
 
 
 @router.get("/verify-email", response_model=MessageResponse)
 async def verify_email_from_link(
+    response: Response,
     token: str = Query(..., min_length=20, max_length=512),
     db: DatabaseManager = Depends(get_db),
 ):
-    return await _verify_email_token(token, db)
+    user_id = await _verify_email_token(token, db)
+    _set_auth_cookie(response, create_access_token(user_id))
+    return MessageResponse(message="Email verified. You can now sign in.")
 
 
 @router.post("/resend-verification", response_model=MessageResponse)

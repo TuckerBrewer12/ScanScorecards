@@ -78,6 +78,15 @@ function AppRoutes() {
     );
   }
 
+  if (location.pathname === "/verify-email") {
+    return (
+      <Routes>
+        <Route path="/verify-email" element={<VerifyEmailPage />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    );
+  }
+
   return (
     <AppLayout>
         <Routes>

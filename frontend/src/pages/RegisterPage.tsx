@@ -4,7 +4,7 @@ import { useAuth } from "@/context/AuthContext";
 import { api } from "@/lib/api";
 import { parseHandicapInput } from "@/lib/handicap";
 import type { CourseSummary } from "@/types/golf";
-import { Flag } from "lucide-react";
+import { Eye, EyeOff, Flag } from "lucide-react";
 
 function Logo() {
   return (
@@ -24,6 +24,8 @@ export function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [handicap, setHandicap] = useState("");
   const [homeCourseQuery, setHomeCourseQuery] = useState("");
   const [homeCourseId, setHomeCourseId] = useState<string>("");
@@ -183,30 +185,52 @@ export function RegisterPage() {
 
             <div>
               <label htmlFor="reg-password" className="block text-xs font-semibold text-gray-500 mb-1.5">Password</label>
-              <input
-                id="reg-password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                autoComplete="new-password"
-                className={inputClass}
-                placeholder="At least 8 characters"
-              />
+              <div className="relative">
+                <input
+                  id="reg-password"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  autoComplete="new-password"
+                  className={`${inputClass} pr-12`}
+                  placeholder="At least 8 characters"
+                />
+                <button
+                  type="button"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  aria-pressed={showPassword}
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  className="absolute inset-y-0 right-0 px-3 text-gray-500 hover:text-gray-700"
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
             </div>
 
             <div>
               <label htmlFor="reg-confirm" className="block text-xs font-semibold text-gray-500 mb-1.5">Confirm Password</label>
-              <input
-                id="reg-confirm"
-                type="password"
-                value={confirm}
-                onChange={(e) => setConfirm(e.target.value)}
-                required
-                autoComplete="new-password"
-                className={inputClass}
-                placeholder="••••••••"
-              />
+              <div className="relative">
+                <input
+                  id="reg-confirm"
+                  type={showConfirmPassword ? "text" : "password"}
+                  value={confirm}
+                  onChange={(e) => setConfirm(e.target.value)}
+                  required
+                  autoComplete="new-password"
+                  className={`${inputClass} pr-12`}
+                  placeholder="••••••••"
+                />
+                <button
+                  type="button"
+                  aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
+                  aria-pressed={showConfirmPassword}
+                  onClick={() => setShowConfirmPassword((prev) => !prev)}
+                  className="absolute inset-y-0 right-0 px-3 text-gray-500 hover:text-gray-700"
+                >
+                  {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
             </div>
 
             <div>

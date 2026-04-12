@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useState } from "react";
 
 interface AuthState {
   userId: string | null;
@@ -19,6 +19,7 @@ interface AuthContextValue extends AuthState {
   verifyEmail: (token: string) => Promise<string>;
   forgotPassword: (email: string) => Promise<string>;
   resetPassword: (token: string, newPassword: string) => Promise<string>;
+  refreshSession: () => Promise<AuthState | null>;
   logout: () => Promise<void>;
   loading: boolean;
 }
@@ -66,26 +67,58 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   });
   const [loading, setLoading] = useState(true);
 
+  const refreshSession = useCallback(async (): Promise<AuthState | null> => {
+    try {
+      const res = await fetch("/api/auth/me", { credentials: "include" });
+      if (!res.ok) throw new Error("unauthenticated");
+      const data = (await res.json()) as AuthUserPayload;
+      const nextState: AuthState = {
+        userId: data.user_id,
+        name: data.name,
+        email: data.email,
+        emailVerified: !!data.email_verified,
+      };
+      setState((prev) =>
+        prev.userId === nextState.userId &&
+        prev.name === nextState.name &&
+        prev.email === nextState.email &&
+        prev.emailVerified === nextState.emailVerified
+          ? prev
+          : nextState
+      );
+      return nextState;
+    } catch {
+      setState((prev) =>
+        prev.userId === null && prev.name === null && prev.email === null && prev.emailVerified === false
+          ? prev
+          : { userId: null, name: null, email: null, emailVerified: false }
+      );
+      return null;
+    }
+  }, []);
+
   // On mount, try to re-hydrate from session cookie.
   useEffect(() => {
-    fetch("/api/auth/me", { credentials: "include" })
-      .then((res) => {
-        if (!res.ok) throw new Error("unauthenticated");
-        return res.json() as Promise<AuthUserPayload>;
-      })
-      .then((data) => {
-        setState({
-          userId: data.user_id,
-          name: data.name,
-          email: data.email,
-          emailVerified: !!data.email_verified,
-        });
-      })
-      .catch(() => {
-        setState({ userId: null, name: null, email: null, emailVerified: false });
-      })
-      .finally(() => setLoading(false));
-  }, []);
+    refreshSession().finally(() => setLoading(false));
+  }, [refreshSession]);
+
+  // Keep auth state in sync when user returns to a tab after actions in another tab.
+  useEffect(() => {
+    const handleFocus = () => {
+      void refreshSession();
+    };
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        void refreshSession();
+      }
+    };
+    window.addEventListener("focus", handleFocus);
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => {
+      window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
+  }, [refreshSession]);
 
   const login = async (email: string, password: string) => {
     const data = await callAuth<AuthUserPayload>("/login", { email, password });
@@ -143,7 +176,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ ...state, login, register, resendVerification, verifyEmail, forgotPassword, resetPassword, logout, loading }}
+      value={{
+        ...state,
+        login,
+        register,
+        resendVerification,
+        verifyEmail,
+        forgotPassword,
+        resetPassword,
+        refreshSession,
+        logout,
+        loading,
+      }}
     >
       {children}
     </AuthContext.Provider>

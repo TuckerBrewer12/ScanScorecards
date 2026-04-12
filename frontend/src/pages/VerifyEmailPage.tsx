@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { Flag } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
@@ -19,11 +19,18 @@ export function VerifyEmailPage() {
   const [searchParams] = useSearchParams();
   const token = useMemo(() => (searchParams.get("token") ?? "").trim(), [searchParams]);
   const [result, setResult] = useState<{ kind: "success" | "error"; message: string } | null>(null);
+  const attemptedTokenRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!token) {
       return;
     }
+    // Prevent duplicate verification calls in development StrictMode.
+    if (attemptedTokenRef.current === token) {
+      return;
+    }
+    attemptedTokenRef.current = token;
+
     let active = true;
     void verifyEmail(token)
       .then((msg) => {

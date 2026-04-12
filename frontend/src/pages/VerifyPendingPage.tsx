@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { Link, useLocation, useSearchParams } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { Link, useLocation, useNavigate, useSearchParams } from "react-router-dom";
 import { Flag, MailCheck, RefreshCw } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
@@ -15,7 +15,8 @@ function Logo() {
 }
 
 export function VerifyPendingPage() {
-  const { resendVerification } = useAuth();
+  const { resendVerification, refreshSession, userId, emailVerified } = useAuth();
+  const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const state = location.state as { email?: string; flash?: string } | null;
@@ -25,6 +26,37 @@ export function VerifyPendingPage() {
   const [loading, setLoading] = useState(false);
 
   const normalizedEmail = useMemo(() => emailInput.trim(), [emailInput]);
+
+  useEffect(() => {
+    if (userId && emailVerified) {
+      navigate("/", { replace: true });
+      return;
+    }
+
+    let active = true;
+    const checkSession = async () => {
+      const session = await refreshSession();
+      if (!active) return;
+      if (session?.userId && session.emailVerified) {
+        navigate("/", { replace: true });
+      }
+    };
+
+    void checkSession();
+    const intervalId = window.setInterval(() => {
+      void checkSession();
+    }, 3000);
+    const handleFocus = () => {
+      void checkSession();
+    };
+    window.addEventListener("focus", handleFocus);
+
+    return () => {
+      active = false;
+      window.clearInterval(intervalId);
+      window.removeEventListener("focus", handleFocus);
+    };
+  }, [refreshSession, userId, emailVerified, navigate]);
 
   const handleResend = async () => {
     if (!normalizedEmail) {

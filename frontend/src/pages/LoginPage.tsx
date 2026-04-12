@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate, Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
-import { Flag } from "lucide-react";
+import { Eye, EyeOff, Flag } from "lucide-react";
 
 function Logo() {
   return (
@@ -21,6 +21,7 @@ export function LoginPage() {
   const initialEmail = ((location.state as { email?: string } | null)?.email ?? "").trim();
   const [email, setEmail] = useState(initialEmail);
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [resendMessage, setResendMessage] = useState<string | null>(null);
   const [resendLoading, setResendLoading] = useState(false);
@@ -130,16 +131,27 @@ export function LoginPage() {
 
             <div>
               <label htmlFor="login-password" className="block text-xs font-semibold text-gray-500 mb-1.5">Password</label>
-              <input
-                id="login-password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                autoComplete="current-password"
-                className={inputClass}
-                placeholder="••••••••"
-              />
+              <div className="relative">
+                <input
+                  id="login-password"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  autoComplete="current-password"
+                  className={`${inputClass} pr-12`}
+                  placeholder="••••••••"
+                />
+                <button
+                  type="button"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  aria-pressed={showPassword}
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  className="absolute inset-y-0 right-0 px-3 text-gray-500 hover:text-gray-700"
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
               <div className="mt-2 text-right">
                 <Link to="/forgot-password" className="text-xs text-primary font-semibold hover:underline">
                   Forgot password?
