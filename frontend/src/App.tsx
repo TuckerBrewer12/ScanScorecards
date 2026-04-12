@@ -38,10 +38,6 @@ function AppRoutes() {
   const location = useLocation();
 
   useEffect(() => {
-    if (userId) {
-      applyTheme(getStoredTheme());
-      return;
-    }
     if (
       location.pathname === "/" ||
       location.pathname === "/login" ||
@@ -52,6 +48,10 @@ function AppRoutes() {
       location.pathname === "/verify-pending"
     ) {
       applyTheme(getStoredPublicTheme());
+      return;
+    }
+    if (userId) {
+      applyTheme(getStoredTheme());
     }
   }, [userId, location.pathname]);
 

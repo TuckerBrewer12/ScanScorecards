@@ -16,7 +16,7 @@ class User(BaseGolfModel):
     email_verified: bool = False
     email_verified_at: Optional[datetime] = None
     home_course_id: Optional[str] = None
-    handicap: Optional[float] = Field(None, gt=0, le=54)
+    handicap: Optional[float] = Field(None, ge=-10, le=54)
     rounds: List["Round"] = Field(default_factory=list)
     created_at: Optional[datetime] = None
     last_handicap_update: Optional[datetime] = None

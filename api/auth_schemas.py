@@ -2,7 +2,12 @@
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from api.input_validation import ensure_uuid_str, normalize_email, sanitize_user_text
+from api.input_validation import (
+    ensure_uuid_str,
+    normalize_email,
+    normalize_handicap_value,
+    sanitize_user_text,
+)
 
 
 class RegisterRequest(BaseModel):
@@ -11,7 +16,7 @@ class RegisterRequest(BaseModel):
     name: str = Field(..., min_length=1, max_length=100)
     email: str
     password: str = Field(..., min_length=8, max_length=128)
-    handicap: float | None = Field(default=None, gt=0, le=54)
+    handicap: float | None = Field(default=None, ge=-10, le=54)
     home_course_id: str | None = None
 
     @field_validator("name")
@@ -23,6 +28,11 @@ class RegisterRequest(BaseModel):
     @classmethod
     def _validate_email(cls, v: str) -> str:
         return normalize_email(v)
+
+    @field_validator("handicap", mode="before")
+    @classmethod
+    def _normalize_handicap(cls, v: object) -> object:
+        return normalize_handicap_value(v)
 
     @field_validator("home_course_id")
     @classmethod

@@ -19,20 +19,19 @@ export function VerifyEmailPage() {
   const [searchParams] = useSearchParams();
   const token = useMemo(() => (searchParams.get("token") ?? "").trim(), [searchParams]);
   const [result, setResult] = useState<{ kind: "success" | "error"; message: string } | null>(null);
-  const attemptedTokenRef = useRef<string | null>(null);
+  const verificationRef = useRef<{ token: string; promise: Promise<string> } | null>(null);
 
   useEffect(() => {
     if (!token) {
       return;
     }
-    // Prevent duplicate verification calls in development StrictMode.
-    if (attemptedTokenRef.current === token) {
-      return;
+    setResult(null);
+    if (!verificationRef.current || verificationRef.current.token !== token) {
+      verificationRef.current = { token, promise: verifyEmail(token) };
     }
-    attemptedTokenRef.current = token;
 
     let active = true;
-    void verifyEmail(token)
+    verificationRef.current.promise
       .then((msg) => {
         if (!active) return;
         setResult({ kind: "success", message: msg });

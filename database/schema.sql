@@ -118,7 +118,7 @@ CREATE TABLE IF NOT EXISTS users.users (
     email_verified BOOLEAN NOT NULL DEFAULT FALSE,
     email_verified_at TIMESTAMP,
     handicap_index NUMERIC(4,1)
-        CHECK (handicap_index IS NULL OR (handicap_index > 0 AND handicap_index <= 54)),
+        CHECK (handicap_index IS NULL OR (handicap_index >= -10 AND handicap_index <= 54)),
     home_course_id UUID REFERENCES courses.courses(id) ON DELETE SET NULL,
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW(),

@@ -1,4 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import { setStoredColorBlindMode } from "@/lib/accessibility";
+import { applyTheme, setStoredPublicTheme, setStoredTheme } from "@/lib/theme";
 
 interface AuthState {
   userId: string | null;
@@ -143,6 +145,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       handicap: options?.handicap ?? null,
       home_course_id: options?.home_course_id ?? null,
     });
+    // New accounts should always start with light mode and no color filter.
+    setStoredTheme("light");
+    setStoredPublicTheme("light");
+    setStoredColorBlindMode("none");
+    applyTheme("light");
     return data.message;
   };
 

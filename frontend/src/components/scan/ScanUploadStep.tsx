@@ -141,7 +141,7 @@ export function ScanUploadStep({
             {selectedCourseName}
             {scanMode === "full" ? " (preselected)" : ""}
           </span>
-          <button onClick={onClearCourse} className="text-white/70 hover:text-white">
+          <button onClick={onClearCourse} className="text-green-600 hover:text-green-800">
             <X size={14} />
           </button>
         </div>

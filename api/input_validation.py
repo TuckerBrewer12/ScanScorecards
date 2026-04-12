@@ -78,3 +78,31 @@ def sanitize_ocr_text(value: str, *, max_length: int = 300_000) -> str:
     if _CONTROL_CHARS_RE.search(text):
         raise ValueError("ocr_text contains invalid control characters.")
     return text
+
+
+def normalize_handicap_value(value: object) -> object:
+    """
+    Normalize handicap inputs so '+X' is treated as a plus handicap (stored as -X).
+
+    Examples:
+    - '+3.2' -> -3.2
+    - '12.5' -> '12.5' (left for float parsing)
+    - -2.1   -> -2.1
+    """
+    if value is None:
+        return None
+    if isinstance(value, str):
+        text = value.strip()
+        if not text:
+            return None
+        if text.startswith("+"):
+            number_portion = text[1:].strip()
+            if not number_portion:
+                raise ValueError("Invalid handicap format.")
+            try:
+                parsed = float(number_portion)
+            except ValueError as exc:
+                raise ValueError("Invalid handicap format.") from exc
+            return -parsed
+        return text
+    return value

@@ -8,7 +8,7 @@ from typing import List, Optional
 from database.db_manager import DatabaseManager
 from database.exceptions import DuplicateError, NotFoundError
 from api.dependencies import get_current_user, get_db
-from api.input_validation import normalize_email, sanitize_user_text
+from api.input_validation import normalize_email, normalize_handicap_value, sanitize_user_text
 from models import User, UserTee
 from analytics import handicap as hcap
 
@@ -77,8 +77,13 @@ class UpdateUserRequest(BaseModel):
     model_config = ConfigDict(extra="forbid", str_strip_whitespace=True)
 
     home_course_id: Optional[UUID] = None
-    handicap: Optional[float] = Field(default=None, gt=0, le=54)
+    handicap: Optional[float] = Field(default=None, ge=-10, le=54)
     scoring_goal: Optional[int] = Field(default=None, ge=50, le=150)
+
+    @field_validator("handicap", mode="before")
+    @classmethod
+    def _normalize_handicap(cls, v: object) -> object:
+        return normalize_handicap_value(v)
 
 
 class SendFriendRequest(BaseModel):

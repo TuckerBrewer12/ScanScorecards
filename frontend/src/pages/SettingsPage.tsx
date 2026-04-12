@@ -4,7 +4,7 @@ import { Moon, Sun } from "lucide-react";
 import { useBeforeUnload, useLocation } from "react-router-dom";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { api } from "@/lib/api";
-import { parseHandicapInput } from "@/lib/handicap";
+import { formatHandicapInputValue, parseHandicapInput } from "@/lib/handicap";
 import { applyTheme, getStoredTheme, setStoredTheme } from "@/lib/theme";
 import { getStoredColorBlindMode, setStoredColorBlindMode } from "@/lib/accessibility";
 import type { AppTheme } from "@/lib/theme";
@@ -79,7 +79,7 @@ export function SettingsPage({ userId }: { userId: string }) {
     const savedUpdates = localStorage.getItem(UPDATES_PREF_KEY);
     const updatesPref = savedUpdates !== null ? savedUpdates === "true" : true;
     const initialHomeCourseId = settingsData.user.home_course_id ?? "";
-    const initialHandicap = settingsData.user.handicap != null ? String(settingsData.user.handicap) : "";
+    const initialHandicap = formatHandicapInputValue(settingsData.user.handicap);
     const initialTheme = getStoredTheme();
     const initialColorBlind = getStoredColorBlindMode();
     setGetUpdates(updatesPref);
@@ -243,7 +243,7 @@ export function SettingsPage({ userId }: { userId: string }) {
       const refreshedUser = await api.getUser(userId);
 
       setHomeCourseId(refreshedUser.home_course_id ?? "");
-      setHandicapInput(refreshedUser.handicap != null ? String(refreshedUser.handicap) : "");
+      setHandicapInput(formatHandicapInputValue(refreshedUser.handicap));
       setFriendCode(refreshedUser.friend_code ?? "");
       if (refreshedUser.home_course_id) {
         const selected = (settingsData?.allCourses ?? []).find((course) => course.id === refreshedUser.home_course_id);
@@ -257,7 +257,7 @@ export function SettingsPage({ userId }: { userId: string }) {
         homeCourseQuery: refreshedUser.home_course_id
           ? ((settingsData?.allCourses ?? []).find((course) => course.id === refreshedUser.home_course_id)?.name ?? homeCourseQuery)
           : "",
-        handicapInput: refreshedUser.handicap != null ? String(refreshedUser.handicap) : "",
+        handicapInput: formatHandicapInputValue(refreshedUser.handicap),
         getUpdates,
         theme,
         colorBlindMode,
@@ -489,7 +489,7 @@ export function SettingsPage({ userId }: { userId: string }) {
             className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
           />
           <p className="text-xs text-gray-500">
-            Leave blank to clear handicap. Allowed range: greater than 0 and up to 54.
+            Leave blank to clear handicap. Allowed range: +10 through 54.
           </p>
         </section>
 

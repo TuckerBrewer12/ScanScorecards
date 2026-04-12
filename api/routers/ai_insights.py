@@ -24,7 +24,7 @@ async def get_ai_suggestions(
     user_id: UUID,
     request: Request,
     limit: int = Query(default=50, ge=1, le=200),
-    target_handicap: Optional[float] = Query(default=None, gt=0, le=54),
+    target_handicap: Optional[float] = Query(default=None, ge=-10, le=54),
     db: DatabaseManager = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
