@@ -21,7 +21,7 @@ export interface ExtractedRound {
     name: string | null;
     location: string | null;
     par: number | null;
-    holes: { number: number | null; par: number | null }[];
+    holes: { number: number | null; par: number | null; handicap: number | null }[];
     tees: { color: string | null; slope_rating: number | null; course_rating: number | null; hole_yardages: Record<string, number> }[];
   } | null;
   tee_box: string | null;
@@ -82,7 +82,7 @@ export interface ScanState {
   reviewExternalCourseId: string | null;
   reviewCourseName: string | null;
   // Manual entry: fetched course data
-  manualCourseHoles: { number: number | null; par: number | null }[];
+  manualCourseHoles: { number: number | null; par: number | null; handicap: number | null }[];
   manualCourseTees: ManualTee[];
 }
 
