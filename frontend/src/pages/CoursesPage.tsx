@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { MapPin, Search } from "lucide-react";
 import { motion } from "framer-motion";
 import { api } from "@/lib/api";
+import { formatCourseName } from "@/lib/courseName";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { CourseDetailPanel } from "@/components/course-detail/CourseDetailPanel";
 import { ScrollSection } from "@/components/analytics/ScrollSection";
@@ -21,15 +22,6 @@ function isApiTestCourse(name: string | null | undefined): boolean {
   if (!name) return false;
   const normalized = name.trim().toLowerCase();
   return normalized === "api test course" || normalized.startsWith("api test course ");
-}
-
-function formatCourseName(name: string | null | undefined): string {
-  if (!name) return "Unknown";
-  return name
-    .trim()
-    .split(/\s+/)
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-    .join(" ");
 }
 
 export function CoursesPage({ userId }: { userId: string }) {

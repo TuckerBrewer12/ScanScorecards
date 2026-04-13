@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 from database.db_manager import DatabaseManager
 from api.dependencies import get_current_user, get_optional_current_user, get_db
-from api.input_validation import ensure_uuid_str, sanitize_ocr_text, sanitize_user_text
+from api.input_validation import ensure_uuid_str, normalize_course_display_name, sanitize_ocr_text, sanitize_user_text
 from api.request_models import SaveRoundRequest
 from models import User
 from services.gemini_table_merger import merge_split_tables
@@ -211,7 +211,7 @@ def _build_round_from_parsed_rows(
             )
     else:
         # Unknown-course path uses parsed OCR rows.
-        course_name = parsed.course_name
+        course_name = normalize_course_display_name(parsed.course_name) if parsed.course_name else None
         parsed_pars = list(_safe_list_attr("par_row")[:hole_count])
         while len(parsed_pars) < hole_count:
             parsed_pars.append(None)

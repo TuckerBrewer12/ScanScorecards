@@ -5,7 +5,7 @@ from typing import Dict, List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from api.input_validation import ensure_uuid_str, sanitize_user_text
+from api.input_validation import ensure_uuid_str, normalize_course_display_name, sanitize_user_text
 
 
 class HoleScoreInput(BaseModel):
@@ -106,7 +106,8 @@ class SaveRoundRequest(BaseModel):
     def _validate_course_name(cls, v: Optional[str]) -> Optional[str]:
         if v is None:
             return None
-        return sanitize_user_text(v, field_name="course_name", max_length=140)
+        sanitized = sanitize_user_text(v, field_name="course_name", max_length=140)
+        return normalize_course_display_name(sanitized)
 
     @field_validator("course_location")
     @classmethod

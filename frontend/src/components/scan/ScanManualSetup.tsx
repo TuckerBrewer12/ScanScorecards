@@ -1,6 +1,7 @@
 import { Search, MapPin, Loader2, CheckCircle, X } from "lucide-react";
 import type { ScanState, ManualTee } from "@/types/scan";
 import type { CourseSummary } from "@/types/golf";
+import { formatCourseName } from "@/lib/courseName";
 
 interface ScanManualSetupProps {
   selectedCourseId: string | null;
@@ -75,7 +76,7 @@ export function ScanManualSetup({
                   >
                     <MapPin size={14} className="text-gray-400 mt-0.5 shrink-0" />
                     <div>
-                      <div className="text-sm font-medium text-gray-800">{c.name}</div>
+                      <div className="text-sm font-medium text-gray-800">{formatCourseName(c.name)}</div>
                       {c.location && <div className="text-xs text-gray-500">{c.location}</div>}
                     </div>
                   </button>
@@ -102,7 +103,7 @@ export function ScanManualSetup({
       ) : (
         <div className="flex items-center gap-2 px-4 py-3 bg-green-50 border border-green-200 rounded-lg">
           <CheckCircle size={16} className="text-green-600 shrink-0" />
-          <span className="text-sm font-semibold text-green-800 flex-1">{selectedCourseName}</span>
+          <span className="text-sm font-semibold text-green-800 flex-1">{formatCourseName(selectedCourseName)}</span>
           <button
             onClick={onClearCourse}
             className="text-green-600 hover:text-green-800"

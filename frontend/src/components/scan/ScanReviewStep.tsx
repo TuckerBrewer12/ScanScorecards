@@ -7,6 +7,7 @@ import { formatToPar, calcCourseHandicap, calcNetScore } from "@/types/golf";
 import type { CourseSummary } from "@/types/golf";
 import type { ScanState, ScanResult, ExtractedHoleScore, FieldConfidence, ScoreMetadata } from "@/types/scan";
 import { initialScanState } from "@/types/scan";
+import { formatCourseName } from "@/lib/courseName";
 
 interface ScanReviewStepProps {
   result: ScanResult;
@@ -338,7 +339,7 @@ export function ScanReviewStep({
   return (
     <div>
       <PageHeader
-        title={reviewCourseName ?? rd.course?.name ?? "Review Extraction"}
+        title={formatCourseName(reviewCourseName ?? rd.course?.name ?? "Review Extraction")}
         subtitle={rd.course?.location ?? "Verify and edit the extracted data"}
       />
 
@@ -449,7 +450,7 @@ export function ScanReviewStep({
           {/* Course info */}
           <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
             <div className="text-lg font-bold text-gray-900">
-              {reviewCourseId ? reviewCourseName : reviewCourseName ?? "Unknown Course"}
+              {formatCourseName(reviewCourseId ? reviewCourseName : reviewCourseName ?? "Unknown Course")}
             </div>
             {rd.course?.location && <div className="text-sm text-gray-500">{rd.course.location}</div>}
             <div className="flex gap-4 mt-2 text-sm text-gray-600">
@@ -460,7 +461,7 @@ export function ScanReviewStep({
             <div className="mt-3">
               {reviewCourseId || reviewExternalCourseId ? (
                 <CourseLinkChip
-                  name={reviewCourseName ?? ""}
+                  name={formatCourseName(reviewCourseName ?? "")}
                   onClear={() => {
                     onUpdate({ reviewCourseId: null, reviewExternalCourseId: null });
                     setReviewCourseQuery(reviewCourseName ?? "");

@@ -9,6 +9,7 @@ import { ScrollSection } from "@/components/analytics/ScrollSection";
 import { api } from "@/lib/api";
 import { getStoredColorBlindMode } from "@/lib/accessibility";
 import { getColorBlindPalette, type ChartPalette } from "@/lib/chartPalettes";
+import { formatCourseName } from "@/lib/courseName";
 import { formatToPar, calcCourseHandicap, calcNetScore } from "@/types/golf";
 import type { ComparisonRow } from "@/types/analytics";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -307,7 +308,7 @@ export function RoundDetailPage({ userId }: { userId: string }) {
       </Link>
 
       <PageHeader
-        title={round.course?.name ?? round.course_name_played ?? "Unknown Course"}
+        title={formatCourseName(round.course?.name ?? round.course_name_played)}
         subtitle={
           round.date
             ? new Date(round.date).toLocaleDateString("en-US", {
@@ -326,7 +327,7 @@ export function RoundDetailPage({ userId }: { userId: string }) {
           {/* Left: identity */}
           <div className="min-w-0">
             <h1 className="text-4xl font-extrabold tracking-tight text-gray-900 leading-tight truncate">
-              {round.course?.name ?? round.course_name_played ?? "Unknown Course"}
+              {formatCourseName(round.course?.name ?? round.course_name_played)}
             </h1>
             <div className="flex items-center gap-3 mt-1.5 flex-wrap">
               {round.date && (

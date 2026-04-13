@@ -5,6 +5,7 @@ import { Link2, Search } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { CourseLinkSearch } from "@/components/CourseLinkSearch";
 import { api } from "@/lib/api";
+import { formatCourseName } from "@/lib/courseName";
 import { getStoredColorBlindMode } from "@/lib/accessibility";
 import { getColorBlindPalette } from "@/lib/chartPalettes";
 import type { RoundSummary, CourseSummary } from "@/types/golf";
@@ -257,7 +258,7 @@ export function RoundsPage({ userId }: RoundsPageProps) {
                           className="hover:text-primary transition-colors"
                           onClick={(e) => e.stopPropagation()}
                         >
-                          {r.course_name ?? "—"}
+                          {r.course_name ? formatCourseName(r.course_name) : "—"}
                         </Link>
                         {!r.course_id && (
                           <button
@@ -336,7 +337,7 @@ export function RoundsPage({ userId }: RoundsPageProps) {
                     >
                       <td colSpan={7} className="px-6 py-4 bg-blue-50/60 border-b border-blue-100">
                         <CourseLinkSearch
-                          title={`Link "${r.course_name ?? "this round"}" to a saved course`}
+                          title={`Link "${r.course_name ? formatCourseName(r.course_name) : "this round"}" to a saved course`}
                           query={linkQuery}
                           results={linkResults}
                           searching={linkSearching}

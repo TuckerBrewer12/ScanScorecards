@@ -8,7 +8,7 @@ from typing import List, Optional
 from database.db_manager import DatabaseManager
 from database.exceptions import DuplicateError, IntegrityError, NotFoundError
 from api.dependencies import get_db, get_optional_current_user, get_current_user
-from api.input_validation import sanitize_search_query, sanitize_user_text
+from api.input_validation import normalize_course_display_name, sanitize_search_query, sanitize_user_text
 from api.schemas import CourseSummaryResponse
 from models import Course, Hole, Tee, User
 from services import GolfCourseAPIService
@@ -52,7 +52,8 @@ class CreateCourseRequest(BaseModel):
     @field_validator("name")
     @classmethod
     def _validate_name(cls, v: str) -> str:
-        return sanitize_user_text(v, field_name="name", max_length=140)
+        sanitized = sanitize_user_text(v, field_name="name", max_length=140)
+        return normalize_course_display_name(sanitized)
 
     @field_validator("external_course_id")
     @classmethod
@@ -82,7 +83,8 @@ class UpdateCourseRequest(BaseModel):
     def _validate_name(cls, v: Optional[str]) -> Optional[str]:
         if v is None:
             return None
-        return sanitize_user_text(v, field_name="name", max_length=140)
+        sanitized = sanitize_user_text(v, field_name="name", max_length=140)
+        return normalize_course_display_name(sanitized)
 
     @field_validator("external_course_id")
     @classmethod

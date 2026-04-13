@@ -106,3 +106,12 @@ def normalize_handicap_value(value: object) -> object:
             return -parsed
         return text
     return value
+
+
+def normalize_course_display_name(value: str) -> str:
+    """Normalize course names to consistent title case for display/storage."""
+    text = (value or "").strip()
+    if not text:
+        return text
+    words = re.split(r"\s+", text)
+    return " ".join(word[:1].upper() + word[1:].lower() if word else "" for word in words)
