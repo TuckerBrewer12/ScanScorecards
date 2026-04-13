@@ -121,6 +121,8 @@ def enforce_https_if_needed(request: Request) -> Optional[RedirectResponse]:
     enforce_https = env_bool("ENFORCE_HTTPS", os.environ.get("APP_ENV", "").lower() in {"production", "prod", "staging"})
     if not enforce_https:
         return None
+    if request.url.path == "/api/health":
+        return None
     if is_https_request(request):
         return None
     if should_allow_insecure_local_request(request):
