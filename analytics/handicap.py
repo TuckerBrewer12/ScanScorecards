@@ -18,14 +18,14 @@ _WHS_TABLE: List[tuple[int, float]] = [
     (2, 0.0),    # 8
     (3, 0.0),    # 9
     (3, 0.0),    # 10
-    (4, 0.0),    # 11
+    (3, 0.0),    # 11
     (4, 0.0),    # 12
-    (5, 0.0),    # 13
-    (5, 0.0),    # 14
-    (6, 0.0),    # 15
-    (6, 0.0),    # 16
+    (4, 0.0),    # 13
+    (4, 0.0),    # 14
+    (5, 0.0),    # 15
+    (5, 0.0),    # 16
     (6, 0.0),    # 17
-    (7, 0.0),    # 18
+    (6, 0.0),    # 18
     (7, 0.0),    # 19
     (8, 0.0),    # 20+
 ]
@@ -44,6 +44,11 @@ def _get_differential_for_round(round_obj: Round) -> Optional[float]:
 
     tee = round_obj.get_tee()
     if tee is None or tee.course_rating is None or tee.slope_rating is None:
+        return None
+
+    # Exclude 9-hole/partial rounds tracked against 18-hole course ratings
+    holes_played = sum(1 for s in round_obj.hole_scores if s.strokes is not None)
+    if holes_played < 18 and tee.course_rating >= 50.0:
         return None
 
     return score_differential(total, tee.course_rating, tee.slope_rating)
@@ -152,7 +157,7 @@ def handicap_index(
     count, adjustment = _WHS_TABLE[table_idx]
 
     best = valid[:count]
-    hi = (sum(best) / len(best)) * 0.96 + adjustment
+    hi = (sum(best) / len(best)) + adjustment
 
     # WHS caps index at 54.0
     hi = min(hi, 54.0)

@@ -2,8 +2,9 @@ import { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { api } from "@/lib/api";
+import { parseHandicapInput } from "@/lib/handicap";
 import type { CourseSummary } from "@/types/golf";
-import { Flag } from "lucide-react";
+import { Eye, EyeOff, Flag } from "lucide-react";
 
 function Logo() {
   return (
@@ -11,7 +12,7 @@ function Logo() {
       <div className="h-9 w-9 rounded-full bg-primary flex items-center justify-center shadow-sm">
         <Flag size={17} className="text-white" />
       </div>
-      <span className="text-xl font-bold text-gray-900 tracking-tight">ScanScorecards</span>
+      <span className="text-xl font-bold text-gray-900 tracking-tight">BirdieEyeView</span>
     </div>
   );
 }
@@ -23,10 +24,13 @@ export function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [handicap, setHandicap] = useState("");
   const [homeCourseQuery, setHomeCourseQuery] = useState("");
   const [homeCourseId, setHomeCourseId] = useState<string>("");
   const [courseResults, setCourseResults] = useState<CourseSummary[]>([]);
+  const [searchingCourses, setSearchingCourses] = useState(false);
   const [showCourseResults, setShowCourseResults] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -35,14 +39,27 @@ export function RegisterPage() {
     const q = homeCourseQuery.trim();
     if (q.length < 2) {
       setCourseResults([]);
+      setSearchingCourses(false);
       return;
     }
+    let active = true;
+    setSearchingCourses(true);
     const handle = window.setTimeout(() => {
       api.searchCourses(q)
-        .then((rows) => setCourseResults(rows))
-        .catch(() => setCourseResults([]));
+        .then((rows) => {
+          if (active) setCourseResults(rows);
+        })
+        .catch(() => {
+          if (active) setCourseResults([]);
+        })
+        .finally(() => {
+          if (active) setSearchingCourses(false);
+        });
     }, 250);
-    return () => window.clearTimeout(handle);
+    return () => {
+      active = false;
+      window.clearTimeout(handle);
+    };
   }, [homeCourseQuery]);
 
   const selectCourse = (course: CourseSummary) => {
@@ -63,27 +80,27 @@ export function RegisterPage() {
       return;
     }
     const trimmedCourse = homeCourseQuery.trim();
-    if (trimmedCourse.length > 0 && !homeCourseId) {
-      setError("Select a home course from the list, or leave it blank.");
-      return;
+    const shouldIgnoreUnmatchedHomeCourse = trimmedCourse.length > 0 && !homeCourseId;
+    if (shouldIgnoreUnmatchedHomeCourse) {
+      setHomeCourseQuery("");
+      setShowCourseResults(false);
     }
 
-    let parsedHandicap: number | null = null;
-    if (handicap.trim() !== "") {
-      parsedHandicap = Number(handicap);
-      if (Number.isNaN(parsedHandicap) || parsedHandicap < 10 || parsedHandicap > 54) {
-        setError("Handicap must be between +10 and 54.");
-        return;
-      }
+    const { value: parsedHandicap, error: handicapError } = parseHandicapInput(handicap);
+    if (handicapError) {
+      setError(handicapError);
+      return;
     }
 
     setLoading(true);
     try {
-      await register(name, email, password, {
+      const message = await register(name, email, password, {
         handicap: parsedHandicap,
-        home_course_id: homeCourseId || null,
+        home_course_id: shouldIgnoreUnmatchedHomeCourse ? null : homeCourseId || null,
       });
-      navigate("/");
+      navigate(`/verify-pending?email=${encodeURIComponent(email.trim())}`, {
+        state: { flash: message, email: email.trim() },
+      });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registration failed");
     } finally {
@@ -117,7 +134,7 @@ export function RegisterPage() {
             </ul>
           </div>
         </div>
-        <div className="text-xs text-gray-400">© 2026 ScanScorecards</div>
+        <div className="text-xs text-gray-400">© 2026 BirdieEyeView</div>
       </div>
 
       {/* Right form panel */}
@@ -133,14 +150,15 @@ export function RegisterPage() {
 
           <form onSubmit={handleSubmit} className="space-y-5">
             {error && (
-              <div className="bg-red-50 border border-red-100 text-red-600 text-sm rounded-xl px-4 py-3">
+              <div role="alert" className="bg-red-50 border border-red-100 text-red-600 text-sm rounded-xl px-4 py-3">
                 {error}
               </div>
             )}
 
             <div>
-              <label className="block text-xs font-semibold text-gray-500 mb-1.5">Name</label>
+              <label htmlFor="reg-name" className="block text-xs font-semibold text-gray-500 mb-1.5">Name</label>
               <input
+                id="reg-name"
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
@@ -152,8 +170,9 @@ export function RegisterPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-gray-500 mb-1.5">Email</label>
+              <label htmlFor="reg-email" className="block text-xs font-semibold text-gray-500 mb-1.5">Email</label>
               <input
+                id="reg-email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -165,48 +184,72 @@ export function RegisterPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-gray-500 mb-1.5">Password</label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                autoComplete="new-password"
-                className={inputClass}
-                placeholder="At least 8 characters"
-              />
+              <label htmlFor="reg-password" className="block text-xs font-semibold text-gray-500 mb-1.5">Password</label>
+              <div className="relative">
+                <input
+                  id="reg-password"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  autoComplete="new-password"
+                  className={`${inputClass} pr-12`}
+                  placeholder="At least 8 characters"
+                />
+                <button
+                  type="button"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  aria-pressed={showPassword}
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  className="absolute inset-y-0 right-0 px-3 text-gray-500 hover:text-gray-700"
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-gray-500 mb-1.5">Confirm Password</label>
-              <input
-                type="password"
-                value={confirm}
-                onChange={(e) => setConfirm(e.target.value)}
-                required
-                autoComplete="new-password"
-                className={inputClass}
-                placeholder="••••••••"
-              />
+              <label htmlFor="reg-confirm" className="block text-xs font-semibold text-gray-500 mb-1.5">Confirm Password</label>
+              <div className="relative">
+                <input
+                  id="reg-confirm"
+                  type={showConfirmPassword ? "text" : "password"}
+                  value={confirm}
+                  onChange={(e) => setConfirm(e.target.value)}
+                  required
+                  autoComplete="new-password"
+                  className={`${inputClass} pr-12`}
+                  placeholder="••••••••"
+                />
+                <button
+                  type="button"
+                  aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
+                  aria-pressed={showConfirmPassword}
+                  onClick={() => setShowConfirmPassword((prev) => !prev)}
+                  className="absolute inset-y-0 right-0 px-3 text-gray-500 hover:text-gray-700"
+                >
+                  {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-gray-500 mb-1.5">Handicap (optional)</label>
+              <label htmlFor="reg-handicap" className="block text-xs font-semibold text-gray-500 mb-1.5">Handicap (optional)</label>
               <input
-                type="number"
+                id="reg-handicap"
+                type="text"
+                inputMode="decimal"
                 value={handicap}
                 onChange={(e) => setHandicap(e.target.value)}
-                min={10}
-                max={54}
-                step="0.1"
                 className={inputClass}
-                placeholder="e.g. 14.2"
+                placeholder="e.g. +5.0"
               />
             </div>
 
             <div className="relative">
-              <label className="block text-xs font-semibold text-gray-500 mb-1.5">Home Course (optional)</label>
+              <label htmlFor="reg-home-course" className="block text-xs font-semibold text-gray-500 mb-1.5">Home Course (optional)</label>
               <input
+                id="reg-home-course"
                 type="text"
                 value={homeCourseQuery}
                 onChange={(e) => {
@@ -218,23 +261,31 @@ export function RegisterPage() {
                 className={inputClass}
                 placeholder="Type course name..."
               />
-              {showCourseResults && courseResults.length > 0 ? (
+              {showCourseResults && homeCourseQuery.trim().length >= 2 ? (
                 <div className="absolute z-10 mt-1 w-full rounded-xl border border-gray-100 bg-white shadow-lg shadow-gray-200/50 max-h-56 overflow-auto">
-                  {courseResults.map((course) => (
-                    <button
-                      key={course.id}
-                      type="button"
-                      onMouseDown={() => selectCourse(course)}
-                      className="w-full text-left px-4 py-2.5 text-sm rounded-lg hover:bg-gray-50 transition-colors"
-                    >
-                      <div className="text-gray-900">{course.name ?? "Unnamed Course"}</div>
-                      {course.location ? <div className="text-xs text-gray-500">{course.location}</div> : null}
-                    </button>
-                  ))}
+                  {searchingCourses ? (
+                    <div className="px-4 py-2.5 text-sm text-gray-500">Searching courses...</div>
+                  ) : courseResults.length > 0 ? (
+                    courseResults.map((course) => (
+                      <button
+                        key={course.id}
+                        type="button"
+                        onMouseDown={() => selectCourse(course)}
+                        className="w-full text-left px-4 py-2.5 text-sm rounded-lg hover:bg-gray-50 transition-colors"
+                      >
+                        <div className="text-gray-900">{course.name ?? "Unnamed Course"}</div>
+                        {course.location ? <div className="text-xs text-gray-500">{course.location}</div> : null}
+                      </button>
+                    ))
+                  ) : (
+                    <div className="px-4 py-2.5 text-sm text-gray-500">
+                      No matching saved course found.
+                    </div>
+                  )}
                 </div>
               ) : null}
               <p className="mt-1 text-xs text-gray-500">
-                Must be selected from existing courses. If it is not in the DB yet, set it later in Settings.
+                Select from suggestions if available. If not found, leave it blank and set it later in Settings.
               </p>
             </div>
 

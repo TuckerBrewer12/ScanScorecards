@@ -167,6 +167,31 @@ class RoundRepositoryDB:
     # Read
     # ================================================================
 
+    async def get_round_owner_id(self, round_id: str) -> Optional[str]:
+        """Return the user_id that owns a round, or None if not found."""
+        try:
+            rid = UUID(round_id)
+        except (TypeError, ValueError):
+            return None
+        async with self._pool.acquire() as conn:
+            row = await conn.fetchrow(
+                "SELECT user_id FROM users.rounds WHERE id = $1", rid
+            )
+            return str(row["user_id"]) if row else None
+
+    async def get_played_courses_for_user(self, user_id: str) -> list:
+        """Return distinct courses a user has rounds linked to."""
+        async with self._pool.acquire() as conn:
+            rows = await conn.fetch(
+                """SELECT DISTINCT c.id, c.name, c.location
+                   FROM users.rounds r
+                   JOIN courses.courses c ON r.course_id = c.id
+                   WHERE r.user_id = $1
+                   ORDER BY c.name""",
+                UUID(user_id),
+            )
+        return [{"id": str(r["id"]), "name": r["name"], "location": r["location"]} for r in rows]
+
     async def get_round(self, round_id: str) -> Optional[Round]:
         """Get a round with hole_scores and course data."""
         async with self._pool.acquire() as conn:
@@ -349,7 +374,7 @@ class RoundRepositoryDB:
     # Update
     # ================================================================
 
-    async def update_round(self, round_id: str, **fields) -> Optional[Round]:
+    async def update_round(self, round_id: str, *, user_id: Optional[str] = None, **fields) -> Optional[Round]:
         """Update round-level fields."""
         allowed = {
             "round_date", "total_score", "adjusted_gross_score",
@@ -364,9 +389,15 @@ class RoundRepositoryDB:
         values = [UUID(round_id)] + list(updates.values())
 
         async with self._pool.acquire() as conn:
+            where_clause = "id = $1"
+            where_values = []
+            if user_id:
+                where_clause += f" AND user_id = ${len(values) + 1}"
+                where_values.append(UUID(user_id))
             row = await conn.fetchrow(
-                f"UPDATE users.rounds SET {set_clause} WHERE id = $1 RETURNING *",
+                f"UPDATE users.rounds SET {set_clause} WHERE {where_clause} RETURNING *",
                 *values,
+                *where_values,
             )
             if not row:
                 return None
@@ -417,7 +448,7 @@ class RoundRepositoryDB:
             )
 
     async def update_hole_scores(
-        self, round_id: str, hole_scores: list
+        self, round_id: str, hole_scores: list, *, user_id: Optional[str] = None
     ) -> Optional[Round]:
         """Batch-upsert hole scores and recalculate round totals.
 
@@ -425,9 +456,16 @@ class RoundRepositoryDB:
         Returns the updated Round.
         """
         async with self._pool.acquire() as conn:
-            round_row = await conn.fetchrow(
-                "SELECT * FROM users.rounds WHERE id = $1", UUID(round_id)
-            )
+            if user_id:
+                round_row = await conn.fetchrow(
+                    "SELECT * FROM users.rounds WHERE id = $1 AND user_id = $2",
+                    UUID(round_id),
+                    UUID(user_id),
+                )
+            else:
+                round_row = await conn.fetchrow(
+                    "SELECT * FROM users.rounds WHERE id = $1", UUID(round_id)
+                )
             if not round_row:
                 raise NotFoundError(f"Round {round_id} not found")
 
@@ -472,16 +510,37 @@ class RoundRepositoryDB:
                 holes_played = len(valid_strokes)
                 is_complete = holes_played == 18
 
-                await conn.execute(
-                    """UPDATE users.rounds
-                       SET total_score = $2, holes_played = $3, is_complete = $4
-                       WHERE id = $1""",
-                    UUID(round_id), new_total, holes_played, is_complete,
-                )
+                if user_id:
+                    await conn.execute(
+                        """UPDATE users.rounds
+                           SET total_score = $2, holes_played = $3, is_complete = $4
+                           WHERE id = $1 AND user_id = $5""",
+                        UUID(round_id),
+                        new_total,
+                        holes_played,
+                        is_complete,
+                        UUID(user_id),
+                    )
+                else:
+                    await conn.execute(
+                        """UPDATE users.rounds
+                           SET total_score = $2, holes_played = $3, is_complete = $4
+                           WHERE id = $1""",
+                        UUID(round_id),
+                        new_total,
+                        holes_played,
+                        is_complete,
+                    )
 
         return await self.get_round(round_id)
 
-    async def link_course_to_round(self, round_id: str, course_id: str) -> Optional[Round]:
+    async def link_course_to_round(
+        self,
+        round_id: str,
+        course_id: str,
+        *,
+        user_id: Optional[str] = None,
+    ) -> Optional[Round]:
         """Link an unlinked round to an existing course.
 
         - Sets course_id / tee_id on the round, clears course_name_played
@@ -497,21 +556,43 @@ class RoundRepositoryDB:
             hcp_by_hole = {r["hole_number"]: r["handicap"] for r in course_hole_rows if r["handicap"] is not None}
 
             # Resolve tee_id from stored tee_box_played
-            round_row = await conn.fetchrow(
-                "SELECT tee_box_played FROM users.rounds WHERE id = $1", UUID(round_id)
-            )
+            if user_id:
+                round_row = await conn.fetchrow(
+                    "SELECT tee_box_played FROM users.rounds WHERE id = $1 AND user_id = $2",
+                    UUID(round_id),
+                    UUID(user_id),
+                )
+            else:
+                round_row = await conn.fetchrow(
+                    "SELECT tee_box_played FROM users.rounds WHERE id = $1", UUID(round_id)
+                )
+            if not round_row:
+                return None
             tee_color = round_row["tee_box_played"] if round_row else None
             tee_id = None
             if tee_color:
                 tee_id = await self._resolve_tee_id(conn, UUID(course_id), tee_color)
 
             async with conn.transaction():
-                await conn.execute(
-                    """UPDATE users.rounds
-                       SET course_id = $2, tee_id = $3, course_name_played = NULL
-                       WHERE id = $1""",
-                    UUID(round_id), UUID(course_id), tee_id,
-                )
+                if user_id:
+                    await conn.execute(
+                        """UPDATE users.rounds
+                           SET course_id = $2, tee_id = $3, course_name_played = NULL
+                           WHERE id = $1 AND user_id = $4""",
+                        UUID(round_id),
+                        UUID(course_id),
+                        tee_id,
+                        UUID(user_id),
+                    )
+                else:
+                    await conn.execute(
+                        """UPDATE users.rounds
+                           SET course_id = $2, tee_id = $3, course_name_played = NULL
+                           WHERE id = $1""",
+                        UUID(round_id),
+                        UUID(course_id),
+                        tee_id,
+                    )
                 for hole_num, hole_id in hole_id_map.items():
                     await conn.execute(
                         """UPDATE users.hole_scores
@@ -529,12 +610,19 @@ class RoundRepositoryDB:
     # Delete
     # ================================================================
 
-    async def delete_round(self, round_id: str) -> bool:
+    async def delete_round(self, round_id: str, *, user_id: Optional[str] = None) -> bool:
         """Delete round and its hole_scores (CASCADE). Returns True if deleted."""
         async with self._pool.acquire() as conn:
-            result = await conn.execute(
-                "DELETE FROM users.rounds WHERE id = $1", UUID(round_id)
-            )
+            if user_id:
+                result = await conn.execute(
+                    "DELETE FROM users.rounds WHERE id = $1 AND user_id = $2",
+                    UUID(round_id),
+                    UUID(user_id),
+                )
+            else:
+                result = await conn.execute(
+                    "DELETE FROM users.rounds WHERE id = $1", UUID(round_id)
+                )
             return result == "DELETE 1"
 
     # ================================================================

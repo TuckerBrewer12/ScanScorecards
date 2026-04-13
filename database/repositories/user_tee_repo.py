@@ -36,12 +36,20 @@ class UserTeeRepositoryDB:
                 )
             return [user_tee_from_row(r) for r in rows]
 
-    async def get_user_tee(self, tee_id: str) -> Optional[UserTee]:
+    async def get_user_tee(self, tee_id: str, *, user_id: Optional[str] = None) -> Optional[UserTee]:
         """Get a single user tee by ID."""
         async with self._pool.acquire() as conn:
-            row = await conn.fetchrow(
-                "SELECT * FROM users.user_tees WHERE id = $1", UUID(tee_id)
-            )
+            if user_id:
+                row = await conn.fetchrow(
+                    "SELECT * FROM users.user_tees WHERE id = $1 AND user_id = $2",
+                    UUID(tee_id),
+                    UUID(user_id),
+                )
+            else:
+                row = await conn.fetchrow(
+                    "SELECT * FROM users.user_tees WHERE id = $1",
+                    UUID(tee_id),
+                )
             return user_tee_from_row(row) if row else None
 
     async def create_user_tee(self, user_tee: UserTee) -> UserTee:
@@ -62,12 +70,12 @@ class UserTeeRepositoryDB:
         except asyncpg.UniqueViolationError as e:
             raise DuplicateError(str(e)) from e
 
-    async def update_user_tee(self, tee_id: str, **fields) -> Optional[UserTee]:
+    async def update_user_tee(self, tee_id: str, *, user_id: Optional[str] = None, **fields) -> Optional[UserTee]:
         """Update a user tee configuration."""
         allowed = {"name", "slope_rating", "course_rating", "hole_yardages"}
         updates = {k: v for k, v in fields.items() if k in allowed}
         if not updates:
-            return await self.get_user_tee(tee_id)
+            return await self.get_user_tee(tee_id, user_id=user_id)
 
         # Serialize hole_yardages to JSON string for asyncpg
         if "hole_yardages" in updates and updates["hole_yardages"] is not None:
@@ -77,20 +85,32 @@ class UserTeeRepositoryDB:
 
         set_clause = ", ".join(f"{k} = ${i+2}" for i, k in enumerate(updates))
         values = [UUID(tee_id)] + list(updates.values())
+        where_clause = "id = $1"
+        if user_id:
+            values.append(UUID(user_id))
+            where_clause += f" AND user_id = ${len(values)}"
 
         async with self._pool.acquire() as conn:
             row = await conn.fetchrow(
-                f"UPDATE users.user_tees SET {set_clause} WHERE id = $1 RETURNING *",
+                f"UPDATE users.user_tees SET {set_clause} WHERE {where_clause} RETURNING *",
                 *values,
             )
             if not row:
                 raise NotFoundError(f"UserTee {tee_id} not found")
             return user_tee_from_row(row)
 
-    async def delete_user_tee(self, tee_id: str) -> bool:
+    async def delete_user_tee(self, tee_id: str, *, user_id: Optional[str] = None) -> bool:
         """Delete a user tee. Returns True if deleted."""
         async with self._pool.acquire() as conn:
-            result = await conn.execute(
-                "DELETE FROM users.user_tees WHERE id = $1", UUID(tee_id)
-            )
+            if user_id:
+                result = await conn.execute(
+                    "DELETE FROM users.user_tees WHERE id = $1 AND user_id = $2",
+                    UUID(tee_id),
+                    UUID(user_id),
+                )
+            else:
+                result = await conn.execute(
+                    "DELETE FROM users.user_tees WHERE id = $1",
+                    UUID(tee_id),
+                )
             return result == "DELETE 1"

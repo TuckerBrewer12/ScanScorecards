@@ -4,7 +4,6 @@ import { Link } from "react-router-dom";
 import { Inbox } from "lucide-react";
 import { api } from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
-import type { Friendship } from "@/types/golf";
 
 export function SocialPage() {
   const { userId } = useAuth();

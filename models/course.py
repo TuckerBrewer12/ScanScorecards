@@ -53,7 +53,7 @@ class Course(BaseGolfModel):
     @property
     def front_nine_par(self) -> Optional[int]:
         """Calculate par for holes 1-9."""
-        front = self.holes[:9]
+        front = [h for h in self.holes if h.number is not None and 1 <= h.number <= 9]
         if len(front) < 9 or any(h.par is None for h in front):
             return None
         return sum(h.par for h in front if h.par is not None)
@@ -61,7 +61,7 @@ class Course(BaseGolfModel):
     @property
     def back_nine_par(self) -> Optional[int]:
         """Calculate par for holes 10-18."""
-        back = self.holes[9:18]
+        back = [h for h in self.holes if h.number is not None and 10 <= h.number <= 18]
         if len(back) < 9 or any(h.par is None for h in back):
             return None
         return sum(h.par for h in back if h.par is not None)

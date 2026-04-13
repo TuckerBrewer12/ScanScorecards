@@ -1,6 +1,16 @@
 .env
+.env.*
+!.env.example
 __pycache__/
 *.pyc
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.crt
+secrets/
+credentials/
 
 # Frontend
 frontend/node_modules/

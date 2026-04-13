@@ -2,7 +2,6 @@
 
 import contextlib
 import hashlib
-import math
 import logging
 import os
 import tempfile
@@ -11,14 +10,14 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
-import numpy as np
 from pydantic import BaseModel
-from PIL import Image, ImageFilter, ImageOps, ImageEnhance
+from PIL import Image, ImageOps
 
-logger = logging.getLogger("uvicorn.error")
+logger = logging.getLogger(__name__)
 
 from database.db_manager import DatabaseManager
-from api.dependencies import get_current_user, get_db
+from api.dependencies import get_current_user, get_optional_current_user, get_db
+from api.input_validation import ensure_uuid_str, normalize_course_display_name, sanitize_ocr_text, sanitize_user_text
 from api.request_models import SaveRoundRequest
 from models import User
 from services.gemini_table_merger import merge_split_tables
@@ -30,11 +29,26 @@ router = APIRouter()
 
 OCR_LONG_EDGE_TARGET = 1800
 OCR_JPEG_QUALITY = 75
-BW_FALLBACK_TRIGGER = 0.65
-BW_FALLBACK_MIN_IMPROVEMENT = 0.03
 PREPROCESS_CACHE_VERSION = "v2"
+MAX_UPLOAD_BYTES = 20 * 1024 * 1024  # 20 MB
+MAX_OCR_TEXT_CHARS = 300_000
+MAX_USER_CONTEXT_CHARS = 1_500
+MAX_IMAGE_PIXELS = 40_000_000
+MAX_IMAGE_SIDE = 12_000
 PREPROCESS_CACHE_DIR = Path(tempfile.gettempdir()) / "scanscore_ocr_cache"
+PREPROCESS_CACHE_ENABLED = False
 MISTRAL_OCR_MODEL = os.environ.get("MISTRAL_OCR_MODEL") or "mistral-ocr-latest"
+ALLOWED_UPLOAD_SUFFIXES = {".jpg", ".jpeg", ".png", ".webp", ".heic", ".pdf"}
+ALLOWED_UPLOAD_MIME_TYPES = {
+    "image/jpeg",
+    "image/png",
+    "image/webp",
+    "image/heic",
+    "image/heif",
+    "application/pdf",
+    "application/octet-stream",  # some mobile clients use this for HEIC
+}
+ALLOWED_IMAGE_FORMATS = {"JPEG", "PNG", "WEBP", "HEIC", "HEIF"}
 
 
 class ScanResponse(BaseModel):
@@ -42,6 +56,47 @@ class ScanResponse(BaseModel):
     round: dict
     confidence: dict
     fields_needing_review: list
+
+
+def _extract_upload_suffix(file: UploadFile) -> str:
+    filename = (file.filename or "").strip()
+    if not filename:
+        raise HTTPException(400, "Filename is required.")
+    suffix = Path(filename).suffix.lower()
+    if suffix not in ALLOWED_UPLOAD_SUFFIXES:
+        raise HTTPException(400, f"Unsupported file type: {suffix}. Allowed: {', '.join(sorted(ALLOWED_UPLOAD_SUFFIXES))}")
+    content_type = (file.content_type or "").lower().strip()
+    if content_type and content_type not in ALLOWED_UPLOAD_MIME_TYPES:
+        raise HTTPException(400, f"Unsupported upload content type: {content_type}")
+    return suffix
+
+
+def _validate_upload_payload(path: Path, suffix: str) -> None:
+    if suffix == ".pdf":
+        with open(path, "rb") as fh:
+            header = fh.read(5)
+        if header != b"%PDF-":
+            raise HTTPException(400, "Invalid PDF upload.")
+        return
+
+    try:
+        with Image.open(path) as img:
+            img.verify()
+        with Image.open(path) as img:
+            fmt = (img.format or "").upper()
+            if fmt not in ALLOWED_IMAGE_FORMATS:
+                raise HTTPException(400, f"Unsupported image format: {fmt or 'unknown'}")
+            width, height = img.size
+            if width <= 0 or height <= 0:
+                raise HTTPException(400, "Invalid image dimensions.")
+            if width > MAX_IMAGE_SIDE or height > MAX_IMAGE_SIDE:
+                raise HTTPException(400, "Image dimensions exceed allowed size.")
+            if width * height > MAX_IMAGE_PIXELS:
+                raise HTTPException(400, "Image pixel count exceeds allowed size.")
+    except HTTPException:
+        raise
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(400, "Invalid or unreadable image upload.") from exc
 
 
 def _confidence_level(score: float) -> str:
@@ -156,7 +211,7 @@ def _build_round_from_parsed_rows(
             )
     else:
         # Unknown-course path uses parsed OCR rows.
-        course_name = parsed.course_name
+        course_name = normalize_course_display_name(parsed.course_name) if parsed.course_name else None
         parsed_pars = list(_safe_list_attr("par_row")[:hole_count])
         while len(parsed_pars) < hole_count:
             parsed_pars.append(None)
@@ -285,36 +340,52 @@ def _build_round_from_parsed_rows(
     return round_payload, fields_needing_review
 
 
+def _save_upload_to_temp(file: UploadFile, suffix: str) -> tuple[Path, str]:
+    """Stream upload to a temp file enforcing max size. Returns (path, sha256_hex)."""
+    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
+        hasher = hashlib.sha256()
+        total_bytes = 0
+        while True:
+            chunk = file.file.read(1024 * 1024)
+            if not chunk:
+                break
+            total_bytes += len(chunk)
+            if total_bytes > MAX_UPLOAD_BYTES:
+                Path(tmp.name).unlink(missing_ok=True)
+                raise HTTPException(413, "File too large. Maximum size is 20 MB.")
+            tmp.write(chunk)
+            hasher.update(chunk)
+        return Path(tmp.name), hasher.hexdigest()
+
+
 async def _run_ocr_pipeline(ocr_path: Path) -> str:
     """Mistral OCR → Gemini merge → raw markdown string."""
     svc = MistralOCRService()
     ocr_resp = await svc.ocr_file(ocr_path)
+
+    pages = ocr_resp.get("pages")
+    if isinstance(pages, list):
+        for page_idx, page in enumerate(pages):
+            if not isinstance(page, dict):
+                continue
+            tables = page.get("tables") or []
+            if not isinstance(tables, list):
+                continue
+            for table_idx, table in enumerate(tables):
+                if not isinstance(table, dict):
+                    continue
+                html_table = table.get("content")
+                if isinstance(html_table, str) and html_table.strip():
+                    logger.info(
+                        "=== MISTRAL HTML TABLE page=%d table=%d ===\n%s\n=== END MISTRAL HTML TABLE ===",
+                        page_idx,
+                        table_idx,
+                        html_table,
+                    )
+
     raw_markdown = MistralOCRService.extract_markdown_text(ocr_resp)
+    logger.info("=== MISTRAL RAW MARKDOWN ===\n%s\n=== END MISTRAL RAW MARKDOWN ===", raw_markdown)
     return await merge_split_tables(raw_markdown)
-
-
-def _blur_fold_line(img: Image.Image) -> Image.Image:
-    """Blur a narrow vertical strip at the center crease to prevent Mistral
-    from reading the fold as a table divider and splitting the OCR output."""
-    width, height = img.size
-    center_x = width // 2
-    blur_width = max(14, int(width * 0.015))
-    x1 = max(0, center_x - blur_width // 2)
-    x2 = min(width, center_x + blur_width // 2)
-    strip = img.crop((x1, 0, x2, height))
-    blurred = strip.filter(ImageFilter.GaussianBlur(radius=10))
-    result = img.copy()
-    result.paste(blurred, (x1, 0))
-    return result
-
-
-def _normalize_angle_deg(angle: float) -> float:
-    """Normalize angle to [-90, 90)."""
-    while angle >= 90.0:
-        angle -= 180.0
-    while angle < -90.0:
-        angle += 180.0
-    return angle
 
 
 def _get_preprocess_cache_path(upload_digest: str) -> Path:
@@ -335,98 +406,6 @@ def _save_jpeg(path: Path, img: Image.Image) -> None:
     )
 
 
-def _deskew_scorecard(img: Image.Image) -> tuple[Image.Image, bool, float]:
-    """
-    Conservative deskew using dominant edge orientation.
-
-    Only applies small-angle correction and falls back safely if confidence is low.
-    """
-    gray = np.asarray(img.convert("L"), dtype=np.float32)
-    if gray.shape[0] < 60 or gray.shape[1] < 60:
-        return img, False, 0.0
-
-    gy, gx = np.gradient(gray)
-    mag = np.hypot(gx, gy)
-    thresh = np.percentile(mag, 90)
-    edge_mask = mag > thresh
-    ys, xs = np.where(edge_mask)
-    if ys.size < 500:
-        return img, False, 0.0
-
-    pts = np.stack([xs.astype(np.float64), ys.astype(np.float64)], axis=1)
-    pts -= pts.mean(axis=0, keepdims=True)
-
-    cov = np.cov(pts, rowvar=False)
-    eigvals, eigvecs = np.linalg.eigh(cov)
-    major = eigvecs[:, int(np.argmax(eigvals))]
-    angle = math.degrees(math.atan2(float(major[1]), float(major[0])))
-    angle = _normalize_angle_deg(angle)
-
-    # Snap to nearest cardinal axis and correct only small skew deltas.
-    nearest_axis = round(angle / 90.0) * 90.0
-    delta = _normalize_angle_deg(angle - nearest_axis)
-    if abs(delta) < 0.8 or abs(delta) > 12.0:
-        return img, False, 0.0
-
-    bg = tuple(int(x) for x in np.median(np.asarray(img).reshape(-1, 3), axis=0))
-    rotated = img.rotate(-delta, resample=Image.Resampling.BICUBIC, expand=True, fillcolor=bg)
-    return rotated, True, float(delta)
-
-
-def _crop_to_scorecard_region(img: Image.Image) -> tuple[Image.Image, bool]:
-    """
-    Conservative background crop:
-    - Estimate background from border pixels.
-    - Find foreground bbox by color distance.
-    - Apply only when crop looks safe; otherwise keep full image.
-    """
-    arr = np.asarray(img)
-    if arr.ndim != 3 or arr.shape[0] < 50 or arr.shape[1] < 50:
-        return img, False
-
-    h, w, _ = arr.shape
-    border = max(4, int(min(h, w) * 0.03))
-    top = arr[:border, :, :]
-    bottom = arr[h - border :, :, :]
-    left = arr[:, :border, :]
-    right = arr[:, w - border :, :]
-    border_pixels = np.concatenate(
-        [top.reshape(-1, 3), bottom.reshape(-1, 3), left.reshape(-1, 3), right.reshape(-1, 3)],
-        axis=0,
-    )
-    bg = np.median(border_pixels, axis=0)
-
-    # Manhattan distance from estimated background color.
-    dist = np.abs(arr.astype(np.int16) - bg.astype(np.int16)).sum(axis=2)
-    mask = dist > 25
-    ys, xs = np.where(mask)
-    if ys.size == 0 or xs.size == 0:
-        return img, False
-
-    x1, x2 = int(xs.min()), int(xs.max())
-    y1, y2 = int(ys.min()), int(ys.max())
-
-    # Add small padding to avoid clipping edges/text near the border.
-    pad_x = max(8, int(w * 0.04))
-    pad_y = max(8, int(h * 0.04))
-    x1 = max(0, x1 - pad_x)
-    y1 = max(0, y1 - pad_y)
-    x2 = min(w - 1, x2 + pad_x)
-    y2 = min(h - 1, y2 + pad_y)
-
-    crop_w = x2 - x1 + 1
-    crop_h = y2 - y1 + 1
-    area_ratio = (crop_w * crop_h) / float(w * h)
-
-    # Safety gates: only keep moderate crops; skip extreme/low-confidence crops.
-    if area_ratio < 0.45 or area_ratio > 0.98:
-        return img, False
-    if crop_w < int(w * 0.6) or crop_h < int(h * 0.6):
-        return img, False
-
-    return img.crop((x1, y1, x2 + 1, y2 + 1)), True
-
-
 def _normalize_upload_for_ocr(path: Path, upload_digest: str) -> tuple[Path, bool]:
     """
     Normalize uploaded images to JPEG for faster, consistent OCR payloads.
@@ -436,16 +415,7 @@ def _normalize_upload_for_ocr(path: Path, upload_digest: str) -> tuple[Path, boo
       Falls back to original PDF if rendering is unavailable.
     - If normalization fails (e.g., unsupported HEIC decoder), fall back to original.
     """
-    cache_path = _get_preprocess_cache_path(upload_digest)
-    # cache disabled for testing — always reprocess
-    if False and cache_path.exists():
-        logger.info(
-            "OCR preprocess cache hit: path=%s size_bytes=%s",
-            cache_path.name,
-            cache_path.stat().st_size if cache_path.exists() else None,
-        )
-        return cache_path, True
-
+    cache_path = _get_preprocess_cache_path(upload_digest) if PREPROCESS_CACHE_ENABLED else None
     is_pdf = path.suffix.lower() == ".pdf"
     t0 = time.perf_counter()
     try:
@@ -463,13 +433,6 @@ def _normalize_upload_for_ocr(path: Path, upload_digest: str) -> tuple[Path, boo
                 img = img.convert("RGB")
             t_orient = time.perf_counter()
             original_size = img.size
-            
-            # Skip manual cropping, deskewing, blurring, and contrast filters.
-            # Mistral's underlying vision model is robust to natural photos, 
-            # and contrast filters tend to wipe out light pencil marks.
-            cropped, deskewed, deskew_angle = False, False, 0.0
-            
-            t_crop1, t_deskew = t_orient, t_orient
 
             # Resize large images before OCR (keep aspect ratio, do not upscale).
             width, height = img.size
@@ -479,42 +442,41 @@ def _normalize_upload_for_ocr(path: Path, upload_digest: str) -> tuple[Path, boo
                 new_size = (max(1, int(width * scale)), max(1, int(height * scale)))
                 img = img.resize(new_size, Image.Resampling.LANCZOS)
             t_resize = time.perf_counter()
-            
-            t_blur, t_contrast = t_resize, t_resize
+
             # Explicitly strip metadata by creating a fresh pixel-only image.
             # This prevents EXIF/ICC/comment payloads from carrying into OCR input.
             stripped = Image.new("RGB", img.size)
             stripped.paste(img)
 
-            # Save into cache atomically.
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg", dir=PREPROCESS_CACHE_DIR) as out:
-                temp_cache_path = Path(out.name)
-            _save_jpeg(temp_cache_path, stripped)
-            os.replace(temp_cache_path, cache_path)
+            if PREPROCESS_CACHE_ENABLED and cache_path is not None:
+                # Save into cache atomically.
+                with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg", dir=PREPROCESS_CACHE_DIR) as out:
+                    temp_cache_path = Path(out.name)
+                _save_jpeg(temp_cache_path, stripped)
+                os.replace(temp_cache_path, cache_path)
+                output_path = cache_path
+            else:
+                with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as out:
+                    output_path = Path(out.name)
+                _save_jpeg(output_path, stripped)
             t_save = time.perf_counter()
             logger.info(
-                "OCR preprocess image: source=%s original=%sx%s cropped=%s deskewed=%s angle=%.2f resized_to=%sx%s in_bytes=%s out_bytes=%s timing_ms(open=%.1f orient=%.1f crop=%.1f deskew=%.1f resize=%.1f blur=%.1f contrast=%.1f save=%.1f total=%.1f)",
+                "OCR preprocess image: source=%s cache_enabled=%s original=%sx%s resized_to=%sx%s in_bytes=%s out_bytes=%s timing_ms(open=%.1f orient=%.1f resize=%.1f save=%.1f total=%.1f)",
                 "pdf" if is_pdf else "image",
+                PREPROCESS_CACHE_ENABLED,
                 original_size[0],
                 original_size[1],
-                cropped,
-                deskewed,
-                deskew_angle,
                 stripped.size[0],
                 stripped.size[1],
                 path.stat().st_size if path.exists() else None,
-                cache_path.stat().st_size if cache_path.exists() else None,
+                output_path.stat().st_size if output_path.exists() else None,
                 (t_open - t0) * 1000.0,
                 (t_orient - t_open) * 1000.0,
-                (t_crop1 - t_orient) * 1000.0,
-                (t_deskew - t_crop1) * 1000.0,
-                (t_resize - t_deskew) * 1000.0,
-                (t_blur - t_resize) * 1000.0,
-                (t_contrast - t_blur) * 1000.0,
-                (t_save - t_contrast) * 1000.0,
+                (t_resize - t_orient) * 1000.0,
+                (t_save - t_resize) * 1000.0,
                 (t_save - t0) * 1000.0,
             )
-            return cache_path, False
+            return output_path, False
     except Exception as e:
         logger.warning(
             "Image normalization failed; using original upload. file=%s source=%s err=%s",
@@ -525,76 +487,36 @@ def _normalize_upload_for_ocr(path: Path, upload_digest: str) -> tuple[Path, boo
         return path, False
 
 
-def _build_bw_fallback_variant(path: Path) -> Optional[Path]:
-    """
-    Build a high-contrast B/W variant for low-confidence retry.
-
-    Returns None if variant generation fails.
-    """
-    if path.suffix.lower() == ".pdf":
-        return None
-
-    try:
-        with Image.open(path) as img:
-            gray = img.convert("L")
-            gray = ImageOps.autocontrast(gray, cutoff=1)
-            arr = np.asarray(gray, dtype=np.uint8)
-            # Simple dynamic threshold around mean intensity.
-            thr = int(np.clip(arr.mean(), 100, 180))
-            bw = gray.point(lambda p: 255 if p >= thr else 0, mode="1").convert("RGB")
-
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as out:
-                out_path = Path(out.name)
-            bw.save(
-                out_path,
-                format="JPEG",
-                quality=OCR_JPEG_QUALITY,
-                optimize=True,
-                progressive=True,
-                exif=b"",
-                icc_profile=None,
-            )
-            return out_path
-    except Exception as e:
-        logger.warning("B/W fallback generation failed; skipping. file=%s err=%s", path.name, e)
-        return None
-
-
 @router.post("/ocr")
 async def prefetch_ocr(
     file: UploadFile = File(...),
-    current_user: User = Depends(get_current_user),
+    current_user: Optional[User] = Depends(get_optional_current_user),
 ):
     """Run OCR on an uploaded image and return the raw markdown text.
 
     Called immediately on file selection so the slow OCR step is already
     complete by the time the user clicks Extract.
     """
-    suffix = Path(file.filename or "upload.jpg").suffix.lower()
-    allowed = {".jpg", ".jpeg", ".png", ".webp", ".heic", ".pdf"}
-    if suffix not in allowed:
-        raise HTTPException(400, f"Unsupported file type: {suffix}")
+    suffix = _extract_upload_suffix(file)
+    original_tmp_path, upload_digest = _save_upload_to_temp(file, suffix)
 
-    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
-        hasher = hashlib.sha256()
-        while True:
-            chunk = file.file.read(1024 * 1024)
-            if not chunk:
-                break
-            tmp.write(chunk)
-            hasher.update(chunk)
-        original_tmp_path = Path(tmp.name)
-    upload_digest = hasher.hexdigest()
-
+    ocr_path = original_tmp_path
+    cache_hit = False
     try:
-        ocr_path, _ = _normalize_upload_for_ocr(original_tmp_path, upload_digest)
+        _validate_upload_payload(original_tmp_path, suffix)
+        ocr_path, cache_hit = _normalize_upload_for_ocr(original_tmp_path, upload_digest)
         markdown_text = await _run_ocr_pipeline(ocr_path)
-        logger.info("Prefetch OCR complete: user=%s chars=%d", current_user.id, len(markdown_text))
+        logger.info("Prefetch OCR complete: user=%s chars=%d", getattr(current_user, "id", "anonymous"), len(markdown_text))
         return {"ocr_text": markdown_text}
-    except Exception as e:
+    except HTTPException:
+        raise
+    except Exception:
         logger.exception("Prefetch OCR failed")
-        raise HTTPException(500, f"OCR failed: {type(e).__name__}: {str(e)}")
+        raise HTTPException(500, "OCR failed. Please try again.")
     finally:
+        if ocr_path != original_tmp_path and (not PREPROCESS_CACHE_ENABLED or not cache_hit):
+            with contextlib.suppress(OSError):
+                ocr_path.unlink()
         with contextlib.suppress(OSError):
             original_tmp_path.unlink()
 
@@ -606,7 +528,7 @@ async def extract_scan(
     course_id: Optional[str] = Form(None),
     ocr_text: Optional[str] = Form(None),
     db: DatabaseManager = Depends(get_db),
-    current_user: User = Depends(get_current_user),
+    current_user: Optional[User] = Depends(get_optional_current_user),
 ):
     """Upload a scorecard image, run OCR extraction, return results for review."""
     request_t0 = time.perf_counter()
@@ -614,39 +536,55 @@ async def extract_scan(
         "Scan extract request received: filename=%s course_id=%s user_id=%s",
         file.filename,
         course_id,
-        current_user.id,
+        getattr(current_user, "id", "anonymous"),
     )
-    # Validate file type
-    suffix = Path(file.filename or "upload.jpg").suffix.lower()
-    allowed = {".jpg", ".jpeg", ".png", ".webp", ".heic", ".pdf"}
-    if suffix not in allowed:
-        raise HTTPException(400, f"Unsupported file type: {suffix}. Allowed: {', '.join(allowed)}")
+    # Validate file type + metadata.
+    suffix = _extract_upload_suffix(file)
+    if user_context is not None:
+        try:
+            user_context = sanitize_user_text(
+                user_context,
+                field_name="user_context",
+                max_length=MAX_USER_CONTEXT_CHARS,
+                allow_newlines=True,
+                allow_empty=True,
+            )
+        except ValueError as exc:
+            raise HTTPException(422, str(exc))
+    if course_id is not None and course_id.strip():
+        try:
+            course_id = ensure_uuid_str(course_id, "course_id")
+        except ValueError as exc:
+            raise HTTPException(422, str(exc))
+    elif course_id is not None:
+        course_id = None
+    if ocr_text is not None:
+        try:
+            ocr_text = sanitize_ocr_text(ocr_text, max_length=MAX_OCR_TEXT_CHARS)
+        except ValueError as exc:
+            raise HTTPException(422, str(exc))
 
-    # Save upload to temp file
-    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as tmp:
-        hasher = hashlib.sha256()
-        while True:
-            chunk = file.file.read(1024 * 1024)
-            if not chunk:
-                break
-            tmp.write(chunk)
-            hasher.update(chunk)
-        original_tmp_path = Path(tmp.name)
-    upload_digest = hasher.hexdigest()
+    original_tmp_path, upload_digest = _save_upload_to_temp(file, suffix)
 
-    t_pre_start = time.perf_counter()
-    ocr_path, cache_hit = _normalize_upload_for_ocr(original_tmp_path, upload_digest)
-    t_pre_end = time.perf_counter()
-    logger.info(
-        "Scan preprocessing complete: original=%s ocr_input=%s normalized=%s cache_hit=%s pre_ms=%.1f",
-        original_tmp_path.name,
-        ocr_path.name,
-        ocr_path != original_tmp_path,
-        cache_hit,
-        (t_pre_end - t_pre_start) * 1000.0,
-    )
+    ocr_path = original_tmp_path
+    cache_hit = False
 
     try:
+        _validate_upload_payload(original_tmp_path, suffix)
+
+        t_pre_start = time.perf_counter()
+        ocr_path, cache_hit = _normalize_upload_for_ocr(original_tmp_path, upload_digest)
+        t_pre_end = time.perf_counter()
+        logger.info(
+            "Scan preprocessing complete: original=%s ocr_input=%s normalized=%s cache_enabled=%s cache_hit=%s pre_ms=%.1f",
+            original_tmp_path.name,
+            ocr_path.name,
+            ocr_path != original_tmp_path,
+            PREPROCESS_CACHE_ENABLED,
+            cache_hit,
+            (t_pre_end - t_pre_start) * 1000.0,
+        )
+
         # Scoring format is inferred from row parser + user_context hints.
         to_par_scoring: Optional[bool] = None
 
@@ -657,6 +595,8 @@ async def extract_scan(
             course_model = await db.courses.get_course(course_id)
             if course_model is None:
                 raise HTTPException(404, f"Course {course_id} not found")
+            if course_model.user_id and (current_user is None or str(course_model.user_id) != str(current_user.id)):
+                raise HTTPException(403, "Forbidden")
         t_course_lookup_end = time.perf_counter()
         logger.info(
             "Scan stage complete: stage=course_lookup has_course_id=%s found=%s lookup_ms=%.1f",
@@ -700,15 +640,6 @@ async def extract_scan(
             len(fields_needing_review),
         )
 
-        # Serialize the round and confidence for the frontend
-        t_serialize_start = time.perf_counter()
-        t_serialize_end = time.perf_counter()
-        logger.info(
-            "Scan stage complete: stage=serialize_response serialize_ms=%.1f fields_to_review=%d",
-            (t_serialize_end - t_serialize_start) * 1000.0,
-            len(fields_needing_review),
-        )
-
         return ScanResponse(
             round=round_data,
             confidence=confidence_data,
@@ -719,16 +650,18 @@ async def extract_scan(
         raise HTTPException(400, "Uploaded file could not be processed")
     except EnvironmentError as e:
         raise HTTPException(500, str(e))
-    except Exception as e:
+    except HTTPException:
+        raise
+    except Exception:
         logger.exception("Scan extraction error")
-        raise HTTPException(500, f"Extraction failed: {type(e).__name__}: {str(e) or repr(e)}")
+        raise HTTPException(500, "Extraction failed. Please try again.")
     finally:
         logger.info(
             "Scan extract request complete: total_ms=%.1f",
             (time.perf_counter() - request_t0) * 1000.0,
         )
-        # Keep cached normalized artifacts; remove ephemeral files only.
-        if not cache_hit and ocr_path != original_tmp_path:
+        # Cache is disabled by default; remove generated OCR preprocess artifact.
+        if ocr_path != original_tmp_path and (not PREPROCESS_CACHE_ENABLED or not cache_hit):
             ocr_path.unlink(missing_ok=True)
         original_tmp_path.unlink(missing_ok=True)
 
@@ -752,6 +685,8 @@ async def save_round(
         service = ScanService(db)
         saved = await service.save_reviewed_scan(req)
         return {"id": saved.id, "total_score": saved.calculate_total_score()}
-    except Exception as e:
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    except Exception:
         logger.exception("Save round error")
-        raise HTTPException(500, f"Save failed: {type(e).__name__}: {str(e)}")
+        raise HTTPException(500, "Save failed. Please try again.")

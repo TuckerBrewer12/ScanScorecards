@@ -23,11 +23,7 @@ export function AnimatedNumber({
   );
 
   useEffect(() => {
-    if (!inView || value == null) return;
-    if (typeof value === "string") {
-      setDisplay(value);
-      return;
-    }
+    if (!inView || value == null || typeof value === "string") return;
     const target = Number(value);
     const duration = 1100;
     const start = performance.now();
@@ -55,7 +51,7 @@ export function AnimatedNumber({
   return (
     <span ref={ref} className={className}>
       {prefix}
-      {display}
+      {typeof value === "string" ? value : display}
       {suffix}
     </span>
   );

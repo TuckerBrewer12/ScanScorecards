@@ -1,11 +1,13 @@
+import { useState } from "react";
 import { CheckCircle, AlertTriangle, Loader2, X } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { CourseLinkSearch, CourseLinkChip } from "@/components/CourseLinkSearch";
 import { formatToPar, calcCourseHandicap, calcNetScore } from "@/types/golf";
 import type { CourseSummary } from "@/types/golf";
-import type { ScanState, ScanResult, ExtractedHoleScore, FieldConfidence } from "@/types/scan";
+import type { ScanState, ScanResult, ExtractedHoleScore, FieldConfidence, ScoreMetadata } from "@/types/scan";
 import { initialScanState } from "@/types/scan";
+import { formatCourseName } from "@/lib/courseName";
 
 interface ScanReviewStepProps {
   result: ScanResult;
@@ -28,12 +30,14 @@ interface ScanReviewStepProps {
   onReviewCourseQuery: (q: string) => void;
   onSelectReviewCourse: (course: CourseSummary) => void;
 
+  scoreMetadata: ScoreMetadata[];
+  badScanNullCount: number;
+
   // Callbacks
   onUpdate: (patch: Partial<ScanState>) => void;
-  onScoreChange: (index: number, field: keyof ExtractedHoleScore, value: string) => void;
+  onScoreChange: (index: number, field: "strokes" | "putts" | "hole_number", value: string) => void;
   onGirChange: (index: number, value: boolean | null) => void;
   onSave: () => void;
-  onReset: () => void;
   setReviewCourseQuery: (q: string) => void;
   setReviewCourseResults: (r: CourseSummary[]) => void;
   setScanState: React.Dispatch<React.SetStateAction<ScanState>>;
@@ -69,6 +73,8 @@ export function ScanReviewStep({
   result,
   scanMode,
   editedScores,
+  scoreMetadata,
+  badScanNullCount,
   editedDate,
   editedTeeBox,
   error,
@@ -87,11 +93,11 @@ export function ScanReviewStep({
   onScoreChange,
   onGirChange,
   onSave,
-  onReset,
   setReviewCourseQuery,
   setReviewCourseResults,
   setScanState,
 }: ScanReviewStepProps) {
+  const [badScanDismissed, setBadScanDismissed] = useState(false);
   const rd = result.round;
   const coursePar = rd.course?.par ?? null;
   const totalStrokes = editedScores.reduce((s, h) => s + (h.strokes ?? 0), 0);
@@ -168,8 +174,8 @@ export function ScanReviewStep({
                 const yds = selectedTee.hole_yardages[String(holeNum)];
                 return <td key={si} className="px-1 py-1.5 text-center">{yds ?? "-"}</td>;
               })}
-              <td className="px-2 py-1.5 text-center bg-gray-50 font-bold">{nineYardage || "-"}</td>
-              {showGrandTotal && <td className="px-2 py-1.5 text-center bg-gray-100 font-bold">{totalYardage || "-"}</td>}
+              <td className="px-2 py-1.5 text-center bg-gray-50 font-bold">{nineYardage ?? "-"}</td>
+              {showGrandTotal && <td className="px-2 py-1.5 text-center bg-gray-100 font-bold">{totalYardage ?? "-"}</td>}
             </tr>
           )}
           {/* Par */}
@@ -180,7 +186,7 @@ export function ScanReviewStep({
               const par = rd.course?.holes.find((h) => h.number === holeNum)?.par;
               return <td key={si} className="px-1 py-1.5 text-center">{par ?? "-"}</td>;
             })}
-            <td className="px-2 py-1.5 text-center bg-gray-50 font-bold">{ninePar || "-"}</td>
+            <td className="px-2 py-1.5 text-center bg-gray-50 font-bold">{ninePar ?? "-"}</td>
             {showGrandTotal && <td className="px-2 py-1.5 text-center bg-gray-100 font-bold">{coursePar ?? "-"}</td>}
           </tr>
 
@@ -223,7 +229,7 @@ export function ScanReviewStep({
             </td>
             {showGrandTotal && (
               <td className="px-2 py-1.5 text-center bg-gray-100 font-bold text-base text-gray-900">
-                {totalStrokes || "-"}
+                {totalStrokes ?? "-"}
               </td>
             )}
           </tr>
@@ -256,41 +262,57 @@ export function ScanReviewStep({
               <td className="px-3 py-1.5 font-medium">Putts</td>
               {slice.map((hs, si) => {
                 const origIdx = startIdx + si;
+                const isEstimated = scoreMetadata[origIdx]?.putts_estimated === true;
                 return (
                   <td key={si} className="px-1 py-1 text-center">
                     <input
                       type="number" min="0" max="10"
                       value={hs.putts ?? ""}
                       onChange={(e) => onScoreChange(origIdx, "putts", e.target.value)}
-                      className="w-9 text-center px-0.5 py-0.5 border border-gray-200 rounded text-sm"
+                      title={isEstimated ? "Estimated (2-putt default)" : undefined}
+                      className={`w-9 text-center px-0.5 py-0.5 border rounded text-sm ${
+                        isEstimated
+                          ? "border-dashed border-amber-400 bg-amber-50/50 text-amber-700"
+                          : "border-gray-200"
+                      }`}
                     />
                   </td>
                 );
               })}
               <td className="px-2 py-1.5 text-center bg-gray-50">
-                {slice.reduce((s, hs) => s + (hs.putts ?? 0), 0) || "-"}
+                {slice.reduce((s, hs) => s + (hs.putts ?? 0), 0)}
               </td>
               {showGrandTotal && (
                 <td className="px-2 py-1.5 text-center bg-gray-100">
-                  {editedScores.reduce((s, hs) => s + (hs.putts ?? 0), 0) || "-"}
+                  {editedScores.reduce((s, hs) => s + (hs.putts ?? 0), 0)}
                 </td>
               )}
             </tr>
           )}
 
-          {/* GIR — manual entry only */}
+          {/* GIR — manual entry, or when any GIR data present (including auto-calculated) */}
           {(isManual || slice.some((hs) => hs.green_in_regulation !== null)) && (
             <tr className="text-xs">
               <td className="px-3 py-1.5 font-bold text-green-700">GIR</td>
               {slice.map((hs, si) => {
                 const origIdx = startIdx + si;
                 const gir = hs.green_in_regulation;
+                const isCalcGir = scoreMetadata[origIdx]?.gir_calculated === true;
                 return (
                   <td key={si} className="px-1 py-1 text-center">
                     <button
                       onClick={() => onGirChange(origIdx, gir === true ? false : gir === false ? null : true)}
                       className="w-7 h-7 flex items-center justify-center mx-auto rounded-full hover:bg-gray-100 focus:outline-none"
-                      title={gir === true ? "GIR hit — click to mark missed" : gir === false ? "GIR missed — click to clear" : "GIR unknown — click to mark hit"}
+                      style={isCalcGir ? { outline: "1px dashed #9ca3af", outlineOffset: "1px" } : undefined}
+                      title={
+                        isCalcGir
+                          ? "Auto-calculated from strokes and putts — click to override"
+                          : gir === true
+                            ? "GIR hit — click to mark missed"
+                            : gir === false
+                              ? "GIR missed — click to clear"
+                              : "GIR unknown — click to mark hit"
+                      }
                     >
                       <span style={{ color: gir === true ? "#16a34a" : "#9ca3af" }}>
                         {gir === true ? "●" : gir === false ? "○" : "–"}
@@ -300,11 +322,11 @@ export function ScanReviewStep({
                 );
               })}
               <td className="px-2 py-1.5 text-center text-green-700 font-semibold bg-gray-50">
-                {slice.filter((hs) => hs.green_in_regulation === true).length || "-"}
+                {slice.filter((hs) => hs.green_in_regulation === true).length}
               </td>
               {showGrandTotal && (
                 <td className="px-2 py-1.5 text-center text-green-700 font-semibold bg-gray-100">
-                  {editedScores.filter((hs) => hs.green_in_regulation === true).length || "-"}
+                  {editedScores.filter((hs) => hs.green_in_regulation === true).length}
                 </td>
               )}
             </tr>
@@ -317,12 +339,12 @@ export function ScanReviewStep({
   return (
     <div>
       <PageHeader
-        title={reviewCourseName ?? rd.course?.name ?? "Review Extraction"}
+        title={formatCourseName(reviewCourseName ?? rd.course?.name ?? "Review Extraction")}
         subtitle={rd.course?.location ?? "Verify and edit the extracted data"}
       />
 
       {error && (
-        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+        <div role="alert" className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
           {error}
         </div>
       )}
@@ -341,6 +363,32 @@ export function ScanReviewStep({
           )}
         </div>
       </div>
+
+      {/* Bad scan warning */}
+      <AnimatePresence>
+        {badScanNullCount > 5 && !badScanDismissed && (
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+            className="mb-4 p-3 bg-amber-50 border border-amber-300 rounded-lg text-sm text-amber-800 flex items-start gap-2"
+          >
+            <AlertTriangle size={16} className="mt-0.5 shrink-0 text-amber-500" />
+            <div className="flex-1">
+              <span className="font-semibold">Scan may be incomplete</span>
+              {" — "}{badScanNullCount} holes appear to be missing scores. Check the original image and fill in any gaps.
+            </div>
+            <button
+              onClick={() => setBadScanDismissed(true)}
+              className="ml-2 text-amber-400 hover:text-amber-700 focus:outline-none shrink-0"
+              aria-label="Dismiss warning"
+            >
+              <X size={14} />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Stat cards */}
       {(() => {
@@ -370,7 +418,7 @@ export function ScanReviewStep({
             </div>
             <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
               <div className="text-xs text-gray-500 mb-1">Total</div>
-              <div className="text-3xl font-bold text-gray-900">{totalStrokes || "-"}</div>
+              <div className="text-3xl font-bold text-gray-900">{totalStrokes ?? "-"}</div>
             </div>
             <div className="bg-white rounded-xl border border-gray-200 p-4 text-center">
               <div className="text-xs text-gray-500 mb-1">To Par</div>
@@ -402,7 +450,7 @@ export function ScanReviewStep({
           {/* Course info */}
           <div className="bg-white rounded-xl border border-gray-200 p-4 shadow-sm">
             <div className="text-lg font-bold text-gray-900">
-              {reviewCourseId ? reviewCourseName : reviewCourseName ?? "Unknown Course"}
+              {formatCourseName(reviewCourseId ? reviewCourseName : reviewCourseName ?? "Unknown Course")}
             </div>
             {rd.course?.location && <div className="text-sm text-gray-500">{rd.course.location}</div>}
             <div className="flex gap-4 mt-2 text-sm text-gray-600">
@@ -413,7 +461,7 @@ export function ScanReviewStep({
             <div className="mt-3">
               {reviewCourseId || reviewExternalCourseId ? (
                 <CourseLinkChip
-                  name={reviewCourseName ?? ""}
+                  name={formatCourseName(reviewCourseName ?? "")}
                   onClear={() => {
                     onUpdate({ reviewCourseId: null, reviewExternalCourseId: null });
                     setReviewCourseQuery(reviewCourseName ?? "");
@@ -480,6 +528,7 @@ export function ScanReviewStep({
             <label className="text-xs text-gray-500">Date</label>
             <input type="date" value={editedDate}
               onChange={(e) => onUpdate({ editedDate: e.target.value })}
+              max={new Date().toISOString().substring(0, 10)}
               className="w-full mt-1 px-3 py-1.5 border border-gray-200 rounded-lg text-sm" />
           </div>
 

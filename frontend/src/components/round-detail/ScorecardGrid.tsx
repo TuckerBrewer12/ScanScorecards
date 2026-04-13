@@ -4,6 +4,7 @@ import { ScoreCell } from "./ScoreCell";
 import { useMemo, type CSSProperties } from "react";
 import { getStoredColorBlindMode } from "@/lib/accessibility";
 import { getColorBlindPalette, type ChartPalette } from "@/lib/chartPalettes";
+import { formatCourseName } from "@/lib/courseName";
 
 type EditedScores = Record<number, { strokes: number | null; putts: number | null; gir?: boolean | null }>;
 
@@ -248,7 +249,7 @@ function NineTable({
               ? {
                   backgroundColor: paletteBackground,
                   color: diff === 0 ? "#111827" : "#ffffff",
-                  boxShadow: `0 0 0 ${diff <= -1 ? 2 : 1}px ${paletteBackground}66`,
+                  boxShadow: `0 0 0 ${(diff ?? 0) <= -1 ? 2 : 1}px ${paletteBackground}66`,
                 }
               : undefined;
             return (
@@ -426,7 +427,7 @@ export function ScorecardGrid({
         <div className="px-4 py-3 border-b border-gray-200 flex items-center justify-between header-gradient rounded-t-xl">
           <div>
             <div className="font-bold text-white text-base">
-              {round.course?.name ?? round.course_name_played ?? "Unknown Course"}
+              {formatCourseName(round.course?.name ?? round.course_name_played)}
             </div>
             {round.course?.location && (
               <div className="text-xs text-white/50">{round.course.location}</div>

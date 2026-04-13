@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useMemo } from "react";
+import { useState, useCallback, useRef, useMemo, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { ArrowLeft, Pencil, Trash2, Link2, CalendarDays } from "lucide-react";
@@ -9,9 +9,9 @@ import { ScrollSection } from "@/components/analytics/ScrollSection";
 import { api } from "@/lib/api";
 import { getStoredColorBlindMode } from "@/lib/accessibility";
 import { getColorBlindPalette, type ChartPalette } from "@/lib/chartPalettes";
-import type { Round } from "@/types/golf";
+import { formatCourseName } from "@/lib/courseName";
 import { formatToPar, calcCourseHandicap, calcNetScore } from "@/types/golf";
-import type { RoundComparison, ComparisonRow } from "@/types/analytics";
+import type { ComparisonRow } from "@/types/analytics";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { ScorecardGrid } from "@/components/round-detail/ScorecardGrid";
 import { RoundStory } from "@/components/round-detail/RoundStory";
@@ -117,6 +117,7 @@ export function RoundDetailPage({ userId }: { userId: string }) {
   const [linkSearching, setLinkSearching] = useState(false);
   const [linking, setLinking] = useState(false);
   const linkTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (linkTimer.current) clearTimeout(linkTimer.current); }, []);
   const colorBlindMode = useMemo(() => getStoredColorBlindMode(), []);
   const colorBlindPalette = useMemo(() => getColorBlindPalette(colorBlindMode), [colorBlindMode]);
 
@@ -156,9 +157,10 @@ export function RoundDetailPage({ userId }: { userId: string }) {
       .map((t) => t.color)
       .filter((c): c is string => !!c) ?? [];
 
-    if (round.course?.id) {
+    const courseId = round.course?.id;
+    if (courseId) {
       try {
-        const full = await api.getCourse(String(round.course.id));
+        const full = await api.getCourse(courseId);
         setAvailableTees(full.tees.map((t) => t.color).filter((c): c is string => !!c));
       } catch {
         setAvailableTees(fallbackColors);
@@ -205,7 +207,7 @@ export function RoundDetailPage({ userId }: { userId: string }) {
     } finally {
       setSaving(false);
     }
-  }, [round, roundId, editedScores, editedTeeBox]);
+  }, [round, roundId, editedScores, editedTeeBox, queryClient, userId]);
 
   const handleDelete = useCallback(async () => {
     if (!roundId || deletingRef.current) return;
@@ -269,7 +271,7 @@ export function RoundDetailPage({ userId }: { userId: string }) {
     } finally {
       setLinking(false);
     }
-  }, [roundId]);
+  }, [roundId, queryClient]);
 
   if (!round) {
     return (
@@ -306,7 +308,7 @@ export function RoundDetailPage({ userId }: { userId: string }) {
       </Link>
 
       <PageHeader
-        title={round.course?.name ?? round.course_name_played ?? "Unknown Course"}
+        title={formatCourseName(round.course?.name ?? round.course_name_played)}
         subtitle={
           round.date
             ? new Date(round.date).toLocaleDateString("en-US", {
@@ -325,7 +327,7 @@ export function RoundDetailPage({ userId }: { userId: string }) {
           {/* Left: identity */}
           <div className="min-w-0">
             <h1 className="text-4xl font-extrabold tracking-tight text-gray-900 leading-tight truncate">
-              {round.course?.name ?? round.course_name_played ?? "Unknown Course"}
+              {formatCourseName(round.course?.name ?? round.course_name_played)}
             </h1>
             <div className="flex items-center gap-3 mt-1.5 flex-wrap">
               {round.date && (

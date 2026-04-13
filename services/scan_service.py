@@ -1,21 +1,21 @@
 """Scan save service — orchestrates course resolution, par lookup, and round creation."""
 
 import logging
-import re
 from datetime import datetime
 from typing import List, Optional, Tuple
 
 from api.request_models import CourseHoleInput, SaveRoundRequest, TeeInput
 from database.db_manager import DatabaseManager
 from models import Course, Hole, HoleScore, Round, Tee, UserTee
-from services.golfcourse_api_service import GolfCourseAPIService
+from services.golfcourse_api_service import GolfCourseAPIService, _normalize_course_name
 
 logger = logging.getLogger(__name__)
 
 
 class ScanService:
-    def __init__(self, db: DatabaseManager) -> None:
+    def __init__(self, db: DatabaseManager, course_api: Optional[GolfCourseAPIService] = None) -> None:
         self._db = db
+        self._course_api = course_api or GolfCourseAPIService()
 
     async def save_reviewed_scan(self, req: SaveRoundRequest) -> Round:
         """Top-level orchestrator: resolve course, build scores, create round."""
@@ -45,17 +45,27 @@ class ScanService:
         self, req: SaveRoundRequest
     ) -> Tuple[Optional[Course], Optional[str]]:
         """5-tier course resolution. Returns (course, course_id_str)."""
-        await self._maybe_lookup_external_id_from_name(req)
+        ext_id, location = await self._maybe_lookup_external_id_from_name(req)
+        if ext_id:
+            req.external_course_id = ext_id
+        if location:
+            req.course_location = location
         tees = self._build_tees(req)
         scan_holes = req.course_holes or []
 
         # Tier 0: explicit course_id (user selected from DB — skip fuzzy match)
         if req.course_id:
-            course = await self._db.courses.get_course(req.course_id)
+            try:
+                course = await self._db.courses.get_course(req.course_id)
+            except Exception as exc:  # noqa: BLE001
+                raise ValueError("Selected course_id is invalid.") from exc
             if course:
+                if course.user_id and str(course.user_id) != str(req.user_id):
+                    raise ValueError("Selected course is not accessible for this user.")
                 course = await self._maybe_backfill_external_id(course, req)
                 await self._fill_gaps(str(course.id), scan_holes, tees)
                 return course, str(course.id)
+            raise ValueError(f"Selected course not found: {req.course_id}")
 
         # Tier 0.5: confirmed external match from UI
         # Create local row keyed by external_course_id if missing.
@@ -99,17 +109,7 @@ class ScanService:
             await self._fill_gaps(str(course.id), scan_holes, tees)
             return course, str(course.id)
 
-        # Tier 3: another user's course → fill gaps + promote to master
-        course = await self._db.courses.find_any_user_course_by_name(
-            req.course_name, req.course_location
-        )
-        if course:
-            course = await self._maybe_backfill_external_id(course, req)
-            await self._fill_gaps(str(course.id), scan_holes, tees)
-            course = await self._db.courses.promote_to_master(str(course.id))
-            return course, str(course.id)
-
-        # Tier 4: nobody has it → create user-owned course from scan data
+        # Tier 3: nobody has it → create user-owned course from scan data
         holes = [
             Hole(
                 number=h.hole_number,
@@ -141,55 +141,61 @@ class ScanService:
         course = await self._db.courses.create_course(new_course, user_id=req.user_id)
         return course, str(course.id) if course else None
 
-    async def _maybe_lookup_external_id_from_name(self, req: SaveRoundRequest) -> None:
-        """Best-effort provider lookup when UI did not send external_course_id."""
+    async def _maybe_lookup_external_id_from_name(
+        self, req: SaveRoundRequest
+    ) -> Tuple[Optional[str], Optional[str]]:
+        """Best-effort provider lookup when UI did not send external_course_id.
+
+        Returns (external_course_id, location) to apply on the request; both None if not found.
+        """
         if req.external_course_id or not req.course_name:
-            return
+            return None, None
         try:
-            rows = await GolfCourseAPIService().search_external_courses(req.course_name, limit=8)
+            rows = await self._course_api.search_external_courses(req.course_name, limit=8)
         except Exception as exc:  # noqa: BLE001
             logger.info("External lookup skipped for '%s': %s", req.course_name, exc)
-            return
+            return None, None
         if not rows:
-            return
+            return None, None
 
-        target = self._normalize_name(req.course_name)
+        target = _normalize_course_name(req.course_name)
 
-        # Prefer exact-ish normalized name match; fallback to first row with an ID.
+        # Prefer exact-ish normalized name match; avoid weak fallback binds.
         chosen = None
+        best_overlap = 0.0
+        target_tokens = set(target.split())
         for row in rows:
             external_id = row.get("external_course_id")
             if not external_id:
                 continue
             name = row.get("name") or ""
-            norm = self._normalize_name(name)
+            norm = _normalize_course_name(name)
             if norm == target or target in norm or norm in target:
                 chosen = row
                 break
-            if chosen is None:
+            row_tokens = set(norm.split())
+            if not target_tokens or not row_tokens:
+                continue
+            overlap = len(target_tokens & row_tokens) / max(len(target_tokens), len(row_tokens))
+            if overlap >= 0.8 and overlap > best_overlap:
                 chosen = row
+                best_overlap = overlap
 
         if chosen and chosen.get("external_course_id"):
-            req.external_course_id = chosen["external_course_id"]
+            ext_id = chosen["external_course_id"]
+            location = None
             if not req.course_location:
                 city = chosen.get("city")
                 state = chosen.get("state")
-                req.course_location = ", ".join([p for p in [city, state] if p]) or None
+                location = ", ".join([p for p in [city, state] if p]) or None
             logger.info(
                 "External lookup resolved for '%s': external_course_id=%s",
                 req.course_name,
-                req.external_course_id,
+                ext_id,
             )
+            return ext_id, location
 
-    @staticmethod
-    def _normalize_name(value: str) -> str:
-        base = re.sub(r"[^a-z0-9]+", " ", (value or "").lower()).strip()
-        base = re.sub(
-            r"\b(golf|course|club|country|links|gc|cc)\b",
-            " ",
-            base,
-        )
-        return " ".join(base.split())
+        return None, None
 
     async def _maybe_backfill_external_id(
         self,
@@ -201,6 +207,7 @@ class ScanService:
             req.external_course_id
             and course.id
             and not course.external_course_id
+            and (not course.user_id or str(course.user_id) == str(req.user_id))
         ):
             updated = await self._db.courses.update_course(
                 str(course.id),
@@ -272,9 +279,9 @@ class ScanService:
             hs_dict = hs.model_dump()
             hole_num = hs_dict.get("hole_number")
             if hole_num is not None:
-                if not hs_dict.get("par_played"):
+                if hs_dict.get("par_played") is None:
                     hs_dict["par_played"] = par_by_hole.get(hole_num)
-                if not hs_dict.get("handicap_played"):
+                if hs_dict.get("handicap_played") is None:
                     hs_dict["handicap_played"] = handicap_by_hole.get(hole_num)
             # Guard against putts > strokes (can occur when score row is to-par
             # and the to-par→absolute conversion didn't happen at extract time).

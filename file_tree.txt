@@ -1,0 +1,177 @@
+ScanScorecards/
+├── analytics/
+│   ├── __init__.py
+│   ├── demo.py
+│   ├── goals.py
+│   ├── handicap.py
+│   ├── stats.py
+│   ├── visualizations.py
+│   └── visualize_player_from_db.py
+├── api/
+│   ├── __init__.py
+│   ├── auth_schemas.py
+│   ├── auth_utils.py
+│   ├── dependencies.py
+│   ├── main.py
+│   ├── request_models.py
+│   ├── schemas.py
+│   └── routers/
+│       ├── __init__.py
+│       ├── ai_insights.py
+│       ├── auth.py
+│       ├── courses.py
+│       ├── rounds.py
+│       ├── scan.py
+│       ├── stats.py
+│       └── users.py
+├── database/
+│   ├── __init__.py
+│   ├── connection.py
+│   ├── converters.py
+│   ├── db_manager.py
+│   ├── exceptions.py
+│   ├── sample_data.sql
+│   ├── schema.sql
+│   ├── migrations/
+│   │   ├── 001_add_course_user_id.sql
+│   │   ├── 002_par_played_nullable_hole_id.sql
+│   │   ├── 003_add_password_hash.sql
+│   │   ├── 003_add_scoring_goal.sql
+│   │   ├── 004_add_external_course_id.sql
+│   │   ├── 005_add_friendships.sql
+│   │   └── 006_add_friend_code.sql
+│   └── repositories/
+│       ├── __init__.py
+│       ├── course_repo.py
+│       ├── friendship_repo.py
+│       ├── round_repo.py
+│       ├── user_repo.py
+│       └── user_tee_repo.py
+├── models/
+│   ├── __init__.py
+│   ├── base.py
+│   ├── course.py
+│   ├── hole.py
+│   ├── hole_score.py
+│   ├── round.py
+│   ├── tee.py
+│   ├── user.py
+│   └── user_tee.py
+├── services/
+│   ├── __init__.py
+│   ├── _archived_html_stitching.py
+│   ├── ai_service.py
+│   ├── gemini_table_merger.py
+│   ├── golfcourse_api_service.py
+│   ├── mistral_ocr_service.py
+│   ├── mistral_scorecard_parser.py
+│   ├── pixtral_scorecard_service.py
+│   └── scan_service.py
+├── tests/
+│   ├── test_analytics.py
+│   ├── test_database.py
+│   ├── test_mistral_scorecard_parser.py
+│   ├── test_models.py
+│   └── test_ocr_pipeline.py
+├── frontend/src/
+│   ├── App.tsx
+│   ├── main.tsx
+│   ├── index.css
+│   ├── components/
+│   │   ├── CourseLinkSearch.tsx
+│   │   ├── analytics/
+│   │   │   ├── AnalyticsFilterBar.tsx
+│   │   │   ├── AnimatedNumber.tsx
+│   │   │   ├── BestRoundCard.tsx
+│   │   │   ├── MetricCard.tsx
+│   │   │   ├── NarrativeInsight.tsx
+│   │   │   ├── ParMatrixGrid.tsx
+│   │   │   ├── RoundFlowTimeline.tsx
+│   │   │   ├── SVGHandicapTrend.tsx
+│   │   │   ├── SVGTimeSeriesArea.tsx
+│   │   │   ├── ScrollSection.tsx
+│   │   │   ├── StickyScoreBar.tsx
+│   │   │   ├── UserRadarChart.tsx
+│   │   │   ├── YardageAnalysisCard.tsx
+│   │   │   └── YardageTargetScatter.tsx
+│   │   ├── course-detail/
+│   │   │   └── CourseDetailPanel.tsx
+│   │   ├── dashboard/
+│   │   │   ├── MilestoneFeed.tsx
+│   │   │   ├── RecentRoundsTable.tsx
+│   │   │   ├── SVGScoreHandicapTrend.tsx
+│   │   │   ├── ScoreHeroBanner.tsx
+│   │   │   └── StatCard.tsx
+│   │   ├── goals/
+│   │   │   └── GoalSaverCard.tsx
+│   │   ├── layout/
+│   │   │   ├── AppLayout.tsx
+│   │   │   ├── BottomNav.tsx
+│   │   │   ├── PageHeader.tsx
+│   │   │   └── Sidebar.tsx
+│   │   ├── round-detail/
+│   │   │   ├── RoundStory.tsx
+│   │   │   ├── ScoreCell.tsx
+│   │   │   └── ScorecardGrid.tsx
+│   │   ├── scan/
+│   │   │   ├── ScanManualSetup.tsx
+│   │   │   ├── ScanProcessing.tsx
+│   │   │   ├── ScanReviewStep.tsx
+│   │   │   ├── ScanUploadStep.tsx
+│   │   │   └── ScorecardLayoutPicker.tsx
+│   │   ├── suggestions/
+│   │   │   └── ComparisonTargetToggle.tsx
+│   │   ├── the-lab/
+│   │   │   ├── AttemptsTimeline.tsx
+│   │   │   ├── ProgressRing.tsx
+│   │   │   └── constants.ts
+│   │   └── ui/
+│   │       └── BentoCard.tsx
+│   ├── context/
+│   │   ├── AuthContext.tsx
+│   │   └── ScanContext.tsx
+│   ├── hooks/
+│   │   └── useScan.ts
+│   ├── lib/
+│   │   ├── accessibility.ts
+│   │   ├── api.ts
+│   │   ├── auth.ts
+│   │   ├── chartPalettes.ts
+│   │   ├── theme.ts
+│   │   └── utils.ts
+│   ├── pages/
+│   │   ├── AnalyticsPage.tsx
+│   │   ├── CareerPage.tsx
+│   │   ├── CoursesPage.tsx
+│   │   ├── DashboardPage.tsx
+│   │   ├── FriendsInboxPage.tsx
+│   │   ├── LoginPage.tsx
+│   │   ├── RegisterPage.tsx
+│   │   ├── RoundDetailPage.tsx
+│   │   ├── RoundsPage.tsx
+│   │   ├── ScanPage.tsx
+│   │   ├── SettingsPage.tsx
+│   │   ├── SocialPage.tsx
+│   │   ├── TheLabPage.tsx
+│   │   └── public/
+│   │       ├── LandingPage.tsx
+│   │       ├── PublicNav.tsx
+│   │       └── sections/
+│   │           ├── ComparisonSection.tsx
+│   │           ├── FeaturesSection.tsx
+│   │           ├── FinalCtaSection.tsx
+│   │           ├── HeroSection.tsx
+│   │           ├── HowItWorksSection.tsx
+│   │           ├── PricingSection.tsx
+│   │           ├── ProblemSection.tsx
+│   │           └── ScreenshotsSection.tsx
+│   └── types/
+│       ├── analytics.ts
+│       ├── golf.ts
+│       ├── scan.ts
+│       └── suggestions.ts
+├── CLAUDE.md
+├── README.md
+├── conftest.py
+├── requirements.txt
+└── update_mistral.py

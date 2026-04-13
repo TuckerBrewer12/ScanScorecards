@@ -26,24 +26,17 @@ export function ScorecardLayoutPicker({ onContextChange }: ScorecardLayoutPicker
   // "row" drag = reordering data rows; "name" drag = repositioning Name label
   const dragging = useRef<{ type: "row"; src: number } | { type: "name" } | null>(null);
 
-  // Sync rowOrder with checkboxes; clamp nameRowIndex
-  useEffect(() => {
-    setRowOrder((prev) => {
-      let next = prev.filter(
-        (r) =>
-          r === "score" ||
-          (r === "putts" && hasPutts) ||
-          (r === "shots" && hasShotsToGreen)
-      );
-      if (hasPutts && !next.includes("putts")) next = [...next, "putts"];
-      if (hasShotsToGreen && !next.includes("shots")) next = [...next, "shots"];
-      return next;
-    });
-  }, [hasPutts, hasShotsToGreen]);
+  const syncRowOrder = (prev: DataRow[], nextHasPutts: boolean, nextHasShots: boolean): DataRow[] => {
+    let next = prev.filter(
+      (r) => r === "score" || (r === "putts" && nextHasPutts) || (r === "shots" && nextHasShots)
+    );
+    if (!next.includes("score")) next = ["score", ...next];
+    if (nextHasPutts && !next.includes("putts")) next = [...next, "putts"];
+    if (nextHasShots && !next.includes("shots")) next = [...next, "shots"];
+    return next;
+  };
 
-  useEffect(() => {
-    setNameRowIndex((prev) => Math.min(prev, rowOrder.length - 1));
-  }, [rowOrder]);
+  const safeNameRowIndex = Math.min(nameRowIndex, rowOrder.length - 1);
 
   // Build user_context string
   useEffect(() => {
@@ -54,7 +47,7 @@ export function ScorecardLayoutPicker({ onContextChange }: ScorecardLayoutPicker
 
     // Always send row order + name position when the picker is active
     if (hasPutts || hasShotsToGreen) {
-      const nameRowType = rowOrder[nameRowIndex] ?? "score";
+      const nameRowType = rowOrder[safeNameRowIndex] ?? "score";
       const nameLabel = nameRowType === "shots" ? "shots to green" : nameRowType;
       parts.push(`name on ${nameLabel} row`);
 
@@ -63,7 +56,7 @@ export function ScorecardLayoutPicker({ onContextChange }: ScorecardLayoutPicker
     }
 
     onContextChange(parts.join(". "));
-  }, [playerName, hasPutts, hasShotsToGreen, isTopar, rowOrder, nameRowIndex, onContextChange]);
+  }, [playerName, hasPutts, hasShotsToGreen, isTopar, rowOrder, safeNameRowIndex, onContextChange]);
 
   // dragover handler shared by each row slot
   const handleRowDragOver = (e: React.DragEvent, i: number) => {
@@ -85,6 +78,28 @@ export function ScorecardLayoutPicker({ onContextChange }: ScorecardLayoutPicker
   };
 
   const showPicker = hasPutts || hasShotsToGreen;
+  const togglePutts = () => {
+    setHasPutts((prev) => {
+      const nextHasPutts = !prev;
+      setRowOrder((orderPrev) => {
+        const nextOrder = syncRowOrder(orderPrev, nextHasPutts, hasShotsToGreen);
+        setNameRowIndex((idxPrev) => Math.min(idxPrev, nextOrder.length - 1));
+        return nextOrder;
+      });
+      return nextHasPutts;
+    });
+  };
+  const toggleShotsToGreen = () => {
+    setHasShotsToGreen((prev) => {
+      const nextHasShots = !prev;
+      setRowOrder((orderPrev) => {
+        const nextOrder = syncRowOrder(orderPrev, hasPutts, nextHasShots);
+        setNameRowIndex((idxPrev) => Math.min(idxPrev, nextOrder.length - 1));
+        return nextOrder;
+      });
+      return nextHasShots;
+    });
+  };
 
   return (
     <div className="space-y-3">
@@ -138,8 +153,8 @@ export function ScorecardLayoutPicker({ onContextChange }: ScorecardLayoutPicker
         </p>
         <div className="flex flex-wrap gap-2">
           {([
-            { label: "Putts",          active: hasPutts,         toggle: () => setHasPutts((v) => !v) },
-            { label: "Shots to green", active: hasShotsToGreen,  toggle: () => setHasShotsToGreen((v) => !v) },
+            { label: "Putts",          active: hasPutts,         toggle: togglePutts },
+            { label: "Shots to green", active: hasShotsToGreen,  toggle: toggleShotsToGreen },
           ] as const).map(({ label, active, toggle }) => (
             <button
               key={label}
@@ -187,7 +202,7 @@ export function ScorecardLayoutPicker({ onContextChange }: ScorecardLayoutPicker
               <div className="flex flex-col gap-1.5">
                 {rowOrder.map((row, i) => {
                   const { label, color, bg, border } = ROW_CONFIG[row];
-                  const nameHere = i === nameRowIndex;
+                  const nameHere = i === safeNameRowIndex;
                   return (
                     <div
                       key={row}

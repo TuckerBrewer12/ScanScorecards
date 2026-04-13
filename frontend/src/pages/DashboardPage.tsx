@@ -11,14 +11,10 @@ import { MilestoneFeed } from "@/components/dashboard/MilestoneFeed";
 import { api } from "@/lib/api";
 import { getStoredColorBlindMode } from "@/lib/accessibility";
 import { getColorBlindPalette } from "@/lib/chartPalettes";
-import type { DashboardData, Milestone } from "@/types/golf";
-import type { AnalyticsData } from "@/types/analytics";
+import type { Milestone } from "@/types/golf";
 import { RecentRoundsTable } from "@/components/dashboard/RecentRoundsTable";
 import { ScrollSection } from "@/components/analytics/ScrollSection";
 import { BentoCard } from "@/components/ui/BentoCard";
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type Fmt = (v: any, name: any, props: any) => any;
 
 const tooltipStyle = {
   fontSize: 12,
@@ -325,7 +321,16 @@ export function DashboardPage({ userId }: DashboardPageProps) {
                   <XAxis dataKey="label" tick={{ fontSize: 9, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
                   <YAxis tick={{ fontSize: 10, fill: "#9ca3af" }} tickLine={false} axisLine={false} unit="%" />
                   <Tooltip contentStyle={tooltipStyle}
-                    formatter={((v: number, _: unknown, props: any) => [`${v.toFixed(1)}%`, props.payload.label]) as Fmt}
+                    formatter={(
+                      value: number | string | ReadonlyArray<number | string> | undefined,
+                      _name: string | number | undefined,
+                      item: { payload?: { label?: string } },
+                    ) => {
+                      const base = Array.isArray(value) ? value[0] : value;
+                      const n = typeof base === "number" ? base : Number(base);
+                      const display = Number.isFinite(n) ? `${n.toFixed(1)}%` : `${String(base ?? "")}%`;
+                      return [display, item.payload?.label ?? ""];
+                    }}
                   />
                   <Bar dataKey="value" radius={[4, 4, 0, 0]} maxBarSize={28}>
                     {recentDistribution.map((entry) => (
@@ -424,7 +429,7 @@ export function DashboardPage({ userId }: DashboardPageProps) {
                     <div
                       className="h-full rounded-full transition-all"
                       style={{
-                        width: `${Math.min(100, Math.max(5, goalReport.on_track ? 100 : (1 - (goalReport.gap ?? 0) / Math.max(goalReport.scoring_average ?? 1, 1)) * 100))}%`,
+                        width: `${Math.min(100, Math.max(5, goalReport.on_track ? 100 : goalReport.gap == null ? 5 : (1 - goalReport.gap / Math.max(goalReport.scoring_average ?? 1, 1)) * 100))}%`,
                         background: goalReport.on_track ? "#059669" : "linear-gradient(90deg, #2d7a3a, #9ca3af)",
                       }}
                     />

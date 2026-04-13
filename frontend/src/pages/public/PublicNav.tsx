@@ -9,7 +9,7 @@ function Logo() {
       <div className="h-9 w-9 rounded-full bg-primary flex items-center justify-center shadow-sm">
         <Flag size={17} className="text-white" />
       </div>
-      <span className="text-xl font-bold text-gray-900 tracking-tight">ScanScorecards</span>
+      <span className="text-xl font-bold text-gray-900 tracking-tight">BirdieEyeView</span>
     </div>
   );
 }
@@ -36,14 +36,11 @@ export function PublicNav() {
 
         {/* Desktop nav */}
         <div className="hidden md:flex items-center gap-8 text-sm text-gray-600 font-medium">
-          <button onClick={() => scrollTo("how-it-works")} className="hover:text-primary transition-colors">
-            How It Works
+          <button onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })} className="hover:text-primary transition-colors">
+            Overview
           </button>
-          <button onClick={() => scrollTo("features")} className="hover:text-primary transition-colors">
-            Features
-          </button>
-          <button onClick={() => scrollTo("pricing")} className="hover:text-primary transition-colors">
-            Pricing
+          <button onClick={() => scrollTo("try-it-out")} className="hover:text-primary transition-colors">
+            Try It Out
           </button>
         </div>
 
@@ -58,7 +55,7 @@ export function PublicNav() {
             to="/register"
             className="bg-primary text-white rounded-full px-5 py-2 text-sm font-semibold hover:bg-primary/90 transition-colors"
           >
-            Sign Up Free
+            Sign Up
           </Link>
           <button
             type="button"
@@ -84,22 +81,16 @@ export function PublicNav() {
       {open && (
         <div className="md:hidden border-t border-gray-100 bg-white px-6 py-4 flex flex-col gap-4">
           <button
-            onClick={() => { scrollTo("how-it-works"); setOpen(false); }}
+            onClick={() => { window.scrollTo({ top: 0, behavior: "smooth" }); setOpen(false); }}
             className="text-sm font-medium text-gray-700 text-left hover:text-primary transition-colors"
           >
-            How It Works
+            Overview
           </button>
           <button
-            onClick={() => { scrollTo("features"); setOpen(false); }}
+            onClick={() => { scrollTo("try-it-out"); setOpen(false); }}
             className="text-sm font-medium text-gray-700 text-left hover:text-primary transition-colors"
           >
-            Features
-          </button>
-          <button
-            onClick={() => { scrollTo("pricing"); setOpen(false); }}
-            className="text-sm font-medium text-gray-700 text-left hover:text-primary transition-colors"
-          >
-            Pricing
+            Try It Out
           </button>
           <div className="flex flex-col gap-2 pt-2 border-t border-gray-100">
             <button
@@ -121,7 +112,7 @@ export function PublicNav() {
               onClick={() => setOpen(false)}
               className="bg-primary text-white rounded-full px-5 py-2 text-sm font-semibold text-center hover:bg-primary/90 transition-colors"
             >
-              Sign Up Free
+              Sign Up
             </Link>
           </div>
         </div>

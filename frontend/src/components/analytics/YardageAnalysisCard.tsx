@@ -28,12 +28,13 @@ const SCORE_SEGMENTS = [
 ] as const;
 
 export function YardageAnalysisCard({ row }: YardageAnalysisCardProps) {
-  const total = row.raw_scores.length;
+  const rawScores = row.raw_scores || [];
+  const total = rawScores.length;
   const hasScores = total > 0;
 
   const segments = SCORE_SEGMENTS.map(seg => ({
     ...seg,
-    pct: hasScores ? (row.raw_scores.filter(s => seg.test(s.to_par)).length / total) * 100 : 0,
+    pct: hasScores ? (rawScores.filter(s => seg.test(s.to_par)).length / total) * 100 : 0,
   })).filter(s => s.pct > 0);
 
   return (
@@ -52,7 +53,7 @@ export function YardageAnalysisCard({ row }: YardageAnalysisCardProps) {
       </div>
 
       {/* Scatter */}
-      <YardageTargetScatter rawScores={row.raw_scores} bucketLabel={row.bucket_label} />
+      <YardageTargetScatter rawScores={rawScores} bucketLabel={row.bucket_label} />
 
       {/* Divider */}
       <div className="border-t border-gray-50 mt-3 pt-3">

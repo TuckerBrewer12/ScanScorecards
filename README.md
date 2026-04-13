@@ -39,4 +39,19 @@ npm run dev
 
 Open [http://localhost:5173](http://localhost:5173). Backend runs on port 8000; the frontend proxies to it automatically.
 
-Requires a `.env` file with `GOOGLE_API_KEY` for LLM scorecard extraction.
+Copy `.env.example` to `.env` and fill required keys (`GOOGLE_API_KEY`, `MISTRAL_API_KEY`, `SECRET_KEY`, `DATABASE_URL`).  
+For auth emails in production, also set `RESEND_API_KEY` and `AUTH_FROM_EMAIL`.
+
+For production hardening (HTTPS, secret handling, DB network restrictions, security logging), see:
+
+- `SECURITY_DEPLOYMENT.md`
+
+## Secret Safety Checks
+
+Run this before pushing:
+
+```bash
+bash scripts/security/scan_secrets.sh
+```
+
+This fails if common key/token formats are committed, if frontend code references secret env vars, or if frontend tries to call AI providers directly.

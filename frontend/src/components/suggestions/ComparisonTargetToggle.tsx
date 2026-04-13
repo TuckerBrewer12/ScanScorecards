@@ -1,18 +1,21 @@
 import { motion } from "framer-motion";
 
-const TARGETS: { label: string; value: number | null }[] = [
+export type ComparisonTargetValue = number | null | "friend";
+
+const TARGETS: { label: string; value: ComparisonTargetValue }[] = [
   { label: "My Level",   value: null },
   { label: "Scratch",    value: 0    },
   { label: "Breaks 80",  value: 5    },
   { label: "Breaks 85",  value: 10   },
   { label: "Breaks 90",  value: 15   },
   { label: "Breaks 95",  value: 20   },
-  { label: "Breaks 100", value: 28   },
+  { label: "Breaks 100", value: 25   },
+  { label: "Compare Friend", value: "friend" },
 ];
 
 interface ComparisonTargetToggleProps {
-  value: number | null;
-  onChange: (v: number | null) => void;
+  value: ComparisonTargetValue;
+  onChange: (v: ComparisonTargetValue) => void;
   vertical?: boolean;
 }
 

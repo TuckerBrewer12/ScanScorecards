@@ -12,6 +12,7 @@ Add new scorecards by appending to FIXTURES below.
 from __future__ import annotations
 
 import asyncio
+import os
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import List, Optional
@@ -24,6 +25,18 @@ import pytest
 from services.gemini_table_merger import merge_split_tables
 from services.mistral_ocr_service import MistralOCRService
 from services.mistral_scorecard_parser import parse_mistral_scorecard_rows
+
+# Live OCR integration tests are opt-in so normal local/CI runs don't fail on
+# network/provider outages. Enable explicitly when validating OCR end-to-end.
+_RUN_LIVE_OCR = os.environ.get("RUN_LIVE_OCR_TESTS", "").strip().lower() in {"1", "true", "yes", "on"}
+if not _RUN_LIVE_OCR:
+    pytestmark = pytest.mark.skip(
+        reason="Live OCR integration tests are disabled. Set RUN_LIVE_OCR_TESTS=1 to enable."
+    )
+elif not os.environ.get("MISTRAL_API_KEY"):
+    pytestmark = pytest.mark.skip(
+        reason="MISTRAL_API_KEY is required for live OCR integration tests."
+    )
 
 # ---------------------------------------------------------------------------
 # Fixtures — add one entry per scorecard image you want to test.

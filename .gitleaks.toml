@@ -1,0 +1,22 @@
+title = "ScanScorecards Gitleaks Config"
+
+[[allowlists]]
+description = "Example env template values are placeholders, not live secrets"
+paths = [
+  '''(^|/)\.env\.example$''',
+]
+
+[[allowlists]]
+description = "Secret-scanner regex definitions may resemble key formats"
+paths = [
+  '''(^|/)scripts/security/scan_secrets\.sh$''',
+]
+
+[[allowlists]]
+description = "Security unit tests use explicit fake secrets"
+paths = [
+  '''(^|/)tests/test_auth_security\.py$''',
+]
+regexes = [
+  '''test-secret-key-for-jwt''',
+]

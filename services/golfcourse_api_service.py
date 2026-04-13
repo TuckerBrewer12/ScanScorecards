@@ -6,6 +6,15 @@ from typing import Any, Dict, List, Optional
 
 import httpx
 
+_GOLF_STOP_WORDS = re.compile(r"\b(golf|course|club|country|links|gc|cc)\b")
+
+
+def _normalize_course_name(value: str) -> str:
+    """Lowercase, strip punctuation and common golf-specific words for comparison."""
+    base = re.sub(r"[^a-z0-9]+", " ", (value or "").lower()).strip()
+    base = _GOLF_STOP_WORDS.sub(" ", base)
+    return " ".join(base.split())
+
 
 class GolfCourseAPIService:
     """Thin wrapper around GolfCourseAPI search.
@@ -73,15 +82,8 @@ class GolfCourseAPIService:
 
     def _normalize_search_query(self, query: str) -> str:
         """Normalize user query to provider-friendly form while keeping one request."""
-        base = " ".join((query or "").strip().split())
-        lowered = base.lower()
-        cleaned = re.sub(
-            r"\b(golf|course|club|country|links|gc|cc)\b",
-            " ",
-            lowered,
-        )
-        cleaned = " ".join(cleaned.split())
-        return cleaned or base
+        cleaned = _normalize_course_name(query)
+        return cleaned or " ".join((query or "").strip().split())
 
     def _extract_items(self, payload: Any) -> List[Dict[str, Any]]:
         """Extract a list of course objects from varying JSON response shapes."""

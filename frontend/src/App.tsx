@@ -5,6 +5,10 @@ import { ScanProvider } from "./context/ScanContext";
 import { AppLayout } from "./components/layout/AppLayout";
 import { LoginPage } from "./pages/LoginPage";
 import { RegisterPage } from "./pages/RegisterPage";
+import { VerifyPendingPage } from "./pages/VerifyPendingPage";
+import { ForgotPasswordPage } from "./pages/ForgotPasswordPage";
+import { ResetPasswordPage } from "./pages/ResetPasswordPage";
+import { VerifyEmailPage } from "./pages/VerifyEmailPage";
 import { LandingPage } from "./pages/public/LandingPage";
 import { applyTheme, getStoredPublicTheme, getStoredTheme } from "./lib/theme";
 
@@ -34,12 +38,20 @@ function AppRoutes() {
   const location = useLocation();
 
   useEffect(() => {
-    if (userId) {
-      applyTheme(getStoredTheme());
+    if (
+      location.pathname === "/" ||
+      location.pathname === "/login" ||
+      location.pathname === "/register" ||
+      location.pathname === "/forgot-password" ||
+      location.pathname === "/reset-password" ||
+      location.pathname === "/verify-email" ||
+      location.pathname === "/verify-pending"
+    ) {
+      applyTheme(getStoredPublicTheme());
       return;
     }
-    if (location.pathname === "/" || location.pathname === "/login" || location.pathname === "/register") {
-      applyTheme(getStoredPublicTheme());
+    if (userId) {
+      applyTheme(getStoredTheme());
     }
   }, [userId, location.pathname]);
 
@@ -57,6 +69,19 @@ function AppRoutes() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route path="/verify-email" element={<VerifyEmailPage />} />
+        <Route path="/verify-pending" element={<VerifyPendingPage />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    );
+  }
+
+  if (location.pathname === "/verify-email") {
+    return (
+      <Routes>
+        <Route path="/verify-email" element={<VerifyEmailPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     );

@@ -1,10 +1,11 @@
-import { useState, useMemo, useCallback, useRef } from "react";
+import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Link2, Search } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { CourseLinkSearch } from "@/components/CourseLinkSearch";
 import { api } from "@/lib/api";
+import { formatCourseName } from "@/lib/courseName";
 import { getStoredColorBlindMode } from "@/lib/accessibility";
 import { getColorBlindPalette } from "@/lib/chartPalettes";
 import type { RoundSummary, CourseSummary } from "@/types/golf";
@@ -60,7 +61,7 @@ function SortHeader({
       <span className="flex items-center gap-1">
         {label}
         <span className={`text-[10px] transition-opacity ${active ? "opacity-100" : "opacity-0"}`}>
-          {sortAsc ? "↑" : "↓"}
+          {sortAsc ? "↓" : "↑"}
         </span>
       </span>
     </th>
@@ -68,6 +69,7 @@ function SortHeader({
 }
 
 export function RoundsPage({ userId }: RoundsPageProps) {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { data: rounds = [], isLoading: loading } = useQuery({
     queryKey: ["rounds", userId],
@@ -85,6 +87,7 @@ export function RoundsPage({ userId }: RoundsPageProps) {
   const [linkSearching, setLinkSearching] = useState(false);
   const [linking, setLinking] = useState(false);
   const linkTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (linkTimer.current) clearTimeout(linkTimer.current); }, []);
   const colorBlindMode = useMemo(() => getStoredColorBlindMode(), []);
   const colorBlindPalette = useMemo(() => getColorBlindPalette(colorBlindMode), [colorBlindMode]);
 
@@ -117,7 +120,7 @@ export function RoundsPage({ userId }: RoundsPageProps) {
     } finally {
       setLinking(false);
     }
-  }, []);
+  }, [queryClient, userId]);
 
   const openLink = useCallback((roundId: string) => {
     setLinkingRoundId(roundId);
@@ -240,6 +243,7 @@ export function RoundsPage({ userId }: RoundsPageProps) {
                     className="cursor-pointer hover:bg-emerald-50/40 border-l-2 border-transparent hover:border-primary/30 transition-all duration-150 group"
                     onClick={() => {
                       if (linkingRoundId === r.id) return;
+                      navigate(`/rounds/${r.id}`);
                     }}
                   >
                     <td className="px-6 py-3.5 text-sm text-gray-400">
@@ -254,13 +258,17 @@ export function RoundsPage({ userId }: RoundsPageProps) {
                           className="hover:text-primary transition-colors"
                           onClick={(e) => e.stopPropagation()}
                         >
-                          {r.course_name ?? "—"}
+                          {r.course_name ? formatCourseName(r.course_name) : "—"}
                         </Link>
                         {!r.course_id && (
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
-                              linkingRoundId === r.id ? closeLink() : openLink(r.id);
+                              if (linkingRoundId === r.id) {
+                                closeLink();
+                              } else {
+                                openLink(r.id);
+                              }
                             }}
                             title="Link to a saved course"
                             className="text-gray-300 hover:text-primary transition-colors shrink-0 opacity-0 group-hover:opacity-100"
@@ -329,7 +337,7 @@ export function RoundsPage({ userId }: RoundsPageProps) {
                     >
                       <td colSpan={7} className="px-6 py-4 bg-blue-50/60 border-b border-blue-100">
                         <CourseLinkSearch
-                          title={`Link "${r.course_name ?? "this round"}" to a saved course`}
+                          title={`Link "${r.course_name ? formatCourseName(r.course_name) : "this round"}" to a saved course`}
                           query={linkQuery}
                           results={linkResults}
                           searching={linkSearching}

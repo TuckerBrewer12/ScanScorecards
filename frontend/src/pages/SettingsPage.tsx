@@ -4,6 +4,7 @@ import { Moon, Sun } from "lucide-react";
 import { useBeforeUnload, useLocation } from "react-router-dom";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { api } from "@/lib/api";
+import { formatHandicapInputValue, parseHandicapInput } from "@/lib/handicap";
 import { applyTheme, getStoredTheme, setStoredTheme } from "@/lib/theme";
 import { getStoredColorBlindMode, setStoredColorBlindMode } from "@/lib/accessibility";
 import type { AppTheme } from "@/lib/theme";
@@ -34,6 +35,7 @@ export function SettingsPage({ userId }: { userId: string }) {
   const [showUnsavedModal, setShowUnsavedModal] = useState(false);
   const initializedRef = useRef(false);
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => { if (searchTimer.current) clearTimeout(searchTimer.current); }, []);
   const bypassGuardRef = useRef(false);
   const baselineRef = useRef<{
     homeCourseId: string;
@@ -77,7 +79,7 @@ export function SettingsPage({ userId }: { userId: string }) {
     const savedUpdates = localStorage.getItem(UPDATES_PREF_KEY);
     const updatesPref = savedUpdates !== null ? savedUpdates === "true" : true;
     const initialHomeCourseId = settingsData.user.home_course_id ?? "";
-    const initialHandicap = settingsData.user.handicap != null ? String(settingsData.user.handicap) : "";
+    const initialHandicap = formatHandicapInputValue(settingsData.user.handicap);
     const initialTheme = getStoredTheme();
     const initialColorBlind = getStoredColorBlindMode();
     setGetUpdates(updatesPref);
@@ -225,17 +227,10 @@ export function SettingsPage({ userId }: { userId: string }) {
         }
       }
 
-      const trimmed = handicapInput.trim();
-      let handicap: number | null | undefined = undefined;
-      if (trimmed === "") {
-        handicap = null;
-      } else {
-        const parsed = Number(trimmed);
-        if (!Number.isFinite(parsed) || parsed < -10 || parsed > 54) {
-          setMessage("Handicap must be a number between +10 and 54.");
-          return false;
-        }
-        handicap = Math.round(parsed * 10) / 10;
+      const { value: handicap, error: handicapError } = parseHandicapInput(handicapInput);
+      if (handicapError) {
+        setMessage(handicapError);
+        return false;
       }
 
       await api.updateUser(userId, {
@@ -248,7 +243,7 @@ export function SettingsPage({ userId }: { userId: string }) {
       const refreshedUser = await api.getUser(userId);
 
       setHomeCourseId(refreshedUser.home_course_id ?? "");
-      setHandicapInput(refreshedUser.handicap != null ? String(refreshedUser.handicap) : "");
+      setHandicapInput(formatHandicapInputValue(refreshedUser.handicap));
       setFriendCode(refreshedUser.friend_code ?? "");
       if (refreshedUser.home_course_id) {
         const selected = (settingsData?.allCourses ?? []).find((course) => course.id === refreshedUser.home_course_id);
@@ -262,7 +257,7 @@ export function SettingsPage({ userId }: { userId: string }) {
         homeCourseQuery: refreshedUser.home_course_id
           ? ((settingsData?.allCourses ?? []).find((course) => course.id === refreshedUser.home_course_id)?.name ?? homeCourseQuery)
           : "",
-        handicapInput: refreshedUser.handicap != null ? String(refreshedUser.handicap) : "",
+        handicapInput: formatHandicapInputValue(refreshedUser.handicap),
         getUpdates,
         theme,
         colorBlindMode,
@@ -486,17 +481,15 @@ export function SettingsPage({ userId }: { userId: string }) {
           </label>
           <input
             id="settings-handicap"
-            type="number"
-            step="0.1"
-            min={-10}
-            max={54}
+            type="text"
+            inputMode="decimal"
             value={handicapInput}
             onChange={(event) => setHandicapInput(event.target.value)}
-            placeholder="e.g. 12.4"
+            placeholder="e.g. +5.0"
             className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
           />
           <p className="text-xs text-gray-500">
-            Leave blank to clear handicap. Allowed range: +10 to 54.
+            Leave blank to clear handicap. Allowed range: +10 through 54.
           </p>
         </section>
 

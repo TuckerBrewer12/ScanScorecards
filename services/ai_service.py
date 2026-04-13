@@ -193,8 +193,8 @@ class AIService:
             sum(three_putt_counts) / len(three_putt_counts) if three_putt_counts else None
         )
 
-        par_avgs = self._scoring_by_par_played(rounds)
-        par_counts = self._par_hole_counts(rounds)
+        par_avgs, par_counts = self._par_stats(rounds)
+        par_avgs_trend = self._par_stats_per_round(rounds)
 
         putts_rows = analytics.putts_per_round(rounds)
         putts_vals = [r["total_putts"] for r in putts_rows if r.get("total_putts") is not None]
@@ -219,6 +219,7 @@ class AIService:
             "avg_to_par": avg_to_par,
             "par_avgs": par_avgs,
             "par_counts": par_counts,
+            "par_avgs_trend": par_avgs_trend,
             "gir_values": gir_values,
             "three_putt_trend": three_putt_trend,
             "putts_per_gir_trend": putts_per_gir_trend,
@@ -226,7 +227,33 @@ class AIService:
             "num_rounds": len(rounds),
         }
 
-    def _scoring_by_par_played(self, rounds: list) -> Dict[int, float]:
+    @staticmethod
+    def _par_stats_per_round(rounds: list) -> Dict[int, List[Optional[float]]]:
+        """Per-round avg to par by par type — used for trend detection."""
+        result: Dict[int, List[Optional[float]]] = {3: [], 4: [], 5: []}
+        for r in rounds:
+            by_par: Dict[int, List[float]] = {}
+            for hs in r.hole_scores:
+                if hs.strokes is None:
+                    continue
+                par: Optional[int] = None
+                if r.course and hs.hole_number:
+                    hole = r.course.get_hole(hs.hole_number)
+                    if hole and hole.par:
+                        par = hole.par
+                if par is None:
+                    par = hs.par_played
+                if par not in (3, 4, 5):
+                    continue
+                by_par.setdefault(par, []).append(float(hs.strokes - par))
+            for p in (3, 4, 5):
+                vals = by_par.get(p, [])
+                result[p].append(sum(vals) / len(vals) if vals else None)
+        return result
+
+    @staticmethod
+    def _par_stats(rounds: list) -> tuple[Dict[int, float], Dict[int, int]]:
+        """Single-pass: returns (avg_to_par_by_par, hole_count_by_par)."""
         by_par: Dict[int, List[float]] = {}
         for r in rounds:
             for hs in r.hole_scores:
@@ -242,27 +269,12 @@ class AIService:
                 if par not in (3, 4, 5):
                     continue
                 by_par.setdefault(par, []).append(float(hs.strokes - par))
-        return {p: sum(vals) / len(vals) for p, vals in by_par.items() if vals}
+        avgs = {p: sum(vals) / len(vals) for p, vals in by_par.items() if vals}
+        counts = {p: len(vals) for p, vals in by_par.items() if vals}
+        return avgs, counts
 
-    def _par_hole_counts(self, rounds: list) -> Dict[int, int]:
-        counts: Dict[int, int] = {}
-        for r in rounds:
-            for hs in r.hole_scores:
-                if hs.strokes is None:
-                    continue
-                par: Optional[int] = None
-                if r.course and hs.hole_number:
-                    hole = r.course.get_hole(hs.hole_number)
-                    if hole and hole.par:
-                        par = hole.par
-                if par is None:
-                    par = hs.par_played
-                if par not in (3, 4, 5):
-                    continue
-                counts[par] = counts.get(par, 0) + 1
-        return counts
-
-    def _putts_per_gir_per_round(self, rounds: list) -> List[Optional[float]]:
+    @staticmethod
+    def _putts_per_gir_per_round(rounds: list) -> List[Optional[float]]:
         results: List[Optional[float]] = []
         for r in rounds:
             gir_scores = [
@@ -306,6 +318,8 @@ class AIService:
         avg = par_avgs[worst_par]
         bench = bench_map[worst_par]
         priority = min(10.0, worst_gap * 4.0)
+        par_avgs_trend: Dict[int, List[Optional[float]]] = raw.get("par_avgs_trend", {})
+        trend = _trend_direction(par_avgs_trend.get(worst_par, []))
 
         hole_count = raw.get("par_counts", {}).get(worst_par, 0)
         num_rounds = raw.get("num_rounds", 1)
@@ -346,7 +360,7 @@ class AIService:
             key_metric=round(avg, 2),
             metric_label=f"Avg to par ({par_labels[worst_par]})",
             benchmark=round(bench, 2),
-            trend_direction="stable",
+            trend_direction=trend,
             drill_tips=drill_tips_map[worst_par],
             what_if=what_if,
         )

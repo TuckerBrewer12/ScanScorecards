@@ -625,17 +625,28 @@ class CourseRepositoryDB:
         """Insert or update a tee and its yardages."""
         async with self._pool.acquire() as conn:
             async with conn.transaction():
-                tee_row = await conn.fetchrow(
-                    """INSERT INTO courses.tees
-                       (course_id, color, slope_rating, course_rating)
-                       VALUES ($1, $2, $3, $4)
-                       ON CONFLICT (course_id, color)
-                       DO UPDATE SET slope_rating = EXCLUDED.slope_rating,
-                                     course_rating = EXCLUDED.course_rating
-                       RETURNING id""",
-                    UUID(course_id), tee.color, tee.slope_rating, tee.course_rating,
+                cid = UUID(course_id)
+                existing_tee = await conn.fetchrow(
+                    """SELECT id FROM courses.tees
+                       WHERE course_id = $1 AND LOWER(color) = LOWER($2)""",
+                    cid, tee.color,
                 )
-                tee_id = tee_row["id"]
+                if existing_tee:
+                    tee_id = existing_tee["id"]
+                    await conn.execute(
+                        """UPDATE courses.tees
+                           SET slope_rating = $2, course_rating = $3
+                           WHERE id = $1""",
+                        tee_id, tee.slope_rating, tee.course_rating,
+                    )
+                else:
+                    tee_row = await conn.fetchrow(
+                        """INSERT INTO courses.tees
+                           (course_id, color, slope_rating, course_rating)
+                           VALUES ($1, $2, $3, $4) RETURNING id""",
+                        cid, tee.color, tee.slope_rating, tee.course_rating,
+                    )
+                    tee_id = tee_row["id"]
 
                 # Replace all yardages for this tee
                 await conn.execute(

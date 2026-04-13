@@ -23,7 +23,7 @@ export function FeaturesSection() {
               </div>
               <h3 className="text-xl font-bold text-gray-900 mb-3">Scorecard Scanning</h3>
               <p className="text-sm text-gray-500 leading-relaxed mb-6">
-                Point your camera at any paper scorecard — tournament style, resort format, spiral notebook — and our AI extracts every score, hole par, and yardage in seconds.
+                Point your camera at any paper scorecard — tournament style, resort format, spiral notebook — and AI extracts every score, hole par, and yardage in seconds.
               </p>
               <div className="mt-auto rounded-xl bg-gradient-to-br from-primary/10 to-primary/5 aspect-video flex items-center justify-center">
                 <ScanLine size={48} className="text-primary/30" />

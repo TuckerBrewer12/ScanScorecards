@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
-import { Flag } from "lucide-react";
+import { Eye, EyeOff, Flag } from "lucide-react";
 
 function Logo() {
   return (
@@ -9,17 +9,22 @@ function Logo() {
       <div className="h-9 w-9 rounded-full bg-primary flex items-center justify-center shadow-sm">
         <Flag size={17} className="text-white" />
       </div>
-      <span className="text-xl font-bold text-gray-900 tracking-tight">ScanScorecards</span>
+      <span className="text-xl font-bold text-gray-900 tracking-tight">BirdieEyeView</span>
     </div>
   );
 }
 
 export function LoginPage() {
-  const { login } = useAuth();
+  const { login, resendVerification } = useAuth();
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
+  const location = useLocation();
+  const initialEmail = ((location.state as { email?: string } | null)?.email ?? "").trim();
+  const [email, setEmail] = useState(initialEmail);
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [resendMessage, setResendMessage] = useState<string | null>(null);
+  const [resendLoading, setResendLoading] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -30,14 +35,39 @@ export function LoginPage() {
       await login(email, password);
       navigate("/");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Login failed");
+      const message = err instanceof Error ? err.message : "Login failed";
+      setError(message);
+      setResendMessage(null);
     } finally {
       setLoading(false);
     }
   };
 
+  const handleResendVerification = async () => {
+    const normalizedEmail = email.trim();
+    if (!normalizedEmail) {
+      setError("Enter your email first to resend verification.");
+      return;
+    }
+    setResendLoading(true);
+    setResendMessage(null);
+    try {
+      const message = await resendVerification(normalizedEmail);
+      setResendMessage(message);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not resend verification email.");
+    } finally {
+      setResendLoading(false);
+    }
+  };
+
   const inputClass =
     "w-full px-4 py-3 border border-gray-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary";
+
+  const flashMessage = (() => {
+    const state = location.state as { flash?: string } | null;
+    return state?.flash ?? null;
+  })();
 
   return (
     <div className="min-h-screen grid md:grid-cols-2">
@@ -54,7 +84,7 @@ export function LoginPage() {
             </p>
           </div>
         </div>
-        <div className="text-xs text-gray-400">© 2026 ScanScorecards</div>
+        <div className="text-xs text-gray-400">© 2026 BirdieEyeView</div>
       </div>
 
       {/* Right form panel */}
@@ -69,15 +99,26 @@ export function LoginPage() {
           <h2 className="text-3xl font-extrabold tracking-tight text-gray-900 mb-8">Sign In</h2>
 
           <form onSubmit={handleSubmit} className="space-y-5">
+            {flashMessage && (
+              <div role="status" className="bg-emerald-50 border border-emerald-100 text-emerald-700 text-sm rounded-xl px-4 py-3">
+                {flashMessage}
+              </div>
+            )}
             {error && (
-              <div className="bg-red-50 border border-red-100 text-red-600 text-sm rounded-xl px-4 py-3">
+              <div role="alert" className="bg-red-50 border border-red-100 text-red-600 text-sm rounded-xl px-4 py-3">
                 {error}
+              </div>
+            )}
+            {resendMessage && (
+              <div role="status" className="bg-emerald-50 border border-emerald-100 text-emerald-700 text-sm rounded-xl px-4 py-3">
+                {resendMessage}
               </div>
             )}
 
             <div>
-              <label className="block text-xs font-semibold text-gray-500 mb-1.5">Email</label>
+              <label htmlFor="login-email" className="block text-xs font-semibold text-gray-500 mb-1.5">Email</label>
               <input
+                id="login-email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -89,16 +130,33 @@ export function LoginPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-gray-500 mb-1.5">Password</label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                autoComplete="current-password"
-                className={inputClass}
-                placeholder="••••••••"
-              />
+              <label htmlFor="login-password" className="block text-xs font-semibold text-gray-500 mb-1.5">Password</label>
+              <div className="relative">
+                <input
+                  id="login-password"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  autoComplete="current-password"
+                  className={`${inputClass} pr-12`}
+                  placeholder="••••••••"
+                />
+                <button
+                  type="button"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  aria-pressed={showPassword}
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  className="absolute inset-y-0 right-0 px-3 text-gray-500 hover:text-gray-700"
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
+              <div className="mt-2 text-right">
+                <Link to="/forgot-password" className="text-xs text-primary font-semibold hover:underline">
+                  Forgot password?
+                </Link>
+              </div>
             </div>
 
             <button
@@ -108,6 +166,17 @@ export function LoginPage() {
             >
               {loading ? "Signing in…" : "Sign In"}
             </button>
+
+            {error?.toLowerCase().includes("email not verified") ? (
+              <button
+                type="button"
+                onClick={handleResendVerification}
+                disabled={resendLoading}
+                className="w-full rounded-xl border border-primary text-primary py-3 text-sm font-semibold hover:bg-primary/5 transition-colors disabled:opacity-50"
+              >
+                {resendLoading ? "Sending…" : "Resend Verification Email"}
+              </button>
+            ) : null}
           </form>
 
           <p className="text-center text-sm text-gray-400 mt-6">

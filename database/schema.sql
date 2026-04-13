@@ -48,9 +48,9 @@ CREATE INDEX IF NOT EXISTS idx_courses_user_id ON courses.courses (user_id);
 -- Partial unique indexes: master courses unique by (name, location),
 -- user courses unique by (name, location, user_id)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_courses_unique_master
-    ON courses.courses (LOWER(name), location) WHERE user_id IS NULL;
+    ON courses.courses (LOWER(name), COALESCE(LOWER(location), '')) WHERE user_id IS NULL;
 CREATE UNIQUE INDEX IF NOT EXISTS idx_courses_unique_user
-    ON courses.courses (LOWER(name), location, user_id) WHERE user_id IS NOT NULL;
+    ON courses.courses (LOWER(name), COALESCE(LOWER(location), ''), user_id) WHERE user_id IS NOT NULL;
 
 CREATE TRIGGER trg_courses_updated_at
     BEFORE UPDATE ON courses.courses
@@ -84,12 +84,13 @@ CREATE TABLE IF NOT EXISTS courses.tees (
     color VARCHAR(50) NOT NULL,
     slope_rating NUMERIC(4,1) CHECK (slope_rating BETWEEN 55 AND 155),
     course_rating NUMERIC(4,1) CHECK (course_rating BETWEEN 55 AND 85),
-    created_at TIMESTAMP DEFAULT NOW(),
-    UNIQUE (course_id, color)
+    created_at TIMESTAMP DEFAULT NOW()
 );
 
 CREATE INDEX IF NOT EXISTS idx_tees_course_id ON courses.tees (course_id);
 CREATE INDEX IF NOT EXISTS idx_tees_color ON courses.tees (color);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_tees_unique_course_color_ci
+    ON courses.tees (course_id, LOWER(color));
 
 -- =============
 -- courses.tee_yardages
@@ -113,7 +114,11 @@ CREATE TABLE IF NOT EXISTS users.users (
     friend_code VARCHAR(12) NOT NULL UNIQUE,
     name VARCHAR(255) NOT NULL,
     email VARCHAR(255) NOT NULL UNIQUE,
-    handicap_index NUMERIC(4,1),
+    password_hash VARCHAR(255),
+    email_verified BOOLEAN NOT NULL DEFAULT FALSE,
+    email_verified_at TIMESTAMP,
+    handicap_index NUMERIC(4,1)
+        CHECK (handicap_index IS NULL OR (handicap_index >= -10 AND handicap_index <= 54)),
     home_course_id UUID REFERENCES courses.courses(id) ON DELETE SET NULL,
     created_at TIMESTAMP DEFAULT NOW(),
     updated_at TIMESTAMP DEFAULT NOW(),
@@ -125,10 +130,31 @@ CREATE TABLE IF NOT EXISTS users.users (
 CREATE INDEX IF NOT EXISTS idx_users_email ON users.users (email);
 CREATE INDEX IF NOT EXISTS idx_users_home_course ON users.users (home_course_id);
 CREATE INDEX IF NOT EXISTS idx_users_friend_code ON users.users (friend_code);
+CREATE INDEX IF NOT EXISTS idx_users_email_verified ON users.users (email_verified);
 
 CREATE TRIGGER trg_users_updated_at
     BEFORE UPDATE ON users.users
     FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+
+-- =============
+-- users.auth_tokens
+-- One-time tokens used for email verification and password reset.
+-- Token values are stored as hashes only.
+-- =============
+CREATE TABLE IF NOT EXISTS users.auth_tokens (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    user_id UUID NOT NULL REFERENCES users.users(id) ON DELETE CASCADE,
+    token_type VARCHAR(32) NOT NULL CHECK (token_type IN ('email_verify', 'password_reset')),
+    token_hash CHAR(64) NOT NULL,
+    expires_at TIMESTAMP NOT NULL,
+    used_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT NOW(),
+    meta JSONB
+);
+
+CREATE INDEX IF NOT EXISTS idx_auth_tokens_hash ON users.auth_tokens (token_hash);
+CREATE INDEX IF NOT EXISTS idx_auth_tokens_user_type ON users.auth_tokens (user_id, token_type);
+CREATE INDEX IF NOT EXISTS idx_auth_tokens_expires_at ON users.auth_tokens (expires_at);
 
 -- =============
 -- users.friendships
@@ -166,7 +192,6 @@ CREATE TABLE IF NOT EXISTS users.rounds (
     user_id UUID NOT NULL REFERENCES users.users(id) ON DELETE CASCADE,
     course_id UUID REFERENCES courses.courses(id) ON DELETE RESTRICT,
     tee_id UUID REFERENCES courses.tees(id) ON DELETE RESTRICT,
-    user_tee_id UUID REFERENCES users.user_tees(id),  -- optional user-owned tee config
     round_date DATE,
     total_score INTEGER CHECK (total_score BETWEEN 18 AND 200),
     adjusted_gross_score INTEGER CHECK (adjusted_gross_score BETWEEN 18 AND 200),
@@ -236,6 +261,11 @@ CREATE TABLE IF NOT EXISTS users.user_tees (
 
 CREATE INDEX IF NOT EXISTS idx_user_tees_user_id ON users.user_tees (user_id);
 CREATE INDEX IF NOT EXISTS idx_user_tees_course_id ON users.user_tees (course_id);
+
+-- Optional: a round can reference a user_tee instead of a master tee
+ALTER TABLE users.rounds
+    ADD COLUMN IF NOT EXISTS user_tee_id UUID REFERENCES users.user_tees(id);
+CREATE INDEX IF NOT EXISTS idx_rounds_user_tee_id ON users.rounds (user_tee_id);
 
 -- =============
 -- users.scorecard_scans (raw LLM output)

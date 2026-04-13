@@ -2,6 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import type { RoundSummary } from "@/types/golf";
 import { formatToPar } from "@/types/golf";
+import { formatCourseName } from "@/lib/courseName";
 
 interface RecentRoundsTableProps {
   rounds: RoundSummary[];
@@ -47,7 +48,7 @@ export function RecentRoundsTable({ rounds }: RecentRoundsTableProps) {
                   : "—"}
               </td>
               <td className="px-3 py-3.5 text-sm font-semibold text-gray-900 truncate">
-                {r.course_name ?? "—"}
+                {r.course_name ? formatCourseName(r.course_name) : "—"}
               </td>
               <td className="px-3 py-3.5 text-sm text-center font-bold text-gray-900">
                 {r.total_score ?? "—"}

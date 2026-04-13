@@ -1,5 +1,6 @@
 import { Camera, Bot, TrendingUp } from "lucide-react";
 import { ScrollSection } from "@/components/analytics/ScrollSection";
+import { PublicScanHero } from "@/components/public/PublicScanHero";
 
 const STEPS = [
   {
@@ -22,13 +23,6 @@ const STEPS = [
   },
 ];
 
-const DEMO_SCORES = [
-  { hole: 1, par: 4, score: 5 },
-  { hole: 2, par: 3, score: 3 },
-  { hole: 3, par: 5, score: 6 },
-  { hole: 4, par: 4, score: 4 },
-  { hole: 5, par: 4, score: 5 },
-];
 
 export function HowItWorksSection() {
   return (
@@ -63,42 +57,10 @@ export function HowItWorksSection() {
           })}
         </div>
 
-        {/* Live Demo placeholder */}
+        {/* Live Demo */}
         <ScrollSection delay={0.3}>
-          <div className="mt-20 rounded-2xl border border-gray-100 bg-gray-50 p-6 md:p-8 max-w-2xl mx-auto">
-            <p className="text-xs tracking-widest text-primary uppercase font-semibold mb-5 text-center">Live Demo</p>
-            <div className="grid grid-cols-2 gap-6">
-              {/* Left: scorecard photo placeholder */}
-              <div className="rounded-xl bg-gradient-to-br from-gray-200 to-gray-100 aspect-[4/3] flex flex-col items-center justify-center gap-2">
-                <Camera size={28} className="text-gray-400" />
-                <span className="text-xs text-gray-400 font-medium">Scorecard Photo</span>
-              </div>
-              {/* Right: parsed data */}
-              <div className="flex flex-col justify-center">
-                <div className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-3">Detected Scores</div>
-                <table className="w-full text-xs font-mono">
-                  <thead>
-                    <tr className="text-gray-400">
-                      <th className="text-left font-medium pb-1">Hole</th>
-                      <th className="text-left font-medium pb-1">Par</th>
-                      <th className="text-left font-medium pb-1">Score</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {DEMO_SCORES.map((row) => (
-                      <tr key={row.hole} className="border-t border-gray-100">
-                        <td className="py-1 text-gray-600">{row.hole}</td>
-                        <td className="py-1 text-gray-600">{row.par}</td>
-                        <td className={`py-1 font-semibold ${row.score < row.par ? "text-primary" : row.score === row.par ? "text-gray-700" : "text-gray-500"}`}>
-                          {row.score}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                <div className="mt-3 text-xs text-gray-400 italic">+ 13 more holes…</div>
-              </div>
-            </div>
+          <div id="try-it-out" className="mt-20 max-w-2xl mx-auto">
+            <PublicScanHero />
           </div>
         </ScrollSection>
       </div>

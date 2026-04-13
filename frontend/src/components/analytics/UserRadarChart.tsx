@@ -18,6 +18,7 @@ function fmtSign(v: number) {
   return (v >= 0 ? "+" : "") + v.toFixed(1);
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function buildRadarData(
   kpis: AnalyticsKPIs,
   scoringByPar: ScoringByParRow[],

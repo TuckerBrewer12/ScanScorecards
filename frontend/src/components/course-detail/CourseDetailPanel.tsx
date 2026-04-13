@@ -365,7 +365,6 @@ export function CourseDetailPanel({ courseId, userId, onBack }: CourseDetailPane
 
   useEffect(() => {
     let isMounted = true;
-    setLoading(true);
     Promise.all([
       api.getCourse(courseId),
       api.getCourseAnalytics(userId, courseId),
@@ -431,12 +430,6 @@ export function CourseDetailPanel({ courseId, userId, onBack }: CourseDetailPane
 
   const front = [1, 2, 3, 4, 5, 6, 7, 8, 9];
   const back = [10, 11, 12, 13, 14, 15, 16, 17, 18];
-
-  const scoreTrendDomain: [number | "auto", number | "auto"] = (() => {
-    if (!analytics) return ["auto", "auto"];
-    const scores = analytics.score_trend_on_course.map((r) => r.total_score).filter((s): s is number => s != null);
-    return scores.length ? [Math.min(...scores) - 5, Math.max(...scores) + 5] : ["auto", "auto"];
-  })();
 
   const selectedTee = course.tees.find(
     (t) => t.color?.toLowerCase() === selectedTeeColor?.toLowerCase()

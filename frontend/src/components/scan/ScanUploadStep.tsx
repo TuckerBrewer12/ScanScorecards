@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { PageHeader } from "@/components/layout/PageHeader";
 import type { ScanState } from "@/types/scan";
 import type { CourseSummary } from "@/types/golf";
+import { formatCourseName } from "@/lib/courseName";
 
 interface ScanUploadStepProps {
   scanMode: ScanState["scanMode"];
@@ -60,7 +61,7 @@ export function ScanUploadStep({
       <PageHeader title="Scan Scorecard" subtitle="Choose how to process your scorecard" />
 
       {error && (
-        <div className="mb-4 p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-700 dark:text-red-300 flex items-center gap-2">
+        <div role="alert" className="mb-4 p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg text-sm text-red-700 dark:text-red-300 flex items-center gap-2">
           <AlertTriangle size={16} />
           {error}
         </div>
@@ -119,7 +120,7 @@ export function ScanUploadStep({
                   >
                     <MapPin size={14} className="text-gray-400 dark:text-slate-400 mt-0.5 shrink-0" />
                     <div>
-                      <div className="text-sm font-medium text-gray-800 dark:text-slate-100">{c.name}</div>
+                      <div className="text-sm font-medium text-gray-800 dark:text-slate-100">{formatCourseName(c.name)}</div>
                       {c.location && <div className="text-xs text-gray-500 dark:text-slate-400">{c.location}</div>}
                     </div>
                   </button>
@@ -138,10 +139,10 @@ export function ScanUploadStep({
         <div className="mb-4 flex items-center gap-2 px-4 py-3 bg-green-50 border border-green-200 rounded-lg">
           <CheckCircle size={16} className="text-green-600 shrink-0" />
           <span className="text-sm font-semibold text-green-800 flex-1">
-            {selectedCourseName}
+            {formatCourseName(selectedCourseName)}
             {scanMode === "full" ? " (preselected)" : ""}
           </span>
-          <button onClick={onClearCourse} className="text-white/70 hover:text-white">
+          <button onClick={onClearCourse} className="text-green-600 hover:text-green-800">
             <X size={14} />
           </button>
         </div>
@@ -257,7 +258,8 @@ export function ScanUploadStep({
                 onClick={onExtract}
                 className="mt-4 w-full flex items-center justify-center gap-2 px-5 py-3.5 bg-primary text-white rounded-xl font-semibold hover:opacity-90 transition-opacity shadow-sm"
               >
-                <><ScanLine size={17} />Extract Scorecard</>
+                <ScanLine size={17} />
+                Extract Scorecard
               </button>
             </div>
           </motion.div>

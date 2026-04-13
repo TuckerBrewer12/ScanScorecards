@@ -1,11 +1,11 @@
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import type { CourseSummary } from "@/types/golf";
 import type { ScanState, ScanResult, ExtractedHoleScore, ManualTee } from "@/types/scan";
 import { initialScanState } from "@/types/scan";
 import { api } from "@/lib/api";
-import { getToken } from "@/lib/auth";
+import { initializeScores, countBadScanNulls } from "@/lib/scanUtils";
 
 function normalizeCourseQueryForSearch(value: string): string {
   return value.trim().replace(/\s+/g, " ");
@@ -66,7 +66,7 @@ export function useScan(
   setScanState: React.Dispatch<React.SetStateAction<ScanState>>
 ) {
   const navigate = useNavigate();
-  const { step, scanMode, selectedCourseId, selectedCourseName, file, result, editedScores, editedDate, editedTeeBox, userContext, prefetchedOcrText, reviewCourseId, reviewExternalCourseId, reviewCourseName, manualCourseHoles, manualCourseTees } = scanState;
+  const { step, scanMode, selectedCourseId, selectedCourseName, file, result, editedScores, scoreMetadata, editedDate, editedTeeBox, userContext, prefetchedOcrText, reviewCourseId, reviewExternalCourseId, reviewCourseName, manualCourseHoles, manualCourseTees } = scanState;
 
   const update = useCallback(
     (patch: Partial<ScanState>) => setScanState((prev) => ({ ...prev, ...patch })),
@@ -93,6 +93,28 @@ export function useScan(
   const [reviewCourseResults, setReviewCourseResults] = useState<CourseSummary[]>([]);
   const [reviewSearching, setReviewSearching] = useState(false);
   const reviewSearchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const previewUrlRef = useRef<string | null>(null);
+  useEffect(() => () => {
+    if (reviewSearchTimer.current) clearTimeout(reviewSearchTimer.current);
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+  }, []);
+  useEffect(() => {
+    const nextPreview = scanState.preview ?? null;
+    const prevPreview = previewUrlRef.current;
+    if (prevPreview && prevPreview !== nextPreview && prevPreview.startsWith("blob:")) {
+      URL.revokeObjectURL(prevPreview);
+    }
+    previewUrlRef.current = nextPreview;
+  }, [scanState.preview]);
+  useEffect(
+    () => () => {
+      if (previewUrlRef.current?.startsWith("blob:")) {
+        URL.revokeObjectURL(previewUrlRef.current);
+      }
+    },
+    []
+  );
 
   const handleReviewCourseQuery = useCallback((q: string) => {
     setReviewCourseQuery(q);
@@ -129,7 +151,7 @@ export function useScan(
   const [courseQuery, setCourseQuery] = useState("");
   const [courseResults, setCourseResults] = useState<CourseSummary[]>([]);
   const [searching, setSearching] = useState(false);
-  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [prefetchStatus, setPrefetchStatus] = useState<"idle" | "running" | "ready" | "failed">("idle");
 
   const handleCourseQuery = useCallback((q: string) => {
     setCourseQuery(q);
@@ -153,10 +175,13 @@ export function useScan(
   }, [update]);
 
   const activePrefetch = useRef<string | null>(null);
+  const activePrefetchPromise = useRef<{ fileId: string; promise: Promise<string | null> } | null>(null);
 
   const handleFile = useCallback((f: File) => {
     const fileId = `${f.name}-${f.size}-${Date.now()}`;
     activePrefetch.current = fileId;
+    activePrefetchPromise.current = null;
+    setPrefetchStatus("running");
 
     void (async () => {
       const t0 = performance.now();
@@ -177,15 +202,14 @@ export function useScan(
 
       update({ file: processed, preview: URL.createObjectURL(processed), error: null, prefetchedOcrText: null });
 
-      // Kick off OCR immediately in the background so it's ready when user hits Extract
-      void (async () => {
+      // Kick off OCR immediately in the background so it's ready when user hits Extract.
+      const prefetchPromise = (async () => {
         try {
-          const token = getToken();
           const ocrForm = new FormData();
           ocrForm.append("file", processed);
           const res = await fetch("/api/scan/ocr", {
             method: "POST",
-            headers: token ? { Authorization: `Bearer ${token}` } : {},
+            credentials: "include",
             body: ocrForm,
           });
           if (res.ok) {
@@ -193,14 +217,21 @@ export function useScan(
             // Ensure we don't set state if the user discarded this file or uploaded a new one
             if (activePrefetch.current === fileId) {
                 update({ prefetchedOcrText: ocr_text });
+                setPrefetchStatus("ready");
                 console.info("[scan] OCR prefetch complete: chars=%d", ocr_text.length);
             }
+            return ocr_text;
+          } else if (activePrefetch.current === fileId) {
+            setPrefetchStatus("failed");
           }
         } catch {
           // Prefetch failed silently — extract will fall back to running OCR itself
+          if (activePrefetch.current === fileId) setPrefetchStatus("failed");
           console.info("[scan] OCR prefetch failed, will retry on extract");
         }
+        return null;
       })();
+      activePrefetchPromise.current = { fileId, promise: prefetchPromise };
     })();
   }, [update]);
 
@@ -218,6 +249,13 @@ export function useScan(
     if (!file) return;
     update({ step: "processing", error: null });
 
+    let ocrTextToUse = prefetchedOcrText;
+    const inflight = activePrefetchPromise.current;
+    if (!ocrTextToUse && inflight && activePrefetch.current === inflight.fileId) {
+      const waited = await inflight.promise;
+      if (waited) ocrTextToUse = waited;
+    }
+
     const formData = new FormData();
     formData.append("file", file);
     if (selectedCourseId) {
@@ -226,17 +264,14 @@ export function useScan(
     if (userContext.trim()) {
       formData.append("user_context", userContext.trim());
     }
-    if (prefetchedOcrText) {
-      formData.append("ocr_text", prefetchedOcrText);
+    if (ocrTextToUse) {
+      formData.append("ocr_text", ocrTextToUse);
     }
 
     try {
-      const token = getToken();
       const res = await fetch("/api/scan/extract", {
         method: "POST",
-        headers: {
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
+        credentials: "include",
         body: formData,
       });
       if (!res.ok) {
@@ -252,9 +287,15 @@ export function useScan(
       }
 
       const data: ScanResult = await res.json();
+      const { editedScores: initialScores, scoreMetadata: initialMeta } = initializeScores(
+        data.round.hole_scores,
+        data.fields_needing_review,
+        data.round.course?.holes ?? []
+      );
       update({
         result: data,
-        editedScores: data.round.hole_scores.map((s) => ({ ...s })),
+        editedScores: initialScores,
+        scoreMetadata: initialMeta,
         editedDate: data.round.date
           ? data.round.date.substring(0, 10)
           : new Date().toISOString().substring(0, 10),
@@ -280,22 +321,43 @@ export function useScan(
     } catch (err) {
       update({ error: err instanceof Error ? err.message : "Extraction failed", step: "upload" });
     }
-  }, [file, selectedCourseId, userContext, prefetchedOcrText, update, userId, handleReviewCourseQuery]);
+  }, [file, selectedCourseId, userContext, prefetchedOcrText, update, handleReviewCourseQuery]);
 
-  const handleScoreChange = useCallback((index: number, field: keyof ExtractedHoleScore, value: string) => {
+  useEffect(() => {
+    if (!file) {
+      activePrefetch.current = null;
+      activePrefetchPromise.current = null;
+      setPrefetchStatus("idle");
+    }
+  }, [file]);
+
+  const handleScoreChange = useCallback((index: number, field: "strokes" | "putts" | "hole_number", value: string) => {
     const next = [...editedScores];
-    const parsed = value === "" ? null : parseInt(value);
+    const raw = parseInt(value, 10);
+    const parsed = value === "" ? null : Number.isNaN(raw) ? null : raw;
     if (field === "strokes") next[index] = { ...next[index], strokes: parsed };
     else if (field === "putts") next[index] = { ...next[index], putts: parsed };
     else if (field === "hole_number") next[index] = { ...next[index], hole_number: parsed };
-    update({ editedScores: next });
-  }, [update, editedScores]);
+    const patch: Partial<ScanState> = { editedScores: next };
+    if (field === "putts" && scoreMetadata[index]?.putts_estimated) {
+      const nextMeta = [...scoreMetadata];
+      nextMeta[index] = { ...nextMeta[index], putts_estimated: false };
+      patch.scoreMetadata = nextMeta;
+    }
+    update(patch);
+  }, [update, editedScores, scoreMetadata]);
 
   const handleGirChange = useCallback((index: number, value: boolean | null) => {
     const next = [...editedScores];
     next[index] = { ...next[index], green_in_regulation: value };
-    update({ editedScores: next });
-  }, [update, editedScores]);
+    const patch: Partial<ScanState> = { editedScores: next };
+    if (scoreMetadata[index]?.gir_calculated) {
+      const nextMeta = [...scoreMetadata];
+      nextMeta[index] = { ...nextMeta[index], gir_calculated: false };
+      patch.scoreMetadata = nextMeta;
+    }
+    update(patch);
+  }, [update, editedScores, scoreMetadata]);
 
   const selectCourseManual = useCallback(async (course: CourseSummary) => {
     update({ selectedCourseId: course.id, selectedCourseName: course.name ?? course.id });
@@ -352,9 +414,16 @@ export function useScan(
       fields_needing_review: [],
     };
 
+    const { editedScores: initialScores, scoreMetadata: initialMeta } = initializeScores(
+      emptyScores,
+      syntheticResult.fields_needing_review,
+      syntheticResult.round.course?.holes ?? []
+    );
+
     update({
       result: syntheticResult,
-      editedScores: emptyScores,
+      editedScores: initialScores,
+      scoreMetadata: initialMeta,
       editedDate: manualDate,
       editedTeeBox: manualTeeBox || null,
       reviewCourseId: selectedCourseId,
@@ -370,10 +439,10 @@ export function useScan(
     update({ error: null });
 
     try {
-      const saveToken = getToken();
       const res = await fetch("/api/scan/save", {
         method: "POST",
-        headers: { "Content-Type": "application/json", ...(saveToken ? { Authorization: `Bearer ${saveToken}` } : {}) },
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           user_id: userId,
           ...(reviewCourseId
@@ -439,7 +508,11 @@ export function useScan(
       update({ error: err instanceof Error ? err.message : "Save failed" });
       setSaving(false);
     }
+    // Note: setSaving(false) is intentionally omitted on success because we
+    // navigate away immediately; keeping it true prevents double-submit during navigation.
   }, [result, userId, reviewCourseId, reviewExternalCourseId, reviewCourseName, editedTeeBox, editedDate, editedScores, update, setScanState, navigate]);
+
+  const badScanNullCount = countBadScanNulls(editedScores);
 
   return {
     // Derived state from scanState
@@ -450,6 +523,8 @@ export function useScan(
     file,
     result,
     editedScores,
+    scoreMetadata,
+    badScanNullCount,
     editedDate,
     editedTeeBox,
     userContext,
@@ -475,6 +550,7 @@ export function useScan(
     manualTeeBox,
     setManualTeeBox,
     loadingCourse,
+    prefetchStatus,
 
     // Review course search
     reviewCourseQuery,
