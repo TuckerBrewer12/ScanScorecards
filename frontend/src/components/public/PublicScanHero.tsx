@@ -316,7 +316,7 @@ function NineTable({
 // ── Main component ────────────────────────────────────────────────────────────
 
 export function PublicScanHero() {
-  const { step, file, preview, userContext, setUserContext, extracting, result, error, handleFile, handleExtract, reset } = usePublicScan();
+  const { step, file, preview, setUserContext, extracting, result, error, handleFile, handleExtract, reset } = usePublicScan();
   const inputRef = useRef<HTMLInputElement>(null);
 
   const onExtract = useCallback(() => handleExtract(), [handleExtract]);
