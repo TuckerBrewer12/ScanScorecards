@@ -178,6 +178,22 @@ export function ScanReviewStep({
               {showGrandTotal && <td className="px-2 py-1.5 text-center bg-gray-100 font-bold">{totalYardage ?? "-"}</td>}
             </tr>
           )}
+          {/* Handicap — shown when any hole has a handicap value */}
+          {slice.some((hs, si) => {
+            const holeNum = hs.hole_number ?? startIdx + si + 1;
+            return rd.course?.holes.find((h) => h.number === holeNum)?.handicap != null;
+          }) && (
+            <tr className="border-b border-gray-100 text-xs text-gray-400">
+              <td className="px-3 py-1.5 font-medium">Hdcp</td>
+              {slice.map((hs, si) => {
+                const holeNum = hs.hole_number ?? startIdx + si + 1;
+                const hdcp = rd.course?.holes.find((h) => h.number === holeNum)?.handicap;
+                return <td key={si} className="px-1 py-1.5 text-center">{hdcp ?? "-"}</td>;
+              })}
+              <td className="px-2 py-1.5 text-center bg-gray-50" />
+              {showGrandTotal && <td className="px-2 py-1.5 text-center bg-gray-100" />}
+            </tr>
+          )}
           {/* Par */}
           <tr className="border-b border-gray-100 text-xs text-gray-500">
             <td className="px-3 py-1.5 font-medium">Par</td>

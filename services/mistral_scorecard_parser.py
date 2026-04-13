@@ -41,6 +41,7 @@ class ParsedScorecardRows(BaseGolfModel):
 
 _INT_RE = re.compile(r"(?<!\d)-?\d{1,4}(?!\d)")
 _ROMAN_RE = re.compile(r"^(?:i|ii|iii|iv|v|vi|vii|viii|ix|x)$", re.IGNORECASE)
+_HANDICAP_RE = re.compile(r"\b(handicap|hdcp|hcp|h\.c\.p)\b", re.IGNORECASE)
 _COURSE_RE = re.compile(r"^[A-Z0-9 '&.-]{3,}$")
 _NAME_RE = re.compile(r"\bmy name is\s+([a-z0-9][a-z0-9 '.\-]{0,40})\b", re.IGNORECASE)
 _ROW_NAME_RE = re.compile(r"\b(?:scan|read|use)\s+([a-z0-9][a-z0-9 '\-]{1,40})\s+row\b", re.IGNORECASE)
@@ -622,7 +623,7 @@ def _identify_row_label(cells: List[str]) -> str:
         return "hole"
     if "par" in label:
         return "par"
-    if "handicap" in label or "hdcp" in label or "hcp" in label:
+    if _HANDICAP_RE.search(label):
         return "handicap"
     if _ROMAN_RE.match(label) or label in {"blue", "white", "gold", "red", "black", "green", "combo"}:
         return "tee"
@@ -680,14 +681,24 @@ def _extract_2d_from_raw_lines(
             parsed.handicap_row = _col_map_to_18_list(d)
             break
 
-    # Tee rows
+    # Tee rows: any non-structural row whose col-mapped values are all positive
+    # with at least half in yardage range (≥100).  No hardcoded color names needed.
     for label, cells, _ in classified:
-        if label == "tee":
-            tee_label = cells[0].upper().strip()
-            d = _extract_values_by_col_map(cells, col_map, parse_fn=lambda c: _parse_int_cell(c))
-            yardages = _col_map_to_18_list(d)
-            large = [v for v in yardages if v is not None and v >= 80]
-            if len(large) >= min_scores // 2:
+        if label in ("separator", "hole", "par", "handicap"):
+            continue
+        tee_label = cells[0].upper().strip()
+        if not tee_label:
+            continue
+        d = _extract_values_by_col_map(cells, col_map, parse_fn=lambda c: _parse_int_cell(c))
+        yardages = _col_map_to_18_list(d)
+        vals = [v for v in yardages if v is not None]
+        if len(vals) < max(4, min_scores // 2):
+            continue
+        if any(v <= 0 for v in vals):
+            continue
+        large = [v for v in vals if v >= 100]
+        if len(large) >= max(4, len(vals) // 2):
+            if not any(tr.label == tee_label for tr in parsed.tee_rows):
                 parsed.tee_rows.append(ParsedTeeRow(label=tee_label, yardages=yardages))
 
     # ------------------------------------------------------------------
@@ -1029,7 +1040,7 @@ def _extract_par_row(lines: List[str]) -> List[int]:
 
 def _extract_handicap_row(lines: List[str]) -> Tuple[Optional[int], List[int]]:
     for i, line in enumerate(lines):
-        if "handicap" in line.lower() or "hdcp" in line.lower():
+        if _HANDICAP_RE.search(line):
             nums = [n for n in _line_ints(line, max_abs=18) if 1 <= n <= 18]
             return i, nums
     return None, []
@@ -1039,7 +1050,7 @@ def _extract_tee_rows(lines: List[str]) -> List[Tuple[str, List[int]]]:
     rows: List[Tuple[str, List[int]]] = []
     for line in lines:
         lower = line.lower()
-        if "handicap" in lower or "hole" in lower:
+        if _HANDICAP_RE.search(lower) or "hole" in lower or "par" in lower:
             continue
         parts = line.split()
         if not parts:
@@ -1047,17 +1058,14 @@ def _extract_tee_rows(lines: List[str]) -> List[Tuple[str, List[int]]]:
         label = parts[0]
         nums = _line_ints(line)
         nums = _normalize_hole_values(nums)
-        large = [n for n in nums if n >= 80]
-        label_is_tee = _ROMAN_RE.match(label) is not None or "combo" in lower or label.lower() in {
-            "blue",
-            "white",
-            "gold",
-            "red",
-            "black",
-            "green",
-        }
-        if label_is_tee and len(large) >= 9:
-            rows.append((label.upper(), large[:18]))
+        if len(nums) < 9:
+            continue
+        # All values must be positive; at least half must be yardage-range (≥100).
+        if any(n <= 0 for n in nums):
+            continue
+        large = [n for n in nums if n >= 100]
+        if len(large) >= max(4, len(nums) // 2):
+            rows.append((label.upper(), nums[:18]))
     return rows
 
 

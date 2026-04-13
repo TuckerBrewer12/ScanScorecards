@@ -480,6 +480,7 @@ export function useScan(
           course_holes: result.round.course?.holes?.map((h) => ({
             hole_number: h.number,
             par: h.par,
+            handicap: h.handicap,
           })),
           all_tees: result.round.course?.tees
             ?.filter((t) => t.color)
