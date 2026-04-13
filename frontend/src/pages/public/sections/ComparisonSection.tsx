@@ -53,7 +53,7 @@ export function ComparisonSection() {
           <div className="text-center mb-14">
             <p className="text-xs tracking-widest text-primary uppercase font-semibold mb-3">Why Us</p>
             <h2 className="text-4xl font-extrabold tracking-tight text-gray-900">
-              ScanScorecards vs. The Rest
+              BirdieEyeView vs. The Rest
             </h2>
           </div>
         </ScrollSection>
@@ -67,7 +67,7 @@ export function ComparisonSection() {
                     Feature
                   </th>
                   <th className="px-6 py-4 text-center text-sm font-bold text-primary bg-primary/5 border-t-2 border-primary">
-                    ScanScorecards
+                    BirdieEyeView
                   </th>
                   <th className="px-6 py-4 text-center text-xs font-semibold text-gray-400 uppercase tracking-wide bg-gray-50">
                     Typical Golf Apps

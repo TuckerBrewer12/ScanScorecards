@@ -9,7 +9,7 @@ function Logo() {
       <div className="h-9 w-9 rounded-full bg-primary flex items-center justify-center shadow-sm">
         <Flag size={17} className="text-white" />
       </div>
-      <span className="text-xl font-bold text-gray-900 tracking-tight">ScanScorecards</span>
+      <span className="text-xl font-bold text-gray-900 tracking-tight">BirdieEyeView</span>
     </div>
   );
 }

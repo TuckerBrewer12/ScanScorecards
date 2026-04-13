@@ -9,7 +9,7 @@ function Logo() {
       <div className="h-9 w-9 rounded-full bg-primary flex items-center justify-center shadow-sm">
         <Flag size={17} className="text-white" />
       </div>
-      <span className="text-xl font-bold text-gray-900 tracking-tight">ScanScorecards</span>
+      <span className="text-xl font-bold text-gray-900 tracking-tight">BirdieEyeView</span>
     </div>
   );
 }
@@ -53,7 +53,7 @@ export function ForgotPasswordPage() {
             </p>
           </div>
         </div>
-        <div className="text-xs text-gray-400">© 2026 ScanScorecards</div>
+        <div className="text-xs text-gray-400">© 2026 BirdieEyeView</div>
       </div>
 
       <div className="flex items-center justify-center px-6 py-12 bg-white min-h-screen md:min-h-0">

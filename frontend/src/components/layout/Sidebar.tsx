@@ -27,7 +27,7 @@ export function Sidebar() {
           <div className="w-7 h-7 rounded-lg bg-white/15 flex items-center justify-center flex-shrink-0">
             <Flag size={14} className="text-white" />
           </div>
-          <span className="text-sm font-semibold text-white flex-1 text-left truncate">ScanScorecards</span>
+          <span className="text-sm font-semibold text-white flex-1 text-left truncate">BirdieEyeView</span>
           <ChevronsUpDown size={14} className="text-white/30 flex-shrink-0" />
         </button>
       </div>

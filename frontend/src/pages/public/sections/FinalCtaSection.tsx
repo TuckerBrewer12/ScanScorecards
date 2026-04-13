@@ -22,7 +22,7 @@ export function FinalCtaSection() {
       {/* Footer strip */}
       <div className="border-t border-white/10">
         <div className="max-w-5xl mx-auto px-6 py-6 flex flex-col md:flex-row items-center justify-between gap-3 text-white/40 text-sm">
-          <span>© 2026 ScanScorecards</span>
+          <span>© 2026 BirdieEyeView</span>
           <div className="flex items-center gap-6">
             <Link to="/login" className="hover:text-white transition-colors">
               Sign In
