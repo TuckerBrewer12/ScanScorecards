@@ -1,9 +1,9 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
 import { Target, Trophy, CheckCircle2, BarChart2 } from "lucide-react";
 import { api } from "@/lib/api";
-import { ComparisonTargetToggle } from "@/components/suggestions/ComparisonTargetToggle";
+import { ComparisonTargetToggle, type ComparisonTargetValue } from "@/components/suggestions/ComparisonTargetToggle";
 import { BentoCard } from "@/components/ui/BentoCard";
 import { GoalSaverCard } from "@/components/goals/GoalSaverCard";
 import type { BenchmarkProfile } from "@/components/the-lab/constants";
@@ -11,7 +11,7 @@ import { GOAL_OPTIONS, GOAL_BENCHMARK, HANDICAP_BENCHMARK } from "@/components/t
 import { ProgressRing } from "@/components/the-lab/ProgressRing";
 import { AttemptsTimeline } from "@/components/the-lab/AttemptsTimeline";
 import { buildRadarData, UserRadarChart } from "@/components/analytics/UserRadarChart";
-import type { ScoreTypeRow } from "@/types/analytics";
+import type { AnalyticsData, ScoreTypeRow } from "@/types/analytics";
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
@@ -45,10 +45,28 @@ interface TheLabPageProps {
   userId: string;
 }
 
+function toBenchmarkProfile(data: AnalyticsData | undefined): BenchmarkProfile | null {
+  if (!data || data.kpis.total_rounds < 1) return null;
+  const clamp = (value: number) => Math.max(0, Math.min(100, value));
+  const par3 = data.scoring_by_par.find((row) => row.par === 3 && row.sample_size > 0)?.average_to_par;
+  const par4 = data.scoring_by_par.find((row) => row.par === 4 && row.sample_size > 0)?.average_to_par;
+  const par5 = data.scoring_by_par.find((row) => row.par === 5 && row.sample_size > 0)?.average_to_par;
+
+  return {
+    gir: clamp(data.kpis.gir_percentage ?? 0),
+    scrambling: clamp(data.kpis.scrambling_percentage ?? 0),
+    putting: clamp(((3.5 - (data.kpis.putts_per_gir ?? 3.5)) / 2) * 100),
+    par3: clamp(((2 - (par3 ?? 2)) / 2.5) * 100),
+    par4: clamp(((2 - (par4 ?? 2)) / 2.5) * 100),
+    par5: clamp(((2 - (par5 ?? 2)) / 2.5) * 100),
+  };
+}
+
 export function TheLabPage({ userId }: TheLabPageProps) {
   const queryClient = useQueryClient();
-  const [targetHandicap, setTargetHandicap] = useState<number | null>(null);
+  const [targetHandicap, setTargetHandicap] = useState<ComparisonTargetValue>(null);
   const [radarMode, setRadarMode] = useState<"benchmark" | "peak">("benchmark");
+  const [selectedFriendId, setSelectedFriendId] = useState("");
 
   // Queries
   const { data: user } = useQuery({
@@ -69,6 +87,49 @@ export function TheLabPage({ userId }: TheLabPageProps) {
     queryFn: () => api.getAnalytics(userId, { limit: 20, timeframe: "all", courseId: "all" }),
   });
 
+  const { data: acceptedFriendships = [] } = useQuery({
+    queryKey: ["friendships", "accepted"],
+    queryFn: () => api.getFriendships("accepted"),
+  });
+
+  const friendOptions = useMemo(() => {
+    const deduped = new Map<string, string>();
+    for (const friendship of acceptedFriendships) {
+      const isRequester = friendship.requester_id === userId;
+      const friendId = isRequester ? friendship.addressee_id : friendship.requester_id;
+      if (!friendId || friendId === userId) continue;
+      const friendName = (isRequester ? friendship.addressee_name : friendship.requester_name) || "Unknown user";
+      if (!deduped.has(friendId)) {
+        deduped.set(friendId, friendName);
+      }
+    }
+    return [...deduped.entries()]
+      .map(([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }, [acceptedFriendships, userId]);
+
+  useEffect(() => {
+    if (!friendOptions.length) {
+      setSelectedFriendId("");
+      return;
+    }
+    if (!selectedFriendId || !friendOptions.some((f) => f.id === selectedFriendId)) {
+      setSelectedFriendId(friendOptions[0].id);
+    }
+  }, [friendOptions, selectedFriendId]);
+
+  const selectedFriend = useMemo(
+    () => friendOptions.find((friend) => friend.id === selectedFriendId) ?? null,
+    [friendOptions, selectedFriendId],
+  );
+
+  const comparingFriend = radarMode === "benchmark" && targetHandicap === "friend";
+  const { data: friendAnalytics, isLoading: friendAnalyticsLoading } = useQuery({
+    queryKey: ["analytics", "friend-compare", selectedFriendId, { limit: 20 }],
+    queryFn: () => api.getAnalytics(selectedFriendId, { limit: 20, timeframe: "all", courseId: "all" }),
+    enabled: comparingFriend && !!selectedFriendId,
+  });
+
   // Goal mutation
   const { mutate: setGoal, isPending: settingGoal } = useMutation({
     mutationFn: (value: number) => api.updateUser(userId, { scoring_goal: value }),
@@ -80,9 +141,14 @@ export function TheLabPage({ userId }: TheLabPageProps) {
 
   // Benchmark profile: driven solely by the toggle, independent of goal
   const benchmarkProfile = useMemo<BenchmarkProfile | null>(() => {
-    if (targetHandicap != null) return HANDICAP_BENCHMARK[targetHandicap] ?? null;
+    if (typeof targetHandicap === "number") return HANDICAP_BENCHMARK[targetHandicap] ?? null;
     return null;
   }, [targetHandicap]);
+
+  const friendProfile = useMemo<BenchmarkProfile | null>(
+    () => toBenchmarkProfile(friendAnalytics),
+    [friendAnalytics],
+  );
 
   // Best rounds insight — top 3 rounds by score, for peak-game analysis
   const peakInsight = useMemo(() => {
@@ -136,7 +202,11 @@ export function TheLabPage({ userId }: TheLabPageProps) {
   }, [peakInsight, analytics]);
 
   // Active profile: switches between peer benchmark and peak game
-  const activeProfile = radarMode === "peak" ? peakProfile : benchmarkProfile;
+  const activeProfile = useMemo(() => {
+    if (radarMode === "peak") return peakProfile;
+    if (targetHandicap === "friend") return friendProfile;
+    return benchmarkProfile;
+  }, [radarMode, targetHandicap, peakProfile, friendProfile, benchmarkProfile]);
 
   // Missing axes for the "no data" notice in the left panel
   const missingAxes = useMemo(() => {
@@ -159,6 +229,7 @@ export function TheLabPage({ userId }: TheLabPageProps) {
   // Radar card heading
   const benchmarkHeading = useMemo(() => {
     if (radarMode === "peak") return peakInsight ? `You vs. Your Peak Game (avg ${peakInsight.bestAvg.toFixed(1)})` : "Peak Game";
+    if (targetHandicap === "friend") return selectedFriend ? `You vs. ${selectedFriend.name}` : "You vs. Friend";
     if (targetHandicap === 0)  return "You vs. Scratch";
     if (targetHandicap === 5)  return "You vs. Break-80 Shape";
     if (targetHandicap === 10) return "You vs. Break-85 Shape";
@@ -166,7 +237,7 @@ export function TheLabPage({ userId }: TheLabPageProps) {
     if (targetHandicap === 20) return "You vs. Break-95 Shape";
     if (targetHandicap === 25) return "You vs. Break-100 Shape";
     return "Your Performance Shape";
-  }, [radarMode, targetHandicap, peakInsight]);
+  }, [radarMode, targetHandicap, peakInsight, selectedFriend]);
 
   return (
     <div className="space-y-6">
@@ -226,12 +297,12 @@ export function TheLabPage({ userId }: TheLabPageProps) {
                     You
                   </span>
                   {activeProfile && (
-                    <span className="flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-gray-300 shrink-0" />
-                      Target shape
-                    </span>
-                  )}
-                </div>
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-gray-300 shrink-0" />
+                    {comparingFriend ? (selectedFriend?.name ?? "Friend") : "Target shape"}
+                  </span>
+                )}
+              </div>
 
                 {missingAxes.length > 0 && (
                   <p className="text-[10px] text-amber-600 bg-amber-50 rounded-lg px-2.5 py-1.5 leading-relaxed">
@@ -242,6 +313,32 @@ export function TheLabPage({ userId }: TheLabPageProps) {
 
               {/* Right panel: radar chart */}
               <div className="flex-1 min-w-0">
+                <div className="flex justify-end mb-2 min-h-11">
+                  {comparingFriend && (
+                    <div className="w-full max-w-64">
+                      <label htmlFor="friend-compare-select" className="sr-only">
+                        Select friend to compare
+                      </label>
+                      <select
+                        id="friend-compare-select"
+                        value={selectedFriendId}
+                        onChange={(event) => setSelectedFriendId(event.target.value)}
+                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                        disabled={friendOptions.length === 0}
+                      >
+                        {friendOptions.length === 0 ? (
+                          <option value="">No friends available</option>
+                        ) : (
+                          friendOptions.map((friend) => (
+                            <option key={friend.id} value={friend.id}>
+                              {friend.name}
+                            </option>
+                          ))
+                        )}
+                      </select>
+                    </div>
+                  )}
+                </div>
                 {analytics?.kpis && (
                   <UserRadarChart
                     kpis={analytics.kpis}
@@ -253,7 +350,13 @@ export function TheLabPage({ userId }: TheLabPageProps) {
                     gridColor="#e5e7eb"
                     showTooltip
                     emptyMessage={
-                      currentGoal
+                      comparingFriend
+                        ? friendOptions.length === 0
+                          ? "Add friends in Social to unlock friend comparison."
+                          : friendAnalyticsLoading
+                            ? "Loading friend comparison..."
+                            : "This friend needs more round data before comparison appears."
+                        : currentGoal
                         ? "Play more rounds to build your performance shape."
                         : "Set a target above to see your benchmark comparison."
                     }

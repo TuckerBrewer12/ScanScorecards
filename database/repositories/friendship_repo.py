@@ -121,3 +121,23 @@ class FriendshipRepositoryDB:
                     uid,
                 )
             return [dict(r) for r in rows]
+
+    async def are_friends(self, user_a_id: str, user_b_id: str) -> bool:
+        """Return True when users have an accepted friendship in either direction."""
+        a = UUID(user_a_id)
+        b = UUID(user_b_id)
+        if a == b:
+            return True
+
+        async with self._pool.acquire() as conn:
+            row = await conn.fetchrow(
+                """SELECT 1
+                   FROM users.friendships
+                   WHERE status = 'accepted'
+                     AND ((requester_id = $1 AND addressee_id = $2)
+                       OR (requester_id = $2 AND addressee_id = $1))
+                   LIMIT 1""",
+                a,
+                b,
+            )
+            return row is not None

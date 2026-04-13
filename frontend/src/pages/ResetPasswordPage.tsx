@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
-import { Flag } from "lucide-react";
+import { Eye, EyeOff, Flag } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
 function Logo() {
@@ -21,6 +21,8 @@ export function ResetPasswordPage() {
   const token = useMemo(() => (searchParams.get("token") ?? "").trim(), [searchParams]);
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -95,30 +97,52 @@ export function ResetPasswordPage() {
 
             <div>
               <label htmlFor="reset-password" className="block text-xs font-semibold text-gray-500 mb-1.5">New Password</label>
-              <input
-                id="reset-password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                autoComplete="new-password"
-                className={inputClass}
-                placeholder="At least 8 characters"
-              />
+              <div className="relative">
+                <input
+                  id="reset-password"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  autoComplete="new-password"
+                  className={`${inputClass} pr-12`}
+                  placeholder="At least 8 characters"
+                />
+                <button
+                  type="button"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  aria-pressed={showPassword}
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  className="absolute inset-y-0 right-0 px-3 text-gray-500 hover:text-gray-700"
+                >
+                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
             </div>
 
             <div>
               <label htmlFor="reset-confirm" className="block text-xs font-semibold text-gray-500 mb-1.5">Confirm Password</label>
-              <input
-                id="reset-confirm"
-                type="password"
-                value={confirm}
-                onChange={(e) => setConfirm(e.target.value)}
-                required
-                autoComplete="new-password"
-                className={inputClass}
-                placeholder="••••••••"
-              />
+              <div className="relative">
+                <input
+                  id="reset-confirm"
+                  type={showConfirmPassword ? "text" : "password"}
+                  value={confirm}
+                  onChange={(e) => setConfirm(e.target.value)}
+                  required
+                  autoComplete="new-password"
+                  className={`${inputClass} pr-12`}
+                  placeholder="••••••••"
+                />
+                <button
+                  type="button"
+                  aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
+                  aria-pressed={showConfirmPassword}
+                  onClick={() => setShowConfirmPassword((prev) => !prev)}
+                  className="absolute inset-y-0 right-0 px-3 text-gray-500 hover:text-gray-700"
+                >
+                  {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
             </div>
 
             <button

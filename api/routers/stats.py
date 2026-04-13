@@ -101,9 +101,12 @@ async def get_analytics(
     db: DatabaseManager = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    if str(current_user.id) != str(user_id):
+    viewer_id = str(current_user.id)
+    target_user_id = str(user_id)
+    can_view = viewer_id == target_user_id or await db.friendships.are_friends(viewer_id, target_user_id)
+    if not can_view:
         raise HTTPException(403, "Forbidden")
-    user = await db.users.get_user(str(user_id))
+    user = await db.users.get_user(target_user_id)
     if not user:
         raise HTTPException(404, "User not found")
 
@@ -128,7 +131,7 @@ async def get_analytics(
 
     # DB returns newest-first; reverse for chronological trend ordering
     rounds_desc = await db.rounds.get_rounds_for_user(
-        str(user_id), limit=limit, offset=0,
+        target_user_id, limit=limit, offset=0,
         course_id=resolved_course_id,
         date_from=date_from,
     )
