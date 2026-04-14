@@ -65,6 +65,20 @@ def create_app() -> FastAPI:
     allowed_hosts = parse_allowed_hosts()
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=allowed_hosts)
 
+    # Bypass TrustedHostMiddleware for the healthcheck endpoint so that
+    # Railway's internal probe (which sends no matching Host header) always
+    # gets a 200 rather than a 400.  This middleware is added *after*
+    # TrustedHostMiddleware so that Starlette wraps it on the outside and it
+    # therefore runs *first* in the request chain.
+    @app.middleware("http")
+    async def health_bypass_middleware(request: Request, call_next):
+        if request.url.path == "/api/health":
+            healthy = await db.health_check()
+            return JSONResponse(
+                content={"status": "ok" if healthy else "degraded", "database": healthy}
+            )
+        return await call_next(request)
+
     cors_origins_raw = os.environ.get("CORS_ALLOW_ORIGINS", "http://localhost:5173")
     cors_origins = [o.strip() for o in cors_origins_raw.split(",") if o.strip()]
     app.add_middleware(
