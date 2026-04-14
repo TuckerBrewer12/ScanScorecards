@@ -255,7 +255,10 @@ def create_app() -> FastAPI:
     @app.get("/api/health")
     async def health():
         healthy = await db.health_check()
-        return {"status": "ok" if healthy else "degraded", "database": healthy}
+        return JSONResponse(
+            status_code=200,
+            content={"status": "ok" if healthy else "degraded", "database": healthy},
+        )
 
     return app
 
