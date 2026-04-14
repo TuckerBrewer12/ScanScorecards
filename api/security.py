@@ -148,19 +148,21 @@ def parse_allowed_hosts() -> list[str]:
     raw = os.environ.get("ALLOWED_HOSTS", "").strip()
     hosts = [h.strip() for h in raw.split(",") if h.strip()]
 
-    if not hosts:
-        hosts = ["localhost", "127.0.0.1", "::1"]
-        for env_name in ("RAILWAY_PUBLIC_DOMAIN", "RAILWAY_PRIVATE_DOMAIN", "RAILWAY_STATIC_URL", "FRONTEND_URL"):
-            host = _normalize_host(os.environ.get(env_name, ""))
-            if host:
-                hosts.append(host)
+    # Always keep local dev hosts available.
+    hosts.extend(["localhost", "127.0.0.1", "::1"])
 
-        on_railway = any(
-            os.environ.get(name)
-            for name in ("RAILWAY_PROJECT_ID", "RAILWAY_SERVICE_ID", "RAILWAY_ENVIRONMENT_ID")
-        )
-        if on_railway:
-            hosts.extend(["*.up.railway.app", "*.railway.app"])
+    for env_name in ("RAILWAY_PUBLIC_DOMAIN", "RAILWAY_PRIVATE_DOMAIN", "RAILWAY_STATIC_URL", "FRONTEND_URL"):
+        host = _normalize_host(os.environ.get(env_name, ""))
+        if host:
+            hosts.append(host)
+
+    on_railway = any(
+        os.environ.get(name)
+        for name in ("RAILWAY_PROJECT_ID", "RAILWAY_SERVICE_ID", "RAILWAY_ENVIRONMENT_ID")
+    )
+    if on_railway:
+        # Health checks and routed traffic may arrive on public or internal domains.
+        hosts.extend(["*.up.railway.app", "*.railway.app", "*.railway.internal"])
 
     deduped: list[str] = []
     seen = set()
