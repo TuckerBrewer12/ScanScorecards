@@ -6,7 +6,7 @@ import time
 from contextlib import asynccontextmanager
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Response
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
 
@@ -252,9 +252,21 @@ def create_app() -> FastAPI:
     app.include_router(scan.router, prefix="/api/scan", tags=["scan"])
     app.include_router(ai_insights.router, prefix="/api/ai-insights", tags=["ai-insights"])
 
-    @app.get("/api/health")
-    async def health():
+    @app.api_route("/", methods=["GET", "HEAD"])
+    async def root_status(request: Request):
+        if request.method == "HEAD":
+            return Response(status_code=200)
+        return JSONResponse(
+            status_code=200,
+            content={"status": "ok", "service": "backend"},
+        )
+
+    @app.api_route("/health", methods=["GET", "HEAD"])
+    @app.api_route("/api/health", methods=["GET", "HEAD"])
+    async def health(request: Request):
         healthy = await db.health_check()
+        if request.method == "HEAD":
+            return Response(status_code=200)
         return JSONResponse(
             status_code=200,
             content={"status": "ok" if healthy else "degraded", "database": healthy},
