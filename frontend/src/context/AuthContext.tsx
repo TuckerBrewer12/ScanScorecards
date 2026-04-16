@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { setStoredColorBlindMode } from "@/lib/accessibility";
 import { apiUrl } from "@/lib/apiBase";
+import { setSessionToken, withAuthHeaders } from "@/lib/sessionToken";
 import { applyTheme, setStoredPublicTheme, setStoredTheme } from "@/lib/theme";
 
 interface AuthState {
@@ -32,6 +33,7 @@ interface AuthUserPayload {
   name: string;
   email: string;
   email_verified: boolean;
+  access_token?: string | null;
 }
 
 interface RegisterPayload {
@@ -84,7 +86,7 @@ async function callAuth<T>(path: string, body: object): Promise<T> {
   const res = await fetch(apiUrl(`/api/auth${path}`), {
     method: "POST",
     credentials: "include",
-    headers: { "Content-Type": "application/json" },
+    headers: withAuthHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify(body),
   });
   if (!res.ok) {
@@ -104,18 +106,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const refreshSession = useCallback(async (): Promise<AuthState | null> => {
     try {
-      const res = await fetch(apiUrl("/api/auth/me"), { credentials: "include" });
+      const res = await fetch(apiUrl("/api/auth/me"), {
+        credentials: "include",
+        headers: withAuthHeaders(),
+      });
       if (res.status === 401 || res.status === 403) {
+        setSessionToken(null);
         setState((prev) =>
           prev.userId === null && prev.name === null && prev.email === null && prev.emailVerified === false
             ? prev
             : EMPTY_AUTH_STATE
         );
         return null;
-      }
-      if (!res.ok) {
-        // Don't force-logout users on transient infra/network errors.
-        return latestStateRef.current.userId ? latestStateRef.current : null;
       }
       const data = await parseJsonPayload<AuthUserPayload>(res);
       const nextState: AuthState = {
@@ -164,6 +166,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (email: string, password: string) => {
     const data = await callAuth<AuthUserPayload>("/login", { email, password });
+    setSessionToken(data.access_token ?? null);
     setState({
       userId: data.user_id,
       name: data.name,
@@ -217,6 +220,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await callAuth<{ message: string }>("/logout", {});
     } finally {
+      setSessionToken(null);
       setState(EMPTY_AUTH_STATE);
     }
   };

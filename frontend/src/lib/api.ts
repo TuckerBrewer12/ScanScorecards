@@ -1,6 +1,7 @@
 import type { DashboardData, RoundSummary, Round, CourseSummary, Course, User, Milestone, Friendship } from "@/types/golf";
 import type { AnalyticsData, AnalyticsFilters, CourseAnalyticsData, RoundComparison, GoalReport } from "@/types/analytics";
 import { apiUrl } from "@/lib/apiBase";
+import { withAuthHeaders } from "@/lib/sessionToken";
 
 async function parseJSONBody<T>(res: Response): Promise<T> {
   const text = await res.text();
@@ -31,6 +32,7 @@ async function parseErrorMessage(res: Response): Promise<string> {
 async function fetchJSON<T>(path: string): Promise<T> {
   const res = await fetch(apiUrl(`/api${path}`), {
     credentials: "include",
+    headers: withAuthHeaders(),
   });
   if (!res.ok) {
     throw new Error(await parseErrorMessage(res));
@@ -42,7 +44,7 @@ async function postJSON<T>(path: string, body: unknown): Promise<T> {
   const res = await fetch(apiUrl(`/api${path}`), {
     method: "POST",
     credentials: "include",
-    headers: { "Content-Type": "application/json" },
+    headers: withAuthHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify(body),
   });
   if (!res.ok) {
@@ -55,7 +57,7 @@ async function putJSON<T>(path: string, body: unknown): Promise<T> {
   const res = await fetch(apiUrl(`/api${path}`), {
     method: "PUT",
     credentials: "include",
-    headers: { "Content-Type": "application/json" },
+    headers: withAuthHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify(body),
   });
   if (!res.ok) {
@@ -68,7 +70,7 @@ async function patchJSON<T>(path: string, body: unknown): Promise<T> {
   const res = await fetch(apiUrl(`/api${path}`), {
     method: "PATCH",
     credentials: "include",
-    headers: { "Content-Type": "application/json" },
+    headers: withAuthHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify(body),
   });
   if (!res.ok) {
@@ -104,6 +106,7 @@ export const api = {
     fetch(apiUrl(`/api/rounds/${roundId}`), {
       method: "DELETE",
       credentials: "include",
+      headers: withAuthHeaders(),
     }).then((res) => {
       if (!res.ok) throw new Error(`Delete failed: ${res.status}`);
     }),

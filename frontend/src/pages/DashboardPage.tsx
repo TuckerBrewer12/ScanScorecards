@@ -107,9 +107,21 @@ interface DashboardPageProps {
 
 export function DashboardPage({ userId }: DashboardPageProps) {
   const navigate = useNavigate();
-  const { data: fetched, isLoading: loading } = useQuery({
+  const { data: fetched, isLoading: loading, error, refetch } = useQuery({
     queryKey: ["dashboard", userId],
-    queryFn: () => Promise.all([api.getDashboard(userId), api.getAnalytics(userId, { limit: 20, timeframe: "all", courseId: "all" })]),
+    queryFn: async () => {
+      const [dashboardResult, analyticsResult] = await Promise.allSettled([
+        api.getDashboard(userId),
+        api.getAnalytics(userId, { limit: 20, timeframe: "all", courseId: "all" }),
+      ]);
+      if (dashboardResult.status !== "fulfilled") {
+        throw dashboardResult.reason;
+      }
+      return [
+        dashboardResult.value,
+        analyticsResult.status === "fulfilled" ? analyticsResult.value : null,
+      ] as const;
+    },
   });
   const { data: user } = useQuery({
     queryKey: ["user", userId],
@@ -225,7 +237,22 @@ export function DashboardPage({ userId }: DashboardPageProps) {
     );
   }
 
-  if (!data) return null;
+  if (!data) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 gap-3">
+        <div className="text-sm text-red-500 text-center max-w-md px-4">
+          {(error as Error | null)?.message ?? "Dashboard data failed to load."}
+        </div>
+        <button
+          type="button"
+          onClick={() => void refetch()}
+          className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
 
   const scramblingPct = (() => {
     const rows = (trends?.scrambling_trend ?? []).slice(-5);

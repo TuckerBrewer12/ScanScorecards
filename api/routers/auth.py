@@ -375,6 +375,7 @@ async def login(
         name=auth_user["name"] or "",
         email=auth_user["email"] or "",
         email_verified=True,
+        access_token=token,
     )
 
 
