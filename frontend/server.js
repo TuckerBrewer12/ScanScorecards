@@ -72,6 +72,20 @@ const server = http.createServer((req, res) => {
     return;
   }
 
+  // Fail fast for API calls accidentally sent to the frontend container.
+  if (pathname === "/api" || pathname.startsWith("/api/")) {
+    send(
+      res,
+      502,
+      JSON.stringify({
+        detail: "Frontend service cannot serve API routes. Set VITE_API_BASE_URL to your backend URL (including https://).",
+      }),
+      "application/json; charset=utf-8",
+      { "Cache-Control": "no-store" },
+    );
+    return;
+  }
+
   let requestPath = pathname;
   if (requestPath.endsWith("/")) requestPath += "index.html";
   const candidate = path.resolve(distDir, requestPath.replace(/^\/+/, ""));

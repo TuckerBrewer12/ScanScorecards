@@ -2,14 +2,40 @@ import type { DashboardData, RoundSummary, Round, CourseSummary, Course, User, M
 import type { AnalyticsData, AnalyticsFilters, CourseAnalyticsData, RoundComparison, GoalReport } from "@/types/analytics";
 import { apiUrl } from "@/lib/apiBase";
 
+async function parseJSONBody<T>(res: Response): Promise<T> {
+  const text = await res.text();
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    if (/^\s*</.test(text)) {
+      throw new Error("API returned HTML instead of JSON. Check VITE_API_BASE_URL points to your backend (include https://).");
+    }
+    throw new Error("API returned an invalid JSON payload.");
+  }
+}
+
+async function parseErrorMessage(res: Response): Promise<string> {
+  const text = await res.text();
+  const fallback = `API error: ${res.status}`;
+  if (!text) return fallback;
+  try {
+    return JSON.parse(text).detail ?? fallback;
+  } catch {
+    if (/^\s*</.test(text)) {
+      return "API returned HTML instead of JSON. Check VITE_API_BASE_URL points to your backend (include https://).";
+    }
+    return text;
+  }
+}
+
 async function fetchJSON<T>(path: string): Promise<T> {
   const res = await fetch(apiUrl(`/api${path}`), {
     credentials: "include",
   });
   if (!res.ok) {
-    throw new Error(`API error: ${res.status} ${res.statusText}`);
+    throw new Error(await parseErrorMessage(res));
   }
-  return res.json();
+  return parseJSONBody<T>(res);
 }
 
 async function postJSON<T>(path: string, body: unknown): Promise<T> {
@@ -20,12 +46,9 @@ async function postJSON<T>(path: string, body: unknown): Promise<T> {
     body: JSON.stringify(body),
   });
   if (!res.ok) {
-    const text = await res.text();
-    let msg = `API error: ${res.status}`;
-    try { msg = JSON.parse(text).detail ?? msg; } catch { if (text) msg = text; }
-    throw new Error(msg);
+    throw new Error(await parseErrorMessage(res));
   }
-  return res.json();
+  return parseJSONBody<T>(res);
 }
 
 async function putJSON<T>(path: string, body: unknown): Promise<T> {
@@ -36,12 +59,9 @@ async function putJSON<T>(path: string, body: unknown): Promise<T> {
     body: JSON.stringify(body),
   });
   if (!res.ok) {
-    const text = await res.text();
-    let msg = `API error: ${res.status}`;
-    try { msg = JSON.parse(text).detail ?? msg; } catch { if (text) msg = text; }
-    throw new Error(msg);
+    throw new Error(await parseErrorMessage(res));
   }
-  return res.json();
+  return parseJSONBody<T>(res);
 }
 
 async function patchJSON<T>(path: string, body: unknown): Promise<T> {
@@ -52,12 +72,9 @@ async function patchJSON<T>(path: string, body: unknown): Promise<T> {
     body: JSON.stringify(body),
   });
   if (!res.ok) {
-    const text = await res.text();
-    let msg = `API error: ${res.status}`;
-    try { msg = JSON.parse(text).detail ?? msg; } catch { if (text) msg = text; }
-    throw new Error(msg);
+    throw new Error(await parseErrorMessage(res));
   }
-  return res.json();
+  return parseJSONBody<T>(res);
 }
 
 export const api = {
