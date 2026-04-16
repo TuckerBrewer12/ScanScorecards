@@ -325,7 +325,8 @@ export function CareerPage({ userId }: { userId: string }) {
 
           {/* ── Round Records Table ──────────────────────────────────────── */}
           <ChartCard title="Round Records" className="xl:col-span-2">
-            <table className="w-full text-sm">
+            <div className="w-full overflow-x-auto">
+            <table className="w-full min-w-[400px] text-sm">
               <thead>
                 <tr className="border-b border-gray-100">
                   <th className="text-left text-[10px] uppercase tracking-widest text-gray-400 font-semibold pb-2 w-[30%]">Record</th>
@@ -343,6 +344,7 @@ export function CareerPage({ userId }: { userId: string }) {
                 ))}
               </tbody>
             </table>
+            </div>
           </ChartCard>
 
           {/* ── Handicap Index Gauge ─────────────────────────────────────── */}
@@ -378,7 +380,7 @@ export function CareerPage({ userId }: { userId: string }) {
             title={w === "lifetime" ? "Career Totals" : "Year Totals"}
             className="xl:col-span-2"
           >
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
               {w === "lifetime" ? (
                 <>
                   <StatTile label="Rounds" value={career_totals.lifetime.total_rounds_played} />
@@ -410,7 +412,7 @@ export function CareerPage({ userId }: { userId: string }) {
           {/* ── Career Milestones ────────────────────────────────────────── */}
           <ChartCard title="Career Milestones" className="xl:col-span-2">
             {w === "lifetime" ? (
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {scoreBreaksAbove70.map((row) => (
                   <MilestoneBar
                     key={row.threshold}

@@ -385,39 +385,41 @@ export function SettingsPage({ userId }: { userId: string }) {
 
           <div className="space-y-2">
             <div className="rounded-xl border border-gray-300 overflow-hidden">
-              <div className="grid grid-cols-[1.4fr_auto_1fr_auto] items-stretch">
-                <div className="px-3 py-2.5 text-xs font-bold tracking-wider uppercase text-gray-700 bg-gray-50 border-r border-gray-300">
+              <div className="flex flex-wrap items-stretch">
+                <div className="px-3 py-2.5 text-xs font-bold tracking-wider uppercase text-gray-700 bg-gray-50 border-r border-b border-gray-300 flex-1 min-w-[130px]">
                   Color Blind Mode
                 </div>
-                <button
-                  type="button"
-                  onClick={() => stepColorBlindMode(-1)}
-                  aria-label="Previous color blind mode"
-                  className="px-3 py-2.5 text-gray-600 bg-white border-r border-gray-300 hover:bg-gray-50"
-                >
-                  ‹
-                </button>
-                <div className="px-3 py-2.5 bg-white border-r border-gray-300">
-                  <div className="text-sm font-semibold text-gray-900">{colorBlindDisplay}</div>
-                  <div className="mt-1 flex gap-1">
-                    {COLORBLIND_MODES.map((m, i) => (
-                      <span
-                        key={m.key}
-                        className={`h-1.5 flex-1 rounded-sm ${
-                          i === colorBlindIndex ? "bg-primary" : "bg-gray-300"
-                        }`}
-                      />
-                    ))}
+                <div className="flex items-stretch flex-1 min-w-[180px] border-b border-gray-300 sm:border-b-0">
+                  <button
+                    type="button"
+                    onClick={() => stepColorBlindMode(-1)}
+                    aria-label="Previous color blind mode"
+                    className="px-3 py-2.5 text-gray-600 bg-white border-r border-gray-300 hover:bg-gray-50 shrink-0"
+                  >
+                    ‹
+                  </button>
+                  <div className="px-3 py-2.5 bg-white border-r border-gray-300 flex-1 min-w-0">
+                    <div className="text-sm font-semibold text-gray-900">{colorBlindDisplay}</div>
+                    <div className="mt-1 flex gap-1">
+                      {COLORBLIND_MODES.map((m, i) => (
+                        <span
+                          key={m.key}
+                          className={`h-1.5 flex-1 rounded-sm ${
+                            i === colorBlindIndex ? "bg-primary" : "bg-gray-300"
+                          }`}
+                        />
+                      ))}
+                    </div>
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => stepColorBlindMode(1)}
+                    aria-label="Next color blind mode"
+                    className="px-3 py-2.5 text-gray-600 bg-white hover:bg-gray-50 shrink-0"
+                  >
+                    ›
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => stepColorBlindMode(1)}
-                  aria-label="Next color blind mode"
-                  className="px-3 py-2.5 text-gray-600 bg-white hover:bg-gray-50"
-                >
-                  ›
-                </button>
               </div>
             </div>
             <p className="text-xs text-gray-500">

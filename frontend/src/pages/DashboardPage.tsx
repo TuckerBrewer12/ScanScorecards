@@ -459,7 +459,9 @@ export function DashboardPage({ userId }: DashboardPageProps) {
 
           {/* 10. Recent Rounds — fills remaining cols of last row */}
           <BentoCard title="Recent Rounds" className="md:col-span-2 lg:col-span-3 overflow-hidden" interactive>
-            <RecentRoundsTable rounds={data.recent_rounds.slice(0, 2)} />
+            <div className="overflow-x-auto -mx-5 px-5">
+              <RecentRoundsTable rounds={data.recent_rounds.slice(0, 2)} />
+            </div>
             <div className="mt-4 flex gap-3">
               <Link to="/rounds" className="px-4 py-2 bg-primary text-white rounded-xl text-xs font-semibold hover:opacity-90 transition-opacity shadow-sm">
                 All Rounds

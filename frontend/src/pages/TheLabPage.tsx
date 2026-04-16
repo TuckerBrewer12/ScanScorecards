@@ -259,10 +259,10 @@ export function TheLabPage({ userId }: TheLabPageProps) {
         ) : (
           <BentoCard>
             {/* Main layout: left controls | right chart */}
-            <div className="flex gap-5 items-stretch">
+            <div className="flex flex-col md:flex-row gap-5 items-stretch">
 
               {/* Left panel: mode toggle + peer toggle + legend + notice */}
-              <div className="flex flex-col gap-3 w-36 shrink-0">
+              <div className="flex flex-col gap-3 w-full md:w-36 shrink-0">
                 <p className="text-sm font-bold text-gray-900 leading-tight">{benchmarkHeading}</p>
 
                 {/* Mode toggle — vertical */}
@@ -344,8 +344,8 @@ export function TheLabPage({ userId }: TheLabPageProps) {
                     kpis={analytics.kpis}
                     scoringByPar={analytics.scoring_by_par ?? []}
                     profile={activeProfile ?? undefined}
-                    height={420}
-                    outerRadius={155}
+                    height={360}
+                    outerRadius={130}
                     primaryColor="#2d7a3a"
                     gridColor="#e5e7eb"
                     showTooltip

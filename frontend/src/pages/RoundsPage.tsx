@@ -219,7 +219,8 @@ export function RoundsPage({ userId }: RoundsPageProps) {
             </span>
           </div>
 
-          <table className="w-full">
+          <div className="overflow-x-auto custom-scrollbar pb-2">
+          <table className="w-full min-w-[650px]">
             <thead>
               <tr className="bg-gray-50/60 text-left text-[10px] font-bold uppercase tracking-widest">
                 <SortHeader label="Date" field="date" sortKey={sortKey} sortAsc={sortAsc} onSort={handleSort} />
@@ -353,6 +354,7 @@ export function RoundsPage({ userId }: RoundsPageProps) {
               ))}
             </tbody>
           </table>
+          </div>
 
           {filtered.length === 0 && (
             <div className="px-6 py-12 text-center text-gray-400 text-sm">
