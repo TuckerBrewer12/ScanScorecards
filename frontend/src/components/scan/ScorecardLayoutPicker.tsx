@@ -38,6 +38,16 @@ export function ScorecardLayoutPicker({ onContextChange }: ScorecardLayoutPicker
 
   const safeNameRowIndex = Math.min(nameRowIndex, rowOrder.length - 1);
 
+  const reorderRow = (from: number, to: number) => {
+    if (from === to || to < 0 || to >= rowOrder.length) return;
+    setRowOrder((prev) => {
+      const next = [...prev];
+      const [item] = next.splice(from, 1);
+      next.splice(to, 0, item);
+      return next;
+    });
+  };
+
   // Build user_context string
   useEffect(() => {
     const parts: string[] = [];
@@ -75,6 +85,34 @@ export function ScorecardLayoutPicker({ onContextChange }: ScorecardLayoutPicker
       });
       dragging.current = { type: "row", src: i };
     }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!dragging.current) return;
+    const touch = e.touches[0];
+    if (!touch) return;
+    const el = document.elementFromPoint(touch.clientX, touch.clientY) as HTMLElement | null;
+    const rowHost = el?.closest("[data-row-index]") as HTMLElement | null;
+    if (!rowHost) return;
+    const idxRaw = rowHost.dataset.rowIndex;
+    if (idxRaw == null) return;
+    const i = Number.parseInt(idxRaw, 10);
+    if (Number.isNaN(i)) return;
+
+    e.preventDefault();
+    if (dragging.current.type === "name") {
+      setNameRowIndex(i);
+      return;
+    }
+
+    const src = dragging.current.src;
+    if (src === i) return;
+    reorderRow(src, i);
+    dragging.current = { type: "row", src: i };
+  };
+
+  const endPointerDrag = () => {
+    dragging.current = null;
   };
 
   const showPicker = hasPutts || hasShotsToGreen;
@@ -206,8 +244,12 @@ export function ScorecardLayoutPicker({ onContextChange }: ScorecardLayoutPicker
                   return (
                     <div
                       key={row}
+                      data-row-index={i}
                       className="flex gap-2"
                       onDragOver={(e) => handleRowDragOver(e, i)}
+                      onTouchMove={handleTouchMove}
+                      onTouchEnd={endPointerDrag}
+                      onTouchCancel={endPointerDrag}
                     >
                       {/* Left column: Name indicator or empty drop target */}
                       <div className="w-16 shrink-0">
@@ -216,7 +258,10 @@ export function ScorecardLayoutPicker({ onContextChange }: ScorecardLayoutPicker
                             draggable
                             onDragStart={() => { dragging.current = { type: "name" }; }}
                             onDragEnd={() => { dragging.current = null; }}
-                            className="h-full min-h-[38px] flex items-center justify-center rounded-lg border border-gray-500 bg-gray-600 cursor-grab active:cursor-grabbing select-none"
+                            onTouchStart={() => { dragging.current = { type: "name" }; }}
+                            onTouchEnd={endPointerDrag}
+                            onTouchCancel={endPointerDrag}
+                            className="h-full min-h-[38px] flex items-center justify-center rounded-lg border border-gray-500 bg-gray-600 cursor-grab active:cursor-grabbing select-none touch-none"
                           >
                             <span className="text-[10px] font-bold text-white uppercase tracking-wide">
                               Name
@@ -233,7 +278,11 @@ export function ScorecardLayoutPicker({ onContextChange }: ScorecardLayoutPicker
                         draggable
                         onDragStart={() => { dragging.current = { type: "row", src: i }; }}
                         onDragEnd={() => { dragging.current = null; }}
-                        className="flex-1 flex items-center gap-2 px-3 py-2.5 rounded-lg border cursor-grab active:cursor-grabbing select-none"
+                        onTouchStart={() => { dragging.current = { type: "row", src: i }; }}
+                        onTouchMove={handleTouchMove}
+                        onTouchEnd={endPointerDrag}
+                        onTouchCancel={endPointerDrag}
+                        className="flex-1 flex items-center gap-2 px-3 py-2.5 rounded-lg border cursor-grab active:cursor-grabbing select-none touch-none"
                         style={{ backgroundColor: bg, borderColor: border }}
                       >
                         <GripVertical size={13} className="text-white/50 shrink-0" />
