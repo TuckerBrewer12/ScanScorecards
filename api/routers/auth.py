@@ -114,23 +114,27 @@ def _build_password_reset_url(request: Request, token: str) -> str:
 
 
 def _set_auth_cookie(response: Response, token: str) -> None:
+    samesite = get_cookie_samesite()
+    secure = get_cookie_secure_flag() or samesite == "none"
     response.set_cookie(
         key=get_access_token_cookie_name(),
         value=token,
         httponly=True,
-        secure=get_cookie_secure_flag(),
-        samesite=get_cookie_samesite(),
+        secure=secure,
+        samesite=samesite,
         max_age=get_access_token_expiry_seconds(),
         path="/",
     )
 
 
 def _clear_auth_cookie(response: Response) -> None:
+    samesite = get_cookie_samesite()
+    secure = get_cookie_secure_flag() or samesite == "none"
     response.delete_cookie(
         key=get_access_token_cookie_name(),
         path="/",
-        secure=get_cookie_secure_flag(),
-        samesite=get_cookie_samesite(),
+        secure=secure,
+        samesite=samesite,
     )
 
 
@@ -371,6 +375,7 @@ async def login(
         name=auth_user["name"] or "",
         email=auth_user["email"] or "",
         email_verified=True,
+        access_token=token,
     )
 
 

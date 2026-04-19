@@ -94,10 +94,10 @@ def parse_mistral_scorecard_rows(
     row_hints_2d = _extract_row_hints(user_context)
     player_name_2d = _extract_player_name_hint(user_context)
 
-    logger.info(
-        "Parser: user_context=%r player_name=%r name_on_row=%r row_order=%r",
-        (user_context or "")[:120],
-        player_name_2d,
+    logger.debug(
+        "Parser hints: has_user_context=%s has_player_name_hint=%s name_on_row=%r row_order=%r",
+        bool((user_context or "").strip()),
+        bool(player_name_2d),
         row_hints_2d.get("name_on_row"),
         row_hints_2d.get("row_order"),
     )
@@ -829,7 +829,7 @@ def _extract_2d_from_raw_lines(
     name_on_row: Optional[str] = row_hints.get("name_on_row")
     row_order: List[str] = row_hints.get("row_order") or []
 
-    logger.info(
+    logger.debug(
         "2D extract: row_order=%s name_on_row=%s anchor_is_score_offset=0",
         row_order, name_on_row,
     )
@@ -852,7 +852,7 @@ def _extract_2d_from_raw_lines(
         putts_offset = _offset_for("putts")
         shots_offset = _offset_for("shots")
 
-        logger.info(
+        logger.debug(
             "2D extract: name_pos=%d score_offset=%s putts_offset=%s shots_offset=%s",
             name_pos, score_offset, putts_offset, shots_offset,
         )
@@ -860,7 +860,7 @@ def _extract_2d_from_raw_lines(
         # Re-extract score from the correct offset (anchor may be putts or shots row)
         if score_offset is not None:
             score_cells = _classified_at_offset(score_offset)
-            logger.info("2D extract: score_offset=%d cells=%s", score_offset, score_cells)
+            logger.debug("2D extract: score_offset=%d", score_offset)
             if score_cells is not None:
                 if row_hints.get("score_to_par"):
                     sd = _extract_values_by_col_map(score_cells, col_map, parse_fn=_parse_to_par_cell)
@@ -874,22 +874,22 @@ def _extract_2d_from_raw_lines(
 
         if putts_offset is not None:
             putts_cells = _classified_at_offset(putts_offset)
-            logger.info("2D extract: putts_offset=%d cells=%s", putts_offset, putts_cells)
+            logger.debug("2D extract: putts_offset=%d", putts_offset)
             if putts_cells is not None:
                 d = _extract_values_by_col_map(putts_cells, col_map, parse_fn=lambda c: _parse_int_cell(c, max_abs=6))
                 parsed.putts_row = _col_map_to_18_list(d)
-                logger.info("2D extract: putts_row=%s", parsed.putts_row)
+                logger.debug("2D extract: putts_values_detected=%d", sum(v is not None for v in parsed.putts_row))
 
         if shots_offset is not None:
             shots_cells = _classified_at_offset(shots_offset)
-            logger.info("2D extract: shots_offset=%d cells=%s", shots_offset, shots_cells)
+            logger.debug("2D extract: shots_offset=%d", shots_offset)
             if shots_cells is not None:
                 d = _extract_values_by_col_map(shots_cells, col_map, parse_fn=lambda c: _parse_int_cell(c, max_abs=10))
                 parsed.shots_to_green_row = _col_map_to_18_list(d)
-                logger.info("2D extract: shots_row=%s", parsed.shots_to_green_row)
+                logger.debug("2D extract: shots_values_detected=%d", sum(v is not None for v in parsed.shots_to_green_row))
 
     else:
-        logger.info("2D extract: no row_order/name_on_row — using default putts=anchor+1 scan")
+        logger.debug("2D extract: no row_order/name_on_row, using default putts scan")
         # Default: anchor is score row, putts is the next candidate row below it.
         if anchor_classified_idx is not None:
             found_putts = False
@@ -913,10 +913,14 @@ def _extract_2d_from_raw_lines(
                         break
 
     if sum(1 for v in parsed.score_row if v is not None) < min_scores:
-        logger.info("2D extract: score row ultimately has too few values (%d < %d) after offsets", sum(v is not None for v in parsed.score_row), min_scores)
+        logger.debug(
+            "2D extract: score row has too few values (%d < %d)",
+            sum(v is not None for v in parsed.score_row),
+            min_scores,
+        )
         return None, -1
 
-    logger.info(
+    logger.debug(
         "2D extract: final score=%s putts=%s shots=%s",
         [v for v in parsed.score_row if v is not None],
         [v for v in parsed.putts_row if v is not None],

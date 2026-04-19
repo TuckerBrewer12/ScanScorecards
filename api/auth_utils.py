@@ -30,6 +30,15 @@ def _env_bool(name: str, default: bool) -> bool:
     return raw.strip().lower() in {"1", "true", "yes", "on"}
 
 
+def _is_prod_like_runtime() -> bool:
+    app_env = os.environ.get("APP_ENV", "development").strip().lower()
+    if app_env in {"production", "prod", "staging"}:
+        return True
+    # Railway deploys should default to hardened cookie behavior even if APP_ENV
+    # was not explicitly configured.
+    return bool(os.environ.get("RAILWAY_ENVIRONMENT_ID"))
+
+
 def get_secret_key() -> str:
     key = os.environ.get("SECRET_KEY")
     if not key:
@@ -55,8 +64,8 @@ def get_access_token_cookie_name() -> str:
 
 
 def get_cookie_secure_flag() -> bool:
-    # Keep localhost dev workable by default; set AUTH_COOKIE_SECURE=true in prod.
-    return _env_bool("AUTH_COOKIE_SECURE", False)
+    # Keep localhost dev workable while using secure-by-default in production.
+    return _env_bool("AUTH_COOKIE_SECURE", _is_prod_like_runtime())
 
 
 def get_cookie_samesite() -> str:

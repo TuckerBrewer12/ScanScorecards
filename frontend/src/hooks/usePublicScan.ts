@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback } from "react";
 import { apiUrl } from "@/lib/apiBase";
+import { withAuthHeaders } from "@/lib/sessionToken";
 import type { ScanResult } from "@/types/scan";
 
 type PublicScanStep = "upload" | "processing" | "review";
@@ -94,6 +95,7 @@ export function usePublicScan() {
           const res = await fetch(apiUrl("/api/scan/ocr"), {
             method: "POST",
             credentials: "include",
+            headers: withAuthHeaders(),
             body: form,
           });
           if (res.ok) {
@@ -124,6 +126,7 @@ export function usePublicScan() {
       const res = await fetch(apiUrl("/api/scan/extract"), {
         method: "POST",
         credentials: "include",
+        headers: withAuthHeaders(),
         body: form,
       });
       if (!res.ok) {

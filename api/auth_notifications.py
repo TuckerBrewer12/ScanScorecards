@@ -1,11 +1,17 @@
 """Email notifications for auth flows (verification and password reset)."""
 
+import hashlib
 import logging
 import os
 
 import requests
 
 logger = logging.getLogger(__name__)
+
+
+def _email_fingerprint(email: str) -> str:
+    normalized = (email or "").strip().lower()
+    return hashlib.sha256(normalized.encode("utf-8")).hexdigest()[:12]
 
 
 def _send_email(to_email: str, subject: str, text_body: str) -> None:
@@ -16,8 +22,8 @@ def _send_email(to_email: str, subject: str, text_body: str) -> None:
 
     if not resend_api_key:
         logger.info(
-            "Auth email (Resend disabled) to=%s subject=%s",
-            to_email,
+            "Auth email skipped (Resend disabled): to_fp=%s subject=%s",
+            _email_fingerprint(to_email),
             subject,
         )
         return

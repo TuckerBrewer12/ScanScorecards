@@ -133,8 +133,47 @@ def enforce_https_if_needed(request: Request) -> Optional[RedirectResponse]:
 
 
 def parse_allowed_hosts() -> list[str]:
-    raw = os.environ.get("ALLOWED_HOSTS", "localhost,127.0.0.1")
-    return [h.strip() for h in raw.split(",") if h.strip()]
+    def _normalize_host(raw_value: str) -> str:
+        value = (raw_value or "").strip()
+        if not value:
+            return ""
+        if "://" in value:
+            return (urlparse(value).hostname or "").strip()
+        if "/" in value:
+            value = value.split("/", 1)[0]
+        if ":" in value:
+            value = value.split(":", 1)[0]
+        return value.strip()
+
+    raw = os.environ.get("ALLOWED_HOSTS", "").strip()
+    hosts = [h.strip() for h in raw.split(",") if h.strip()]
+
+    # Always keep local dev hosts available.
+    hosts.extend(["localhost", "127.0.0.1", "::1"])
+
+    for env_name in ("RAILWAY_PUBLIC_DOMAIN", "RAILWAY_PRIVATE_DOMAIN", "RAILWAY_STATIC_URL", "FRONTEND_URL"):
+        host = _normalize_host(os.environ.get(env_name, ""))
+        if host:
+            hosts.append(host)
+
+    on_railway = any(
+        os.environ.get(name)
+        for name in ("RAILWAY_PROJECT_ID", "RAILWAY_SERVICE_ID", "RAILWAY_ENVIRONMENT_ID")
+    )
+    if on_railway:
+        # Railway verification/health probes may use this host.
+        hosts.append("healthcheck.railway.app")
+        # Keep broad Railway host globs only as a fallback when ALLOWED_HOSTS is unset.
+        if not raw:
+            hosts.extend(["*.up.railway.app", "*.railway.app", "*.railway.internal"])
+
+    deduped: list[str] = []
+    seen = set()
+    for host in hosts:
+        if host not in seen:
+            deduped.append(host)
+            seen.add(host)
+    return deduped
 
 
 @dataclass

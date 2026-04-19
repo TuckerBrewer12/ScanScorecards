@@ -59,6 +59,7 @@ class AuthUserResponse(BaseModel):
     name: str
     email: str
     email_verified: bool = True
+    access_token: str | None = None
 
 
 class RegisterResponse(BaseModel):

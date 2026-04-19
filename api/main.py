@@ -1,12 +1,13 @@
 """FastAPI application for the Golf Scorecard API."""
 
+import asyncio
 import logging
 import os
 import time
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Response
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import JSONResponse
 
@@ -44,15 +45,68 @@ from database.db_manager import DatabaseManager
 User.model_rebuild()
 
 
+def _env_float(name: str, default: float) -> float:
+    raw = os.environ.get(name)
+    if raw is None:
+        return default
+    try:
+        return float(raw)
+    except (TypeError, ValueError):
+        return default
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Initialize DB pool on startup, close on shutdown."""
+    """Initialize DB pool on startup, close on shutdown.
+
+    Startup remains non-blocking for DB network delays so Railway can mark the
+    service healthy, while DB-dependent routes return 503 until the DB connects.
+    """
     validate_deployment_security()
     dsn = os.environ.get("DATABASE_URL")
-    await db.initialize(dsn=dsn)
-    app.state.db_manager = DatabaseManager(db.pool)
-    yield
-    await db.close()
+
+    connect_timeout = max(1.0, _env_float("DB_CONNECT_TIMEOUT_SECONDS", 8.0))
+    retry_seconds = max(2, env_int("DB_CONNECT_RETRY_SECONDS", 5))
+    app.state.db_manager = None
+    app.state.db_connect_error = None
+
+    async def _connect_db(log_level: int = logging.WARNING) -> bool:
+        try:
+            await db.initialize(dsn=dsn, connect_timeout=connect_timeout)
+            app.state.db_manager = DatabaseManager(db.pool)
+            app.state.db_connect_error = None
+            return True
+        except Exception as exc:  # noqa: BLE001
+            app.state.db_manager = None
+            app.state.db_connect_error = str(exc)
+            logging.getLogger(__name__).log(
+                log_level,
+                "Database initialization failed; API running in degraded mode: %s",
+                exc,
+            )
+            return False
+
+    await _connect_db(log_level=logging.WARNING)
+
+    retry_task = None
+    if app.state.db_manager is None:
+        async def _retry_db_until_ready():
+            while True:
+                await asyncio.sleep(retry_seconds)
+                if await _connect_db(log_level=logging.INFO):
+                    logging.getLogger(__name__).info("Database connection established after retry.")
+                    return
+
+        retry_task = asyncio.create_task(_retry_db_until_ready())
+
+    try:
+        yield
+    finally:
+        if retry_task is not None:
+            retry_task.cancel()
+            with suppress(asyncio.CancelledError):
+                await retry_task
+        await db.close()
 
 
 def create_app() -> FastAPI:
@@ -252,10 +306,33 @@ def create_app() -> FastAPI:
     app.include_router(scan.router, prefix="/api/scan", tags=["scan"])
     app.include_router(ai_insights.router, prefix="/api/ai-insights", tags=["ai-insights"])
 
-    @app.get("/api/health")
-    async def health():
-        healthy = await db.health_check()
-        return {"status": "ok" if healthy else "degraded", "database": healthy}
+    @app.api_route("/", methods=["GET", "HEAD"])
+    async def root_status(request: Request):
+        if request.method == "HEAD":
+            return Response(status_code=200)
+        return JSONResponse(
+            status_code=200,
+            content={"status": "ok", "service": "backend"},
+        )
+
+    @app.api_route("/health", methods=["GET", "HEAD"])
+    @app.api_route("/api/health", methods=["GET", "HEAD"])
+    async def health(request: Request):
+        include_db_probe = env_bool("HEALTHCHECK_INCLUDE_DB_PROBE", False)
+        strict_db = env_bool("HEALTHCHECK_STRICT_DB", False)
+        db_ready = bool(getattr(request.app.state, "db_manager", None))
+
+        healthy = db_ready
+        if include_db_probe and db_ready:
+            healthy = await db.health_check()
+
+        status_code = 503 if (strict_db and not healthy) else 200
+        if request.method == "HEAD":
+            return Response(status_code=status_code)
+        return JSONResponse(
+            status_code=status_code,
+            content={"status": "ok" if healthy else "degraded", "database": healthy},
+        )
 
     return app
 

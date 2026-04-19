@@ -1,6 +1,7 @@
-import { createContext, useCallback, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { setStoredColorBlindMode } from "@/lib/accessibility";
 import { apiUrl } from "@/lib/apiBase";
+import { setSessionToken, withAuthHeaders } from "@/lib/sessionToken";
 import { applyTheme, setStoredPublicTheme, setStoredTheme } from "@/lib/theme";
 
 interface AuthState {
@@ -32,6 +33,7 @@ interface AuthUserPayload {
   name: string;
   email: string;
   email_verified: boolean;
+  access_token?: string | null;
 }
 
 interface RegisterPayload {
@@ -44,37 +46,80 @@ interface MessagePayload {
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
+const EMPTY_AUTH_STATE: AuthState = {
+  userId: null,
+  name: null,
+  email: null,
+  emailVerified: false,
+};
+
+async function getErrorMessage(res: Response): Promise<string> {
+  const text = await res.text();
+  const fallback = `Error ${res.status}`;
+  if (!text) return fallback;
+
+  try {
+    return JSON.parse(text).detail ?? fallback;
+  } catch {
+    const looksLikeHtml = /^\s*</.test(text);
+    if (looksLikeHtml) {
+      return "API returned HTML instead of JSON. Check VITE_API_BASE_URL points to your backend (include https://).";
+    }
+    return text;
+  }
+}
+
+async function parseJsonPayload<T>(res: Response): Promise<T> {
+  const text = await res.text();
+  try {
+    return JSON.parse(text) as T;
+  } catch {
+    const looksLikeHtml = /^\s*</.test(text);
+    if (looksLikeHtml) {
+      throw new Error("API returned HTML instead of JSON. Check VITE_API_BASE_URL points to your backend (include https://).");
+    }
+    throw new Error("API returned an invalid JSON payload.");
+  }
+}
 
 async function callAuth<T>(path: string, body: object): Promise<T> {
   const res = await fetch(apiUrl(`/api/auth${path}`), {
     method: "POST",
     credentials: "include",
-    headers: { "Content-Type": "application/json" },
+    headers: withAuthHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify(body),
   });
   if (!res.ok) {
-    const text = await res.text();
-    let msg = `Error ${res.status}`;
-    try { msg = JSON.parse(text).detail ?? msg; } catch { if (text) msg = text; }
-    throw new Error(msg);
+    throw new Error(await getErrorMessage(res));
   }
-  return res.json();
+  return parseJsonPayload<T>(res);
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [state, setState] = useState<AuthState>({
-    userId: null,
-    name: null,
-    email: null,
-    emailVerified: false,
-  });
+  const [state, setState] = useState<AuthState>(EMPTY_AUTH_STATE);
+  const latestStateRef = useRef<AuthState>(EMPTY_AUTH_STATE);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    latestStateRef.current = state;
+  }, [state]);
 
   const refreshSession = useCallback(async (): Promise<AuthState | null> => {
     try {
-      const res = await fetch(apiUrl("/api/auth/me"), { credentials: "include" });
-      if (!res.ok) throw new Error("unauthenticated");
-      const data = (await res.json()) as AuthUserPayload;
+      const res = await fetch(apiUrl("/api/auth/me"), {
+        credentials: "include",
+        headers: withAuthHeaders(),
+      });
+      if (res.status === 401 || res.status === 403) {
+        setSessionToken(null);
+        setState((prev) =>
+          prev.userId === null && prev.name === null && prev.email === null && prev.emailVerified === false
+            ? prev
+            : EMPTY_AUTH_STATE
+        );
+        return null;
+      }
+      const data = await parseJsonPayload<AuthUserPayload>(res);
       const nextState: AuthState = {
         userId: data.user_id,
         name: data.name,
@@ -91,12 +136,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       );
       return nextState;
     } catch {
-      setState((prev) =>
-        prev.userId === null && prev.name === null && prev.email === null && prev.emailVerified === false
-          ? prev
-          : { userId: null, name: null, email: null, emailVerified: false }
-      );
-      return null;
+      // Network/CORS/parser issues should not immediately clear a valid session.
+      return latestStateRef.current.userId ? latestStateRef.current : null;
     }
   }, []);
 
@@ -125,6 +166,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (email: string, password: string) => {
     const data = await callAuth<AuthUserPayload>("/login", { email, password });
+    setSessionToken(data.access_token ?? null);
     setState({
       userId: data.user_id,
       name: data.name,
@@ -178,7 +220,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await callAuth<{ message: string }>("/logout", {});
     } finally {
-      setState({ userId: null, name: null, email: null, emailVerified: false });
+      setSessionToken(null);
+      setState(EMPTY_AUTH_STATE);
     }
   };
 

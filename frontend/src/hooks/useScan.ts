@@ -6,6 +6,7 @@ import type { ScanState, ScanResult, ExtractedHoleScore, ManualTee } from "@/typ
 import { initialScanState } from "@/types/scan";
 import { api } from "@/lib/api";
 import { apiUrl } from "@/lib/apiBase";
+import { withAuthHeaders } from "@/lib/sessionToken";
 import { initializeScores, countBadScanNulls } from "@/lib/scanUtils";
 
 function normalizeCourseQueryForSearch(value: string): string {
@@ -211,6 +212,7 @@ export function useScan(
           const res = await fetch(apiUrl("/api/scan/ocr"), {
             method: "POST",
             credentials: "include",
+            headers: withAuthHeaders(),
             body: ocrForm,
           });
           if (res.ok) {
@@ -273,6 +275,7 @@ export function useScan(
       const res = await fetch(apiUrl("/api/scan/extract"), {
         method: "POST",
         credentials: "include",
+        headers: withAuthHeaders(),
         body: formData,
       });
       if (!res.ok) {
@@ -443,7 +446,7 @@ export function useScan(
       const res = await fetch(apiUrl("/api/scan/save"), {
         method: "POST",
         credentials: "include",
-        headers: { "Content-Type": "application/json" },
+        headers: withAuthHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({
           user_id: userId,
           ...(reviewCourseId

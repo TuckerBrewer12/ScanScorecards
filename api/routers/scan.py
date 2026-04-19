@@ -51,6 +51,17 @@ ALLOWED_UPLOAD_MIME_TYPES = {
 ALLOWED_IMAGE_FORMATS = {"JPEG", "PNG", "WEBP", "HEIC", "HEIF"}
 
 
+def _env_bool(name: str, default: bool = False) -> bool:
+    raw = os.environ.get(name)
+    if raw is None:
+        return default
+    return raw.strip().lower() in {"1", "true", "yes", "on"}
+
+
+# Disabled by default to avoid leaking OCR/user content into aggregated logs.
+LOG_SENSITIVE_OCR_DEBUG = _env_bool("LOG_SENSITIVE_OCR_DEBUG", False)
+
+
 class ScanResponse(BaseModel):
     """Response from scorecard extraction."""
     round: dict
@@ -374,7 +385,7 @@ async def _run_ocr_pipeline(ocr_path: Path) -> str:
     ocr_resp = await svc.ocr_file(ocr_path)
 
     pages = ocr_resp.get("pages")
-    if isinstance(pages, list):
+    if LOG_SENSITIVE_OCR_DEBUG and isinstance(pages, list):
         for page_idx, page in enumerate(pages):
             if not isinstance(page, dict):
                 continue
@@ -386,15 +397,18 @@ async def _run_ocr_pipeline(ocr_path: Path) -> str:
                     continue
                 html_table = table.get("content")
                 if isinstance(html_table, str) and html_table.strip():
-                    logger.info(
-                        "=== MISTRAL HTML TABLE page=%d table=%d ===\n%s\n=== END MISTRAL HTML TABLE ===",
+                    logger.debug(
+                        "Mistral HTML table page=%d table=%d:\n%s",
                         page_idx,
                         table_idx,
                         html_table,
                     )
 
     raw_markdown = MistralOCRService.extract_markdown_text(ocr_resp)
-    logger.info("=== MISTRAL RAW MARKDOWN ===\n%s\n=== END MISTRAL RAW MARKDOWN ===", raw_markdown)
+    if LOG_SENSITIVE_OCR_DEBUG:
+        logger.debug("Mistral raw markdown:\n%s", raw_markdown)
+    else:
+        logger.info("Mistral OCR produced markdown chars=%d", len(raw_markdown))
     return await merge_split_tables(raw_markdown)
 
 
@@ -627,7 +641,10 @@ async def extract_scan(
                 len(markdown_text),
             )
 
-        logger.info("=== MERGED MARKDOWN ===\n%s\n=== END MERGED MARKDOWN ===", markdown_text)
+        if LOG_SENSITIVE_OCR_DEBUG:
+            logger.debug("Merged markdown:\n%s", markdown_text)
+        else:
+            logger.info("Merged OCR markdown chars=%d", len(markdown_text))
 
         t_parse_start = time.perf_counter()
         parsed_rows = parse_mistral_scorecard_rows(markdown_text, user_context=user_context)

@@ -50,7 +50,10 @@ bearer_scheme = HTTPBearer(auto_error=False)
 
 def get_db(request: Request) -> DatabaseManager:
     """FastAPI dependency that provides the DatabaseManager."""
-    return request.app.state.db_manager
+    db_manager = getattr(request.app.state, "db_manager", None)
+    if db_manager is None:
+        raise HTTPException(503, "Database is unavailable. Please retry shortly.")
+    return db_manager
 
 
 async def get_current_user(
