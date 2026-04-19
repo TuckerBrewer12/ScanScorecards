@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useId, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
 
 interface YardageTargetScatterProps {
@@ -60,6 +60,7 @@ function getScoreLabel(toPar: number): string {
 
 export function YardageTargetScatter({ rawScores, bucketLabel }: YardageTargetScatterProps) {
   const svgRef = useRef<SVGSVGElement>(null);
+  const filterId = useId().replace(/:/g, "");
   const [tooltip, setTooltip] = useState<{
     x: number; y: number; toPar: number; yardage: number; visible: boolean;
   }>({ x: 0, y: 0, toPar: 0, yardage: 0, visible: false });
@@ -113,16 +114,18 @@ export function YardageTargetScatter({ rawScores, bucketLabel }: YardageTargetSc
   const toParSign = (n: number) => n > 0 ? `+${n}` : n === 0 ? "E" : `${n}`;
 
   return (
-    <div className="relative">
+    <div className="relative w-full max-w-[320px] mx-auto aspect-square">
       <svg
         ref={svgRef}
         viewBox="0 0 200 200"
-        style={{ overflow: "visible", width: "100%", height: "auto" }}
+        preserveAspectRatio="xMidYMid meet"
+        className="block w-full h-full"
+        style={{ overflow: "visible" }}
         onMouseMove={handleMouseMove}
         onMouseLeave={() => setTooltip(t => ({ ...t, visible: false }))}
       >
         <defs>
-          <filter id="yardageTargetGlow" x="-50%" y="-50%" width="200%" height="200%">
+          <filter id={filterId} x="-50%" y="-50%" width="200%" height="200%">
             <feGaussianBlur stdDeviation="2" result="blur" />
             <feMerge>
               <feMergeNode in="blur" />
@@ -158,7 +161,7 @@ export function YardageTargetScatter({ rawScores, bucketLabel }: YardageTargetSc
               fillOpacity={1}
               stroke="white"
               strokeWidth={1}
-              filter={dot.to_par <= -1 ? "url(#yardageTargetGlow)" : undefined}
+              filter={dot.to_par <= -1 ? `url(#${filterId})` : undefined}
               initial={{ cx: 100, cy: 100, opacity: 0 }}
               animate={{ cx: dot.cx, cy: dot.cy, opacity: 1 }}
               transition={{ delay: dot.delay, duration: 0.5, ease: "easeOut" }}
