@@ -28,6 +28,7 @@ from analytics.stats import (
     score_type_distribution_by_hole,
     score_type_distribution_per_round,
     scoring_by_par,
+    scoring_by_yardage_buckets,
     scoring_vs_hole_handicap,
     three_putts_comparison,
     three_putts_per_round,
@@ -36,6 +37,8 @@ from models.course import Course
 from models.hole import Hole
 from models.hole_score import HoleScore
 from models.round import Round
+from models.tee import Tee
+from models.user_tee import UserTee
 
 
 def _build_course() -> Course:
@@ -76,6 +79,20 @@ def _build_rounds():
     round_1 = Round(id="r1", course=course, date=datetime(2026, 2, 1), hole_scores=round_1_scores)
     round_2 = Round(id="r2", course=course, date=datetime(2026, 2, 2), hole_scores=round_2_scores)
     return [round_1, round_2]
+
+
+def _build_course_with_yardages() -> Course:
+    course = _build_course()
+    hole_yardages = {}
+    for i in range(1, 19):
+        if i <= 4:
+            hole_yardages[i] = 160
+        elif i <= 14:
+            hole_yardages[i] = 380
+        else:
+            hole_yardages[i] = 520
+    course.tees = [Tee(color="Blue", hole_yardages=hole_yardages)]
+    return course
 
 
 def test_round_summary():
@@ -286,6 +303,56 @@ def test_scoring_by_par():
     assert by_par[3]["average_to_par"] == pytest.approx(1.25)
     assert by_par[4]["average_to_par"] == pytest.approx(0.25)
     assert by_par[5]["average_to_par"] == pytest.approx(-0.75)
+
+
+def test_scoring_by_yardage_buckets_handles_tee_label_variants():
+    course = _build_course_with_yardages()
+    hole_scores = [
+        HoleScore(hole_number=i, strokes=course.get_hole(i).par, green_in_regulation=True)
+        for i in range(1, 19)
+    ]
+    round_obj = Round(
+        id="r-yardage-1",
+        course=course,
+        tee_box="Blue tees",  # Would not match Course.get_tee strict equality
+        date=datetime(2026, 3, 1),
+        hole_scores=hole_scores,
+    )
+
+    rows = scoring_by_yardage_buckets([round_obj])
+    assert len(rows) == 3
+    assert sum(row["sample_size"] for row in rows) == 18
+    assert all(row["average_to_par"] == pytest.approx(0.0) for row in rows)
+    assert all(row["gir_percentage"] == pytest.approx(100.0) for row in rows)
+
+
+def test_scoring_by_yardage_buckets_falls_back_to_user_tee_yardages():
+    course = _build_course()
+    user_tee = UserTee(
+        user_id="u-1",
+        name="Scanned Tee",
+        hole_yardages={
+            **{i: 160 for i in range(1, 5)},
+            **{i: 380 for i in range(5, 15)},
+            **{i: 520 for i in range(15, 19)},
+        },
+    )
+    hole_scores = [
+        HoleScore(hole_number=i, strokes=course.get_hole(i).par, green_in_regulation=True)
+        for i in range(1, 19)
+    ]
+    round_obj = Round(
+        id="r-yardage-2",
+        course=course,
+        tee_box="Unknown Tee",
+        user_tee=user_tee,
+        date=datetime(2026, 3, 2),
+        hole_scores=hole_scores,
+    )
+
+    rows = scoring_by_yardage_buckets([round_obj])
+    assert len(rows) == 3
+    assert sum(row["sample_size"] for row in rows) == 18
 
 
 def test_average_score_relative_to_par_by_hole():

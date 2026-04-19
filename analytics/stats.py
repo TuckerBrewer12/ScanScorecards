@@ -21,6 +21,56 @@ def _valid_hole_scores(round_obj: Round):
     return [score for score in round_obj.hole_scores if score.hole_number is not None]
 
 
+def _normalize_tee_label(value: Optional[str]) -> str:
+    if not value:
+        return ""
+    normalized = value.lower()
+    normalized = normalized.replace("tees", "").replace("tee", "")
+    normalized = "".join(ch for ch in normalized if ch.isalnum())
+    return normalized
+
+
+def _resolve_tee_for_yardage(round_obj: Round) -> Optional[Any]:
+    """Return a tee-like object that has hole_yardages for yardage analytics."""
+    tee = round_obj.get_tee()
+    if tee and tee.hole_yardages:
+        return tee
+
+    if round_obj.course and round_obj.tee_box:
+        requested = _normalize_tee_label(round_obj.tee_box)
+        if requested:
+            exact = [
+                candidate
+                for candidate in round_obj.course.tees
+                if candidate.color and _normalize_tee_label(candidate.color) == requested and candidate.hole_yardages
+            ]
+            if len(exact) == 1:
+                return exact[0]
+
+            fuzzy = [
+                candidate
+                for candidate in round_obj.course.tees
+                if candidate.color
+                and candidate.hole_yardages
+                and (
+                    requested.startswith(_normalize_tee_label(candidate.color))
+                    or _normalize_tee_label(candidate.color).startswith(requested)
+                )
+            ]
+            if len(fuzzy) == 1:
+                return fuzzy[0]
+
+    if round_obj.user_tee and round_obj.user_tee.hole_yardages:
+        return round_obj.user_tee
+
+    if round_obj.course:
+        populated = [candidate for candidate in round_obj.course.tees if candidate.hole_yardages]
+        if len(populated) == 1:
+            return populated[0]
+
+    return None
+
+
 def _resolve_round_index(rows: List[Dict[str, Any]], round_index: Optional[int]) -> int:
     if not rows:
         raise ValueError("At least one round is required")
@@ -1529,7 +1579,7 @@ def scoring_by_yardage_buckets(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
     for round_obj in rounds:
         if not round_obj.course:
             continue
-        tee = round_obj.course.get_tee(round_obj.tee_box)
+        tee = _resolve_tee_for_yardage(round_obj)
         if not tee:
             continue
 
