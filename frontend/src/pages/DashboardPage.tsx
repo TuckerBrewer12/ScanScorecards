@@ -8,6 +8,7 @@ import {
 } from "recharts";
 import { SVGScoreHandicapTrend } from "@/components/dashboard/SVGScoreHandicapTrend";
 import { MilestoneFeed } from "@/components/dashboard/MilestoneFeed";
+import { MobileDashboard } from "@/components/dashboard/MobileDashboard";
 import { api } from "@/lib/api";
 import { getStoredColorBlindMode } from "@/lib/accessibility";
 import { getColorBlindPalette } from "@/lib/chartPalettes";
@@ -283,6 +284,30 @@ export function DashboardPage({ userId }: DashboardPageProps) {
 
   return (
     <div>
+      {/* Mobile layout */}
+      <div className="md:hidden">
+        <MobileDashboard
+          data={data}
+          trends={trends}
+          user={user ?? null}
+          goalReport={goalReport ?? null}
+          dualData={dualData}
+          recentMilestones={recentMilestones}
+          last20ScoringAvg={last20ScoringAvg}
+          girPct={girPct}
+          recentDistribution={recentDistribution}
+          scramblingPct={scramblingPct}
+          upAndDownPct={upAndDownPct}
+          putts={putts}
+          scoreLineColor={scoreLineColor}
+          handicapLineColor={handicapLineColor}
+          girColor={girColor}
+          mutedFill={mutedFill}
+        />
+      </div>
+
+      {/* Desktop layout */}
+      <div className="hidden md:block">
       <ScrollSection>
         <div className="flex items-center justify-between mb-5">
           <h1 className="text-3xl font-extrabold tracking-tight text-gray-900">
@@ -501,6 +526,7 @@ export function DashboardPage({ userId }: DashboardPageProps) {
 
         </div>
       </ScrollSection>
+      </div>
     </div>
   );
 }
