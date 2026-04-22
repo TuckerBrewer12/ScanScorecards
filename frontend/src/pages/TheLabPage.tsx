@@ -12,6 +12,7 @@ import { ProgressRing } from "@/components/the-lab/ProgressRing";
 import { AttemptsTimeline } from "@/components/the-lab/AttemptsTimeline";
 import { buildRadarData, UserRadarChart } from "@/components/analytics/UserRadarChart";
 import type { AnalyticsData, ScoreTypeRow } from "@/types/analytics";
+import { MobileLabPage } from "@/components/the-lab/MobileLabPage";
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
@@ -239,8 +240,37 @@ export function TheLabPage({ userId }: TheLabPageProps) {
     return "Your Performance Shape";
   }, [radarMode, targetHandicap, peakInsight, selectedFriend]);
 
+  const savers = goalReport?.savers ?? [];
+
   return (
-    <div className="space-y-6">
+    <div>
+
+      {/* Mobile layout */}
+      <div className="md:hidden">
+        <MobileLabPage
+          analyticsData={analytics}
+          goalReport={goalReport}
+          currentGoal={currentGoal}
+          setGoal={setGoal}
+          settingGoal={settingGoal}
+          mode={radarMode}
+          setMode={setRadarMode}
+          comparisonTarget={targetHandicap}
+          setComparisonTarget={setTargetHandicap}
+          activeProfile={activeProfile}
+          radarData={analytics?.kpis ? buildRadarData(analytics.kpis, analytics.scoring_by_par ?? [], activeProfile ?? { gir: 0, scrambling: 0, putting: 0, par3: 0, par4: 0, par5: 0 }) : []}
+          peakInsight={peakInsight}
+          peakScoreTypes={peakScoreTypes}
+          savers={savers}
+          achievedCount={achievedCount}
+          goalLabel={goalLabel}
+          benchmarkHeading={benchmarkHeading}
+        />
+      </div>
+
+      {/* Desktop layout */}
+      <div className="hidden md:block">
+      <div className="space-y-6">
 
       {/* Header */}
       <div>
@@ -602,6 +632,8 @@ export function TheLabPage({ userId }: TheLabPageProps) {
         </div>
       )}
 
+    </div>
+      </div>
     </div>
   );
 }
