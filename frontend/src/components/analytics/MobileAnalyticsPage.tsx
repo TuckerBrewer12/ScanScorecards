@@ -17,8 +17,6 @@ import type {
   AnalyticsData, AnalyticsFilters, ScoreTrendRow,
   GIRTrendRow, PuttsTrendRow, ThreePuttRow,
 } from "@/types/analytics";
-import type { CourseSummary } from "@/types/golf";
-
 interface Insight {
   text: string;
   trend?: "up" | "down" | "flat";
@@ -30,7 +28,7 @@ interface MobileAnalyticsPageProps {
   data: AnalyticsData;
   filters: AnalyticsFilters;
   setFilters: (f: AnalyticsFilters) => void;
-  playedCourses: CourseSummary[];
+  playedCourses: { id: string; name: string | null; location: string | null }[];
   hasHomeCourse: boolean;
   scoreTrendWithAvg: (ScoreTrendRow & { rolling_avg: number | null })[];
   donutData: { name: string; value: number }[];
