@@ -92,7 +92,7 @@ export function MobileCareerPage({
   scoreBreaksAbove70,
   scoreBreaks70AndBelow,
   totalHoles,
-  gaugeData,
+  gaugeData: _gaugeData,
   hiColor: _hiColor,
   hiDisplay,
   trendPrimary,
