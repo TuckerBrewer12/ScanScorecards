@@ -392,8 +392,8 @@ export function TheLabPage({ userId }: TheLabPageProps) {
                     kpis={analytics.kpis}
                     scoringByPar={analytics.scoring_by_par ?? []}
                     profile={activeProfile ?? undefined}
-                    height={compactRadarLayout ? 350 : 420}
-                    outerRadius={compactRadarLayout ? "84%" : "88%"}
+                    height={compactRadarLayout ? 320 : 360}
+                    outerRadius={compactRadarLayout ? 110 : 130}
                     primaryColor="#2d7a3a"
                     gridColor="#e5e7eb"
                     showTooltip
@@ -409,8 +409,8 @@ export function TheLabPage({ userId }: TheLabPageProps) {
                         : "Set a target above to see your benchmark comparison."
                     }
                     margin={compactRadarLayout
-                      ? { top: 24, right: 28, bottom: 26, left: 28 }
-                      : { top: 28, right: 52, bottom: 32, left: 52 }}
+                      ? { top: 20, right: 20, bottom: 20, left: 20 }
+                      : { top: 24, right: 44, bottom: 24, left: 44 }}
                   />
                 )}
               </div>

@@ -1,6 +1,6 @@
 import { useMemo, useCallback, memo } from "react";
 import {
-  RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, Tooltip,
+  RadarChart, Radar, PolarGrid, PolarAngleAxis, ResponsiveContainer, Tooltip,
 } from "recharts";
 import type { AnalyticsKPIs, ScoringByParRow } from "@/types/analytics";
 import type { BenchmarkProfile } from "@/components/the-lab/constants";
@@ -122,7 +122,7 @@ interface UserRadarChartProps {
   scoringByPar: ScoringByParRow[];
   profile?: BenchmarkProfile;
   height?: number;
-  outerRadius?: number | string;
+  outerRadius?: number;
   primaryColor?: string;
   gridColor?: string;
   axisColor?: string;
@@ -151,43 +151,17 @@ export const UserRadarChart = memo(function UserRadarChart({
 
   const renderTick = useCallback(
     (props: { cx: number; cy: number; x: number; y: number; payload: { value: string } }) => {
-      const { cx, cy, x, y, payload } = props;
+      const { cx, x, y, payload } = props;
       const entry = chartData.find((e) => e.axis === payload.value);
       const dx = x - cx;
-      const dy = y - cy;
-      const len = Math.hypot(dx, dy) || 1;
-      const ux = dx / len;
-      const uy = dy / len;
       const anchor = Math.abs(dx) < 15 ? "middle" : dx > 0 ? "start" : "end";
-      const isVerticalAxis = Math.abs(uy) > 0.85;
-      const titleOffset = isVerticalAxis ? 18 : 14;
-      const valueOffset = isVerticalAxis ? 36 : 30;
-      const titleX = x + ux * titleOffset;
-      const titleY = y + uy * titleOffset;
-      const valueX = x + ux * valueOffset;
-      const valueY = y + uy * valueOffset;
       return (
         <g>
-          <text
-            x={titleX}
-            y={titleY}
-            textAnchor={anchor}
-            dominantBaseline="middle"
-            fill="#6b7280"
-            fontSize={13}
-            fontWeight={600}
-          >
+          <text x={x} y={y} textAnchor={anchor} fill="#6b7280" fontSize={13} fontWeight={600}>
             {payload.value}
           </text>
           {entry && (
-            <text
-              x={valueX}
-              y={valueY}
-              textAnchor={anchor}
-              dominantBaseline="middle"
-              fontSize={12}
-              fontWeight={700}
-            >
+            <text x={x} y={y + 16} textAnchor={anchor} fontSize={12} fontWeight={700}>
               <tspan fill={primaryColor}>{entry.userRaw}</tspan>
               {profile && (
                 <tspan fill="#6b7280"> vs {entry.benchRaw}</tspan>
@@ -211,9 +185,8 @@ export const UserRadarChart = memo(function UserRadarChart({
 
   return (
     <ResponsiveContainer width="100%" height={height}>
-      <RadarChart data={chartData} outerRadius={outerRadius} margin={margin} cx="50%" cy="50%">
+      <RadarChart data={chartData} outerRadius={outerRadius} margin={margin}>
         <PolarGrid stroke={gridColor} />
-        <PolarRadiusAxis domain={[0, 100]} tick={false} axisLine={false} tickCount={5} />
         <PolarAngleAxis
           dataKey="axis"
           tick={showTooltip ? (renderTick as never) : { fontSize: 11, fill: axisColor }}
