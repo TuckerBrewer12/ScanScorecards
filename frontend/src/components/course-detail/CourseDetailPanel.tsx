@@ -360,6 +360,7 @@ export function CourseDetailPanel({ courseId, userId, onBack }: CourseDetailPane
   const [selectedTeeColor, setSelectedTeeColor] = useState<string | null>(null);
   const [handicapIndex, setHandicapIndex] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<"course" | "performance">("course");
+  const [courseChartTab, setCourseChartTab] = useState<"score" | "gir" | "putts" | "variance">("score");
   const colorBlindMode = useMemo(() => getStoredColorBlindMode(), []);
   const colorBlindPalette = useMemo(() => getColorBlindPalette(colorBlindMode), [colorBlindMode]);
 
@@ -649,7 +650,156 @@ export function CourseDetailPanel({ courseId, userId, onBack }: CourseDetailPane
             {/* E. Remaining charts grid */}
             <div>
               <SectionLabel>Hole-by-Hole Breakdown</SectionLabel>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+
+              {/* Mobile: tabbed pills */}
+              <div className="md:hidden">
+                <div className="flex gap-2 mb-4">
+                  {([
+                    { key: "score", label: "Score" },
+                    { key: "gir", label: "GIR" },
+                    { key: "putts", label: "Putts" },
+                    { key: "variance", label: "Variance" },
+                  ] as const).map(({ key, label }) => (
+                    <button
+                      key={key}
+                      onClick={() => setCourseChartTab(key)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                        courseChartTab === key ? "bg-primary text-white shadow-sm" : "bg-gray-100 text-gray-500"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+
+                {courseChartTab === "score" && (
+                  <div className="space-y-5">
+                    <ChartCard title="Average Score To Par By Hole">
+                      <ResponsiveContainer width="100%" height={240}>
+                        <BarChart data={analytics.average_score_relative_to_par_by_hole} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+                          <XAxis dataKey="hole_number" tick={{ fontSize: 10, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
+                          <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
+                          <Tooltip contentStyle={tooltipStyle} formatter={((v: number) => [Number(v ?? 0).toFixed(2), "Avg to Par"]) as Fmt} />
+                          <ReferenceLine y={0} stroke={gridLineColor} />
+                          <Bar dataKey="average_to_par" radius={[6, 6, 0, 0]}>
+                            {analytics.average_score_relative_to_par_by_hole.map((row) => (
+                              <Cell key={row.hole_number} fill={row.average_to_par <= 0 ? successColor : dangerColor} />
+                            ))}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </ChartCard>
+                    <ChartCard title="Score Type Distribution By Hole">
+                      <ResponsiveContainer width="100%" height={260}>
+                        <BarChart data={analytics.score_type_distribution_by_hole} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+                          <XAxis dataKey="hole_number" tick={{ fontSize: 10, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
+                          <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
+                          <Tooltip
+                            contentStyle={tooltipStyle}
+                            labelFormatter={(_label, payload) => payload?.[0]?.payload?.sample_size != null ? `${payload[0].payload.sample_size} rounds` : ""}
+                            formatter={((v: number) => [`${Number(v ?? 0).toFixed(1)}%`, ""]) as Fmt}
+                          />
+                          <Legend wrapperStyle={{ fontSize: 11 }} />
+                          <Bar dataKey="eagle" stackId="a" fill={colorBlindPalette?.score.eagle ?? "#b45309"} name="Eagle+" />
+                          <Bar dataKey="birdie" stackId="a" fill={colorBlindPalette?.score.birdie ?? "#059669"} name="Birdie" />
+                          <Bar dataKey="par" stackId="a" fill={colorBlindPalette?.score.par ?? "#9ca3af"} name="Par" />
+                          <Bar dataKey="bogey" stackId="a" fill={colorBlindPalette?.score.bogey ?? "#f87171"} name="Bogey" />
+                          <Bar dataKey="double_bogey" stackId="a" fill={colorBlindPalette?.score.double_bogey ?? "#60a5fa"} name="Double" />
+                          <Bar dataKey="triple_bogey" stackId="a" fill={colorBlindPalette?.score.triple_bogey ?? "#a78bfa"} name="Triple" />
+                          <Bar dataKey="quad_bogey" stackId="a" fill={colorBlindPalette?.score.quad_bogey ?? "#6d28d9"} name="Quad+" />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </ChartCard>
+                  </div>
+                )}
+
+                {courseChartTab === "gir" && (
+                  <div className="space-y-5">
+                    <ChartCard title="GIR Percentage By Hole">
+                      <ResponsiveContainer width="100%" height={240}>
+                        <BarChart data={analytics.gir_percentage_by_hole} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+                          <defs>
+                            <linearGradient id="girBarGradPerfM" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%"   stopColor={girGradTop} stopOpacity={1} />
+                              <stop offset="100%" stopColor={girGradBottom} stopOpacity={1} />
+                            </linearGradient>
+                          </defs>
+                          <XAxis dataKey="hole_number" tick={{ fontSize: 10, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
+                          <YAxis domain={[0, 100]} tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
+                          <Tooltip contentStyle={tooltipStyle} formatter={((v: number) => [`${Number(v ?? 0).toFixed(1)}%`, "GIR %"]) as Fmt} />
+                          <Bar dataKey="gir_percentage" fill="url(#girBarGradPerfM)" radius={[6, 6, 0, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </ChartCard>
+                  </div>
+                )}
+
+                {courseChartTab === "putts" && (
+                  <div className="space-y-5">
+                    <ChartCard title="Average Putts By Hole">
+                      <ResponsiveContainer width="100%" height={240}>
+                        <BarChart data={analytics.average_putts_by_hole} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+                          <defs>
+                            <linearGradient id="puttsBarGradPerfM" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%"   stopColor={puttsGradTop} stopOpacity={1} />
+                              <stop offset="100%" stopColor={puttsGradBottom} stopOpacity={1} />
+                            </linearGradient>
+                          </defs>
+                          <XAxis dataKey="hole_number" tick={{ fontSize: 10, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
+                          <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
+                          <Tooltip contentStyle={tooltipStyle} formatter={((v: number) => [Number(v ?? 0).toFixed(2), "Avg putts"]) as Fmt} />
+                          <Bar dataKey="average_putts" fill="url(#puttsBarGradPerfM)" radius={[6, 6, 0, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </ChartCard>
+                  </div>
+                )}
+
+                {courseChartTab === "variance" && (
+                  <div className="space-y-5">
+                    <ChartCard title="Course Difficulty Profile (Hardest To Easiest)">
+                      <ResponsiveContainer width="100%" height={260}>
+                        <BarChart
+                          data={analytics.course_difficulty_profile_by_hole.map((row) => ({ ...row, label: `H${row.hole_number}` }))}
+                          margin={{ top: 4, right: 8, left: -20, bottom: 0 }}
+                        >
+                          <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
+                          <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
+                          <Tooltip contentStyle={tooltipStyle} formatter={((v: number) => [Number(v ?? 0).toFixed(2), "Avg to Par"]) as Fmt} />
+                          <ReferenceLine y={0} stroke={gridLineColor} />
+                          <Bar dataKey="average_to_par" radius={[6, 6, 0, 0]}>
+                            {analytics.course_difficulty_profile_by_hole.map((row) => (
+                              <Cell key={row.hole_number} fill={row.average_to_par <= 0 ? successColor : dangerColor} />
+                            ))}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </ChartCard>
+                    <ChartCard title="Score Variance By Hole (Std Dev)">
+                      <ResponsiveContainer width="100%" height={260}>
+                        <BarChart
+                          data={analytics.score_variance_by_hole.map((row) => ({ ...row, label: `H${row.hole_number}` }))}
+                          margin={{ top: 4, right: 8, left: -20, bottom: 0 }}
+                        >
+                          <defs>
+                            <linearGradient id="varianceBarGradPerfM" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%"   stopColor={varianceGradTop} stopOpacity={1} />
+                              <stop offset="100%" stopColor={varianceGradBottom} stopOpacity={1} />
+                            </linearGradient>
+                          </defs>
+                          <XAxis dataKey="label" tick={{ fontSize: 10, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
+                          <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
+                          <Tooltip contentStyle={tooltipStyle} formatter={((v: number) => [Number(v ?? 0).toFixed(2), "Std dev"]) as Fmt} />
+                          <Bar dataKey="score_std_dev" fill="url(#varianceBarGradPerfM)" radius={[6, 6, 0, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </ChartCard>
+                  </div>
+                )}
+              </div>
+
+              {/* Desktop: unchanged grid */}
+              <div className="hidden md:grid grid-cols-1 lg:grid-cols-2 gap-5">
                 <ChartCard title="Average Score To Par By Hole">
                   <ResponsiveContainer width="100%" height={240}>
                     <BarChart data={analytics.average_score_relative_to_par_by_hole} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>

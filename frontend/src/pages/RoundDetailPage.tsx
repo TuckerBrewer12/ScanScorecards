@@ -105,6 +105,7 @@ export function RoundDetailPage({ userId }: { userId: string }) {
   const queryClient = useQueryClient();
   const [editMode, setEditMode] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [chartTab, setChartTab] = useState<"score" | "short_game" | "gir">("score");
   const [deleting, setDeleting] = useState(false);
   const deletingRef = useRef(false);
   const [saving, setSaving] = useState(false);
@@ -326,7 +327,7 @@ export function RoundDetailPage({ userId }: { userId: string }) {
         <div className="flex items-start justify-between gap-4">
           {/* Left: identity */}
           <div className="min-w-0">
-            <h1 className="text-4xl font-extrabold tracking-tight text-gray-900 leading-tight truncate">
+            <h1 className="text-2xl md:text-4xl font-extrabold tracking-tight text-gray-900 leading-tight truncate">
               {formatCourseName(round.course?.name ?? round.course_name_played)}
             </h1>
             <div className="flex items-center gap-3 mt-1.5 flex-wrap">
@@ -437,7 +438,42 @@ export function RoundDetailPage({ userId }: { userId: string }) {
 
         return (
           <div className="bg-white rounded-2xl border border-gray-100 shadow-sm mb-6">
-            <div className="flex items-stretch divide-x divide-gray-100">
+            {/* Mobile: 2-row grid */}
+            <div className="md:hidden">
+              <div className="grid grid-cols-3 divide-x divide-gray-100 border-b border-gray-100">
+                <div className="flex flex-col items-center justify-center px-3 py-3">
+                  <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-1">Score</div>
+                  <div className="text-2xl font-bold text-gray-900">{totalScore || "–"}</div>
+                </div>
+                <div className="flex flex-col items-center justify-center px-3 py-3">
+                  <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-1">To Par</div>
+                  <div className={`text-2xl font-bold ${toPar !== null && toPar < 0 ? "text-emerald-600" : toPar !== null && toPar > 0 ? "text-red-500" : "text-gray-900"}`}>
+                    {formatToPar(toPar)}
+                  </div>
+                </div>
+                <div className="flex flex-col items-center justify-center px-3 py-3">
+                  <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-1">Net</div>
+                  <div className={`text-2xl font-bold ${netScore != null && coursePar != null ? netScore <= coursePar ? "text-emerald-600" : "text-red-500" : "text-gray-900"}`}>
+                    {netScore ?? "–"}
+                  </div>
+                  {courseHandicap != null && (
+                    <div className="text-[9px] text-gray-400 mt-0.5">HCP {courseHandicap < 0 ? `+${Math.abs(courseHandicap)}` : courseHandicap}</div>
+                  )}
+                </div>
+              </div>
+              <div className="grid grid-cols-2 divide-x divide-gray-100">
+                <div className="flex flex-col items-center justify-center px-3 py-3">
+                  <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-1">Tee</div>
+                  <div className="text-2xl font-bold text-gray-900">{activeTeeBox || "–"}</div>
+                </div>
+                <div className="flex flex-col items-center justify-center px-3 py-3">
+                  <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-1">Par</div>
+                  <div className="text-2xl font-bold text-gray-900">{coursePar ?? "–"}</div>
+                </div>
+              </div>
+            </div>
+            {/* Desktop: single-row flex */}
+            <div className="hidden md:flex items-stretch divide-x divide-gray-100">
               <div className="flex-1 flex flex-col items-center justify-center px-4 py-4">
                 <div className="text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-1">Score</div>
                 <div className="text-4xl font-bold text-gray-900">{totalScore || "–"}</div>
@@ -490,8 +526,10 @@ export function RoundDetailPage({ userId }: { userId: string }) {
       {round.hole_scores.filter((s) => s.strokes != null).length >= 3 && (
         <div className="mt-6">
           <SectionLabel>Momentum</SectionLabel>
-          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-            <RoundFlowTimeline round={round} />
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 overflow-x-auto">
+            <div className="min-w-[720px]">
+              <RoundFlowTimeline round={round} />
+            </div>
           </div>
         </div>
       )}
@@ -501,7 +539,42 @@ export function RoundDetailPage({ userId }: { userId: string }) {
         <div className="mt-8">
           <SectionLabel>Round Comparison</SectionLabel>
           <ScrollSection>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+            {/* Mobile: tabbed pills */}
+            <div className="md:hidden">
+              <div className="flex gap-2 mb-4">
+                {([
+                  { key: "score", label: "Score" },
+                  { key: "short_game", label: "Short Game" },
+                  { key: "gir", label: "GIR" },
+                ] as const).map(({ key, label }) => (
+                  <button
+                    key={key}
+                    onClick={() => setChartTab(key)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                      chartTab === key ? "bg-primary text-white shadow-sm" : "bg-gray-100 text-gray-500"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              {chartTab === "score" && (
+                <ComparisonChartCard title="Score" rows={comparison.score} primaryLabel="score" palette={colorBlindPalette} />
+              )}
+              {chartTab === "gir" && (
+                <ComparisonChartCard title="GIR" rows={comparison.gir} primaryLabel="GIR" palette={colorBlindPalette} />
+              )}
+              {chartTab === "short_game" && (
+                <div className="grid grid-cols-2 gap-3">
+                  <ComparisonChartCard title="Putts" rows={comparison.putts} primaryLabel="putts" palette={colorBlindPalette} />
+                  <ComparisonChartCard title="3-Putts" rows={comparison.three_putts} primaryLabel="3-putts" palette={colorBlindPalette} />
+                  <ComparisonChartCard title="Putts/GIR" rows={comparison.putts_per_gir} primaryLabel="putts/GIR" palette={colorBlindPalette} />
+                  <ComparisonChartCard title="Scrambling" rows={comparison.scrambling} primaryLabel="scramble" palette={colorBlindPalette} />
+                </div>
+              )}
+            </div>
+            {/* Desktop: full grid */}
+            <div className="hidden md:grid grid-cols-1 lg:grid-cols-2 gap-5">
               <ComparisonChartCard title="Score" rows={comparison.score} primaryLabel="score" palette={colorBlindPalette} />
               <ComparisonChartCard title="Putts" rows={comparison.putts} primaryLabel="putts" palette={colorBlindPalette} />
               <ComparisonChartCard title="GIR" rows={comparison.gir} primaryLabel="GIR" palette={colorBlindPalette} />

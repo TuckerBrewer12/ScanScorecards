@@ -15,6 +15,7 @@ import type { ScoreTypeRow } from "@/types/analytics";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { ScrollSection } from "@/components/analytics/ScrollSection";
 import { SVGHandicapTrend } from "@/components/analytics/SVGHandicapTrend";
+import { MobileCareerPage } from "@/components/analytics/MobileCareerPage";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -232,8 +233,21 @@ export function CareerPage({ userId }: { userId: string }) {
   const scoreBreaksAbove70 = round_milestones.lifetime.score_breaks.filter((row) => row.threshold > 70);
   const scoreBreaks70AndBelow = round_milestones.lifetime.score_breaks.filter((row) => row.threshold <= 70);
 
+  const mobileProps = {
+    data, timeWindow, setTimeWindow,
+    donutData, recordRows,
+    scoreBreaksAbove70, scoreBreaks70AndBelow,
+    totalHoles, gaugeData, hiColor, hiDisplay,
+    trendPrimary, successColor, warningColor, dangerColor,
+    neutralColor, gridColor, mutedFill, scoreColors,
+  };
+
   return (
     <div>
+      <div className="md:hidden">
+        <MobileCareerPage {...mobileProps} />
+      </div>
+      <div className="hidden md:block">
       <div className="mb-6">
         <PageHeader title="Career" subtitle="Player achievement records" scrollThreshold={100} />
         <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 mb-4">Career</h1>
@@ -500,6 +514,7 @@ export function CareerPage({ userId }: { userId: string }) {
 
         </div>
       </ScrollSection>
-    </div>
+      </div>
+      </div>
   );
 }
