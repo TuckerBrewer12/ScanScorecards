@@ -207,25 +207,40 @@ export function ScanReviewStep({
               const isLowConf = sc !== null && (sc.level === "low" || sc.final_confidence < 0.7);
               const diff = hs.strokes != null && par != null ? hs.strokes - par : null;
               return (
-                <td key={si} className="px-1 py-1 text-center">
-                  <div className="relative inline-block">
-                    <input
-                      type="number" min="1" max="15"
-                      value={hs.strokes ?? ""}
-                      onChange={(e) => onScoreChange(origIdx, "strokes", e.target.value)}
-                      className="w-9 text-center px-0.5 py-0.5 text-sm font-semibold relative z-10"
-                      style={isLowConf
-                        ? { border: "1px solid #f59e0b", background: "#fffbeb", color: "#92400e", borderRadius: 4 }
-                        : scoreInputStyle(diff)
-                      }
-                    />
-                    {isLowConf && (
-                      <motion.div
-                        className="absolute inset-0 rounded border-2 border-amber-400 pointer-events-none"
-                        animate={{ opacity: [1, 0.2, 1] }}
-                        transition={{ duration: 1.4, repeat: Infinity, ease: "easeInOut" }}
+                <td key={si} className="px-0.5 py-1 text-center">
+                  <div className="inline-flex items-center gap-0.5">
+                    <div className="relative">
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        maxLength={2}
+                        value={hs.strokes ?? ""}
+                        onChange={(e) => onScoreChange(origIdx, "strokes", e.target.value)}
+                        className="w-7 h-7 text-center px-0 py-0 text-sm font-semibold focus:outline-none"
+                        style={isLowConf
+                          ? { border: "1px solid #f59e0b", background: "#fffbeb", color: "#92400e", borderRadius: 4 }
+                          : scoreInputStyle(diff)
+                        }
                       />
-                    )}
+                      {isLowConf && (
+                        <motion.div
+                          className="absolute inset-0 rounded border-2 border-amber-400 pointer-events-none"
+                          animate={{ opacity: [1, 0.2, 1] }}
+                          transition={{ duration: 1.4, repeat: Infinity, ease: "easeInOut" }}
+                        />
+                      )}
+                    </div>
+                    <div className="flex flex-col">
+                      <button type="button" tabIndex={-1}
+                        onClick={() => onScoreChange(origIdx, "strokes", String(Math.min(15, (hs.strokes ?? 1) + 1)))}
+                        className="h-3.5 w-3.5 flex items-center justify-center text-gray-400 hover:text-gray-700 leading-none select-none text-[10px]"
+                      >▲</button>
+                      <button type="button" tabIndex={-1}
+                        onClick={() => onScoreChange(origIdx, "strokes", String(Math.max(1, (hs.strokes ?? 1) - 1)))}
+                        className="h-3.5 w-3.5 flex items-center justify-center text-gray-400 hover:text-gray-700 leading-none select-none text-[10px]"
+                      >▼</button>
+                    </div>
                   </div>
                   {isLowConf && (
                     <div className="text-[8px] font-bold text-amber-500 leading-none mt-0.5 uppercase tracking-wide">check</div>
@@ -275,11 +290,14 @@ export function ScanReviewStep({
                 return (
                   <td key={si} className="px-1 py-1 text-center">
                     <input
-                      type="number" min="0" max="10"
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      maxLength={2}
                       value={hs.putts ?? ""}
                       onChange={(e) => onScoreChange(origIdx, "putts", e.target.value)}
                       title={isEstimated ? "Estimated (2-putt default)" : undefined}
-                      className={`w-9 text-center px-0.5 py-0.5 border rounded text-sm ${
+                      className={`w-7 h-7 text-center px-0 py-0 border rounded text-sm focus:outline-none ${
                         isEstimated
                           ? "border-dashed border-amber-400 bg-amber-50/50 text-amber-700"
                           : "border-gray-200"
