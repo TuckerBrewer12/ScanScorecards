@@ -1,13 +1,40 @@
+import { useNavigate } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 import { useScan } from "@/hooks/useScan";
 import { ScanUploadStep } from "@/components/scan/ScanUploadStep";
 import { ScanManualSetup } from "@/components/scan/ScanManualSetup";
 import { ScanProcessing } from "@/components/scan/ScanProcessing";
 import { ScanReviewStep } from "@/components/scan/ScanReviewStep";
+import { ScanSuccessStep } from "@/components/scan/ScanSuccessStep";
 import { useScanState } from "@/context/ScanContext";
+import { initialScanState } from "@/types/scan";
+import { api } from "@/lib/api";
 
 export function ScanPage({ userId }: { userId: string }) {
   const { scanState, setScanState } = useScanState();
+  const navigate = useNavigate();
   const scan = useScan(userId, scanState, setScanState);
+
+  const { data: savedRound } = useQuery({
+    queryKey: ["round", scan.savedRoundId],
+    queryFn: () => api.getRound(scan.savedRoundId!),
+    enabled: scan.step === "success" && !!scan.savedRoundId,
+  });
+
+  if (scan.step === "success" && scan.savedRoundId) {
+    return savedRound ? (
+      <ScanSuccessStep
+        round={savedRound}
+        onView={() => {
+          const id = scan.savedRoundId!;
+          setScanState(initialScanState);
+          navigate(`/rounds/${id}`);
+        }}
+      />
+    ) : (
+      <div className="flex items-center justify-center h-64 text-gray-400">Loading…</div>
+    );
+  }
 
   if (scan.step === "processing") {
     return <ScanProcessing scanMode={scan.scanMode} />;

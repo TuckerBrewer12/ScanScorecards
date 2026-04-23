@@ -53,7 +53,7 @@ export interface ScanResult {
   fields_needing_review: string[];
 }
 
-type Step = "upload" | "processing" | "review";
+type Step = "upload" | "processing" | "review" | "success";
 
 export interface ManualTee {
   color: string | null;
@@ -84,6 +84,7 @@ export interface ScanState {
   // Manual entry: fetched course data
   manualCourseHoles: { number: number | null; par: number | null; handicap: number | null }[];
   manualCourseTees: ManualTee[];
+  savedRoundId: string | null;
 }
 
 export const initialScanState: ScanState = {
@@ -106,4 +107,5 @@ export const initialScanState: ScanState = {
   reviewCourseName: null,
   manualCourseHoles: [],
   manualCourseTees: [],
+  savedRoundId: null,
 };

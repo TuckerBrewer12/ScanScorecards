@@ -2,6 +2,8 @@
 type Fmt = (v: any, name: any, props: any) => any;
 
 import { useState, useMemo } from "react";
+import { ChevronRight } from "lucide-react";
+import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
   PieChart, Pie, Cell,
@@ -11,7 +13,7 @@ import { UserRadarChart } from "@/components/analytics/UserRadarChart";
 import { api } from "@/lib/api";
 import { getStoredColorBlindMode } from "@/lib/accessibility";
 import { getColorBlindPalette } from "@/lib/chartPalettes";
-import type { ScoreTypeRow } from "@/types/analytics";
+import type { ScoreTypeRow, MilestoneEvent } from "@/types/analytics";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { ScrollSection } from "@/components/analytics/ScrollSection";
 import { SVGHandicapTrend } from "@/components/analytics/SVGHandicapTrend";
@@ -65,7 +67,7 @@ function aggregateDonut(dist: ScoreTypeRow[]) {
 }
 
 
-function eventMeta(event: { date: string; course: string } | null | undefined): string | null {
+function eventMeta(event: MilestoneEvent | null | undefined): string | null {
   if (!event) return null;
   return `${event.date} — ${event.course}`;
 }
@@ -118,19 +120,33 @@ function MilestoneBar({
   label,
   achieved,
   achievedColor = "var(--color-primary)",
+  roundId,
 }: {
   label: string;
   achieved: boolean;
   achievedColor?: string;
+  roundId?: string | null;
 }) {
   return (
-    <div className="flex items-center gap-3">
+    <div className="group flex items-center gap-3">
       <div
         className="w-2.5 h-2.5 rounded-full flex-shrink-0"
         style={{ backgroundColor: achieved ? achievedColor : "#e5e7eb" }}
       />
       <div className={`text-sm ${achieved ? "text-gray-900 font-medium" : "text-gray-400"}`}>{label}</div>
-      {achieved && <div className="ml-auto text-[10px] font-bold uppercase tracking-wide" style={{ color: achievedColor }}>Achieved</div>}
+      {achieved && (
+        <div className="ml-auto flex items-center gap-1">
+          <span className="text-[10px] font-bold uppercase tracking-wide" style={{ color: achievedColor }}>Achieved</span>
+          {roundId && (
+            <Link
+              to={`/rounds/${roundId}`}
+              className="opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-gray-600"
+            >
+              <ChevronRight size={14} />
+            </Link>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -202,31 +218,37 @@ export function CareerPage({ userId }: { userId: string }) {
       label: "Lowest Round",
       value: scoring_records[w].lowest_round,
       meta: eventMeta(scoring_records_events[w].lowest_round),
+      roundId: scoring_records_events[w].lowest_round?.round_id,
     },
     {
       label: "Most Birdies",
       value: scoring_records[w].most_birdies_in_round,
       meta: eventMeta(scoring_records_events[w].most_birdies_in_round),
+      roundId: scoring_records_events[w].most_birdies_in_round?.round_id,
     },
     {
       label: "Most GIR",
       value: scoring_records[w].most_gir_in_round,
       meta: eventMeta(scoring_records_events[w].most_gir_in_round),
+      roundId: scoring_records_events[w].most_gir_in_round?.round_id,
     },
     {
       label: "Fewest Putts",
       value: scoring_records[w].fewest_putts_in_round,
       meta: eventMeta(scoring_records_events[w].fewest_putts_in_round),
+      roundId: scoring_records_events[w].fewest_putts_in_round?.round_id,
     },
     {
       label: "Birdie Streak",
       value: best_performance_streaks[w].longest_birdie_streak,
       meta: eventMeta(best_performance_streaks_events[w].longest_birdie_streak),
+      roundId: best_performance_streaks_events[w].longest_birdie_streak?.round_id,
     },
     {
       label: "Par-or-Better Streak",
       value: best_performance_streaks[w].longest_par_streak,
       meta: eventMeta(best_performance_streaks_events[w].longest_par_streak),
+      roundId: best_performance_streaks_events[w].longest_par_streak?.round_id,
     },
   ];
 
@@ -350,10 +372,20 @@ export function CareerPage({ userId }: { userId: string }) {
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {recordRows.map((row) => (
-                  <tr key={row.label}>
+                  <tr key={row.label} className="group">
                     <td className="py-2.5 text-gray-600">{row.label}</td>
                     <td className="py-2.5 pr-4 text-right font-bold text-gray-900">{row.value ?? "—"}</td>
                     <td className="py-2.5 text-xs text-gray-400 truncate max-w-[160px]">{row.meta ?? "—"}</td>
+                    <td className="py-2.5 w-5 text-right">
+                      {row.roundId && (
+                        <Link
+                          to={`/rounds/${row.roundId}`}
+                          className="opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-gray-600 inline-block"
+                        >
+                          <ChevronRight size={14} />
+                        </Link>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -433,12 +465,14 @@ export function CareerPage({ userId }: { userId: string }) {
                     label={`Break ${row.threshold}`}
                     achieved={row.achievement != null}
                     achievedColor={successColor}
+                    roundId={row.achievement?.round_id}
                   />
                 ))}
                 <MilestoneBar
                   label="Round Under Par"
                   achieved={round_milestones.lifetime.first_round_under_par != null}
                   achievedColor={successColor}
+                  roundId={round_milestones.lifetime.first_round_under_par?.round_id}
                 />
                 {scoreBreaks70AndBelow.map((row) => (
                   <MilestoneBar
@@ -446,17 +480,20 @@ export function CareerPage({ userId }: { userId: string }) {
                     label={`Break ${row.threshold}`}
                     achieved={row.achievement != null}
                     achievedColor={successColor}
+                    roundId={row.achievement?.round_id}
                   />
                 ))}
                 <MilestoneBar
                   label="First Eagle"
                   achieved={round_milestones.lifetime.first_eagle != null}
                   achievedColor={successColor}
+                  roundId={round_milestones.lifetime.first_eagle?.round_id}
                 />
                 <MilestoneBar
                   label="Hole-in-One"
                   achieved={round_milestones.lifetime.first_hole_in_one != null}
                   achievedColor={successColor}
+                  roundId={round_milestones.lifetime.first_hole_in_one?.round_id}
                 />
               </div>
             ) : (
@@ -487,6 +524,7 @@ export function CareerPage({ userId }: { userId: string }) {
                     label={`Break ${row.threshold} Putts`}
                     achieved={achieved}
                     achievedColor={successColor}
+                    roundId={row.achievement?.round_id}
                   />
                 );
               })}
@@ -500,12 +538,14 @@ export function CareerPage({ userId }: { userId: string }) {
                 const achieved = w === "lifetime"
                   ? row.achievement != null
                   : row.achievement != null && isWithinLastDays(row.achievement.date, window_days);
+                const roundId = row.achievement?.round_id;
                 return (
                   <MilestoneBar
                     key={row.threshold}
                     label={`${row.threshold}/18 GIR`}
                     achieved={achieved}
                     achievedColor={successColor}
+                    roundId={roundId}
                   />
                 );
               })}

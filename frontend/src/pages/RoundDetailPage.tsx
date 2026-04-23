@@ -1,7 +1,9 @@
 import { useState, useCallback, useRef, useMemo, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Pencil, Trash2, Link2, CalendarDays } from "lucide-react";
+import { ArrowLeft, Pencil, Trash2, Link2, CalendarDays, Share2 } from "lucide-react";
+import { ShareCard } from "@/components/share/ShareCard";
+import { useShareRound } from "@/hooks/useShareRound";
 import type { CourseSummary } from "@/types/golf";
 import { CourseLinkSearch } from "@/components/CourseLinkSearch";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell } from "recharts";
@@ -121,6 +123,7 @@ export function RoundDetailPage({ userId }: { userId: string }) {
   useEffect(() => () => { if (linkTimer.current) clearTimeout(linkTimer.current); }, []);
   const colorBlindMode = useMemo(() => getStoredColorBlindMode(), []);
   const colorBlindPalette = useMemo(() => getColorBlindPalette(colorBlindMode), [colorBlindMode]);
+  const { cardRef: shareCardRef, share: shareRound, sharing } = useShareRound();
 
   const { data: round } = useQuery({
     queryKey: ["round", roundId],
@@ -298,8 +301,15 @@ export function RoundDetailPage({ userId }: { userId: string }) {
     : null;
   const toPar = coursePar !== null ? totalScore - coursePar : null;
 
+  const courseName = formatCourseName(round.course?.name ?? round.course_name_played);
+
   return (
     <div>
+      {/* Hidden share card for image capture */}
+      <div style={{ position: "fixed", left: -9999, top: 0, pointerEvents: "none" }}>
+        <ShareCard ref={shareCardRef} round={round} courseName={courseName} />
+      </div>
+
       <Link
         to="/rounds"
         className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-primary mb-4"
@@ -309,7 +319,7 @@ export function RoundDetailPage({ userId }: { userId: string }) {
       </Link>
 
       <PageHeader
-        title={formatCourseName(round.course?.name ?? round.course_name_played)}
+        title={courseName}
         subtitle={
           round.date
             ? new Date(round.date).toLocaleDateString("en-US", {
@@ -328,7 +338,7 @@ export function RoundDetailPage({ userId }: { userId: string }) {
           {/* Left: identity */}
           <div className="min-w-0">
             <h1 className="text-2xl md:text-4xl font-extrabold tracking-tight text-gray-900 leading-tight truncate">
-              {formatCourseName(round.course?.name ?? round.course_name_played)}
+              {courseName}
             </h1>
             <div className="flex items-center gap-3 mt-1.5 flex-wrap">
               {round.date && (
@@ -374,6 +384,14 @@ export function RoundDetailPage({ userId }: { userId: string }) {
           <div className="flex items-center gap-2 shrink-0">
             {!editMode ? (
               <>
+                <button
+                  onClick={() => shareRound(round, courseName)}
+                  disabled={sharing}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+                >
+                  <Share2 size={14} />
+                  {sharing ? "…" : "Share"}
+                </button>
                 <button
                   onClick={enterEditMode}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50"

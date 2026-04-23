@@ -82,6 +82,7 @@ export interface Milestone {
   label: string;
   date: string; // "YYYY/M/D"
   course: string;
+  round_id?: string | null;
 }
 
 export interface CourseSummary {

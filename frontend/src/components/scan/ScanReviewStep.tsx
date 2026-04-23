@@ -8,6 +8,7 @@ import type { CourseSummary } from "@/types/golf";
 import type { ScanState, ScanResult, ExtractedHoleScore, FieldConfidence, ScoreMetadata } from "@/types/scan";
 import { initialScanState } from "@/types/scan";
 import { formatCourseName } from "@/lib/courseName";
+import { scoreInputStyle } from "@/lib/scoreSymbol";
 
 interface ScanReviewStepProps {
   result: ScanResult;
@@ -43,17 +44,6 @@ interface ScanReviewStepProps {
   setScanState: React.Dispatch<React.SetStateAction<ScanState>>;
 }
 
-function getScoreColorClass(strokes: number | null, par: number | null): string {
-  if (strokes === null || par === null) return "border-gray-200";
-  const diff = strokes - par;
-  if (diff <= -2) return "border-yellow-500 bg-yellow-50 text-yellow-900";
-  if (diff === -1) return "border-green-500 bg-green-50 text-green-900";
-  if (diff === 0)  return "border-gray-300 bg-white text-gray-800";
-  if (diff === 1)  return "border-red-300 bg-red-50 text-red-800";
-  if (diff === 2)  return "border-orange-400 bg-orange-100 text-orange-900";
-  if (diff === 3)  return "border-rose-400 bg-rose-100 text-rose-900";
-  return "border-red-600 bg-red-200 text-red-950";
-}
 
 function toParStr(strokes: number | null, par: number | null): string {
   if (strokes === null || par === null) return "-";
@@ -215,6 +205,7 @@ export function ScanReviewStep({
               const par = rd.course?.holes.find((h) => h.number === holeNum)?.par ?? null;
               const sc = getFieldConfidence(hs.hole_number, origIdx, "strokes");
               const isLowConf = sc !== null && (sc.level === "low" || sc.final_confidence < 0.7);
+              const diff = hs.strokes != null && par != null ? hs.strokes - par : null;
               return (
                 <td key={si} className="px-1 py-1 text-center">
                   <div className="relative inline-block">
@@ -222,9 +213,11 @@ export function ScanReviewStep({
                       type="number" min="1" max="15"
                       value={hs.strokes ?? ""}
                       onChange={(e) => onScoreChange(origIdx, "strokes", e.target.value)}
-                      className={`w-9 text-center px-0.5 py-0.5 border rounded text-sm font-semibold relative z-10 ${
-                        isLowConf ? "border-amber-400 bg-amber-50 text-amber-900" : getScoreColorClass(hs.strokes, par)
-                      }`}
+                      className="w-9 text-center px-0.5 py-0.5 text-sm font-semibold relative z-10"
+                      style={isLowConf
+                        ? { border: "1px solid #f59e0b", background: "#fffbeb", color: "#92400e", borderRadius: 4 }
+                        : scoreInputStyle(diff)
+                      }
                     />
                     {isLowConf && (
                       <motion.div

@@ -122,6 +122,7 @@ def _milestone_event(round_obj: Round) -> Optional[Dict[str, str]]:
     return {
         "date": _format_date_short(round_obj.date),
         "course": _course_label(round_obj) or "Unknown Course",
+        "round_id": str(round_obj.id) if round_obj.id else None,
     }
 
 
