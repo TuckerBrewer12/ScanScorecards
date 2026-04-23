@@ -107,13 +107,13 @@ export function MobileLabPage({
             kpis={analyticsData.kpis}
             scoringByPar={analyticsData.scoring_by_par ?? []}
             profile={activeProfile ?? undefined}
-            height={240}
-            outerRadius={88}
+            height={270}
+            outerRadius="82%"
             primaryColor="#2d7a3a"
             gridColor="#e5e7eb"
             showTooltip
             emptyMessage="Play more rounds to build your performance shape."
-            margin={{ top: 20, right: 36, bottom: 24, left: 36 }}
+            margin={{ top: 24, right: 32, bottom: 28, left: 32 }}
           />
         )}
       </div>
