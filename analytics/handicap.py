@@ -37,21 +37,32 @@ def score_differential(score: int, course_rating: float, slope_rating: float) ->
 
 
 def _get_differential_for_round(round_obj: Round) -> Optional[float]:
-    """Return the score differential for a round, or None if data is unavailable."""
+    """Return the score differential for a round, or None if data is unavailable.
+
+    When slope/course_rating are available uses the WHS formula. When they are
+    absent (unlinked rounds) falls back to score-to-par (equivalent to slope=113,
+    rating=par), which keeps the handicap index moving correctly without rated data.
+    """
     total = round_obj.calculate_total_score()
     if total is None:
         return None
 
-    tee = round_obj.get_tee()
-    if tee is None or tee.course_rating is None or tee.slope_rating is None:
-        return None
-
-    # Exclude 9-hole/partial rounds tracked against 18-hole course ratings
     holes_played = sum(1 for s in round_obj.hole_scores if s.strokes is not None)
-    if holes_played < 18 and tee.course_rating >= 50.0:
-        return None
 
-    return score_differential(total, tee.course_rating, tee.slope_rating)
+    tee = round_obj.get_tee()
+    if tee is not None and tee.course_rating is not None and tee.slope_rating is not None:
+        # Exclude 9-hole/partial rounds tracked against 18-hole course ratings
+        if holes_played < 18 and tee.course_rating >= 50.0:
+            return None
+        return score_differential(total, tee.course_rating, tee.slope_rating)
+
+    # Fallback: no tee ratings available — use score-to-par as differential
+    par = round_obj.get_par()
+    if par is None:
+        return None
+    if holes_played < 18 and par >= 50:
+        return None
+    return float(total - par)
 
 
 def score_differentials_per_round(rounds: Iterable[Round]) -> List[Dict[str, Any]]:

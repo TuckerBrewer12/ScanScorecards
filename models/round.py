@@ -1,6 +1,6 @@
 from datetime import datetime
 from pydantic import Field
-from typing import List, Optional
+from typing import List, Optional, Union
 
 from .base import BaseGolfModel
 from .course import Course
@@ -25,10 +25,14 @@ class Round(BaseGolfModel):
     total_putts: Optional[int] = None
     total_gir: Optional[int] = None
 
-    def get_tee(self) -> Optional[Tee]:
-        """Get the tee used for this round."""
+    def get_tee(self) -> Optional[Union[Tee, UserTee]]:
+        """Get the tee used for this round — course tee first, user_tee as fallback."""
         if self.course and self.tee_box:
-            return self.course.get_tee(self.tee_box)
+            tee = self.course.get_tee(self.tee_box)
+            if tee is not None:
+                return tee
+        if self.user_tee is not None:
+            return self.user_tee
         return None
 
     def get_total_putts(self) -> Optional[int]:

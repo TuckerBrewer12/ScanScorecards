@@ -96,6 +96,7 @@ export const api = {
       tee_box?: string | null;
       notes?: string;
       weather_conditions?: string;
+      course_name_played?: string | null;
     }
   ) => putJSON<Round>(`/rounds/${roundId}`, body),
 

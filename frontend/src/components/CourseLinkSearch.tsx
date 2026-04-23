@@ -81,12 +81,12 @@ export function CourseLinkSearch({
   const noMatch = query.trim().length >= 2 && !searching && results.length === 0 && (
     reviewVariant && onUseCustomName ? (
       <div className="mt-1 flex items-center justify-between px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg">
-        <span className="text-xs text-gray-500">No match — save as new course</span>
+        <span className="text-xs text-gray-500">No match found</span>
         <button
           onClick={() => onUseCustomName(query.trim())}
           className="text-xs font-medium text-primary hover:underline"
         >
-          Use "{query.trim()}"
+          Save as "{query.trim()}"
         </button>
       </div>
     ) : (
@@ -116,6 +116,26 @@ export function CourseLinkSearch({
       {resultsList}
       {noMatch}
     </>
+  );
+}
+
+/** Chip displayed when user has confirmed a custom (unlinked) course name. */
+export function CustomNameChip({
+  name,
+  onClear,
+}: {
+  name: string;
+  onClear: () => void;
+}) {
+  return (
+    <div className="flex items-center gap-2 px-3 py-2 bg-gray-100 border border-gray-200 rounded-lg">
+      <span className="text-sm text-gray-700 flex-1 truncate">
+        Saving as: <span className="font-medium">{name}</span>
+      </span>
+      <button onClick={onClear} className="text-gray-400 hover:text-gray-600 shrink-0" title="Edit name">
+        <X size={14} />
+      </button>
+    </div>
   );
 }
 

@@ -45,6 +45,14 @@ class UpdateRoundRequest(BaseModel):
     notes: Optional[str] = None
     weather_conditions: Optional[str] = None
     tee_box: Optional[str] = None
+    course_name_played: Optional[str] = None
+
+    @field_validator("course_name_played")
+    @classmethod
+    def _validate_course_name_played(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return None
+        return sanitize_user_text(v, field_name="course_name_played", max_length=255)
 
     @field_validator("notes")
     @classmethod
@@ -215,6 +223,8 @@ async def update_round(
             meta_updates["weather_conditions"] = req.weather_conditions
         if req.tee_box is not None:
             meta_updates["tee_box_played"] = req.tee_box
+        if req.course_name_played is not None:
+            meta_updates["course_name_played"] = req.course_name_played
 
         if meta_updates:
             updated = await db.rounds.update_round(
