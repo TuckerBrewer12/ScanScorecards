@@ -205,6 +205,8 @@ export function RoundDetailPage({ userId }: { userId: string }) {
       });
       queryClient.setQueryData(["round", roundId], updated);
       queryClient.invalidateQueries({ queryKey: ["round-comparison", userId, roundId] });
+      queryClient.invalidateQueries({ queryKey: ["career-analytics", userId] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard", userId] });
       setEditMode(false);
     } catch (err) {
       console.error("Save failed:", err);
@@ -224,6 +226,7 @@ export function RoundDetailPage({ userId }: { userId: string }) {
     }
     queryClient.invalidateQueries({ queryKey: ["rounds", userId] });
     queryClient.invalidateQueries({ queryKey: ["dashboard", userId] });
+    queryClient.invalidateQueries({ queryKey: ["career-analytics", userId] });
     navigate("/rounds");
   }, [roundId, userId, queryClient, navigate]);
 
