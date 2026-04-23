@@ -2,7 +2,7 @@ import { useState } from "react";
 import { CheckCircle, AlertTriangle, Loader2, X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { PageHeader } from "@/components/layout/PageHeader";
-import { CourseLinkSearch, CourseLinkChip } from "@/components/CourseLinkSearch";
+import { CourseLinkSearch, CourseLinkChip, CustomNameChip } from "@/components/CourseLinkSearch";
 import { formatToPar, calcCourseHandicap, calcNetScore } from "@/types/golf";
 import type { CourseSummary } from "@/types/golf";
 import type { ScanState, ScanResult, ExtractedHoleScore, FieldConfidence, ScoreMetadata } from "@/types/scan";
@@ -88,6 +88,7 @@ export function ScanReviewStep({
   setScanState,
 }: ScanReviewStepProps) {
   const [badScanDismissed, setBadScanDismissed] = useState(false);
+  const [customNameConfirmed, setCustomNameConfirmed] = useState(false);
   const rd = result.round;
   const coursePar = rd.course?.par ?? null;
   const totalStrokes = editedScores.reduce((s, h) => s + (h.strokes ?? 0), 0);
@@ -490,7 +491,16 @@ export function ScanReviewStep({
                 <CourseLinkChip
                   name={formatCourseName(reviewCourseName ?? "")}
                   onClear={() => {
+                    setCustomNameConfirmed(false);
                     onUpdate({ reviewCourseId: null, reviewExternalCourseId: null });
+                    setReviewCourseQuery(reviewCourseName ?? "");
+                  }}
+                />
+              ) : customNameConfirmed && reviewCourseName ? (
+                <CustomNameChip
+                  name={formatCourseName(reviewCourseName)}
+                  onClear={() => {
+                    setCustomNameConfirmed(false);
                     setReviewCourseQuery(reviewCourseName ?? "");
                   }}
                 />
@@ -502,18 +512,26 @@ export function ScanReviewStep({
                     results={reviewCourseResults}
                     searching={reviewSearching}
                     onQueryChange={onReviewCourseQuery}
-                    onSelectCourse={onSelectReviewCourse}
+                    onSelectCourse={(course) => {
+                      setCustomNameConfirmed(false);
+                      onSelectReviewCourse(course);
+                    }}
                     onClose={() => { setReviewCourseQuery(""); setReviewCourseResults([]); }}
                     reviewVariant
                     onUseCustomName={(name) => {
-                      onUpdate({
-                        reviewCourseName: name,
-                        reviewCourseId: null,
-                        reviewExternalCourseId: null,
-                      });
+                      onUpdate({ reviewCourseName: name, reviewCourseId: null, reviewExternalCourseId: null });
                       setReviewCourseResults([]);
+                      setCustomNameConfirmed(true);
                     }}
                   />
+                  {reviewCourseName && !reviewCourseQuery && (
+                    <button
+                      onClick={() => setCustomNameConfirmed(true)}
+                      className="mt-2 text-xs text-gray-400 hover:text-gray-600 transition-colors"
+                    >
+                      Save as "{formatCourseName(reviewCourseName)}" without linking →
+                    </button>
+                  )}
                 </div>
               )}
             </div>
