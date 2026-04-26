@@ -1,9 +1,11 @@
 import { useState, useCallback, useRef, useMemo, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { ArrowLeft, Pencil, Trash2, Link2, CalendarDays } from "lucide-react";
+import { ArrowLeft, Pencil, Trash2, Link2, CalendarDays, Share2 } from "lucide-react";
+import { ShareCard } from "@/components/share/ShareCard";
+import { useShareRound } from "@/hooks/useShareRound";
 import type { CourseSummary } from "@/types/golf";
-import { CourseLinkSearch } from "@/components/CourseLinkSearch";
+import { CourseLinkSearch, CourseLinkChip, CustomNameChip } from "@/components/CourseLinkSearch";
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell } from "recharts";
 import { ScrollSection } from "@/components/analytics/ScrollSection";
 import { api } from "@/lib/api";
@@ -118,9 +120,23 @@ export function RoundDetailPage({ userId }: { userId: string }) {
   const [linkSearching, setLinkSearching] = useState(false);
   const [linking, setLinking] = useState(false);
   const linkTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(() => () => { if (linkTimer.current) clearTimeout(linkTimer.current); }, []);
+  // Edit-mode course state
+  const [editCoursePendingLink, setEditCoursePendingLink] = useState<CourseSummary | null>(null);
+  const [editCourseChanging, setEditCourseChanging] = useState(false);
+  const [editCourseNameValue, setEditCourseNameValue] = useState("");
+  const [editCourseNameConfirmed, setEditCourseNameConfirmed] = useState(false);
+  const [editCourseQuery, setEditCourseQuery] = useState("");
+  const [editCourseResults, setEditCourseResults] = useState<CourseSummary[]>([]);
+  const [editCourseSearching, setEditCourseSearching] = useState(false);
+  const editCourseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => () => {
+    if (linkTimer.current) clearTimeout(linkTimer.current);
+    if (editCourseTimer.current) clearTimeout(editCourseTimer.current);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const colorBlindMode = useMemo(() => getStoredColorBlindMode(), []);
   const colorBlindPalette = useMemo(() => getColorBlindPalette(colorBlindMode), [colorBlindMode]);
+  const { cardRef: shareCardRef, share: shareRound, sharing } = useShareRound();
 
   const { data: round } = useQuery({
     queryKey: ["round", roundId],
@@ -170,6 +186,15 @@ export function RoundDetailPage({ userId }: { userId: string }) {
       setAvailableTees(fallbackColors);
     }
 
+    // Init course edit state from current round
+    const hasCustomName = !!(round.course_name_played && !round.course);
+    setEditCoursePendingLink(null);
+    setEditCourseChanging(false);
+    setEditCourseNameValue(hasCustomName ? round.course_name_played! : "");
+    setEditCourseNameConfirmed(hasCustomName);
+    setEditCourseQuery(hasCustomName ? "" : (round.course_name_played ?? ""));
+    setEditCourseResults([]);
+
     setEditMode(true);
     setConfirmDelete(false);
   }, [round]);
@@ -177,12 +202,23 @@ export function RoundDetailPage({ userId }: { userId: string }) {
   const cancelEdit = useCallback(() => {
     setEditMode(false);
     setEditedScores({});
+    setEditCoursePendingLink(null);
+    setEditCourseChanging(false);
+    setEditCourseNameValue("");
+    setEditCourseNameConfirmed(false);
+    setEditCourseQuery("");
+    setEditCourseResults([]);
   }, []);
 
   const handleSave = useCallback(async () => {
     if (!round || !roundId) return;
     setSaving(true);
     try {
+      // Link to DB course if user picked one
+      if (editCoursePendingLink) {
+        await api.linkCourse(roundId, editCoursePendingLink.id);
+      }
+
       const holeScores = round.hole_scores
         .filter((s) => s.hole_number != null)
         .map((s) => {
@@ -196,19 +232,37 @@ export function RoundDetailPage({ userId }: { userId: string }) {
             green_in_regulation: girValue,
           };
         });
+
+      // Determine course_name_played for unlinked rounds
+      let courseNamePlayed: string | null | undefined;
+      if (!round.course && !editCoursePendingLink) {
+        if (editCourseNameConfirmed && editCourseNameValue) {
+          courseNamePlayed = editCourseNameValue;
+        } else if (round.course_name_played && !editCourseNameConfirmed) {
+          courseNamePlayed = null; // user cleared the name
+        }
+      }
+
       const updated = await api.updateRound(roundId, {
         hole_scores: holeScores,
         tee_box: editedTeeBox || null,
+        ...(courseNamePlayed !== undefined ? { course_name_played: courseNamePlayed } : {}),
       });
       queryClient.setQueryData(["round", roundId], updated);
       queryClient.invalidateQueries({ queryKey: ["round-comparison", userId, roundId] });
+      queryClient.invalidateQueries({ queryKey: ["career-analytics", userId] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard", userId] });
       setEditMode(false);
+      setEditCoursePendingLink(null);
+      setEditCourseChanging(false);
+      setEditCourseNameValue("");
+      setEditCourseNameConfirmed(false);
     } catch (err) {
       console.error("Save failed:", err);
     } finally {
       setSaving(false);
     }
-  }, [round, roundId, editedScores, editedTeeBox, queryClient, userId]);
+  }, [round, roundId, editedScores, editedTeeBox, editCoursePendingLink, editCourseNameConfirmed, editCourseNameValue, queryClient, userId]);
 
   const handleDelete = useCallback(async () => {
     if (!roundId || deletingRef.current) return;
@@ -221,6 +275,7 @@ export function RoundDetailPage({ userId }: { userId: string }) {
     }
     queryClient.invalidateQueries({ queryKey: ["rounds", userId] });
     queryClient.invalidateQueries({ queryKey: ["dashboard", userId] });
+    queryClient.invalidateQueries({ queryKey: ["career-analytics", userId] });
     navigate("/rounds");
   }, [roundId, userId, queryClient, navigate]);
 
@@ -255,6 +310,20 @@ export function RoundDetailPage({ userId }: { userId: string }) {
         setLinkResults(results);
       } catch { setLinkResults([]); }
       finally { setLinkSearching(false); }
+    }, 300);
+  }, [userId]);
+
+  const handleEditCourseQuery = useCallback((q: string) => {
+    setEditCourseQuery(q);
+    if (editCourseTimer.current) clearTimeout(editCourseTimer.current);
+    if (q.trim().length < 2) { setEditCourseResults([]); return; }
+    editCourseTimer.current = setTimeout(async () => {
+      setEditCourseSearching(true);
+      try {
+        const results = await api.searchCourses(q.trim(), userId);
+        setEditCourseResults(results);
+      } catch { setEditCourseResults([]); }
+      finally { setEditCourseSearching(false); }
     }, 300);
   }, [userId]);
 
@@ -298,8 +367,15 @@ export function RoundDetailPage({ userId }: { userId: string }) {
     : null;
   const toPar = coursePar !== null ? totalScore - coursePar : null;
 
+  const courseName = formatCourseName(round.course?.name ?? round.course_name_played);
+
   return (
     <div>
+      {/* Hidden share card for image capture */}
+      <div style={{ position: "fixed", left: -9999, top: 0, pointerEvents: "none" }}>
+        <ShareCard ref={shareCardRef} round={round} courseName={courseName} />
+      </div>
+
       <Link
         to="/rounds"
         className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-primary mb-4"
@@ -309,7 +385,7 @@ export function RoundDetailPage({ userId }: { userId: string }) {
       </Link>
 
       <PageHeader
-        title={formatCourseName(round.course?.name ?? round.course_name_played)}
+        title={courseName}
         subtitle={
           round.date
             ? new Date(round.date).toLocaleDateString("en-US", {
@@ -328,7 +404,7 @@ export function RoundDetailPage({ userId }: { userId: string }) {
           {/* Left: identity */}
           <div className="min-w-0">
             <h1 className="text-2xl md:text-4xl font-extrabold tracking-tight text-gray-900 leading-tight truncate">
-              {formatCourseName(round.course?.name ?? round.course_name_played)}
+              {courseName}
             </h1>
             <div className="flex items-center gap-3 mt-1.5 flex-wrap">
               {round.date && (
@@ -374,6 +450,14 @@ export function RoundDetailPage({ userId }: { userId: string }) {
           <div className="flex items-center gap-2 shrink-0">
             {!editMode ? (
               <>
+                <button
+                  onClick={() => shareRound(round, courseName)}
+                  disabled={sharing}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 disabled:opacity-50"
+                >
+                  <Share2 size={14} />
+                  {sharing ? "…" : "Share"}
+                </button>
                 <button
                   onClick={enterEditMode}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50"
@@ -505,6 +589,54 @@ export function RoundDetailPage({ userId }: { userId: string }) {
           </div>
         );
       })()}
+
+      {/* Course link / name section — visible in edit mode */}
+      {editMode && (
+        <div className="mb-4">
+          {editCoursePendingLink ? (
+            <CourseLinkChip
+              name={editCoursePendingLink.name ?? ""}
+              onClear={() => { setEditCoursePendingLink(null); setEditCourseChanging(false); setEditCourseQuery(""); setEditCourseResults([]); }}
+            />
+          ) : round.course && !editCourseChanging ? (
+            <div className="flex items-center gap-2">
+              <CourseLinkChip
+                name={round.course.name ?? ""}
+                onClear={() => setEditCourseChanging(true)}
+              />
+            </div>
+          ) : editCourseChanging || !round.course ? (
+            editCourseNameConfirmed && editCourseNameValue ? (
+              <CustomNameChip
+                name={editCourseNameValue}
+                onClear={() => { setEditCourseNameConfirmed(false); setEditCourseNameValue(""); setEditCourseQuery(""); }}
+              />
+            ) : (
+              <div>
+                <CourseLinkSearch
+                  query={editCourseQuery}
+                  results={editCourseResults}
+                  searching={editCourseSearching}
+                  onQueryChange={handleEditCourseQuery}
+                  onSelectCourse={(c) => { setEditCoursePendingLink(c); setEditCourseChanging(false); setEditCourseQuery(""); setEditCourseResults([]); }}
+                  onClose={() => { setEditCourseChanging(false); setEditCourseQuery(""); setEditCourseResults([]); }}
+                  reviewVariant={!round.course}
+                  onUseCustomName={!round.course ? (name) => { setEditCourseNameValue(name); setEditCourseNameConfirmed(true); } : undefined}
+                />
+                {!round.course && round.course_name_played && !editCourseQuery && !editCourseNameConfirmed && (
+                  <button
+                    type="button"
+                    onClick={() => { setEditCourseNameValue(round.course_name_played!); setEditCourseNameConfirmed(true); }}
+                    className="mt-1.5 text-xs text-gray-400 hover:text-primary transition-colors"
+                  >
+                    Keep "{round.course_name_played}" without linking →
+                  </button>
+                )}
+              </div>
+            )
+          ) : null}
+        </div>
+      )}
 
       {/* Story view (normal) / Scorecard grid (edit) */}
       {!editMode && <RoundStory round={round} />}

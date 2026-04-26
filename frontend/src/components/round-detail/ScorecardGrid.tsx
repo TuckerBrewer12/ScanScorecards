@@ -1,5 +1,5 @@
 import type { Round } from "@/types/golf";
-import { getScoreColor } from "@/types/golf";
+import { scoreInputStyle } from "@/lib/scoreSymbol";
 import { ScoreCell } from "./ScoreCell";
 import { useMemo, type CSSProperties } from "react";
 import { getStoredColorBlindMode } from "@/lib/accessibility";
@@ -222,36 +222,25 @@ function NineTable({
             }
             const strokes = effectiveStrokes[i];
             const par = data[i].effectivePar;
-            const colorClass =
-              strokes !== null && par !== null
-                ? getScoreColor(strokes, par)
-                : "bg-white border-2 border-dashed border-gray-300 text-gray-400";
             const diff = strokes !== null && par !== null ? strokes - par : null;
-            const isOverPar = diff !== null && diff >= 1;
-            const shapeClass = isOverPar ? "rounded-sm" : "rounded-full";
-            const ringClass =
-              diff === -1 ? "ring-2 ring-birdie/50" : diff !== null && diff >= 1 ? "ring-1 ring-bogey/40" : "";
-            const paletteBackground =
-              diff !== null
-                ? diff <= -2
-                  ? palette?.score.eagle
-                  : diff === -1
-                  ? palette?.score.birdie
-                  : diff === 0
-                  ? palette?.score.par
-                  : diff === 1
-                  ? palette?.score.bogey
-                  : diff === 2
-                  ? palette?.score.double_bogey
-                  : palette?.score.triple_bogey
-                : undefined;
-            const paletteStyle = paletteBackground
-              ? {
-                  backgroundColor: paletteBackground,
-                  color: diff === 0 ? "#111827" : "#ffffff",
-                  boxShadow: `0 0 0 ${(diff ?? 0) <= -1 ? 2 : 1}px ${paletteBackground}66`,
-                }
-              : undefined;
+            const symStyle = palette
+              ? (() => {
+                  const bg =
+                    diff == null ? undefined
+                    : diff <= -2 ? palette.score.eagle
+                    : diff === -1 ? palette.score.birdie
+                    : diff === 0 ? palette.score.par
+                    : diff === 1 ? palette.score.bogey
+                    : diff === 2 ? palette.score.double_bogey
+                    : palette.score.triple_bogey;
+                  return bg
+                    ? { backgroundColor: bg, color: diff === 0 ? "#111827" : "#fff",
+                        borderRadius: diff != null && diff <= -1 ? "50%" : "2px", border: "none" }
+                    : { background: "#fff", border: "1px dashed #d1d5db", borderRadius: "4px", color: "#9ca3af" };
+                })()
+              : strokes !== null && par !== null
+                ? scoreInputStyle(diff)
+                : { background: "#fff", border: "1px dashed #d1d5db", borderRadius: "4px", color: "#9ca3af" };
             return (
               <td key={n} className="px-1 py-1 text-center">
                 <input
@@ -266,10 +255,8 @@ function NineTable({
                     const num = parseInt(v, 10);
                     if (!isNaN(num)) onScoreChange?.(n, "strokes", num);
                   }}
-                  className={`w-7 h-7 text-center text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/40 ${shapeClass} ${
-                    paletteStyle ? "" : `${colorClass} ${ringClass}`
-                  }`}
-                  style={paletteStyle}
+                  className="w-7 h-7 text-center text-sm font-semibold focus:outline-none"
+                  style={symStyle}
                 />
               </td>
             );

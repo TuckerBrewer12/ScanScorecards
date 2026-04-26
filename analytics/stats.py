@@ -122,6 +122,7 @@ def _milestone_event(round_obj: Round) -> Optional[Dict[str, str]]:
     return {
         "date": _format_date_short(round_obj.date),
         "course": _course_label(round_obj) or "Unknown Course",
+        "round_id": str(round_obj.id) if round_obj.id else None,
     }
 
 
@@ -1169,9 +1170,6 @@ def gir_vs_non_gir_score_distribution(rounds: Iterable[Round]) -> List[Dict[str,
     totals = {"GIR": 0, "No GIR": 0}
 
     for round_obj in rounds:
-        if not round_obj.course:
-            continue
-
         for hole_score in _valid_hole_scores(round_obj):
             if (
                 hole_score.hole_number is None
@@ -1180,12 +1178,12 @@ def gir_vs_non_gir_score_distribution(rounds: Iterable[Round]) -> List[Dict[str,
             ):
                 continue
 
-            hole = round_obj.course.get_hole(hole_score.hole_number)
-            if not hole or hole.par is None:
+            par = round_obj.get_hole_par(hole_score.hole_number)
+            if par is None:
                 continue
 
             bucket = "GIR" if hole_score.green_in_regulation else "No GIR"
-            score_type = _score_type_from_to_par(hole_score.strokes - hole.par)
+            score_type = _score_type_from_to_par(hole_score.strokes - par)
             buckets[bucket][score_type] += 1
             totals[bucket] += 1
 
@@ -1319,19 +1317,21 @@ def scoring_vs_hole_handicap(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
     by_handicap: Dict[int, List[int]] = {}
 
     for round_obj in rounds:
-        if not round_obj.course:
-            continue
-
         for hole_score in _valid_hole_scores(round_obj):
             if hole_score.hole_number is None or hole_score.strokes is None:
                 continue
 
-            hole = round_obj.course.get_hole(hole_score.hole_number)
-            if not hole or hole.par is None or hole.handicap is None:
+            par = round_obj.get_hole_par(hole_score.hole_number)
+            handicap = (
+                round_obj.course.get_hole(hole_score.hole_number).handicap
+                if round_obj.course
+                else hole_score.handicap_played
+            )
+            if par is None or handicap is None:
                 continue
 
-            to_par = hole_score.strokes - hole.par
-            by_handicap.setdefault(hole.handicap, []).append(to_par)
+            to_par = hole_score.strokes - par
+            by_handicap.setdefault(handicap, []).append(to_par)
 
     results: List[Dict[str, Any]] = []
     for handicap in sorted(by_handicap):
@@ -1512,20 +1512,15 @@ def scoring_by_par(rounds: Iterable[Round]) -> List[Dict[str, Any]]:
     by_par: Dict[int, List[int]] = {}
 
     for round_obj in rounds:
-        if not round_obj.course:
-            continue
-
         for hole_score in _valid_hole_scores(round_obj):
             if hole_score.hole_number is None or hole_score.strokes is None:
                 continue
 
-            hole = round_obj.course.get_hole(hole_score.hole_number)
-            if not hole or hole.par is None:
-                continue
-            if hole.par not in (3, 4, 5):
+            par = round_obj.get_hole_par(hole_score.hole_number)
+            if par is None or par not in (3, 4, 5):
                 continue
 
-            by_par.setdefault(hole.par, []).append(hole_score.strokes)
+            by_par.setdefault(par, []).append(hole_score.strokes)
 
     results: List[Dict[str, Any]] = []
     for par in sorted(by_par):
@@ -1639,17 +1634,15 @@ def score_type_distribution_per_round(rounds: Iterable[Round]) -> List[Dict[str,
         counts = {name: 0 for name in SCORE_TYPE_ORDER}
         total = 0
 
-        if round_obj.course:
-            for hole_score in _valid_hole_scores(round_obj):
-                if hole_score.hole_number is None or hole_score.strokes is None:
-                    continue
-                hole = round_obj.course.get_hole(hole_score.hole_number)
-                if not hole or hole.par is None:
-                    continue
-
-                score_type = _score_type_from_to_par(hole_score.strokes - hole.par)
-                counts[score_type] += 1
-                total += 1
+        for hole_score in _valid_hole_scores(round_obj):
+            if hole_score.hole_number is None or hole_score.strokes is None:
+                continue
+            par = round_obj.get_hole_par(hole_score.hole_number)
+            if par is None:
+                continue
+            score_type = _score_type_from_to_par(hole_score.strokes - par)
+            counts[score_type] += 1
+            total += 1
 
         row: Dict[str, Any] = {
             "round_index": index,

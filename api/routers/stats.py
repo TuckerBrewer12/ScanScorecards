@@ -462,6 +462,7 @@ async def get_milestones(
                 "label": f"First to break {item['threshold']}",
                 "date": a["date"],
                 "course": a["course"],
+                "round_id": a.get("round_id"),
             })
 
     # First round under par
@@ -472,6 +473,7 @@ async def get_milestones(
             "label": "First round under par",
             "date": under_par["date"],
             "course": under_par["course"],
+            "round_id": under_par.get("round_id"),
         })
 
     # First eagle
@@ -482,6 +484,7 @@ async def get_milestones(
             "label": "First eagle",
             "date": eagle["date"],
             "course": eagle["course"],
+            "round_id": eagle.get("round_id"),
         })
 
     # Hole in one
@@ -492,6 +495,7 @@ async def get_milestones(
             "label": "Hole in one",
             "date": hio["date"],
             "course": hio["course"],
+            "round_id": hio.get("round_id"),
         })
 
     # GIR breaks (first 3, 6, 9, 12, 15, 18 GIR in a round)
@@ -504,6 +508,7 @@ async def get_milestones(
                 "label": f"First {item['threshold']} GIR in a round ({pct}%)",
                 "date": a["date"],
                 "course": a["course"],
+                "round_id": a.get("round_id"),
             })
 
     # Putt breaks (first round under 45, 42, 39, 36, 33, 30 … putts)
@@ -515,6 +520,7 @@ async def get_milestones(
                 "label": f"First round under {item['threshold']} putts",
                 "date": a["date"],
                 "course": a["course"],
+                "round_id": a.get("round_id"),
             })
 
     milestones.sort(key=lambda m: _parse_date(m["date"]), reverse=True)

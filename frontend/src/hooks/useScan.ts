@@ -68,7 +68,7 @@ export function useScan(
   setScanState: React.Dispatch<React.SetStateAction<ScanState>>
 ) {
   const navigate = useNavigate();
-  const { step, scanMode, selectedCourseId, selectedCourseName, file, result, editedScores, scoreMetadata, editedDate, editedTeeBox, userContext, prefetchedOcrText, reviewCourseId, reviewExternalCourseId, reviewCourseName, manualCourseHoles, manualCourseTees } = scanState;
+  const { step, scanMode, selectedCourseId, selectedCourseName, file, result, editedScores, scoreMetadata, editedDate, editedTeeBox, userContext, prefetchedOcrText, reviewCourseId, reviewExternalCourseId, reviewCourseName, manualCourseHoles, manualCourseTees, savedRoundId } = scanState;
 
   const update = useCallback(
     (patch: Partial<ScanState>) => setScanState((prev) => ({ ...prev, ...patch })),
@@ -507,8 +507,8 @@ export function useScan(
       }
 
       const saved = await res.json();
-      setScanState(initialScanState);
-      navigate(`/rounds/${saved.id}`);
+      setScanState({ ...initialScanState, step: "success", savedRoundId: saved.id });
+      setSaving(false);
     } catch (err) {
       update({ error: err instanceof Error ? err.message : "Save failed" });
       setSaving(false);
@@ -538,6 +538,7 @@ export function useScan(
     reviewCourseName,
     manualCourseHoles,
     manualCourseTees,
+    savedRoundId,
     error: scanState.error,
     preview: scanState.preview,
 

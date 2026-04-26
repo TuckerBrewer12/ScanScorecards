@@ -123,14 +123,20 @@ export interface GIRvsNonGIRRow {
   quad_bogey: number;
 }
 
+export interface MilestoneEvent {
+  date: string;
+  course: string;
+  round_id?: string | null;
+}
+
 export interface NotableAchievements {
   scoring_records: {
     lifetime: Record<string, number | null>;
     one_year: Record<string, number | null>;
   };
   scoring_records_events: {
-    lifetime: Record<string, { date: string; course: string } | null>;
-    one_year: Record<string, { date: string; course: string } | null>;
+    lifetime: Record<string, MilestoneEvent | null>;
+    one_year: Record<string, MilestoneEvent | null>;
   };
   career_totals: {
     lifetime: Record<string, number>;
@@ -141,16 +147,16 @@ export interface NotableAchievements {
     one_year: Record<string, number>;
   };
   best_performance_streaks_events: {
-    lifetime: Record<string, { date: string; course: string } | null>;
-    one_year: Record<string, { date: string; course: string } | null>;
+    lifetime: Record<string, MilestoneEvent | null>;
+    one_year: Record<string, MilestoneEvent | null>;
   };
   home_course_records: {
     lifetime: { home_course_name: string | null; lowest_score_on_home_course: number | null; most_rounds_played_at_home_course: number };
     one_year: { home_course_name: string | null; lowest_score_on_home_course: number | null };
   };
   home_course_records_events: {
-    lifetime: { lowest_score_on_home_course: { date: string; course: string } | null };
-    one_year: { lowest_score_on_home_course: { date: string; course: string } | null };
+    lifetime: { lowest_score_on_home_course: MilestoneEvent | null };
+    one_year: { lowest_score_on_home_course: MilestoneEvent | null };
   };
   putting_milestones: {
     lifetime: {
@@ -159,10 +165,7 @@ export interface NotableAchievements {
       most_3_putts_in_round: number | null;
       putt_breaks: Array<{
         threshold: number;
-        achievement: {
-          date: string;
-          course: string;
-        } | null;
+        achievement: MilestoneEvent | null;
       }>;
     };
     one_year: {
@@ -174,33 +177,27 @@ export interface NotableAchievements {
   };
   putting_milestones_events: {
     lifetime: {
-      fewest_putts_in_round: { date: string; course: string } | null;
-      most_1_putts_in_round: { date: string; course: string } | null;
-      most_3_putts_in_round: { date: string; course: string } | null;
+      fewest_putts_in_round: MilestoneEvent | null;
+      most_1_putts_in_round: MilestoneEvent | null;
+      most_3_putts_in_round: MilestoneEvent | null;
     };
     one_year: {
-      fewest_putts_in_round: { date: string; course: string } | null;
-      most_1_putts_in_round: { date: string; course: string } | null;
-      most_3_putts_in_round: { date: string; course: string } | null;
+      fewest_putts_in_round: MilestoneEvent | null;
+      most_1_putts_in_round: MilestoneEvent | null;
+      most_3_putts_in_round: MilestoneEvent | null;
     };
   };
   gir_milestones: {
     lifetime: {
       gir_breaks: Array<{
         threshold: number;
-        achievement: {
-          date: string;
-          course: string;
-        } | null;
+        achievement: MilestoneEvent | null;
       }>;
       highest_gir_percentage_in_round: number | null;
       most_gir_in_round: number | null;
     };
     one_year: {
-      best_gir_round: {
-        date: string;
-        course: string;
-      } | null;
+      best_gir_round: MilestoneEvent | null;
       best_gir_in_round: number | null;
       highest_gir_percentage: number | null;
       gir_milestones_achieved_from_lifetime_set: number;
@@ -208,36 +205,28 @@ export interface NotableAchievements {
   };
   gir_milestones_events: {
     lifetime: {
-      highest_gir_percentage_in_round: { date: string; course: string } | null;
-      most_gir_in_round: { date: string; course: string } | null;
+      highest_gir_percentage_in_round: MilestoneEvent | null;
+      most_gir_in_round: MilestoneEvent | null;
     };
     one_year: {
-      best_gir_round: { date: string; course: string } | null;
-      highest_gir_percentage: { date: string; course: string } | null;
+      best_gir_round: MilestoneEvent | null;
+      highest_gir_percentage: MilestoneEvent | null;
     };
   };
   round_milestones: {
     lifetime: {
       score_breaks: Array<{
         threshold: number;
-        achievement: {
-          date: string;
-          course: string;
-        } | null;
+        achievement: MilestoneEvent | null;
       }>;
       first_round_under_par: {
         score: number;
         date: string;
         course: string;
+        round_id?: string | null;
       } | null;
-      first_eagle: {
-        date: string;
-        course: string;
-      } | null;
-      first_hole_in_one: {
-        date: string;
-        course: string;
-      } | null;
+      first_eagle: MilestoneEvent | null;
+      first_hole_in_one: MilestoneEvent | null;
     };
     one_year: {
       new_personal_records_achieved_count: number;

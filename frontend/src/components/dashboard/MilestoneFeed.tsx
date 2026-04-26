@@ -1,4 +1,5 @@
-import { Trophy, Target, CircleDot, Star, Zap, TrendingDown } from "lucide-react";
+import { Trophy, Target, CircleDot, Star, Zap, TrendingDown, ChevronRight } from "lucide-react";
+import { Link } from "react-router-dom";
 import type { Milestone } from "@/types/golf";
 
 const ICON_MAP: Record<Milestone["type"], React.ElementType> = {
@@ -43,10 +44,7 @@ export function MilestoneFeed({ milestones }: MilestoneFeedProps) {
         const Icon = ICON_MAP[m.type];
         const color = COLOR_MAP[m.type];
         return (
-          <div
-            key={i}
-            className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50/80 transition-colors"
-          >
+          <div key={i} className="group flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50/80 transition-colors">
             <div className={`p-2 rounded-lg shrink-0 ${color}`}>
               <Icon size={14} />
             </div>
@@ -58,6 +56,14 @@ export function MilestoneFeed({ milestones }: MilestoneFeedProps) {
                 {m.course}
               </p>
             </div>
+            {m.round_id && (
+              <Link
+                to={`/rounds/${m.round_id}`}
+                className="shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-gray-600"
+              >
+                <ChevronRight size={14} />
+              </Link>
+            )}
           </div>
         );
       })}
