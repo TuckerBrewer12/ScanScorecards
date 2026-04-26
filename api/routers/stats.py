@@ -73,11 +73,7 @@ async def get_dashboard(
     # Handicap index only needs the last 20 rounds (full model required for differentials)
     hi_rounds_desc = await db.rounds.get_rounds_for_user(str(user_id), limit=20, offset=0)
     rounds_chrono = list(reversed(hi_rounds_desc))
-    calculated_hi = hcap.handicap_index(
-        rounds_chrono,
-        seed_handicap=user.handicap,
-        seed_set_at=user.last_handicap_update,
-    )
+    calculated_hi = hcap.handicap_index(rounds_chrono)
 
     return DashboardResponse(
         total_rounds=len(summaries),
@@ -90,6 +86,15 @@ async def get_dashboard(
         average_putts=round(sum(putts) / len(putts), 1) if putts else None,
         average_gir=round(sum(girs) / len(girs), 1) if girs else None,
     )
+
+
+def _build_handicap_trend(hi_rounds, display_rounds):
+    """Compute rolling HI trend from hi_rounds, slice to display window, then annotate
+    used_in_hi based only on the displayed rounds so green count matches WHS best-N."""
+    full = hcap.handicap_trend(hi_rounds)
+    sliced = full[-len(display_rounds):]
+    hcap.annotate_used_in_hi(sliced)
+    return sliced
 
 
 @router.get("/analytics/{user_id}")
@@ -136,6 +141,14 @@ async def get_analytics(
         date_from=date_from,
     )
     rounds = list(reversed(rounds_desc))
+
+    # Fetch up to 19 extra rounds so handicap_trend uses a true rolling 20-round window
+    hi_rounds_desc = await db.rounds.get_rounds_for_user(
+        target_user_id, limit=limit + 19, offset=0,
+        course_id=resolved_course_id,
+        date_from=date_from,
+    )
+    hi_rounds = list(reversed(hi_rounds_desc))
 
     if not rounds:
         return {
@@ -305,11 +318,7 @@ async def get_analytics(
     ud_vals = [r["percentage"] for r in ud_rows if r["opportunities"] > 0]
     avg_up_and_down = sum(ud_vals) / len(ud_vals) if ud_vals else None
 
-    current_hi = hcap.handicap_index(
-        rounds,
-        seed_handicap=user.handicap,
-        seed_set_at=user.last_handicap_update,
-    )
+    current_hi = hcap.handicap_index(hi_rounds)
 
     return {
         "kpis": {
@@ -341,11 +350,7 @@ async def get_analytics(
         "scoring_by_yardage": analytics.scoring_by_yardage_buckets(rounds),
         "scoring_by_handicap": analytics.scoring_vs_hole_handicap(rounds),
         "gir_vs_non_gir": analytics.gir_vs_non_gir_score_distribution(rounds),
-        "handicap_trend": hcap.handicap_trend(
-            rounds,
-            seed_handicap=user.handicap,
-            seed_set_at=user.last_handicap_update,
-        ),
+        "handicap_trend": _build_handicap_trend(hi_rounds, rounds),
         "score_differentials": hcap.score_differentials_per_round(rounds),
         "notable_achievements": analytics.notable_achievements(
             rounds,

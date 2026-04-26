@@ -147,7 +147,7 @@ export function DashboardPage({ userId }: DashboardPageProps) {
   const girColor = colorBlindPalette?.ui.success ?? "#059669";
   const warningColor = colorBlindPalette?.ui.warning ?? "#f59e0b";
   const dangerColor = colorBlindPalette?.ui.danger ?? "#ef4444";
-  const gridColor = colorBlindPalette?.ui.grid ?? "#f1f5f1";
+  const gridColor = colorBlindPalette?.ui.grid ?? "#d1d5db";
   const mutedFill = colorBlindPalette?.ui.mutedFill ?? "#f1f5f9";
 
 
@@ -182,6 +182,9 @@ export function DashboardPage({ userId }: DashboardPageProps) {
     return trends.score_trend.map((row, i) => ({
       ...row,
       handicap_index: trends.handicap_trend[i]?.handicap_index ?? null,
+      used_in_hi: trends.handicap_trend[i]?.used_in_hi ?? null,
+      differential: trends.handicap_trend[i]?.differential ?? null,
+      hi_threshold: trends.handicap_trend[i]?.hi_threshold ?? null,
     }));
   }, [trends]);
 
@@ -331,7 +334,7 @@ export function DashboardPage({ userId }: DashboardPageProps) {
             </div>
           </BentoCard>
 
-          {/* 2. Hero: Dual-Axis Score + HI Trend */}
+          {/* 2. Hero: Score (to par) + HI Trend */}
           <BentoCard title="Score & Handicap Trend" subtitle="Last 20 rounds" className="md:col-span-2 lg:col-span-2">
             <SVGScoreHandicapTrend
               data={dualData}

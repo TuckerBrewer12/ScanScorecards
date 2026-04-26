@@ -191,20 +191,58 @@ def handicap_trend(
     all_rounds = list(rounds)
     results: List[Dict[str, Any]] = []
 
+    # Compute differentials and rolling HI for each round
     for i, round_obj in enumerate(all_rounds, start=1):
-        # Use all rounds up to and including this one
         hi = handicap_index(
             all_rounds[:i],
             seed_handicap=seed_handicap,
             transition_rounds=transition_rounds,
             seed_set_at=seed_set_at,
         )
+        this_diff = _get_differential_for_round(round_obj)
         results.append(
             {
                 "round_index": i,
                 "round_id": round_obj.id,
                 "handicap_index": hi,
+                "differential": round(this_diff, 1) if this_diff is not None else None,
+                "used_in_hi": None,
+                "hi_threshold": None,
             }
         )
 
     return results
+
+
+def annotate_used_in_hi(entries: List[Dict[str, Any]]) -> None:
+    """
+    Annotate a list of trend entries (in-place) with used_in_hi and hi_threshold.
+    Marks exactly the WHS best-N rounds as used. Ties at the threshold boundary are
+    broken by recency (most recent round wins), matching WHS practice.
+    Call this AFTER slicing to the display window.
+    """
+    # Collect (entry_index, differential) for valid rounds, last 20 only
+    valid: List[tuple[int, float]] = [
+        (i, e["differential"]) for i, e in enumerate(entries) if e["differential"] is not None
+    ]
+    recent = valid[-20:]
+    n = len(recent)
+
+    threshold: Optional[float] = None
+    used_indices: set[int] = set()
+
+    if n >= 3:
+        count, _ = _WHS_TABLE[min(n - 3, len(_WHS_TABLE) - 1)]
+        # Sort by differential asc; break ties by entry index desc (most recent first)
+        sorted_recent = sorted(recent, key=lambda x: (x[1], -x[0]))
+        used = sorted_recent[:count]
+        used_indices = {idx for idx, _ in used}
+        threshold = sorted_recent[count - 1][1]
+
+    for i, entry in enumerate(entries):
+        diff = entry["differential"]
+        entry["hi_threshold"] = round(threshold, 1) if threshold is not None else None
+        if diff is None:
+            entry["used_in_hi"] = None
+        else:
+            entry["used_in_hi"] = i in used_indices
