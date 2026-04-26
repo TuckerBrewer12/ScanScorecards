@@ -1,14 +1,11 @@
-import { CheckCircle2, Target, Trophy, BarChart2 } from "lucide-react";
-import { motion } from "framer-motion";
 import { ComparisonTargetToggle, type ComparisonTargetValue } from "@/components/suggestions/ComparisonTargetToggle";
-import { GoalSaverCard } from "@/components/goals/GoalSaverCard";
-import { ProgressRing } from "@/components/the-lab/ProgressRing";
 import { AttemptsTimeline } from "@/components/the-lab/AttemptsTimeline";
+import { ParTypeCard } from "@/components/the-lab/ParTypeCard";
+import { PuttingDeepDiveCard } from "@/components/the-lab/PuttingDeepDiveCard";
 import { buildRadarData, UserRadarChart } from "@/components/analytics/UserRadarChart";
 import { GOAL_OPTIONS } from "@/components/the-lab/constants";
 import type { BenchmarkProfile } from "@/components/the-lab/constants";
-import type { AnalyticsData, GoalReport } from "@/types/analytics";
-import type { GoalSaver } from "@/types/analytics";
+import type { AnalyticsData } from "@/types/analytics";
 
 interface PeakInsight {
   top: { total_score: number | null; round_index: number; course_name?: string | null }[];
@@ -24,7 +21,6 @@ interface PeakScoreTypes {
 
 interface MobileLabPageProps {
   analyticsData: AnalyticsData | undefined;
-  goalReport: GoalReport | undefined;
   currentGoal: number | null;
   setGoal: (g: number) => void;
   settingGoal: boolean;
@@ -33,18 +29,14 @@ interface MobileLabPageProps {
   comparisonTarget: ComparisonTargetValue;
   setComparisonTarget: (t: ComparisonTargetValue) => void;
   activeProfile: BenchmarkProfile | null;
-  radarData: ReturnType<typeof buildRadarData>;
   peakInsight: PeakInsight | null;
   peakScoreTypes: PeakScoreTypes | null;
-  savers: GoalSaver[];
-  achievedCount: number;
   goalLabel: string | null;
   benchmarkHeading: string;
 }
 
 export function MobileLabPage({
   analyticsData,
-  goalReport,
   currentGoal,
   setGoal,
   settingGoal,
@@ -55,8 +47,6 @@ export function MobileLabPage({
   activeProfile,
   peakInsight,
   peakScoreTypes,
-  savers,
-  achievedCount,
   goalLabel,
   benchmarkHeading,
 }: MobileLabPageProps) {
@@ -142,52 +132,6 @@ export function MobileLabPage({
         </div>
       </div>
 
-      {/* Goal Stats */}
-      {currentGoal && goalReport && goalReport.gap != null && (
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-3">
-          <div className="flex gap-3 items-start">
-            {/* Ring + label */}
-            <div className="shrink-0 flex flex-col items-center gap-1">
-              <div className="relative">
-                <ProgressRing gap={goalReport.gap} onTrack={goalReport.on_track} size={96} />
-                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                  {goalReport.on_track ? (
-                    <>
-                      <CheckCircle2 size={16} className="text-emerald-500" />
-                      <span className="text-[9px] font-bold text-emerald-600 mt-0.5">Done</span>
-                    </>
-                  ) : (
-                    <>
-                      <span className="text-[9px] font-semibold text-gray-400 uppercase tracking-wide">Gap</span>
-                      <span className="text-xl font-black text-gray-900 leading-tight">+{goalReport.gap.toFixed(1)}</span>
-                      <span className="text-[8px] text-gray-400">strokes</span>
-                    </>
-                  )}
-                </div>
-              </div>
-              <span className="text-[9px] text-gray-400 text-center leading-tight max-w-[88px]">{goalLabel}</span>
-            </div>
-
-            {/* 2×2 stat cells */}
-            <div className="flex-1 grid grid-cols-2 gap-1.5">
-              {[
-                { label: "Scoring Avg", value: goalReport.scoring_average?.toFixed(1) ?? "—", Icon: BarChart2, good: goalReport.on_track },
-                { label: "Best Score", value: goalReport.best_score ?? "—", Icon: Trophy, good: goalReport.best_score != null && goalReport.best_score <= currentGoal },
-                { label: "Target", value: currentGoal, Icon: Target, good: false },
-                { label: "Achieved", value: achievedCount === 0 ? "0" : achievedCount, Icon: CheckCircle2, good: achievedCount > 0 },
-              ].map(({ label, value, Icon, good }) => (
-                <div key={label} className="bg-gray-50 rounded-lg px-2 py-1.5">
-                  <div className="flex items-center justify-between mb-0.5">
-                    <span className="text-[8px] font-bold uppercase tracking-wide text-gray-400">{label}</span>
-                    <Icon size={10} className={good ? "text-emerald-500" : "text-gray-200"} />
-                  </div>
-                  <span className={`text-base font-black leading-none ${good ? "text-emerald-600" : "text-gray-900"}`}>{value}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Attempts Timeline */}
       {currentGoal && recentAttempts.length >= 3 && (
@@ -198,6 +142,31 @@ export function MobileLabPage({
             green rounds beat the goal
           </p>
           <AttemptsTimeline scores={analyticsData!.score_trend} goal={currentGoal} />
+        </div>
+      )}
+
+      {/* Performance Breakdown */}
+      {analyticsData && (analyticsData.scoring_by_par.length > 0 || analyticsData.three_putts_trend.length > 0) && (
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-primary/50 mb-2">Performance Breakdown</p>
+          <div className="space-y-3">
+            <ParTypeCard
+              scoringByPar={analyticsData.scoring_by_par}
+              scoreTypeDist={analyticsData.score_type_distribution}
+              benchmark={activeProfile}
+              benchmarkLabel={
+                mode === "peak"
+                  ? "Peak game"
+                  : typeof comparisonTarget === "number"
+                  ? `HCP ${comparisonTarget}`
+                  : goalLabel ?? "Target"
+              }
+            />
+            <PuttingDeepDiveCard
+              threePuttsTrend={analyticsData.three_putts_trend}
+              puttsTrend={analyticsData.putts_trend}
+            />
+          </div>
         </div>
       )}
 
@@ -274,24 +243,6 @@ export function MobileLabPage({
         </div>
       )}
 
-      {/* Priority Fixes */}
-      {currentGoal && savers.length > 0 && (
-        <div>
-          <p className="text-[10px] font-bold uppercase tracking-widest text-primary/50 mb-2">What's Holding You Back</p>
-          <div className="space-y-3">
-            {savers.slice(0, 2).map((saver, i) => (
-              <motion.div
-                key={saver.type}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.05, duration: 0.3 }}
-              >
-                <GoalSaverCard saver={saver} />
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 }

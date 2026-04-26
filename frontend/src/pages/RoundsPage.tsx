@@ -1,9 +1,10 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "react-router-dom";
-import { Link2, Search } from "lucide-react";
+import { Link2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { CourseLinkSearch } from "@/components/CourseLinkSearch";
+import { GooeyInput } from "@/components/ui/gooey-input";
 import { api } from "@/lib/api";
 import { formatCourseName } from "@/lib/courseName";
 import { getStoredColorBlindMode } from "@/lib/accessibility";
@@ -53,15 +54,17 @@ function SortHeader({
   const active = sortKey === field;
   return (
     <th
-      className={`px-6 py-3 cursor-pointer select-none transition-colors ${
+      className={`px-6 py-3 cursor-pointer select-none transition-colors group/th ${
         active ? "text-primary" : "text-gray-400 hover:text-gray-600"
       }`}
       onClick={() => onSort(field)}
     >
       <span className="flex items-center gap-1">
         {label}
-        <span className={`text-[10px] transition-opacity ${active ? "opacity-100" : "opacity-0"}`}>
-          {sortAsc ? "↓" : "↑"}
+        <span className={`text-[10px] transition-opacity ${
+          active ? "opacity-100" : "opacity-0 group-hover/th:opacity-40"
+        }`}>
+          {active ? (sortAsc ? "↓" : "↑") : "↕"}
         </span>
       </span>
     </th>
@@ -199,14 +202,13 @@ export function RoundsPage({ userId }: RoundsPageProps) {
       <ScrollSection>
         <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 mb-5">Rounds</h1>
         {/* Search bar */}
-        <div className="mb-5 relative max-w-sm">
-          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-          <input
-            type="text"
+        <div className="mb-5">
+          <GooeyInput
             placeholder="Search by course..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm bg-white/80 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary shadow-sm"
+            onValueChange={setSearch}
+            collapsedWidth={210}
+            expandedWidth={280}
           />
         </div>
 

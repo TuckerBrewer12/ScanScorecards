@@ -1,15 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { motion } from "framer-motion";
-import { Target, Trophy, CheckCircle2, BarChart2 } from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
 import { api } from "@/lib/api";
-import { ComparisonTargetToggle, type ComparisonTargetValue } from "@/components/suggestions/ComparisonTargetToggle";
+import { type ComparisonTargetValue } from "@/components/suggestions/ComparisonTargetToggle";
 import { BentoCard } from "@/components/ui/BentoCard";
-import { GoalSaverCard } from "@/components/goals/GoalSaverCard";
 import type { BenchmarkProfile } from "@/components/the-lab/constants";
 import { GOAL_OPTIONS, GOAL_BENCHMARK, HANDICAP_BENCHMARK } from "@/components/the-lab/constants";
-import { ProgressRing } from "@/components/the-lab/ProgressRing";
 import { AttemptsTimeline } from "@/components/the-lab/AttemptsTimeline";
+import { ParTypeCard } from "@/components/the-lab/ParTypeCard";
+import { PuttingDeepDiveCard } from "@/components/the-lab/PuttingDeepDiveCard";
 import { buildRadarData, UserRadarChart } from "@/components/analytics/UserRadarChart";
 import type { AnalyticsData, ScoreTypeRow } from "@/types/analytics";
 import { MobileLabPage } from "@/components/the-lab/MobileLabPage";
@@ -260,6 +259,49 @@ export function TheLabPage({ userId }: TheLabPageProps) {
 
   const savers = goalReport?.savers ?? [];
 
+  // Best score across all rounds
+  const bestScore = useMemo(() => {
+    if (goalReport?.best_score != null) return goalReport.best_score;
+    const scores = (analytics?.score_trend ?? [])
+      .map((r) => r.total_score)
+      .filter((s): s is number => s != null);
+    return scores.length ? Math.min(...scores) : null;
+  }, [analytics, goalReport]);
+
+  // Recent trend: last-5 avg vs overall avg (positive = trending worse)
+  const recentTrend = useMemo(() => {
+    const valid = (analytics?.score_trend ?? []).filter((r) => r.total_score != null);
+    if (valid.length < 5) return null;
+    const recent5 = valid.slice(-5).reduce((s, r) => s + r.total_score!, 0) / 5;
+    const overall = analytics!.kpis.scoring_average;
+    if (overall == null) return null;
+    return +(recent5 - overall).toFixed(1);
+  }, [analytics]);
+
+  // Compare-vs dropdown helpers
+  const selectValue = targetHandicap === null ? "" : String(targetHandicap);
+  function handleCompareChange(e: React.ChangeEvent<HTMLSelectElement>) {
+    const v = e.target.value;
+    setTargetHandicap(v === "" ? null : v === "friend" ? "friend" : (Number(v) as ComparisonTargetValue));
+  }
+
+  const COMPARE_OPTIONS = [
+    { label: "My Level",       value: "" },
+    { label: "Scratch",        value: "0" },
+    { label: "Breaks 80",      value: "5" },
+    { label: "Breaks 85",      value: "10" },
+    { label: "Breaks 90",      value: "15" },
+    { label: "Breaks 95",      value: "20" },
+    { label: "Breaks 100",     value: "25" },
+    { label: "Compare Friend", value: "friend" },
+  ];
+
+  const benchmarkLegendLabel = (() => {
+    if (radarMode === "peak") return "Your peak game";
+    if (targetHandicap === "friend") return selectedFriend?.name ?? "Friend";
+    return COMPARE_OPTIONS.find((o) => o.value === selectValue)?.label ?? "Benchmark";
+  })();
+
   return (
     <div>
 
@@ -267,7 +309,6 @@ export function TheLabPage({ userId }: TheLabPageProps) {
       <div className="md:hidden">
         <MobileLabPage
           analyticsData={analytics}
-          goalReport={goalReport}
           currentGoal={currentGoal}
           setGoal={setGoal}
           settingGoal={settingGoal}
@@ -276,11 +317,8 @@ export function TheLabPage({ userId }: TheLabPageProps) {
           comparisonTarget={targetHandicap}
           setComparisonTarget={setTargetHandicap}
           activeProfile={activeProfile}
-          radarData={analytics?.kpis ? buildRadarData(analytics.kpis, analytics.scoring_by_par ?? [], activeProfile ?? { gir: 0, scrambling: 0, putting: 0, par3: 0, par4: 0, par5: 0 }) : []}
           peakInsight={peakInsight}
           peakScoreTypes={peakScoreTypes}
-          savers={savers}
-          achievedCount={achievedCount}
           goalLabel={goalLabel}
           benchmarkHeading={benchmarkHeading}
         />
@@ -305,16 +343,17 @@ export function TheLabPage({ userId }: TheLabPageProps) {
         {analyticsLoading ? (
           <LoadingSkeleton />
         ) : (
-          <BentoCard>
-            {/* Main layout: left controls | right chart */}
-            <div className="flex flex-col md:flex-row gap-5 items-stretch">
+          <BentoCard className="!p-0 overflow-hidden">
+            <div className="flex flex-col md:flex-row divide-y md:divide-y-0 md:divide-x divide-gray-100">
 
-              {/* Left panel: mode toggle + peer toggle + legend + notice */}
-              <div className="flex flex-col gap-3 w-full md:w-36 shrink-0">
-                <p className="text-sm font-bold text-gray-900 leading-tight">{benchmarkHeading}</p>
+              {/* ── Left panel ── */}
+              <div className="flex flex-col gap-4 w-full md:w-64 shrink-0 p-5">
 
-                {/* Mode toggle — vertical */}
-                <div className="flex flex-col bg-gray-100 rounded-xl p-0.5 gap-0.5">
+                {/* Title */}
+                <p className="text-base font-bold text-gray-900 leading-tight">Your Performance Shape</p>
+
+                {/* Mode tabs — horizontal */}
+                <div className="flex bg-gray-100 rounded-xl p-1 gap-1">
                   {(["benchmark", "peak"] as const).map((mode) => {
                     const active = radarMode === mode;
                     const disabled = mode === "peak" && !peakInsight;
@@ -323,7 +362,7 @@ export function TheLabPage({ userId }: TheLabPageProps) {
                         key={mode}
                         onClick={() => !disabled && setRadarMode(mode)}
                         disabled={disabled}
-                        className={`px-2.5 py-1.5 rounded-[10px] text-xs font-semibold transition-all text-left ${
+                        className={`flex-1 px-2 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                           active ? "bg-white shadow-sm text-gray-900" : "text-gray-400 hover:text-gray-600"
                         } ${disabled ? "opacity-40 cursor-not-allowed" : ""}`}
                       >
@@ -333,67 +372,139 @@ export function TheLabPage({ userId }: TheLabPageProps) {
                   })}
                 </div>
 
-                {/* Peer toggle — vertical, only in benchmark mode */}
-                {radarMode === "benchmark" && (
-                  <ComparisonTargetToggle value={targetHandicap} onChange={setTargetHandicap} vertical />
+                {/* Mode-specific stats */}
+                {radarMode === "benchmark" ? (
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1">Your Average</p>
+                      <p className="font-mono text-[32px] font-medium text-gray-900 leading-none tracking-tight">
+                        {analytics?.kpis.scoring_average != null
+                          ? analytics.kpis.scoring_average.toFixed(1)
+                          : "—"}
+                      </p>
+                      <p className="text-[11px] text-gray-400 mt-1">
+                        avg · L20 rounds
+                        {bestScore != null && (
+                          <> · <span className="font-semibold text-gray-600">{bestScore}</span> best</>
+                        )}
+                      </p>
+                    </div>
+                    {recentTrend != null && (
+                      <div className="bg-gray-50 border border-gray-100 rounded-lg px-3 py-2 text-[11px] text-gray-600 leading-snug">
+                        Trending{" "}
+                        <span className="font-semibold text-gray-800">
+                          {recentTrend >= 0 ? "+" : ""}{recentTrend} strokes
+                        </span>{" "}
+                        {recentTrend >= 0 ? "above" : "below"} season avg.
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {peakInsight ? (
+                      <>
+                        <div>
+                          <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1">Peak Game</p>
+                          <p className="font-mono text-[32px] font-medium text-gray-900 leading-none tracking-tight">
+                            {peakInsight.bestAvg.toFixed(1)}
+                          </p>
+                          <p className="text-[11px] text-gray-400 mt-1">
+                            avg · best {peakInsight.top.length} rounds · overall{" "}
+                            <span className="font-semibold text-gray-600">
+                              {peakInsight.overallAvg?.toFixed(1) ?? "—"}
+                            </span>
+                          </p>
+                        </div>
+                        {goalLabel && (
+                          <div className="bg-gray-50 border border-gray-100 rounded-lg px-3 py-2 text-[11px] text-gray-600 leading-snug">
+                            {peakInsight.gapToGoal <= 0 ? (
+                              <>Your best rounds already <span className="font-semibold text-emerald-600">{goalLabel}</span>.</>
+                            ) : (
+                              <><span className="font-semibold text-gray-800">{peakInsight.gapToGoal.toFixed(1)} strokes</span> from {goalLabel} on best days.</>
+                            )}
+                          </div>
+                        )}
+                        <div className="border-t border-gray-50 pt-2 space-y-1.5">
+                          {peakInsight.top.map((r, i) => (
+                            <div key={i} className="flex justify-between text-xs">
+                              <span className="text-gray-400 truncate max-w-[140px]">{r.course_name ?? `Round ${i + 1}`}</span>
+                              <span className="font-mono font-bold text-gray-700 shrink-0 ml-2">{r.total_score}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    ) : (
+                      <p className="text-xs text-gray-400">No peak data yet — set a goal to enable peak analysis.</p>
+                    )}
+                  </div>
                 )}
 
-                {/* Legend */}
-                <div className="flex flex-col gap-1.5 text-[10px] text-gray-400">
-                  <span className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: "#2d7a3a" }} />
+                {/* Compare vs. dropdown */}
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">Compare vs.</p>
+                  <div className="relative">
+                    <select
+                      value={selectValue}
+                      onChange={handleCompareChange}
+                      className="w-full appearance-none rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 pr-7 text-xs text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                    >
+                      {COMPARE_OPTIONS.map((o) => (
+                        <option key={o.value} value={o.value}>{o.label}</option>
+                      ))}
+                    </select>
+                    <svg className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-gray-400" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <path d="m6 9 6 6 6-6" />
+                    </svg>
+                  </div>
+                  {/* Friend picker */}
+                  {comparingFriend && (
+                    <select
+                      value={selectedFriendId}
+                      onChange={(e) => setSelectedFriendId(e.target.value)}
+                      disabled={friendOptions.length === 0}
+                      className="mt-1.5 w-full appearance-none rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                    >
+                      {friendOptions.length === 0 ? (
+                        <option value="">No friends available</option>
+                      ) : (
+                        friendOptions.map((f) => (
+                          <option key={f.id} value={f.id}>{f.name}</option>
+                        ))
+                      )}
+                    </select>
+                  )}
+                </div>
+
+                {/* Spacer + legend pinned to bottom */}
+                <div className="mt-auto pt-2 flex flex-col gap-1.5 text-[11px] text-gray-400">
+                  <span className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ backgroundColor: "#2d7a3a", opacity: 0.75 }} />
                     You
                   </span>
                   {activeProfile && (
-                  <span className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-gray-300 shrink-0" />
-                    {comparingFriend ? (selectedFriend?.name ?? "Friend") : "Target shape"}
-                  </span>
-                )}
-              </div>
-
-                {missingAxes.length > 0 && (
-                  <p className="text-[10px] text-amber-600 bg-amber-50 rounded-lg px-2.5 py-1.5 leading-relaxed">
-                    No {missingAxes.join(", ")} data — log putts & GIR to unlock the full shape.
-                  </p>
-                )}
-              </div>
-
-              {/* Right panel: radar chart */}
-              <div className="flex-1 min-w-0">
-                <div className="flex justify-end mb-2 min-h-11">
-                  {comparingFriend && (
-                    <div className="w-full lg:max-w-64">
-                      <label htmlFor="friend-compare-select" className="sr-only">
-                        Select friend to compare
-                      </label>
-                      <select
-                        id="friend-compare-select"
-                        value={selectedFriendId}
-                        onChange={(event) => setSelectedFriendId(event.target.value)}
-                        className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                        disabled={friendOptions.length === 0}
-                      >
-                        {friendOptions.length === 0 ? (
-                          <option value="">No friends available</option>
-                        ) : (
-                          friendOptions.map((friend) => (
-                            <option key={friend.id} value={friend.id}>
-                              {friend.name}
-                            </option>
-                          ))
-                        )}
-                      </select>
-                    </div>
+                    <span className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-sm bg-gray-400/40 shrink-0" />
+                      {benchmarkLegendLabel}
+                    </span>
+                  )}
+                  {missingAxes.length > 0 && (
+                    <p className="text-[10px] text-amber-600 bg-amber-50 rounded-lg px-2 py-1.5 leading-relaxed mt-1">
+                      No {missingAxes.join(", ")} data yet.
+                    </p>
                   )}
                 </div>
+              </div>
+
+              {/* ── Right panel: radar chart ── */}
+              <div className="flex-1 min-w-0 p-5">
+                <p className="text-xs text-gray-400 mb-3">Your shape vs. benchmark</p>
                 {analytics?.kpis && (
                   <UserRadarChart
                     kpis={analytics.kpis}
                     scoringByPar={analytics.scoring_by_par ?? []}
                     profile={activeProfile ?? undefined}
-                    height={compactRadarLayout ? 320 : 360}
-                    outerRadius={compactRadarLayout ? 110 : 130}
+                    height={compactRadarLayout ? 300 : 340}
+                    outerRadius={compactRadarLayout ? 105 : 125}
                     primaryColor="#2d7a3a"
                     gridColor="#e5e7eb"
                     showTooltip
@@ -402,11 +513,9 @@ export function TheLabPage({ userId }: TheLabPageProps) {
                         ? friendOptions.length === 0
                           ? "Add friends in Social to unlock friend comparison."
                           : friendAnalyticsLoading
-                            ? "Loading friend comparison..."
-                            : "This friend needs more round data before comparison appears."
-                        : currentGoal
-                        ? "Play more rounds to build your performance shape."
-                        : "Set a target above to see your benchmark comparison."
+                            ? "Loading friend data..."
+                            : "This friend needs more round data."
+                        : "Select a benchmark in Compare vs. to see your shape."
                     }
                     margin={compactRadarLayout
                       ? { top: 20, right: 20, bottom: 20, left: 20 }
@@ -419,6 +528,32 @@ export function TheLabPage({ userId }: TheLabPageProps) {
           </BentoCard>
         )}
       </div>
+
+      {/* ── Times Achieved + Attempts Timeline ────────────────────────── */}
+      {currentGoal && analytics?.score_trend &&
+        analytics.score_trend.filter((r) => r.total_score != null).length >= 3 && (
+        <BentoCard>
+          <div className="flex items-start justify-between mb-4">
+            <div>
+              <p className="text-sm font-semibold text-gray-800">Recent Attempts</p>
+              <p className="text-xs text-gray-400 mt-0.5 flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
+                green rounds beat the goal
+              </p>
+            </div>
+            <div className="text-right shrink-0 ml-4">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Times Achieved</p>
+              <p className={`text-3xl font-black leading-tight ${achievedCount > 0 ? "text-emerald-600" : "text-gray-900"}`}>
+                {achievedCount}
+              </p>
+              <p className="text-[11px] text-gray-400">
+                {achievedCount === 0 ? "keep going" : achievedCount === 1 ? "once!" : `${achievedCount} rounds`}
+              </p>
+            </div>
+          </div>
+          <AttemptsTimeline scores={analytics.score_trend} goal={currentGoal} />
+        </BentoCard>
+      )}
 
       {/* ── Section 1: Goal Selector ────────────────────────────────────── */}
       <BentoCard>
@@ -444,72 +579,31 @@ export function TheLabPage({ userId }: TheLabPageProps) {
         </div>
       </BentoCard>
 
-      {/* ── Goal stats ─────────────────────────────────────────────────── */}
-      {currentGoal && goalReport && goalReport.gap != null && (
-        <>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            <BentoCard className="flex flex-col items-center justify-center py-5">
-              <div className="relative">
-                <ProgressRing gap={goalReport.gap} onTrack={goalReport.on_track} />
-                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                  {goalReport.on_track ? (
-                    <>
-                      <CheckCircle2 size={24} className="text-emerald-500" />
-                      <span className="text-xs font-bold text-emerald-600 mt-0.5">Achieved</span>
-                    </>
-                  ) : (
-                    <>
-                      <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide">Gap</span>
-                      <span className="text-3xl font-black text-gray-900 leading-tight">+{goalReport.gap.toFixed(1)}</span>
-                      <span className="text-[10px] text-gray-400">strokes</span>
-                    </>
-                  )}
-                </div>
-              </div>
-              <p className="text-sm font-bold text-gray-700 mt-2">{goalLabel}</p>
-              {goalReport.on_track && <p className="text-xs text-emerald-500 mt-0.5">Averaging below goal</p>}
-            </BentoCard>
-
-            <div className="lg:col-span-2 grid grid-cols-2 gap-3">
-              {[
-                { label: "Scoring Avg", value: goalReport.scoring_average?.toFixed(1) ?? "—", sub: "recent rounds", Icon: BarChart2, good: goalReport.on_track },
-                { label: "Best Score", value: goalReport.best_score ?? "—", sub: goalReport.best_score != null && goalReport.best_score <= currentGoal ? "goal achieved ✓" : "personal best", Icon: Trophy, good: goalReport.best_score != null && goalReport.best_score <= currentGoal },
-                { label: "Target Score", value: currentGoal, sub: goalLabel ?? "", Icon: Target, good: false },
-                { label: "Times Achieved", value: achievedCount === 0 ? "0" : achievedCount, sub: achievedCount === 0 ? "keep going" : achievedCount === 1 ? "once!" : `${achievedCount} rounds`, Icon: CheckCircle2, good: achievedCount > 0 },
-              ].map(({ label, value, sub, Icon, good }) => (
-                <BentoCard key={label}>
-                  <div className="flex items-start justify-between mb-2">
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">{label}</p>
-                    <Icon size={13} className={good ? "text-emerald-500" : "text-gray-200"} />
-                  </div>
-                  <p className={`text-2xl font-black leading-none ${good ? "text-emerald-600" : "text-gray-900"}`}>{value}</p>
-                  <p className="text-[11px] text-gray-400 mt-1">{sub}</p>
-                </BentoCard>
-              ))}
-            </div>
+      {/* ── Section: Par Type + Putting ───────────────────────────────── */}
+      {analytics && (analytics.scoring_by_par.length > 0 || analytics.three_putts_trend.length > 0) && (
+        <div>
+          <SectionDivider label="Performance Breakdown" />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <ParTypeCard
+              scoringByPar={analytics.scoring_by_par}
+              scoreTypeDist={analytics.score_type_distribution}
+              benchmark={activeProfile}
+              benchmarkLabel={
+                radarMode === "peak"
+                  ? "Peak game"
+                  : typeof targetHandicap === "number"
+                  ? `HCP ${targetHandicap}`
+                  : goalLabel ?? "Target"
+              }
+            />
+            <PuttingDeepDiveCard
+              threePuttsTrend={analytics.three_putts_trend}
+              puttsTrend={analytics.putts_trend}
+            />
           </div>
-
-          {analytics?.score_trend && analytics.score_trend.filter((r) => r.total_score != null).length >= 3 && (
-            <BentoCard>
-              <div className="flex items-center justify-between mb-3">
-                <div>
-                  <p className="text-sm font-semibold text-gray-800">Recent Attempts</p>
-                  <p className="text-xs text-gray-400 mt-0.5 flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" />
-                    green rounds beat the goal
-                  </p>
-                </div>
-                {achievedCount > 0 && (
-                  <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-full">
-                    {achievedCount} under {currentGoal + 1}
-                  </span>
-                )}
-              </div>
-              <AttemptsTimeline scores={analytics.score_trend} goal={currentGoal} />
-            </BentoCard>
-          )}
-        </>
+        </div>
       )}
+
 
       {/* ── Section 1b: Peak Game Analysis ─────────────────────────────── */}
       {peakInsight && (
@@ -633,24 +727,6 @@ export function TheLabPage({ userId }: TheLabPageProps) {
         </BentoCard>
       )}
 
-      {/* ── Section 2: Priority Fixes (top 2 savers) ───────────────────── */}
-      {currentGoal && !reportLoading && goalReport && goalReport.savers.length > 0 && (
-        <div>
-          <SectionDivider label="What's Holding You Back" />
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {goalReport.savers.slice(0, 2).map((saver, i) => (
-              <motion.div
-                key={saver.type}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.05, duration: 0.3 }}
-              >
-                <GoalSaverCard saver={saver} />
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      )}
 
     </div>
       </div>

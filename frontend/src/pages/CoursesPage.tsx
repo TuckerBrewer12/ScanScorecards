@@ -1,12 +1,13 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { MapPin, Search } from "lucide-react";
+import { MapPin } from "lucide-react";
 import { motion } from "framer-motion";
 import { api } from "@/lib/api";
 import { formatCourseName } from "@/lib/courseName";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { CourseDetailPanel } from "@/components/course-detail/CourseDetailPanel";
 import { ScrollSection } from "@/components/analytics/ScrollSection";
+import { GooeyInput } from "@/components/ui/gooey-input";
 
 const cardVariants = {
   hidden: { opacity: 0, y: 24, scale: 0.98 },
@@ -66,14 +67,13 @@ export function CoursesPage({ userId }: { userId: string }) {
       <ScrollSection>
         <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 mb-5">Courses</h1>
         {/* Search */}
-        <div className="mb-6 relative max-w-sm">
-          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-          <input
-            type="text"
+        <div className="mb-6">
+          <GooeyInput
             placeholder="Search courses..."
             value={search}
-            onChange={(e) => handleSearchChange(e.target.value)}
-            className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm bg-white/80 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary shadow-sm"
+            onValueChange={handleSearchChange}
+            collapsedWidth={200}
+            expandedWidth={280}
           />
         </div>
 
