@@ -67,6 +67,8 @@ export function TheLabPage({ userId }: TheLabPageProps) {
   const [targetHandicap, setTargetHandicap] = useState<ComparisonTargetValue>(null);
   const [radarMode, setRadarMode] = useState<"benchmark" | "peak">("benchmark");
   const [selectedFriendId, setSelectedFriendId] = useState("");
+  const [compareOpen, setCompareOpen] = useState(false);
+  const [friendOpen, setFriendOpen] = useState(false);
   const [compactRadarLayout, setCompactRadarLayout] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     return window.matchMedia("(max-width: 1023px)").matches;
@@ -280,10 +282,6 @@ export function TheLabPage({ userId }: TheLabPageProps) {
 
   // Compare-vs dropdown helpers
   const selectValue = targetHandicap === null ? "" : String(targetHandicap);
-  function handleCompareChange(e: React.ChangeEvent<HTMLSelectElement>) {
-    const v = e.target.value;
-    setTargetHandicap(v === "" ? null : v === "friend" ? "friend" : (Number(v) as ComparisonTargetValue));
-  }
 
   const COMPARE_OPTIONS = [
     { label: "My Level",       value: "" },
@@ -328,11 +326,36 @@ export function TheLabPage({ userId }: TheLabPageProps) {
       <div className="hidden md:block">
       <div className="space-y-6">
 
-      {/* Header */}
-      <div>
-        <h1 className="text-3xl font-extrabold tracking-tight text-gray-900">The Lab</h1>
-        <p className="text-sm text-gray-400 mt-1">Your blueprint to lower scores.</p>
+      {/* ── Updated Header & Target Selector ── */}
+      <div className="sticky top-0 z-40 bg-white/95 backdrop-blur-md pb-4 pt-2 -mx-4 px-4 md:mx-0 md:px-0 md:-mt-2 md:pt-2 flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 border-b border-gray-100 md:border-none shadow-sm md:shadow-none">
+        <div>
+          <h1 className="text-3xl font-extrabold tracking-tight text-gray-900">The Lab</h1>
+          <p className="text-sm text-gray-400 mt-1">Your blueprint to lower scores.</p>
+        </div>
+        
+        {/* Dynamic Slider-style Segmented Control */}
+        <div className="bg-gray-100/80 p-1.5 rounded-xl flex items-center gap-1 overflow-x-auto hide-scrollbar self-start md:self-auto">
+          {GOAL_OPTIONS.map(({ label, value }) => {
+            const active = currentGoal === value;
+            return (
+              <button
+                key={value}
+                onClick={() => setGoal(value)}
+                disabled={settingGoal}
+                className={`relative px-4 py-1.5 rounded-lg text-xs font-bold transition-all whitespace-nowrap outline-none ${
+                  active
+                    ? "text-gray-900 shadow-sm bg-white"
+                    : "text-gray-400 hover:text-gray-600 hover:bg-gray-200/50"
+                }`}
+              >
+                <span className="relative z-10">{label}</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
+
+
 
       {/* ── Section 3: Benchmark Analysis ──────────────────────────────── */}
       <div>
@@ -343,7 +366,7 @@ export function TheLabPage({ userId }: TheLabPageProps) {
         {analyticsLoading ? (
           <LoadingSkeleton />
         ) : (
-          <BentoCard className="!p-0 overflow-hidden">
+          <BentoCard className="!p-0 relative z-50">
             <div className="flex flex-col md:flex-row divide-y md:divide-y-0 md:divide-x divide-gray-100">
 
               {/* ── Left panel ── */}
@@ -352,8 +375,13 @@ export function TheLabPage({ userId }: TheLabPageProps) {
                 {/* Title */}
                 <p className="text-base font-bold text-gray-900 leading-tight">Your Performance Shape</p>
 
-                {/* Mode tabs — horizontal */}
-                <div className="flex bg-gray-100 rounded-xl p-1 gap-1">
+                {/* Dynamic Mode Tab - Pill Slider */}
+                <div className="relative flex bg-gray-100/70 p-1 rounded-xl shadow-inner isolate">
+                  {/* Sliding Background Indicator */}
+                  <div
+                    className="absolute top-1 bottom-1 w-[calc(50%-4px)] bg-white rounded-lg shadow-sm transition-transform duration-300 ease-[cubic-bezier(0.2,0.8,0.2,1)] -z-10"
+                    style={{ transform: radarMode === "benchmark" ? "translateX(0)" : "translateX(calc(100% + 4px))" }}
+                  />
                   {(["benchmark", "peak"] as const).map((mode) => {
                     const active = radarMode === mode;
                     const disabled = mode === "peak" && !peakInsight;
@@ -362,11 +390,11 @@ export function TheLabPage({ userId }: TheLabPageProps) {
                         key={mode}
                         onClick={() => !disabled && setRadarMode(mode)}
                         disabled={disabled}
-                        className={`flex-1 px-2 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                          active ? "bg-white shadow-sm text-gray-900" : "text-gray-400 hover:text-gray-600"
-                        } ${disabled ? "opacity-40 cursor-not-allowed" : ""}`}
+                        className={`flex-1 px-2 py-1.5 text-xs font-bold transition-all duration-300 rounded-lg ${
+                          active ? "text-gray-900" : "text-gray-400 hover:text-gray-600"
+                        } ${disabled ? "opacity-30 cursor-not-allowed" : "cursor-pointer"}`}
                       >
-                        {mode === "benchmark" ? "Average (L20)" : "Peak Game"}
+                        {mode === "benchmark" ? "Your Average" : "Peak Game"}
                       </button>
                     );
                   })}
@@ -439,39 +467,91 @@ export function TheLabPage({ userId }: TheLabPageProps) {
                   </div>
                 )}
 
-                {/* Compare vs. dropdown */}
+                {/* Compare vs. custom popover */}
                 <div>
                   <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1.5">Compare vs.</p>
-                  <div className="relative">
-                    <select
-                      value={selectValue}
-                      onChange={handleCompareChange}
-                      className="w-full appearance-none rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 pr-7 text-xs text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                  
+                  {/* Benchmark Popover */}
+                  <div className="relative mb-2">
+                    <button
+                      onClick={() => setCompareOpen((o) => !o)}
+                      onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setCompareOpen(false); }}
+                      className="w-full flex items-center justify-between rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                      aria-haspopup="listbox"
+                      aria-expanded={compareOpen}
                     >
-                      {COMPARE_OPTIONS.map((o) => (
-                        <option key={o.value} value={o.value}>{o.label}</option>
-                      ))}
-                    </select>
-                    <svg className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-gray-400" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                      <path d="m6 9 6 6 6-6" />
-                    </svg>
-                  </div>
-                  {/* Friend picker */}
-                  {comparingFriend && (
-                    <select
-                      value={selectedFriendId}
-                      onChange={(e) => setSelectedFriendId(e.target.value)}
-                      disabled={friendOptions.length === 0}
-                      className="mt-1.5 w-full appearance-none rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                    >
-                      {friendOptions.length === 0 ? (
-                        <option value="">No friends available</option>
-                      ) : (
-                        friendOptions.map((f) => (
-                          <option key={f.id} value={f.id}>{f.name}</option>
-                        ))
+                      <span className="truncate flex-1 text-left">{COMPARE_OPTIONS.find(o => o.value === selectValue)?.label ?? "Select..."}</span>
+                      <svg className={`text-gray-400 transition-transform ${compareOpen ? "rotate-180" : ""}`} width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="m6 9 6 6 6-6" /></svg>
+                      
+                      {compareOpen && (
+                        <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-100 rounded-xl shadow-lg z-50 py-1 overflow-hidden animate-in fade-in slide-in-from-top-2">
+                          {COMPARE_OPTIONS.map((o) => (
+                            <div
+                              key={o.value}
+                              tabIndex={0}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const v = o.value;
+                                setTargetHandicap(v === "" ? null : v === "friend" ? "friend" : (Number(v) as ComparisonTargetValue));
+                                setCompareOpen(false);
+                              }}
+                              className={`px-3 py-2 text-xs cursor-pointer hover:bg-gray-50 flex items-center justify-between ${selectValue === o.value ? "bg-emerald-50/50 text-emerald-700 font-semibold" : "text-gray-700"}`}
+                            >
+                              {o.label}
+                              {selectValue === o.value && <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>}
+                            </div>
+                          ))}
+                        </div>
                       )}
-                    </select>
+                    </button>
+                  </div>
+                  
+                  {/* Friend Popover */}
+                  {comparingFriend && (
+                    <div className="relative">
+                      <button
+                        onClick={() => setFriendOpen((o) => !o)}
+                        onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node)) setFriendOpen(false); }}
+                        disabled={friendOptions.length === 0}
+                        className={`w-full flex items-center justify-between rounded-lg border border-gray-200 bg-white px-2.5 py-1.5 text-xs text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all ${friendOptions.length === 0 ? "opacity-50 cursor-not-allowed" : "hover:bg-gray-50"}`}
+                      >
+                        <div className="flex items-center gap-2 truncate flex-1 text-left">
+                          {friendOptions.length > 0 && selectedFriend ? (
+                            <>
+                               <div className="w-4 h-4 rounded-full bg-gray-100 text-[8px] font-bold text-gray-500 flex items-center justify-center uppercase shrink-0">
+                                 {selectedFriend.name.substring(0, 2)}
+                               </div>
+                               <span className="truncate">{selectedFriend.name}</span>
+                            </>
+                          ) : (
+                            <span>No friends available</span>
+                          )}
+                        </div>
+                        <svg className={`text-gray-400 transition-transform ${friendOpen ? "rotate-180" : ""}`} width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="m6 9 6 6 6-6" /></svg>
+                        
+                        {friendOpen && friendOptions.length > 0 && (
+                          <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-100 rounded-xl shadow-lg z-50 py-1 overflow-hidden animate-in fade-in slide-in-from-top-2">
+                            {friendOptions.map((f) => (
+                              <div
+                                key={f.id}
+                                tabIndex={0}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedFriendId(f.id);
+                                  setFriendOpen(false);
+                                }}
+                                className={`px-3 py-2 text-xs cursor-pointer hover:bg-gray-50 flex items-center gap-2 ${selectedFriendId === f.id ? "bg-emerald-50/50 text-emerald-700 font-semibold" : "text-gray-700"}`}
+                              >
+                                <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-bold uppercase shrink-0 ${selectedFriendId === f.id ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-500"}`}>
+                                  {f.name.substring(0, 2)}
+                                </div>
+                                <span className="truncate">{f.name}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </button>
+                    </div>
                   )}
                 </div>
 
@@ -555,29 +635,7 @@ export function TheLabPage({ userId }: TheLabPageProps) {
         </BentoCard>
       )}
 
-      {/* ── Section 1: Goal Selector ────────────────────────────────────── */}
-      <BentoCard>
-        <p className="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-3">Set Your Target</p>
-        <div className="flex flex-wrap gap-2">
-          {GOAL_OPTIONS.map(({ label, value }) => {
-            const active = currentGoal === value;
-            return (
-              <button
-                key={value}
-                onClick={() => setGoal(value)}
-                disabled={settingGoal}
-                className={`px-3 py-1.5 rounded-xl text-sm font-semibold transition-all ${
-                  active
-                    ? "bg-primary text-white shadow-sm"
-                    : "bg-gray-50 text-gray-600 hover:bg-gray-100 border border-gray-100"
-                }`}
-              >
-                {label}
-              </button>
-            );
-          })}
-        </div>
-      </BentoCard>
+
 
       {/* ── Section: Par Type + Putting ───────────────────────────────── */}
       {analytics && (analytics.scoring_by_par.length > 0 || analytics.three_putts_trend.length > 0) && (
@@ -691,31 +749,25 @@ export function TheLabPage({ userId }: TheLabPageProps) {
                     const peakPct = (peak / maxVal) * 100;
                     const avgPct = (avg / maxVal) * 100;
                     return (
-                      <div key={label}>
-                        <div className="flex items-center justify-between mb-1">
+                      <div key={label} className="group">
+                        <div className="flex items-center justify-between mb-2">
                           <span className="text-[11px] font-semibold text-gray-600">{label}</span>
                           <span
-                            className="text-[11px] font-bold"
+                            className="text-[11px] font-bold transition-all duration-300"
                             style={{ color: good ? "#059669" : strokeImpact === 0 ? "#9ca3af" : "#ef4444" }}
                           >
                             {strokeImpact > 0 ? "+" : ""}{strokeImpact.toFixed(1)} strokes {strokeImpact >= 0 ? "gained" : "lost"}
                           </span>
                         </div>
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2">
-                            <span className="text-[10px] text-gray-400 w-10 text-right shrink-0">Peak</span>
-                            <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                              <div className="h-full rounded-full transition-all" style={{ width: `${peakPct}%`, backgroundColor: color }} />
-                            </div>
-                            <span className="text-[11px] font-bold text-gray-700 w-8 shrink-0">{peak.toFixed(1)}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-[10px] text-gray-400 w-10 text-right shrink-0">Avg</span>
-                            <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                              <div className="h-full rounded-full transition-all" style={{ width: `${avgPct}%`, backgroundColor: "#d1d5db" }} />
-                            </div>
-                            <span className="text-[11px] font-bold text-gray-400 w-8 shrink-0">{avg.toFixed(1)}</span>
-                          </div>
+                        <div className="relative h-6 bg-gray-100 rounded-full overflow-hidden flex items-center border border-gray-200">
+                           {/* Average is the thick background bar using the metric's color */}
+                           <div className="absolute top-0 bottom-0 left-0 transition-all duration-1000 ease-out" style={{ width: `${avgPct}%`, backgroundColor: color }} />
+                           {/* Peak is the inner nested bullet line, highlighted in bright yellow */}
+                           <div className="absolute top-2 bottom-2 left-0 rounded-r-lg transition-all duration-1000 ease-out shadow-sm" style={{ width: `${peakPct}%`, backgroundColor: "#facc15" }} />
+                        </div>
+                        <div className="flex justify-between mt-1 text-[10px] font-medium text-gray-400">
+                          <span>Peak: <span className="font-bold text-gray-700">{peak.toFixed(1)}</span></span>
+                          <span>Avg: {avg.toFixed(1)}</span>
                         </div>
                       </div>
                     );
