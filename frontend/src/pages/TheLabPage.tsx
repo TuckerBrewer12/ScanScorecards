@@ -737,8 +737,8 @@ export function TheLabPage({ userId }: TheLabPageProps) {
             ];
             return (
               <div className="border-t border-gray-50 pt-4">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-3">
-                  Peak vs. Average
+                <p className="text-xs font-bold uppercase tracking-widest text-gray-400 mb-3">
+                  <span className="text-[#facc15] font-extrabold">Peak</span> vs. Average
                 </p>
                 <div className="space-y-3">
                   {metrics.map(({ label, peak, avg, higherIsBetter, strokeMult, color }) => {

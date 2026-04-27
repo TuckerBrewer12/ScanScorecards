@@ -11,8 +11,8 @@ export function AttemptsTimeline({
   if (valid.length < 3) return null;
   const W = 560; const H = 96; const PX = 8; const PY = 14;
   const vals = valid.map((r) => r.total_score!);
-  const minV = Math.min(...vals, goal) - 4;
-  const maxV = Math.max(...vals, goal) + 4;
+  const minV = Math.min(...vals, goal) - 1;
+  const maxV = Math.max(...vals, goal) + 1;
   const toX = (i: number) => PX + (i / (valid.length - 1)) * (W - PX * 2);
   const toY = (v: number) => PY + ((v - minV) / (maxV - minV)) * (H - PY * 2);
   const goalY = toY(goal);

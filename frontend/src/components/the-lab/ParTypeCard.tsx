@@ -88,8 +88,8 @@ export function ParTypeCard({ scoringByPar, scoreTypeDist, benchmark, benchmarkL
             return (
               <div key={label}>
                 <div className="flex justify-between mb-1.5">
-                  <span className="text-sm font-semibold text-gray-700">{label}</span>
-                  <span className="text-xs text-gray-400">No data</span>
+                  <span className="text-base font-bold text-gray-900">{label}</span>
+                  <span className="text-sm text-gray-400">No data</span>
                 </div>
               </div>
             );
@@ -104,8 +104,8 @@ export function ParTypeCard({ scoringByPar, scoreTypeDist, benchmark, benchmarkL
           return (
             <div key={label}>
               <div className="flex justify-between items-baseline mb-1.5">
-                <span className="text-sm font-semibold text-gray-700">{label}</span>
-                <span className={`text-sm font-mono font-semibold ${textCls}`}>
+                <span className="text-base font-bold text-gray-900">{label}</span>
+                <span className={`text-base font-mono font-bold ${textCls}`}>
                   {player >= 0 ? "+" : ""}{player.toFixed(2)} avg
                 </span>
               </div>
@@ -138,18 +138,18 @@ export function ParTypeCard({ scoringByPar, scoreTypeDist, benchmark, benchmarkL
       {/* Double+ rate mini chart */}
       {doubleBarData && (
         <div className="pt-3 border-t border-gray-50">
-          <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-3">
-            Double+ Rate (est.)
+          <p className="text-xs font-bold uppercase tracking-widest text-gray-600 mb-3">
+            Double+ Rate
           </p>
           <div className="flex items-end gap-3 h-[64px]">
             {doubleBarData.map(({ label, pct, color }) => (
               <div key={label} className="flex-1 flex flex-col items-center gap-1">
-                <span className="font-mono text-[10px] text-gray-500">{Math.round(pct)}%</span>
+                <span className="font-mono text-xs font-bold text-gray-700">{Math.round(pct)}%</span>
                 <div
                   className="w-full rounded-t-sm"
                   style={{ height: `${Math.max(4, (pct / 40) * 42)}px`, backgroundColor: color }}
                 />
-                <span className="text-[10px] text-gray-400">{label}</span>
+                <span className="text-xs font-semibold text-gray-600">{label}</span>
               </div>
             ))}
           </div>
