@@ -40,8 +40,8 @@ export function ProfileHeroBanner({ user, handicapIndex }: ProfileHeroBannerProp
         </div>
 
         {handicapIndex != null && (
-          <div className="flex flex-col items-start md:items-end bg-gray-50 border border-gray-100 rounded-2xl p-4 min-w-[140px]">
-            <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 flex items-center gap-1.5">
+          <div className="flex flex-col items-start bg-gray-50 border border-gray-100 rounded-2xl p-4 min-w-[140px]">
+            <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">
               Handicap
             </div>
             <div className="text-3xl font-black text-gray-900 leading-none flex items-baseline gap-1">

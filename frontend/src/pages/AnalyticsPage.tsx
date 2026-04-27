@@ -525,6 +525,7 @@ export function AnalyticsPage({ userId }: { userId: string }) {
                   gridColor={gridColor}
                   referenceLine={{ y: kpis.scoring_average ?? 90, label: `Avg ${kpis.scoring_average}` }}
                   gradientSuffix="score"
+                  labelFontSize={11}
                   showDots={false}
                   height={130}
                   tooltipLabel="Score"
@@ -544,8 +545,9 @@ export function AnalyticsPage({ userId }: { userId: string }) {
                   indexKey="round_index"
                   color={successColor}
                   gridColor={gridColor}
-                  yDomain={[0, 100]}
+                  yDomain={["auto", "auto"]}
                   gradientSuffix="gir"
+                  labelFontSize={11}
                   showDots={girData.length <= 30}
                   height={130}
                   tooltipLabel="GIR %"
@@ -567,10 +569,11 @@ export function AnalyticsPage({ userId }: { userId: string }) {
                     unit="%"
                     color={trendSecondary}
                     gridColor={gridColor}
-                    yDomain={[0, 100]}
+                    yDomain={["auto", "auto"]}
                     tooltipLabel="Scrambling"
                     secondaryTooltipLabel="Up & Down"
                     gradientSuffix="shortGame"
+                    labelFontSize={11}
                     showDots={true}
                     height={130}
                     formatTooltipValue={(v) => `${v.toFixed(1)}%`}
@@ -589,6 +592,7 @@ export function AnalyticsPage({ userId }: { userId: string }) {
                   gridColor={gridColor}
                   referenceLine={{ y: 36, label: "36" }}
                   gradientSuffix="putts"
+                  labelFontSize={11}
                   showDots={true}
                   height={130}
                   tooltipLabel="Putts"
@@ -603,9 +607,10 @@ export function AnalyticsPage({ userId }: { userId: string }) {
                     indexKey="round_index"
                     color={dangerColor}
                     gridColor={gridColor}
-                    yDomain={[0, "auto"]}
+                    yDomain={["auto", "auto"]}
                     referenceLine={{ y: 2, label: "2" }}
                     gradientSuffix="threePutts"
+                    labelFontSize={11}
                     showDots={true}
                     height={130}
                     tooltipLabel="3-Putts"
@@ -627,6 +632,7 @@ export function AnalyticsPage({ userId }: { userId: string }) {
                   gridColor={gridColor}
                   referenceLine={{ y: 72, label: "Par 72" }}
                   gradientSuffix="netScore"
+                  labelFontSize={11}
                   showDots={false}
                   height={130}
                   tooltipLabel="Net Score"

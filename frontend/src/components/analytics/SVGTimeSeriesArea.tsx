@@ -23,6 +23,7 @@ interface SVGTimeSeriesAreaProps<T extends object> {
   showDots?: boolean;
   gradientSuffix: string;
   dualTone?: boolean;
+  labelFontSize?: number;
 }
 
 const W = 560;
@@ -48,6 +49,7 @@ export function SVGTimeSeriesArea<T extends object>({
   showDots = false,
   gradientSuffix,
   dualTone = false,
+  labelFontSize = 9,
 }: SVGTimeSeriesAreaProps<T>) {
   const H = height;
   const [hovered, setHovered] = useState<{ row: T; idx: number } | null>(null);
@@ -333,8 +335,9 @@ export function SVGTimeSeriesArea<T extends object>({
               x={xScale(i)}
               y={H - PAD.bottom + 14}
               textAnchor="middle"
-              fontSize={9}
-              fill="#9ca3af"
+              fontSize={labelFontSize}
+              fontWeight="700"
+              fill="#6b7280"
             >
               {getIndex(row)}
             </text>
@@ -348,8 +351,13 @@ export function SVGTimeSeriesArea<T extends object>({
             x={PAD.left - 6}
             y={yScale(v) + 4}
             textAnchor="end"
-            fontSize={9}
-            fill="#9ca3af"
+            fontSize={labelFontSize}
+            fontWeight="700"
+            fill="#6b7280"
+            paintOrder="stroke"
+            stroke="white"
+            strokeWidth={3}
+            strokeLinejoin="round"
           >
             {v}{unit}
           </text>

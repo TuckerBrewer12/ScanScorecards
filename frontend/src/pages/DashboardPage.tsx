@@ -368,8 +368,8 @@ export function DashboardPage({ userId }: DashboardPageProps) {
                   <ResponsiveContainer width="100%" height={200}>
                     <BarChart data={recentDistribution} margin={{ top: 4, right: 4, left: -24, bottom: 0 }}>
                       <CartesianGrid stroke={gridColor} vertical={false} />
-                      <XAxis dataKey="label" tick={{ fontSize: 9, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
-                      <YAxis tick={{ fontSize: 10, fill: "#9ca3af" }} tickLine={false} axisLine={false} unit="%" />
+                      <XAxis dataKey="label" tick={{ fontSize: 9, fill: "#6b7280", fontWeight: 700 }} tickLine={false} axisLine={false} />
+                      <YAxis tick={{ fontSize: 10, fill: "#6b7280", fontWeight: 700 }} tickLine={false} axisLine={false} unit="%" />
                       <Tooltip contentStyle={tooltipStyle}
                         formatter={(value: number | string | ReadonlyArray<number | string> | undefined) => {
                           const base = Array.isArray(value) ? value[0] : value;

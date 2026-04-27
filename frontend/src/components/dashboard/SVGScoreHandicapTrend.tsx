@@ -23,7 +23,7 @@ interface SVGScoreHandicapTrendProps {
 }
 
 const W = 560;
-const PAD = { top: 12, right: 58, bottom: 28, left: 44 };
+const PAD = { top: 12, right: 64, bottom: 20, left: 52 };
 
 function formatHI(hi: number | null | undefined): string {
   if (hi == null) return "—";
@@ -158,16 +158,27 @@ export function SVGScoreHandicapTrend({
           />
         ))}
 
+        {/* Bottom axis line */}
+        <line
+          x1={PAD.left} x2={W - PAD.right}
+          y1={H - PAD.bottom} y2={H - PAD.bottom}
+          stroke="#e5e7eb" strokeWidth={1}
+        />
+
         {/* Left Y-axis labels (score) */}
         {gridTicks.map((v) => (
           <text
             key={`yl-${v}`}
-            x={PAD.left - 7}
+            x={PAD.left - 12}
             y={yScoreScale(v) + 4}
             textAnchor="end"
             fontSize={11}
-            fontWeight="bold"
+            fontWeight="600"
             fill="#4b5563"
+            paintOrder="stroke"
+            stroke="white"
+            strokeWidth={4}
+            strokeLinejoin="round"
           >
             {v}
           </text>
@@ -177,12 +188,16 @@ export function SVGScoreHandicapTrend({
         {validHI.length > 0 && hiTicks.map((v) => (
           <text
             key={`yr-${v}`}
-            x={W - PAD.right + 7}
+            x={W - PAD.right + 12}
             y={yHIScale(v) + 4}
             textAnchor="start"
             fontSize={11}
-            fontWeight="bold"
+            fontWeight="600"
             fill={handicapColor}
+            paintOrder="stroke"
+            stroke="white"
+            strokeWidth={4}
+            strokeLinejoin="round"
           >
             {formatHI(v)}
           </text>
