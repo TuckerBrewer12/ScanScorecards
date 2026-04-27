@@ -14,8 +14,11 @@ import { getStoredColorBlindMode } from "@/lib/accessibility";
 import { getColorBlindPalette } from "@/lib/chartPalettes";
 import type { Milestone } from "@/types/golf";
 import { RecentRoundsTable } from "@/components/dashboard/RecentRoundsTable";
-import { ScrollSection } from "@/components/analytics/ScrollSection";
 import { BentoCard } from "@/components/ui/BentoCard";
+import { ProfileHeroBanner } from "@/components/dashboard/ProfileHeroBanner";
+import { ScanActionCard } from "@/components/dashboard/ScanActionCard";
+import { ActivityHeatmap } from "@/components/dashboard/ActivityHeatmap";
+import { BestRoundHighlight } from "@/components/dashboard/BestRoundHighlight";
 
 const tooltipStyle = {
   fontSize: 12,
@@ -27,11 +30,7 @@ const tooltipStyle = {
   WebkitBackdropFilter: "blur(16px)",
 };
 
-function formatHI(hi: number | null | undefined): string {
-  if (hi == null) return "—";
-  if (hi < 0) return `+${Math.abs(hi).toFixed(1)}`;
-  return hi.toFixed(1);
-}
+
 
 const SCORE_COLORS: Record<string, string> = {
   eagle: "#b45309",
@@ -309,226 +308,241 @@ export function DashboardPage({ userId }: DashboardPageProps) {
         />
       </div>
 
-      {/* Desktop layout */}
-      <div className="hidden md:block">
-      <ScrollSection>
-        <div className="flex items-center justify-between mb-5">
-          <h1 className="text-3xl font-extrabold tracking-tight text-gray-900">
-            {user?.name ? `Hello, ${user.name.split(" ")[0]}` : "Dashboard"}
-          </h1>
-          {data.handicap_index != null && (
-            <div className="flex flex-col items-end">
-              <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Handicap</span>
-              <span className="text-2xl font-bold text-gray-900 leading-tight">{formatHI(data.handicap_index)}</span>
-            </div>
-          )}
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-5 auto-rows-min mt-4">
+      <div className="hidden md:block pb-12">
+        <div className="flex gap-6 max-w-[1400px] mx-auto items-start">
+          
+          {/* Left Main Content */}
+          <div className="flex-1 min-w-0 flex flex-col">
+            <ProfileHeroBanner user={user ?? null} handicapIndex={data.handicap_index} trend={hiTrend} />
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5 auto-rows-min mt-6">
+              
+              {/* Highlight Card */}
+              <BentoCard className="lg:col-span-3">
+                <BestRoundHighlight rounds={data.recent_rounds} />
+              </BentoCard>
 
-          {/* 1. KPI Stack */}
-          <BentoCard className="lg:col-span-1">
-            <div className="flex flex-col gap-5 h-full justify-between">
-              <MiniKpi label="Scoring Avg (L20)" value={last20ScoringAvg != null ? last20ScoringAvg.toFixed(1) : null} trend={hiTrend} />
-              <MiniKpi label="Best Round" value={data.best_round ?? "—"} />
-              <MiniKpi label="Total Rounds" value={data.total_rounds} />
-            </div>
-          </BentoCard>
+              {/* 1. KPI Stack */}
+              <BentoCard className="lg:col-span-1">
+                <div className="flex flex-col gap-5 h-full justify-between">
+                  <MiniKpi label="Scoring Avg (L20)" value={last20ScoringAvg != null ? last20ScoringAvg.toFixed(1) : null} trend={hiTrend} />
+                  <MiniKpi label="Total Rounds" value={data.total_rounds} />
+                </div>
+              </BentoCard>
 
-          {/* 2. Hero: Score (to par) + HI Trend */}
-          <BentoCard title="Score & Handicap Trend" subtitle="Last 20 rounds" className="md:col-span-2 lg:col-span-2">
-            <SVGScoreHandicapTrend
-              data={dualData}
-              scoreColor={scoreLineColor}
-              handicapColor={handicapLineColor}
-              gridColor={gridColor}
-            />
-          </BentoCard>
+              {/* 2. Hero: Dual-Axis Score + HI Trend */}
+              <BentoCard title="Score & Handicap Trend" subtitle="Last 20 rounds" className="md:col-span-2 lg:col-span-2">
+                <SVGScoreHandicapTrend
+                  data={dualData}
+                  scoreColor={scoreLineColor}
+                  handicapColor={handicapLineColor}
+                  gridColor={gridColor}
+                />
+              </BentoCard>
 
-          {/* 3. GIR % Radial Donut */}
-          <BentoCard title="GIR %" subtitle="Last 5 rounds" className="lg:col-span-1">
-            <div className="relative">
-              <ResponsiveContainer width="100%" height={160}>
-                <PieChart>
-                  <Pie data={girDonutData} dataKey="value"
-                    innerRadius={50} outerRadius={68} stroke="none"
-                    startAngle={90} endAngle={-270}>
-                    <Cell fill={girColor} />
-                    <Cell fill={mutedFill} />
-                  </Pie>
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                <div className="text-4xl font-semibold tracking-tighter text-gray-900">{girPct.toFixed(0)}%</div>
-                <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">GIR</div>
-              </div>
-            </div>
-            <div className="text-center text-xs text-gray-400 mt-1">
-              Tour avg ≈ 67%
-            </div>
-          </BentoCard>
+              {/* 3. GIR % Radial Donut */}
+              <BentoCard title="GIR %" subtitle="Last 5 rounds" className="lg:col-span-1">
+                <div className="relative">
+                  <ResponsiveContainer width="100%" height={160}>
+                    <PieChart>
+                      <Pie data={girDonutData} dataKey="value"
+                        innerRadius={50} outerRadius={68} stroke="none"
+                        startAngle={90} endAngle={-270}>
+                        <Cell fill={girColor} />
+                        <Cell fill={mutedFill} />
+                      </Pie>
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                    <div className="text-4xl font-semibold tracking-tighter text-gray-900">{girPct.toFixed(0)}%</div>
+                    <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">GIR</div>
+                  </div>
+                </div>
+              </BentoCard>
 
-          {/* 4. Scoring Distribution */}
-          <BentoCard title="Score Mix" subtitle="Last 5 rounds · % of holes" className="lg:col-span-1 overflow-hidden">
-            {recentDistribution.length > 0 ? (
-              <ResponsiveContainer width="100%" height={200}>
-                <BarChart data={recentDistribution} margin={{ top: 4, right: 4, left: -24, bottom: 0 }}>
-                  <CartesianGrid stroke={gridColor} vertical={false} />
-                  <XAxis dataKey="label" tick={{ fontSize: 9, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
-                  <YAxis tick={{ fontSize: 10, fill: "#9ca3af" }} tickLine={false} axisLine={false} unit="%" />
-                  <Tooltip contentStyle={tooltipStyle}
-                    formatter={(
-                      value: number | string | ReadonlyArray<number | string> | undefined,
-                      _name: string | number | undefined,
-                      item: { payload?: { label?: string } },
-                    ) => {
-                      const base = Array.isArray(value) ? value[0] : value;
-                      const n = typeof base === "number" ? base : Number(base);
-                      const display = Number.isFinite(n) ? `${n.toFixed(1)}%` : `${String(base ?? "")}%`;
-                      return [display, item.payload?.label ?? ""];
-                    }}
+              {/* 4. Scoring Distribution */}
+              <BentoCard title="Score Mix" subtitle="Last 5 rounds · % of holes" className="lg:col-span-1 overflow-hidden">
+                {recentDistribution.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={200}>
+                    <BarChart data={recentDistribution} margin={{ top: 4, right: 4, left: -24, bottom: 0 }}>
+                      <CartesianGrid stroke={gridColor} vertical={false} />
+                      <XAxis dataKey="label" tick={{ fontSize: 9, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
+                      <YAxis tick={{ fontSize: 10, fill: "#9ca3af" }} tickLine={false} axisLine={false} unit="%" />
+                      <Tooltip contentStyle={tooltipStyle}
+                        formatter={(
+                          value: number | string | ReadonlyArray<number | string> | undefined,
+                          _name: string | number | undefined,
+                          item: { payload?: { label?: string } },
+                        ) => {
+                          const base = Array.isArray(value) ? value[0] : value;
+                          const n = typeof base === "number" ? base : Number(base);
+                          const display = Number.isFinite(n) ? `${n.toFixed(1)}%` : `${String(base ?? "")}%`;
+                          return [display, item.payload?.label ?? ""];
+                        }}
+                      />
+                      <Bar dataKey="value" radius={[4, 4, 0, 0]} maxBarSize={28}>
+                        {recentDistribution.map((entry) => (
+                          <Cell key={entry.name} fill={entry.color} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="text-sm text-gray-400 text-center py-8">No data yet</div>
+                )}
+              </BentoCard>
+
+              {/* 5. Short Game */}
+              <BentoCard title="Short Game" subtitle="Last 5 rounds" className="lg:col-span-1 !p-3">
+                <div className="flex items-center justify-around mt-6">
+                  <div className="text-center">
+                    <div className="text-4xl font-semibold text-gray-900 tracking-tighter">
+                      {scramblingPct != null ? `${scramblingPct.toFixed(0)}%` : "—"}
+                    </div>
+                    <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">Scrambling</div>
+                  </div>
+                  <div className="w-px h-8 bg-gray-100" />
+                  <div className="text-center">
+                    <div className="text-4xl font-semibold text-gray-900 tracking-tighter">
+                      {upAndDownPct != null ? `${upAndDownPct.toFixed(0)}%` : "—"}
+                    </div>
+                    <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">Up & Down</div>
+                  </div>
+                </div>
+                {trends && (
+                  <ShortGameSparkline
+                    scrambling={trends.scrambling_trend}
+                    upAndDown={trends.up_and_down_trend}
                   />
-                  <Bar dataKey="value" radius={[4, 4, 0, 0]} maxBarSize={28}>
-                    {recentDistribution.map((entry) => (
-                      <Cell key={entry.name} fill={entry.color} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="text-sm text-gray-400 text-center py-8">No data yet</div>
-            )}
-          </BentoCard>
+                )}
+              </BentoCard>
 
-          {/* 5. Short Game */}
-          <BentoCard title="Short Game" subtitle="Last 5 rounds" className="lg:col-span-1 !p-3">
-            <div className="flex items-center justify-around mt-6">
-              <div className="text-center">
-                <div className="text-4xl font-semibold text-gray-900 tracking-tighter">
-                  {scramblingPct != null ? `${scramblingPct.toFixed(0)}%` : "—"}
-                </div>
-                <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">Scrambling</div>
-              </div>
-              <div className="w-px h-8 bg-gray-100" />
-              <div className="text-center">
-                <div className="text-4xl font-semibold text-gray-900 tracking-tighter">
-                  {upAndDownPct != null ? `${upAndDownPct.toFixed(0)}%` : "—"}
-                </div>
-                <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mt-0.5">Up & Down</div>
-              </div>
-            </div>
-            {trends && (
-              <ShortGameSparkline
-                scrambling={trends.scrambling_trend}
-                upAndDown={trends.up_and_down_trend}
-              />
-            )}
-          </BentoCard>
-
-          {/* 6. Avg Putts Gauge */}
-          <BentoCard title="Avg Putts" subtitle="Last 5 rounds" className="lg:col-span-1 !p-3">
-            <div className="mx-auto w-full max-w-[260px]">
-              <div className="relative" style={{ height: 120 }}>
-                <ResponsiveContainer width="100%" height={120}>
-                  <PieChart>
-                    <Pie data={puttsGaugeData} cx="50%" cy="100%"
-                      startAngle={180} endAngle={0}
-                      innerRadius={52} outerRadius={72}
-                      dataKey="value" stroke="none">
-                      <Cell fill={puttsColor} />
-                      <Cell fill={mutedFill} />
-                    </Pie>
-                  </PieChart>
-                </ResponsiveContainer>
-                <div className="absolute bottom-0 left-0 right-0 flex flex-col items-center pointer-events-none">
-                  <div className="text-2xl font-bold text-gray-900">{putts.toFixed(1)}</div>
-                  <div className="text-[9px] text-gray-400 uppercase tracking-wide">Putts</div>
-                </div>
-              </div>
-            </div>
-            <div className="flex justify-center gap-3 text-[9px] text-gray-300 font-semibold uppercase tracking-wider mt-2">
-              <span style={{ color: girColor }}>{"<30 great"}</span>
-              <span style={{ color: warningColor }}>30-35</span>
-              <span style={{ color: dangerColor }}>35+ work</span>
-            </div>
-          </BentoCard>
-
-          {/* 7. Recent Milestones */}
-          <BentoCard title="Milestones" className="lg:col-span-1 overflow-hidden">
-            <MilestoneFeed milestones={recentMilestones} />
-          </BentoCard>
-
-          {/* 8. Goal Widget */}
-          <BentoCard className="lg:col-span-1 !p-4" interactive onClick={() => navigate("/the-lab")}>
-            {user?.scoring_goal && goalReport ? (
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <div>
-                    <div className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-0.5">Scoring Goal</div>
-                    <div className="text-sm font-bold text-gray-900">
-                      Target: Break {user.scoring_goal + 1}
+              {/* 6. Avg Putts Gauge */}
+              <BentoCard title="Avg Putts" subtitle="Last 5 rounds" className="lg:col-span-1 !p-3">
+                <div className="mx-auto w-full max-w-[260px]">
+                  <div className="relative" style={{ height: 120 }}>
+                    <ResponsiveContainer width="100%" height={120}>
+                      <PieChart>
+                        <Pie data={puttsGaugeData} cx="50%" cy="100%"
+                          startAngle={180} endAngle={0}
+                          innerRadius={52} outerRadius={72}
+                          dataKey="value" stroke="none">
+                          <Cell fill={puttsColor} />
+                          <Cell fill={mutedFill} />
+                        </Pie>
+                      </PieChart>
+                    </ResponsiveContainer>
+                    <div className="absolute bottom-0 left-0 right-0 flex flex-col items-center pointer-events-none">
+                      <div className="text-2xl font-bold text-gray-900">{putts.toFixed(1)}</div>
+                      <div className="text-[9px] text-gray-400 uppercase tracking-wide">Putts</div>
                     </div>
                   </div>
-                  <button
-                    onClick={() => navigate("/the-lab")}
-                    className="text-[11px] font-semibold text-primary hover:underline"
-                  >
-                    Goals →
-                  </button>
                 </div>
-                <div className="mb-3">
-                  <div className="flex justify-between text-[10px] text-gray-400 mb-1">
-                    <span>Avg {goalReport.scoring_average?.toFixed(1)}</span>
-                    <span>Goal {user.scoring_goal + 1}</span>
-                  </div>
-                  <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                    <div
-                      className="h-full rounded-full transition-all"
-                      style={{
-                        width: `${Math.min(100, Math.max(5, goalReport.on_track ? 100 : goalReport.gap == null ? 5 : (1 - goalReport.gap / Math.max(goalReport.scoring_average ?? 1, 1)) * 100))}%`,
-                        background: goalReport.on_track ? "#059669" : "linear-gradient(90deg, #2d7a3a, #9ca3af)",
-                      }}
-                    />
-                  </div>
+                <div className="flex justify-center gap-3 text-[9px] text-gray-300 font-semibold uppercase tracking-wider mt-2">
+                  <span style={{ color: girColor }}>{"<30 great"}</span>
+                  <span style={{ color: warningColor }}>30-35</span>
+                  <span style={{ color: dangerColor }}>35+ work</span>
                 </div>
-                {goalReport.savers[0] && (
-                  <p className="text-[11px] text-gray-500 leading-relaxed">
-                    <span className="font-semibold text-gray-700">Focus: </span>
-                    {goalReport.savers[0].headline}
-                  </p>
+              </BentoCard>
+
+              {/* 7. Recent Milestones */}
+              <BentoCard title="Milestones" className="lg:col-span-1 overflow-hidden">
+                <MilestoneFeed milestones={recentMilestones} />
+              </BentoCard>
+
+              {/* 8. Goal Widget */}
+              <BentoCard className="lg:col-span-1 !p-4" interactive onClick={() => navigate("/the-lab")}>
+                {user?.scoring_goal && goalReport ? (
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <div>
+                        <div className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-0.5">Scoring Goal</div>
+                        <div className="text-sm font-bold text-gray-900">
+                          Target: Break {user.scoring_goal + 1}
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => navigate("/the-lab")}
+                        className="text-[11px] font-semibold text-primary hover:underline"
+                      >
+                        Goals →
+                      </button>
+                    </div>
+                    <div className="mb-3">
+                      <div className="flex justify-between text-[10px] text-gray-400 mb-1">
+                        <span>Avg {goalReport.scoring_average?.toFixed(1)}</span>
+                        <span>Goal {user.scoring_goal + 1}</span>
+                      </div>
+                      <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all"
+                          style={{
+                            width: `${Math.min(100, Math.max(5, goalReport.on_track ? 100 : goalReport.gap == null ? 5 : (1 - goalReport.gap / Math.max(goalReport.scoring_average ?? 1, 1)) * 100))}%`,
+                            background: goalReport.on_track ? "#059669" : "linear-gradient(90deg, #2d7a3a, #9ca3af)",
+                          }}
+                        />
+                      </div>
+                    </div>
+                    {goalReport.savers[0] && (
+                      <p className="text-[11px] text-gray-500 leading-relaxed">
+                        <span className="font-semibold text-gray-700">Focus: </span>
+                        {goalReport.savers[0].headline}
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-start justify-center h-full gap-2">
+                    <div className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Scoring Goal</div>
+                    <p className="text-sm text-gray-500">Set a scoring goal to track your progress.</p>
+                    <button
+                      onClick={() => navigate("/the-lab")}
+                      className="text-xs font-semibold text-primary hover:underline"
+                    >
+                      Set a goal →
+                    </button>
+                  </div>
                 )}
-              </div>
-            ) : (
-              <div className="flex flex-col items-start justify-center h-full gap-2">
-                <div className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Scoring Goal</div>
-                <p className="text-sm text-gray-500">Set a scoring goal to track your progress.</p>
-                <button
-                  onClick={() => navigate("/the-lab")}
-                  className="text-xs font-semibold text-primary hover:underline"
-                >
-                  Set a goal →
-                </button>
-              </div>
-            )}
-          </BentoCard>
+              </BentoCard>
 
+              {/* Note: Recent Rounds is now in the sidebar */}
+              <div className="lg:col-span-3 flex justify-end gap-3 mt-4 lg:hidden">
+                  {/* Hide this on xl where sidebar is visible, but we need recent rounds on lg where sidebar breaks */}
+                  <Link to="/rounds" className="px-4 py-2 bg-primary text-white rounded-xl text-xs font-semibold hover:opacity-90 transition-opacity shadow-sm">
+                    All Rounds
+                  </Link>
+                  <Link to="/courses" className="px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl text-xs font-semibold hover:bg-gray-50 transition-colors">
+                    Browse Courses
+                  </Link>
+              </div>
 
-          {/* 10. Recent Rounds — fills remaining cols of last row */}
-          <BentoCard title="Recent Rounds" className="md:col-span-2 lg:col-span-3 overflow-hidden" interactive>
-            <div className="overflow-x-auto -mx-5 px-5">
-              <RecentRoundsTable rounds={data.recent_rounds.slice(0, 2)} />
             </div>
-            <div className="mt-4 flex gap-3">
-              <Link to="/rounds" className="px-4 py-2 bg-primary text-white rounded-xl text-xs font-semibold hover:opacity-90 transition-opacity shadow-sm">
-                All Rounds
-              </Link>
-              <Link to="/courses" className="px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl text-xs font-semibold hover:bg-gray-50 transition-colors">
-                Browse Courses
-              </Link>
-            </div>
-          </BentoCard>
+          </div>
+
+          {/* Right Sidebar (Desktop Asymmetric Layout) */}
+          <div className="w-[300px] shrink-0 hidden xl:flex flex-col gap-6 sticky top-20 self-start">
+            <ScanActionCard />
+
+            <BentoCard title="Activity" subtitle="Last 30 days" className="!p-4">
+              <ActivityHeatmap rounds={data.recent_rounds} />
+            </BentoCard>
+
+             <BentoCard className="!px-0 !py-3 overflow-hidden" interactive>
+                <div className="px-5 mb-2">
+                  <div className="text-sm font-semibold text-gray-800 dark:text-white">Recent Rounds</div>
+                </div>
+                <div className="max-h-[600px] overflow-y-auto px-4 -mx-1">
+                  <RecentRoundsTable rounds={data.recent_rounds.slice(0, 10)} />
+                </div>
+                <div className="mt-4 px-4 pb-1">
+                  <Link to="/rounds" className="w-full flex items-center justify-center px-4 py-2 bg-gray-50 border border-gray-200 text-gray-700 rounded-xl text-xs font-semibold hover:bg-gray-100 transition-colors">
+                    View All Round History
+                  </Link>
+                </div>
+             </BentoCard>
+
+          </div>
 
         </div>
-      </ScrollSection>
       </div>
     </div>
   );

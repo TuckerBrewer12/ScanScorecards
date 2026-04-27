@@ -18,6 +18,9 @@ export interface HandicapTrendRow {
   round_index: number;
   round_id: string | null;
   handicap_index: number | null;
+  used_in_hi?: boolean | null;
+  differential?: number | null;
+  hi_threshold?: number | null;
 }
 
 export interface ScoreDifferentialRow {
