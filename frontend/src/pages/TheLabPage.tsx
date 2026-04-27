@@ -759,15 +759,22 @@ export function TheLabPage({ userId }: TheLabPageProps) {
                             {strokeImpact > 0 ? "+" : ""}{strokeImpact.toFixed(1)} strokes {strokeImpact >= 0 ? "gained" : "lost"}
                           </span>
                         </div>
-                        <div className="relative h-6 bg-gray-100 rounded-full overflow-hidden flex items-center border border-gray-200">
-                           {/* Average is the thick background bar using the metric's color */}
-                           <div className="absolute top-0 bottom-0 left-0 transition-all duration-1000 ease-out" style={{ width: `${avgPct}%`, backgroundColor: color }} />
-                           {/* Peak is the inner nested bullet line, highlighted in bright yellow */}
-                           <div className="absolute top-2 bottom-2 left-0 rounded-r-lg transition-all duration-1000 ease-out shadow-sm" style={{ width: `${peakPct}%`, backgroundColor: "#facc15" }} />
-                        </div>
-                        <div className="flex justify-between mt-1 text-[10px] font-medium text-gray-400">
-                          <span>Peak: <span className="font-bold text-gray-700">{peak.toFixed(1)}</span></span>
-                          <span>Avg: {avg.toFixed(1)}</span>
+                        <div className="space-y-1.5 mt-1">
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] text-[#facc15] font-bold w-8 text-right shrink-0">Peak</span>
+                            <div className="flex-1 h-3.5 bg-gray-100 rounded-full overflow-hidden">
+                              <div className="h-full rounded-full transition-all duration-1000 ease-out shadow-sm" style={{ width: `${peakPct}%`, backgroundColor: "#facc15" }} />
+                            </div>
+                            <span className="text-[11px] font-bold text-gray-700 w-8 shrink-0 text-right">{peak.toFixed(1)}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] text-gray-400 w-8 text-right shrink-0">Avg</span>
+                            <div className="flex-1 h-3.5 bg-gray-100 rounded-full overflow-hidden">
+                              <div className="h-full rounded-full transition-all duration-1000 ease-out" style={{ width: `${avgPct}%`, backgroundColor: color }} />
+                            </div>
+                            <span className="text-[11px] font-bold text-gray-400 w-8 shrink-0 text-right">{avg.toFixed(1)}</span>
+
+                          </div>
                         </div>
                       </div>
                     );

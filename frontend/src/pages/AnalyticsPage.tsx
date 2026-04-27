@@ -437,7 +437,7 @@ export function AnalyticsPage({ userId }: { userId: string }) {
       <div className="hidden md:block">
 
         {/* Page title */}
-        <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 mb-3">Analytics</h1>
+        <h1 className="text-4xl font-extrabold tracking-tight text-gray-900 mb-3">Analytics</h1>
 
         {/* Unified Command Center */}
         <AnalyticsCommandCenter
@@ -451,24 +451,10 @@ export function AnalyticsPage({ userId }: { userId: string }) {
         {/* ── Exploded KPI Bento Bar ──────────��──────────────────────────── */}
         <div className="flex gap-3 mb-5 flex-wrap">
           {/* Handicap card */}
-          <div className="flex-1 min-w-[130px] bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex flex-col relative">
+          <div className="flex-1 min-w-[130px] bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex flex-col items-center text-center relative">
             <Gauge size={13} className="absolute top-3 right-3 text-gray-200" />
             <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1">Handicap Index</span>
-            <span className="text-2xl font-bold text-gray-900 tracking-tighter">{formatHI(kpis.handicap_index) ?? "—"}</span>
-            {hiTrend && (
-              <div
-                className={`mt-1.5 inline-flex items-center gap-1 self-start px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
-                  hiTrend === "down"
-                    ? "bg-emerald-50 text-emerald-600"
-                    : hiTrend === "up"
-                    ? "bg-red-50 text-red-500"
-                    : "bg-gray-50 text-gray-400"
-                }`}
-              >
-                {hiTrend === "down" ? <TrendingDown size={10} /> : hiTrend === "up" ? <TrendingUp size={10} /> : <Minus size={10} />}
-                <span>{hiTrend === "down" ? "Improving" : hiTrend === "up" ? "Rising" : "Steady"}</span>
-              </div>
-            )}
+            <span className="text-3xl font-bold text-gray-900 tracking-tighter">{formatHI(kpis.handicap_index) ?? "—"}</span>
           </div>
 
           {/* Secondary KPI cards */}
@@ -486,11 +472,11 @@ export function AnalyticsPage({ userId }: { userId: string }) {
           ).map(({ label, value, icon: Icon, subtitle }) => (
             <div
               key={label}
-              className="flex-1 min-w-[110px] bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex flex-col relative"
+              className="flex-1 min-w-[110px] bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex flex-col items-center text-center relative"
             >
               <Icon size={13} className="absolute top-3 right-3 text-gray-200" />
               <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1">{label}</span>
-              <span className="text-2xl font-bold text-gray-900 tracking-tighter">{value ?? "—"}</span>
+              <span className="text-3xl font-bold text-gray-900 tracking-tighter">{value ?? "—"}</span>
               {subtitle && <span className="text-xs text-gray-400 mt-0.5 truncate">{subtitle}</span>}
             </div>
           ))}
@@ -736,10 +722,10 @@ export function AnalyticsPage({ userId }: { userId: string }) {
                 <ResponsiveContainer width="100%" height={160}>
                   <BarChart data={scoring_by_par} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
                     <CartesianGrid stroke={gridColor} vertical={false} />
-                    <XAxis dataKey="par" tick={{ fontSize: 12, fill: "#6b7280" }} tickLine={false} axisLine={false}
+                    <XAxis dataKey="par" tick={{ fontSize: 13, fill: "#374151", fontWeight: 700 }} tickLine={false} axisLine={false}
                       tickFormatter={(v) => `Par ${v}`}
                     />
-                    <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false}
+                    <YAxis tick={{ fontSize: 12, fill: "#6b7280", fontWeight: 700 }} tickLine={false} axisLine={false}
                       tickFormatter={(v) => (v > 0 ? `+${v}` : v)}
                     />
                     <Tooltip contentStyle={tooltipStyle} labelStyle={tooltipTextStyle} itemStyle={tooltipTextStyle}
@@ -759,8 +745,8 @@ export function AnalyticsPage({ userId }: { userId: string }) {
                 <ResponsiveContainer width="100%" height={160}>
                   <BarChart data={scoring_by_handicap} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
                     <CartesianGrid stroke={gridColor} vertical={false} />
-                    <XAxis dataKey="handicap" tick={{ fontSize: 10, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
-                    <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false}
+                    <XAxis dataKey="handicap" tick={{ fontSize: 12, fill: "#374151", fontWeight: 700 }} tickLine={false} axisLine={false} />
+                    <YAxis tick={{ fontSize: 12, fill: "#6b7280", fontWeight: 700 }} tickLine={false} axisLine={false}
                       tickFormatter={(v) => (v > 0 ? `+${v}` : v)}
                     />
                     <Tooltip contentStyle={tooltipStyle} labelStyle={tooltipTextStyle} itemStyle={tooltipTextStyle}
@@ -806,7 +792,8 @@ export function AnalyticsPage({ userId }: { userId: string }) {
                     <XAxis
                       type="number"
                       domain={[-40, 100]}
-                      tick={{ fontSize: 10, fill: "#9ca3af" }}
+                      ticks={[-40, -20, 0, 20, 40, 60, 80, 100]}
+                      tick={{ fontSize: 12, fill: "#111827", fontWeight: 700 }}
                       tickLine={false}
                       axisLine={false}
                       tickFormatter={(v) => `${Math.abs(v)}%`}
@@ -816,21 +803,21 @@ export function AnalyticsPage({ userId }: { userId: string }) {
                       dataKey="bucket"
                       tickLine={false}
                       axisLine={false}
-                      tick={(props: { x: number; y: number; payload: { value: string } }) => (
+                      tick={(props: { x: string | number; y: string | number; payload: { value: string } }) => (
                         <text
                           x={props.x}
                           y={props.y}
                           dy={4}
                           textAnchor="end"
-                          fontSize={12}
-                          fontWeight={600}
+                          fontSize={14}
+                          fontWeight={700}
                           fill={props.payload.value === "GIR" ? successColor : dangerColor}
                         >
                           {props.payload.value}
                         </text>
                       )}
                     />
-                    <CartesianGrid stroke={gridColor} horizontal={false} />
+                    <CartesianGrid stroke="#d1d5db" horizontal={false} />
                     <ReferenceLine x={0} stroke="#d1d5db" strokeWidth={1.5} />
                     <Tooltip
                       content={({ payload, label }: { payload?: { dataKey: string; value: number; fill: string }[]; label?: string }) => {

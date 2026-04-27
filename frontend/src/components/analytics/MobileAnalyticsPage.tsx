@@ -54,7 +54,6 @@ const SCORE_LABELS: Record<string, string> = {
   triple_bogey: "Triple", quad_bogey: "Quad+",
 };
 
-const SCORE_KEYS = ["eagle", "birdie", "par", "bogey", "double_bogey", "triple_bogey", "quad_bogey"] as const;
 
 const TABS = ["Scoring", "Ball Striking", "Putting", "Profile", "Range View"] as const;
 
@@ -392,7 +391,7 @@ export function MobileAnalyticsPage({
                 dataKey="bucket"
                 tickLine={false}
                 axisLine={false}
-                tick={(props: { x: number; y: number; payload: { value: string } }) => (
+                tick={(props: { x: string | number; y: string | number; payload: { value: string } }) => (
                   <text x={props.x} y={props.y} dy={4} textAnchor="end" fontSize={12} fontWeight={600}
                     fill={props.payload.value === "GIR" ? successColor : dangerColor}
                   >
