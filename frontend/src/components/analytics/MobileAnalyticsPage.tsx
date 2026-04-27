@@ -1,10 +1,10 @@
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Fmt = (v: any, name: any, props: any) => any;
 
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 import { motion } from "framer-motion";
 import {
-  BarChart, Bar, PieChart, Pie, Cell, Legend,
+  BarChart, Bar, PieChart, Pie, Cell,
   CartesianGrid, XAxis, YAxis, Tooltip, ReferenceLine, ResponsiveContainer,
 } from "recharts";
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
@@ -238,6 +238,18 @@ export function MobileAnalyticsPage({
     return l != null && p != null ? l - p : null;
   })();
 
+  const divergingGirData = useMemo(() =>
+    gir_vs_non_gir.map((row) => ({
+      bucket:         row.bucket,
+      "Birdie":       -(row.birdie ?? 0),
+      "Eagle":        -(row.eagle ?? 0),
+      "Par":          row.par ?? 0,
+      "Bogey":        row.bogey ?? 0,
+      "Double":       row.double_bogey ?? 0,
+      "Triple+":      (row.triple_bogey ?? 0) + (row.quad_bogey ?? 0),
+    })),
+  [gir_vs_non_gir]);
+
   const bestRoundCourse = (() => {
     const ev = notable_achievements?.scoring_records_events?.lifetime?.lowest_score;
     return ev?.course ?? null;
@@ -357,25 +369,80 @@ export function MobileAnalyticsPage({
       );
     }
 
-    if (gir_vs_non_gir.length > 0) {
+    if (divergingGirData.length > 0) {
       slides.push(
-        <ChartCard key="girvsnon" title="GIR vs No-GIR Score Distribution" subtitle="On vs off the green in regulation">
-          <ResponsiveContainer width="100%" height={160}>
-            <BarChart data={gir_vs_non_gir} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
-              <CartesianGrid stroke={gridColor} vertical={false} />
-              <XAxis dataKey="bucket" tick={{ fontSize: 11, fill: "#6b7280" }} tickLine={false} axisLine={false} />
-              <YAxis tick={{ fontSize: 10, fill: "#9ca3af" }} tickLine={false} axisLine={false} unit="%" />
-              <Tooltip contentStyle={tooltipStyle}
-                formatter={((v: number, name: string) => [`${v?.toFixed(1)}%`, SCORE_LABELS[name] ?? name]) as Fmt}
+        <ChartCard key="girvsnon" title="GIR vs No-GIR">
+          <ResponsiveContainer width="100%" height={130}>
+            <BarChart
+              data={divergingGirData}
+              layout="vertical"
+              barSize={28}
+              margin={{ top: 4, right: 12, left: 52, bottom: 0 }}
+            >
+              <XAxis
+                type="number"
+                domain={[-40, 100]}
+                tick={{ fontSize: 9, fill: "#9ca3af" }}
+                tickLine={false}
+                axisLine={false}
+                tickFormatter={(v) => `${Math.abs(v)}%`}
               />
-              <Legend formatter={(name) => SCORE_LABELS[name] ?? name} wrapperStyle={{ fontSize: 10 }} />
-              {SCORE_KEYS.map((key) => (
-                <Bar key={key} dataKey={key} stackId="a" fill={scoreColors[key]}
-                  radius={key === "eagle" ? [4, 4, 0, 0] : [0, 0, 0, 0]}
-                />
-              ))}
+              <YAxis
+                type="category"
+                dataKey="bucket"
+                tickLine={false}
+                axisLine={false}
+                tick={(props: { x: number; y: number; payload: { value: string } }) => (
+                  <text x={props.x} y={props.y} dy={4} textAnchor="end" fontSize={12} fontWeight={600}
+                    fill={props.payload.value === "GIR" ? successColor : dangerColor}
+                  >
+                    {props.payload.value}
+                  </text>
+                )}
+              />
+              <CartesianGrid stroke={gridColor} horizontal={false} />
+              <ReferenceLine x={0} stroke="#d1d5db" strokeWidth={1.5} />
+              <Tooltip
+                content={({ payload, label }: { payload?: { dataKey: string; value: number; fill: string }[]; label?: string }) => {
+                  if (!payload?.length) return null;
+                  const visible = payload.filter((p) => Math.abs(p.value) > 0.05);
+                  if (!visible.length) return null;
+                  return (
+                    <div style={{ ...tooltipStyle, padding: "8px 10px" }}>
+                      <div className="font-semibold text-[11px] mb-1" style={{ color: label === "GIR" ? successColor : dangerColor }}>{label}</div>
+                      {visible.map((p) => (
+                        <div key={p.dataKey} className="flex items-center justify-between gap-3">
+                          <span style={{ color: p.fill }} className="text-[11px]">{p.dataKey}</span>
+                          <span style={{ color: p.fill }} className="font-bold text-[11px]">{Math.abs(p.value).toFixed(1)}%</span>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                }}
+              />
+              <Bar dataKey="Birdie"  fill={successColor}               stackId="neg" />
+              <Bar dataKey="Eagle"   fill={scoreColors.eagle}           stackId="neg" radius={[4, 0, 0, 4]} />
+              <Bar dataKey="Par"     fill={mutedFill}                   stackId="pos" />
+              <Bar dataKey="Bogey"   fill={dangerColor}                 stackId="pos" />
+              <Bar dataKey="Double"  fill={scoreColors.double_bogey}    stackId="pos" />
+              <Bar dataKey="Triple+" fill={scoreColors.triple_bogey}    stackId="pos" radius={[0, 4, 4, 0]} />
             </BarChart>
           </ResponsiveContainer>
+          <div className="flex items-center gap-3 mt-2.5 justify-center flex-wrap">
+            {[
+              { label: "Birdie",  color: successColor             },
+              { label: "Eagle",   color: scoreColors.eagle        },
+              { label: "Par",     color: mutedFill                },
+              { label: "Bogey",   color: dangerColor              },
+              { label: "Double",  color: scoreColors.double_bogey },
+              { label: "Triple+", color: scoreColors.triple_bogey },
+            ].map(({ label, color }) => (
+              <div key={label} className="flex items-center gap-1">
+                <div className="w-2 h-2 rounded-sm" style={{ background: color }} />
+                <span className="text-[10px] font-semibold text-gray-500">{label}</span>
+              </div>
+            ))}
+          </div>
         </ChartCard>
       );
     }

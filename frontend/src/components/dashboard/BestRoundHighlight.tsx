@@ -6,7 +6,6 @@ interface BestRoundHighlightProps {
 }
 
 export function BestRoundHighlight({ rounds }: BestRoundHighlightProps) {
-  // Find round with the lowest score in the last 60 days
   const validRounds = rounds.filter((r) => r.total_score != null);
   if (validRounds.length === 0) {
     return (
@@ -16,7 +15,6 @@ export function BestRoundHighlight({ rounds }: BestRoundHighlightProps) {
     );
   }
 
-  // Find lowest score
   const best = validRounds.reduce((prev, curr) => {
     return curr.total_score! < prev.total_score! ? curr : prev;
   });

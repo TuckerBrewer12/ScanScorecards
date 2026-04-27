@@ -22,6 +22,7 @@ interface SVGTimeSeriesAreaProps<T extends object> {
   height?: number;
   showDots?: boolean;
   gradientSuffix: string;
+  dualTone?: boolean;
 }
 
 const W = 560;
@@ -46,6 +47,7 @@ export function SVGTimeSeriesArea<T extends object>({
   height = 200,
   showDots = false,
   gradientSuffix,
+  dualTone = false,
 }: SVGTimeSeriesAreaProps<T>) {
   const H = height;
   const [hovered, setHovered] = useState<{ row: T; idx: number } | null>(null);
@@ -174,6 +176,28 @@ export function SVGTimeSeriesArea<T extends object>({
             <stop offset="13%" stopColor={color} stopOpacity={0.13} />
             <stop offset="100%" stopColor={color} stopOpacity={0} />
           </linearGradient>
+          {dualTone && referenceLine && (() => {
+            const refY = Math.max(PAD.top, Math.min(H - PAD.bottom, yScale(referenceLine.y)));
+            const innerW = W - PAD.left - PAD.right;
+            return (
+              <>
+                <linearGradient id={`grad-good-${gradientSuffix}`} x1="0" y1={refY} x2="0" y2={H - PAD.bottom} gradientUnits="userSpaceOnUse">
+                  <stop offset="0%" stopColor="#059669" stopOpacity={0.28} />
+                  <stop offset="100%" stopColor="#059669" stopOpacity={0.02} />
+                </linearGradient>
+                <linearGradient id={`grad-warn-${gradientSuffix}`} x1="0" y1={PAD.top} x2="0" y2={refY} gradientUnits="userSpaceOnUse">
+                  <stop offset="0%" stopColor="#f97316" stopOpacity={0.28} />
+                  <stop offset="100%" stopColor="#f97316" stopOpacity={0.02} />
+                </linearGradient>
+                <clipPath id={`clip-above-${gradientSuffix}`}>
+                  <rect x={PAD.left} y={PAD.top} width={innerW} height={Math.max(0, refY - PAD.top)} />
+                </clipPath>
+                <clipPath id={`clip-below-${gradientSuffix}`}>
+                  <rect x={PAD.left} y={refY} width={innerW} height={Math.max(0, H - PAD.bottom - refY)} />
+                </clipPath>
+              </>
+            );
+          })()}
         </defs>
 
         {/* Grid lines */}
@@ -213,14 +237,25 @@ export function SVGTimeSeriesArea<T extends object>({
         )}
 
         {/* Area fill */}
-        <motion.path
-          d={primaryAreaD}
-          fill={`url(#${gradientId})`}
-          stroke="none"
-          initial={{ pathLength: 0, opacity: 0 }}
-          animate={{ pathLength: 1, opacity: 1 }}
-          transition={{ duration: 1.0, ease: "easeInOut" }}
-        />
+        {dualTone && referenceLine ? (
+          <motion.g
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 1.0, ease: "easeInOut" }}
+          >
+            <path d={primaryAreaD} fill={`url(#grad-warn-${gradientSuffix})`} clipPath={`url(#clip-above-${gradientSuffix})`} stroke="none" />
+            <path d={primaryAreaD} fill={`url(#grad-good-${gradientSuffix})`} clipPath={`url(#clip-below-${gradientSuffix})`} stroke="none" />
+          </motion.g>
+        ) : (
+          <motion.path
+            d={primaryAreaD}
+            fill={`url(#${gradientId})`}
+            stroke="none"
+            initial={{ pathLength: 0, opacity: 0 }}
+            animate={{ pathLength: 1, opacity: 1 }}
+            transition={{ duration: 1.0, ease: "easeInOut" }}
+          />
+        )}
 
         {/* Primary raw line */}
         <motion.path
@@ -339,22 +374,29 @@ export function SVGTimeSeriesArea<T extends object>({
         {hovered && getValue(hovered.row) != null && (
           <motion.div
             key={hovered.idx}
-            className="absolute pointer-events-none z-10 bg-white/95 backdrop-blur-sm rounded-xl border border-gray-100 shadow-lg px-3 py-2.5 text-xs min-w-[120px]"
+            className="absolute pointer-events-none z-10 rounded-xl border shadow-xl px-3 py-2.5 text-xs min-w-[120px]"
             style={{
-              left: tooltipPos.x + (tooltipPos.x > W * 0.65 ? -150 : 14),
+              left: tooltipPos.x + (tooltipPos.x > W * 0.65 ? -160 : 14),
               top: tooltipPos.y - 10,
+              background: "rgba(15,20,18,0.92)",
+              backdropFilter: "blur(16px)",
+              WebkitBackdropFilter: "blur(16px)",
+              borderColor: "rgba(255,255,255,0.08)",
             }}
             initial={{ opacity: 0, scale: 0.92, y: 4 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.92, y: 4 }}
             transition={{ duration: 0.15 }}
           >
-            <div className="font-bold text-gray-900 mb-1">
-              Round {getIndex(hovered.row)}
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <div className="w-2 h-2 rounded-full shrink-0" style={{ background: color }} />
+              <span className="font-semibold text-gray-300 text-[11px]">
+                Round {getIndex(hovered.row)}
+              </span>
             </div>
             <div className="flex items-center justify-between gap-3">
-              <span className="text-gray-500">{tooltipLabel ?? String(valueKey)}</span>
-              <span className="font-semibold text-gray-800">
+              <span className="text-gray-400">{tooltipLabel ?? String(valueKey)}</span>
+              <span className="font-bold text-white">
                 {formatTooltipValue
                   ? formatTooltipValue(getValue(hovered.row)!, hovered.row)
                   : `${getValue(hovered.row)}${unit}`}
@@ -362,14 +404,14 @@ export function SVGTimeSeriesArea<T extends object>({
             </div>
             {rollingAvgKey && getRollingAvg(hovered.row) != null && (
               <div className="flex items-center justify-between gap-3 mt-0.5">
-                <span className="text-gray-500">5-Round Avg</span>
-                <span className="font-semibold text-gray-800">{getRollingAvg(hovered.row)}{unit}</span>
+                <span className="text-gray-400">5-Round Avg</span>
+                <span className="font-bold text-white">{getRollingAvg(hovered.row)}{unit}</span>
               </div>
             )}
             {secondaryValueKey && getSecondary(hovered.row) != null && (
               <div className="flex items-center justify-between gap-3 mt-0.5">
                 <span style={{ color: secondaryColor }}>{secondaryTooltipLabel ?? String(secondaryValueKey)}</span>
-                <span className="font-semibold" style={{ color: secondaryColor }}>
+                <span className="font-bold" style={{ color: secondaryColor }}>
                   {getSecondary(hovered.row)}{unit}
                 </span>
               </div>

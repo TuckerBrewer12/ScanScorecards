@@ -31,7 +31,6 @@ const tooltipStyle = {
 };
 
 
-
 const SCORE_COLORS: Record<string, string> = {
   eagle: "#b45309",
   birdie: "#059669",
@@ -232,6 +231,36 @@ export function DashboardPage({ userId }: DashboardPageProps) {
     return Math.max(0, Math.min(100, (totalGir / totalHoles) * 100));
   }, [trends]);
 
+  const scramblingPct = useMemo(() => {
+    const rows = (trends?.scrambling_trend ?? []).slice(-5);
+    const opps = rows.reduce((s, r) => s + r.scramble_opportunities, 0);
+    const succ = rows.reduce((s, r) => s + r.scramble_successes, 0);
+    return opps > 0 ? (succ / opps) * 100 : null;
+  }, [trends]);
+
+  const upAndDownPct = useMemo(() => {
+    const rows = (trends?.up_and_down_trend ?? []).slice(-5);
+    const opps = rows.reduce((s, r) => s + r.opportunities, 0);
+    const succ = rows.reduce((s, r) => s + r.successes, 0);
+    return opps > 0 ? (succ / opps) * 100 : null;
+  }, [trends]);
+
+  const girDonutData = useMemo(() => [{ value: girPct }, { value: 100 - girPct }], [girPct]);
+
+  const putts = useMemo(() => {
+    const rows = (trends?.putts_trend ?? []).slice(-5).filter(r => r.total_putts != null && r.holes_played > 0);
+    if (!rows.length) return data?.average_putts ?? 36;
+    const totalPutts = rows.reduce((s, r) => s + (r.total_putts ?? 0), 0);
+    const totalHoles = rows.reduce((s, r) => s + r.holes_played, 0);
+    return totalHoles > 0 ? (totalPutts / totalHoles) * 18 : (data?.average_putts ?? 36);
+  }, [trends, data?.average_putts]);
+
+  const puttsClamped = useMemo(() => Math.max(20, Math.min(40, putts)), [putts]);
+  const puttsGaugeData = useMemo(() => [{ value: puttsClamped - 20 }, { value: 20 }], [puttsClamped]);
+  const puttsColor = putts < 30
+    ? (colorBlindPalette?.ui.success ?? "#16a34a")
+    : putts <= 35 ? warningColor : dangerColor;
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -256,33 +285,6 @@ export function DashboardPage({ userId }: DashboardPageProps) {
       </div>
     );
   }
-
-  const scramblingPct = (() => {
-    const rows = (trends?.scrambling_trend ?? []).slice(-5);
-    const opps = rows.reduce((s, r) => s + r.scramble_opportunities, 0);
-    const succ = rows.reduce((s, r) => s + r.scramble_successes, 0);
-    return opps > 0 ? (succ / opps) * 100 : null;
-  })();
-  const upAndDownPct = (() => {
-    const rows = (trends?.up_and_down_trend ?? []).slice(-5);
-    const opps = rows.reduce((s, r) => s + r.opportunities, 0);
-    const succ = rows.reduce((s, r) => s + r.successes, 0);
-    return opps > 0 ? (succ / opps) * 100 : null;
-  })();
-  const girDonutData = [{ value: girPct }, { value: 100 - girPct }];
-
-  const putts = (() => {
-    const rows = (trends?.putts_trend ?? []).slice(-5).filter(r => r.total_putts != null && r.holes_played > 0);
-    if (!rows.length) return data.average_putts ?? 36;
-    const totalPutts = rows.reduce((s, r) => s + (r.total_putts ?? 0), 0);
-    const totalHoles = rows.reduce((s, r) => s + r.holes_played, 0);
-    return totalHoles > 0 ? (totalPutts / totalHoles) * 18 : (data.average_putts ?? 36);
-  })();
-  const puttsClamped = Math.max(20, Math.min(40, putts));
-  const puttsGaugeData = [{ value: puttsClamped - 20 }, { value: 20 }];
-  const puttsColor = putts < 30
-    ? (colorBlindPalette?.ui.success ?? "#16a34a")
-    : putts <= 35 ? warningColor : dangerColor;
 
   return (
     <div>
@@ -313,7 +315,7 @@ export function DashboardPage({ userId }: DashboardPageProps) {
           
           {/* Left Main Content */}
           <div className="flex-1 min-w-0 flex flex-col">
-            <ProfileHeroBanner user={user ?? null} handicapIndex={data.handicap_index} trend={hiTrend} />
+            <ProfileHeroBanner user={user ?? null} handicapIndex={data.handicap_index} />
             
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-5 auto-rows-min mt-6">
               
@@ -369,15 +371,10 @@ export function DashboardPage({ userId }: DashboardPageProps) {
                       <XAxis dataKey="label" tick={{ fontSize: 9, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
                       <YAxis tick={{ fontSize: 10, fill: "#9ca3af" }} tickLine={false} axisLine={false} unit="%" />
                       <Tooltip contentStyle={tooltipStyle}
-                        formatter={(
-                          value: number | string | ReadonlyArray<number | string> | undefined,
-                          _name: string | number | undefined,
-                          item: { payload?: { label?: string } },
-                        ) => {
+                        formatter={(value: number | string | ReadonlyArray<number | string> | undefined) => {
                           const base = Array.isArray(value) ? value[0] : value;
                           const n = typeof base === "number" ? base : Number(base);
-                          const display = Number.isFinite(n) ? `${n.toFixed(1)}%` : `${String(base ?? "")}%`;
-                          return [display, item.payload?.label ?? ""];
+                          return [Number.isFinite(n) ? `${n.toFixed(1)}%` : `${String(base ?? "")}%`, ""];
                         }}
                       />
                       <Bar dataKey="value" radius={[4, 4, 0, 0]} maxBarSize={28}>
@@ -461,12 +458,7 @@ export function DashboardPage({ userId }: DashboardPageProps) {
                           Target: Break {user.scoring_goal + 1}
                         </div>
                       </div>
-                      <button
-                        onClick={() => navigate("/the-lab")}
-                        className="text-[11px] font-semibold text-primary hover:underline"
-                      >
-                        Goals →
-                      </button>
+                      <span className="text-[11px] font-semibold text-primary">Goals →</span>
                     </div>
                     <div className="mb-3">
                       <div className="flex justify-between text-[10px] text-gray-400 mb-1">

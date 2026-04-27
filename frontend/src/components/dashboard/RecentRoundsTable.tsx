@@ -1,5 +1,4 @@
 import { useNavigate } from "react-router-dom";
-import { motion } from "framer-motion";
 import type { RoundSummary } from "@/types/golf";
 import { formatToPar } from "@/types/golf";
 import { formatCourseName } from "@/lib/courseName";
@@ -7,8 +6,6 @@ import { formatCourseName } from "@/lib/courseName";
 interface RecentRoundsTableProps {
   rounds: RoundSummary[];
 }
-
-const rowSpring = { type: "spring" as const, stiffness: 400, damping: 17 };
 
 export function RecentRoundsTable({ rounds }: RecentRoundsTableProps) {
   const navigate = useNavigate();
@@ -31,13 +28,10 @@ export function RecentRoundsTable({ rounds }: RecentRoundsTableProps) {
         <tbody className="divide-y divide-gray-50">
           {rounds.map((r) => {
             return (
-              <motion.tr
+              <tr
                 key={r.id}
                 onClick={() => navigate(`/rounds/${r.id}`)}
-                className="cursor-pointer"
-                whileHover={{ scale: 1.01, backgroundColor: "rgba(249,250,251,1)" }}
-                whileTap={{ scale: 0.99 }}
-                transition={rowSpring}
+                className="cursor-pointer transition-colors hover:bg-gray-50 active:bg-gray-100"
               >
                 <td className="pl-3 py-3.5 text-sm font-semibold text-gray-900 truncate pr-2">
                   {r.course_name ? formatCourseName(r.course_name) : "—"}
@@ -58,7 +52,7 @@ export function RecentRoundsTable({ rounds }: RecentRoundsTableProps) {
                     {formatToPar(r.to_par)}
                   </span>
                 </td>
-              </motion.tr>
+              </tr>
             );
           })}
         </tbody>

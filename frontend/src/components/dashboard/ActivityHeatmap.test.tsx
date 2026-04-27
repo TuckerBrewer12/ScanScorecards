@@ -4,11 +4,9 @@ import { ActivityHeatmap } from "./ActivityHeatmap";
 import type { RoundSummary } from "@/types/golf";
 
 describe("ActivityHeatmap", () => {
-  it("should format dates correctly and render colored squares based on recent rounds", () => {
-    // Generate dates dynamically to ensure they fall within the last 6 months layout
+  it("should format dates correctly and render active squares for rounds", () => {
     const today = new Date();
-    
-    // Y-M-D helper
+
     const formatDateStr = (date: Date) => {
       const y = date.getFullYear();
       const m = String(date.getMonth() + 1).padStart(2, "0");
@@ -23,12 +21,12 @@ describe("ActivityHeatmap", () => {
     dateB.setDate(dateB.getDate() - 2); // 2 Days ago
 
     const dateC = new Date(today);
-    dateC.setDate(dateC.getDate() - 100); // Beyond 3 months, ensuring older dates handled properly
+    dateC.setDate(dateC.getDate() - 100); // Outside 5-week window — should not appear
 
     const rounds: RoundSummary[] = [
       {
         id: "1",
-        date: formatDateStr(dateA) + "T14:30:00Z", // Test parsing ISO with trailing time
+        date: formatDateStr(dateA) + "T14:30:00Z", // ISO with trailing time
         course_id: null, course_name: null, course_location: null,
         course_par: null, tee_box: null, total_score: 80, to_par: null,
         front_nine: null, back_nine: null, total_putts: null, total_gir: null,
@@ -36,21 +34,21 @@ describe("ActivityHeatmap", () => {
       },
       {
         id: "2",
-        date: formatDateStr(dateA) + "T08:00:00", // Two rounds same day, test stacking counts
+        date: formatDateStr(dateA) + "T08:00:00", // Two rounds same day
         course_id: null, course_name: null, course_location: null, course_par: null,
         tee_box: null, total_score: 82, to_par: null, front_nine: null, back_nine: null,
         total_putts: null, total_gir: null, fairways_hit: null, notes: null
       },
       {
         id: "3",
-        date: formatDateStr(dateB), // Exactly YYYY-MM-DD
+        date: formatDateStr(dateB), // Plain YYYY-MM-DD
         course_id: null, course_name: null, course_location: null, course_par: null,
         tee_box: null, total_score: 75, to_par: null, front_nine: null, back_nine: null,
         total_putts: null, total_gir: null, fairways_hit: null, notes: null
       },
       {
         id: "4",
-        date: formatDateStr(dateC).replace(/-/g, "/"), // Unconventional string testing fallback mechanism
+        date: formatDateStr(dateC).replace(/-/g, "/"), // Slash-separated fallback
         course_id: null, course_name: null, course_location: null, course_par: null,
         tee_box: null, total_score: 75, to_par: null, front_nine: null, back_nine: null,
         total_putts: null, total_gir: null, fairways_hit: null, notes: null
@@ -59,19 +57,18 @@ describe("ActivityHeatmap", () => {
 
     const { container } = render(<ActivityHeatmap rounds={rounds} />);
 
-    // Since dateA has 2 rounds, it should have the 'bg-emerald-400 dark:bg-emerald-700' class
+    // dateA has 2 rounds — should render an active square with bg-[#059669]
     const twoRoundsSquare = container.querySelector(`[title="2 rounds on ${formatDateStr(dateA)}"]`);
     expect(twoRoundsSquare).not.toBeNull();
-    expect(twoRoundsSquare?.className).toContain("bg-emerald-400");
+    expect(twoRoundsSquare?.className).toContain("bg-[#059669]");
 
-    // Since dateB has 1 round, it should have the 'bg-emerald-200 dark:bg-emerald-900' class
+    // dateB has 1 round — same active style
     const oneRoundSquare = container.querySelector(`[title="1 rounds on ${formatDateStr(dateB)}"]`);
     expect(oneRoundSquare).not.toBeNull();
-    expect(oneRoundSquare?.className).toContain("bg-emerald-200");
+    expect(oneRoundSquare?.className).toContain("bg-[#059669]");
 
-    // Since dateC relies on string splitting fallback, it should also be safely handled and highlighted
+    // dateC is outside the 5-week window — no square should match
     const fallbackSquare = container.querySelector(`[title="1 rounds on ${formatDateStr(dateC)}"]`);
-    expect(fallbackSquare).not.toBeNull();
-    expect(fallbackSquare?.className).toContain("bg-emerald-200");
+    expect(fallbackSquare).toBeNull();
   });
 });
