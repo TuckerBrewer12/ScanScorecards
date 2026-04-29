@@ -372,7 +372,8 @@ function MobileScoreTrend({
           {yTicks.map((v) => (
             <g key={v}>
               <line x1={PAD.left} x2={W - PAD.right} y1={yScale(v)} y2={yScale(v)} stroke="#d1d5db" strokeWidth={1} />
-              <text x={PAD.left - 7} y={yScale(v) + 4} textAnchor="end" fontSize={11} fontWeight="bold" fill="#4b5563">
+              <text x={PAD.left - 7} y={yScale(v) + 4} textAnchor="end" fontSize={11} fontWeight="bold" fill="#6b7280"
+                paintOrder="stroke" stroke="white" strokeWidth={4} strokeLinejoin="round">
                 {view === "hcp" ? formatHI(v) : v}
               </text>
             </g>
@@ -381,7 +382,7 @@ function MobileScoreTrend({
           <line x1={PAD.left} x2={W - PAD.right} y1={H - PAD.bottom} y2={H - PAD.bottom} stroke="#d1d5db" strokeWidth={1} />
 
           {xTickIdxs.map((i) => (
-            <text key={i} x={xScale(i)} y={H - PAD.bottom + 16} textAnchor="middle" fontSize={11} fontWeight="bold" fill="#4b5563">
+            <text key={i} x={xScale(i)} y={H - PAD.bottom + 16} textAnchor="middle" fontSize={11} fontWeight="bold" fill="#6b7280">
               {i + 1}
             </text>
           ))}

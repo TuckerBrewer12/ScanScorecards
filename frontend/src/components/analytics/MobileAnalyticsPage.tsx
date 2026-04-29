@@ -2,7 +2,7 @@
 type Fmt = (v: any, name: any, props: any) => any;
 
 import { useState, useRef, useMemo } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   BarChart, Bar, PieChart, Pie, Cell,
   CartesianGrid, XAxis, YAxis, Tooltip, ReferenceLine, ResponsiveContainer,
@@ -60,9 +60,12 @@ const TABS = ["Scoring", "Ball Striking", "Putting", "Profile", "Range View"] as
 const tooltipStyle = {
   fontSize: 12,
   borderRadius: 12,
-  border: "1px solid #f1f5f9",
-  boxShadow: "0 4px 24px rgba(0,0,0,0.07)",
-  background: "rgba(255,255,255,0.97)",
+  border: "1px solid rgba(255,255,255,0.08)",
+  boxShadow: "0 4px 24px rgba(0,0,0,0.25)",
+  background: "rgba(15,20,18,0.90)",
+  color: "#f9fafb",
+  backdropFilter: "blur(12px)",
+  WebkitBackdropFilter: "blur(12px)",
 };
 
 function formatHI(hi: number | null | undefined): string {
@@ -97,7 +100,7 @@ function StatCell({ label, value, sub, accent }: {
     <div className="px-3 py-2.5 relative">
       <div className="absolute top-0 left-3 right-3 h-[2px] rounded-full" style={{ background: accent }} />
       <div className="text-[8px] font-bold uppercase tracking-widest text-gray-400 mt-1 mb-0.5">{label}</div>
-      <div className="text-lg font-bold tracking-tight text-gray-900 leading-none tabular-nums">
+      <div className="text-xl font-bold tracking-tight text-gray-900 leading-none tabular-nums">
         {value ?? "—"}
       </div>
       {sub && <div className="text-[9px] text-gray-400 mt-0.5 truncate">{sub}</div>}
@@ -140,31 +143,61 @@ function ShortGameRow({ label, value, delta }: {
   );
 }
 
+const slideVariants = {
+  enter: (dir: number) => ({ x: dir > 0 ? "100%" : "-100%", opacity: 0 }),
+  center: { x: 0, opacity: 1 },
+  exit: (dir: number) => ({ x: dir > 0 ? "-100%" : "100%", opacity: 0 }),
+};
+
 function ChartCarousel({ children }: { children: React.ReactNode[] }) {
   const [idx, setIdx] = useState(0);
+  const [direction, setDirection] = useState(0);
   const startX = useRef<number | null>(null);
+  const startTime = useRef<number | null>(null);
+
+  function navigate(newIdx: number) {
+    setDirection(newIdx > idx ? 1 : -1);
+    setIdx(newIdx);
+  }
 
   function onPointerDown(e: React.PointerEvent) {
     startX.current = e.clientX;
+    startTime.current = Date.now();
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
   }
   function onPointerUp(e: React.PointerEvent) {
-    if (startX.current == null) return;
+    if (startX.current == null || startTime.current == null) return;
     const dx = e.clientX - startX.current;
-    if (dx < -40 && idx < children.length - 1) setIdx((i) => i + 1);
-    if (dx > 40 && idx > 0) setIdx((i) => i - 1);
+    const dt = Math.max(1, Date.now() - startTime.current);
+    const velocity = Math.abs(dx) / dt;
+    const threshold = velocity > 0.4 ? 20 : 40;
+    if (dx < -threshold && idx < children.length - 1) navigate(idx + 1);
+    else if (dx > threshold && idx > 0) navigate(idx - 1);
     startX.current = null;
+    startTime.current = null;
   }
 
   return (
-    <div onPointerDown={onPointerDown} onPointerUp={onPointerUp} className="touch-pan-y select-none">
-      {children[idx]}
+    <div onPointerDown={onPointerDown} onPointerUp={onPointerUp} className="touch-pan-y select-none overflow-hidden">
+      <AnimatePresence mode="wait" custom={direction} initial={false}>
+        <motion.div
+          key={idx}
+          custom={direction}
+          variants={slideVariants}
+          initial="enter"
+          animate="center"
+          exit="exit"
+          transition={{ duration: 0.18, ease: [0.32, 0.72, 0, 1] }}
+        >
+          {children[idx]}
+        </motion.div>
+      </AnimatePresence>
       {children.length > 1 && (
         <div className="flex justify-center gap-1.5 mt-2">
           {children.map((_, i) => (
             <button
               key={i}
-              onClick={() => setIdx(i)}
+              onClick={() => navigate(i)}
               className={`w-1.5 h-1.5 rounded-full transition-colors ${i === idx ? "bg-primary" : "bg-gray-200"}`}
             />
           ))}
@@ -293,6 +326,7 @@ export function MobileAnalyticsPage({
                   gradientSuffix="mScore"
                   showDots={false}
                   height={140}
+                  labelFontSize={11}
                   tooltipLabel="Score"
                 />
               </ChartCard>
@@ -315,6 +349,7 @@ export function MobileAnalyticsPage({
                 gradientSuffix="mNetScore"
                 showDots={false}
                 height={130}
+                labelFontSize={11}
                 tooltipLabel="Net Score"
               />
             </ChartCard>,
@@ -342,6 +377,7 @@ export function MobileAnalyticsPage({
             gradientSuffix="mGir"
             showDots={girData.length <= 30}
             height={130}
+            labelFontSize={11}
             tooltipLabel="GIR %"
             formatTooltipValue={(v) => `${v.toFixed(1)}%`}
           />
@@ -381,7 +417,7 @@ export function MobileAnalyticsPage({
               <XAxis
                 type="number"
                 domain={[-40, 100]}
-                tick={{ fontSize: 9, fill: "#9ca3af" }}
+                tick={{ fontSize: 11, fill: "#6b7280" }}
                 tickLine={false}
                 axisLine={false}
                 tickFormatter={(v) => `${Math.abs(v)}%`}
@@ -438,7 +474,7 @@ export function MobileAnalyticsPage({
             ].map(({ label, color }) => (
               <div key={label} className="flex items-center gap-1">
                 <div className="w-2 h-2 rounded-sm" style={{ background: color }} />
-                <span className="text-[10px] font-semibold text-gray-500">{label}</span>
+                <span className="text-[11px] font-semibold text-gray-500">{label}</span>
               </div>
             ))}
           </div>
@@ -464,6 +500,7 @@ export function MobileAnalyticsPage({
           gradientSuffix="mPutts"
           showDots={true}
           height={130}
+          labelFontSize={11}
           tooltipLabel="Putts"
         />
       </ChartCard>,
@@ -482,6 +519,7 @@ export function MobileAnalyticsPage({
             gradientSuffix="mThreePutts"
             showDots={true}
             height={120}
+            labelFontSize={11}
             tooltipLabel="3-Putts"
           />
         </ChartCard>
@@ -546,7 +584,7 @@ export function MobileAnalyticsPage({
             <XAxis dataKey="par" tick={{ fontSize: 11, fill: "#6b7280" }} tickLine={false} axisLine={false}
               tickFormatter={(v) => `Par ${v}`}
             />
-            <YAxis tick={{ fontSize: 10, fill: "#9ca3af" }} tickLine={false} axisLine={false}
+            <YAxis tick={{ fontSize: 11, fill: "#6b7280" }} tickLine={false} axisLine={false}
               tickFormatter={(v) => (v > 0 ? `+${v}` : v)}
             />
             <Tooltip contentStyle={tooltipStyle}
@@ -565,8 +603,8 @@ export function MobileAnalyticsPage({
         <ResponsiveContainer width="100%" height={150}>
           <BarChart data={scoring_by_handicap} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
             <CartesianGrid stroke={gridColor} vertical={false} />
-            <XAxis dataKey="handicap" tick={{ fontSize: 9, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
-            <YAxis tick={{ fontSize: 10, fill: "#9ca3af" }} tickLine={false} axisLine={false}
+            <XAxis dataKey="handicap" tick={{ fontSize: 11, fill: "#6b7280" }} tickLine={false} axisLine={false} />
+            <YAxis tick={{ fontSize: 11, fill: "#6b7280" }} tickLine={false} axisLine={false}
               tickFormatter={(v) => (v > 0 ? `+${v}` : v)}
             />
             <Tooltip contentStyle={tooltipStyle}
@@ -650,7 +688,7 @@ export function MobileAnalyticsPage({
       </div>
 
       {/* ── Tab bar ────────────────────────────────────────────────────────── */}
-      <div className="flex gap-2 overflow-x-auto pb-1 -mx-0.5 px-0.5">
+      <div className="flex gap-2 overflow-x-auto pb-1 -mx-0.5 px-0.5 [&::-webkit-scrollbar]:hidden [scrollbar-width:none]">
         {TABS.map((tab, i) => (
           <button
             key={tab}

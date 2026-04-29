@@ -18,3 +18,6 @@ frontend/dist/
 
 # Session notes
 sessions/
+
+# Claude Code agent worktrees
+.claude/worktrees/
