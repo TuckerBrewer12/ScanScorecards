@@ -15,6 +15,9 @@ interface DualTrendPoint {
   to_par: number | null;
   handicap_index: number | null;
   course_name?: string | null;
+  used_in_hi?: boolean | null;
+  differential?: number | null;
+  hi_threshold?: number | null;
 }
 
 interface ScoreDistItem {
@@ -55,6 +58,13 @@ function getDotColor(toPar: number | null): string {
   if (toPar === -1) return "#059669";
   if (toPar === 0) return "#9ca3af";
   return "#ef4444";
+}
+
+function getBarColor(d: DualTrendPoint): string {
+  if (d.used_in_hi == null) return "#9ca3af";
+  if (d.used_in_hi) return "#059669";
+  if (d.hi_threshold != null && d.differential != null && d.differential - d.hi_threshold <= 2) return "#d97706";
+  return "#dc2626";
 }
 
 // ─── Mini sparkline for header ────────────────────────────────────────────────
@@ -202,7 +212,7 @@ function MobileScoreTrend({
 
   const W = 320;
   const H = 210;
-  const PAD = { top: 14, right: 14, bottom: 28, left: 38 };
+  const PAD = { top: 14, right: 14, bottom: 32, left: 44 };
   const color = view === "score" ? scoreColor : handicapColor;
 
   const valid = dualData.filter((d) =>
@@ -227,7 +237,7 @@ function MobileScoreTrend({
   const minV = Math.min(...nums);
   const maxV = Math.max(...nums);
   const yScale = scaleLinear()
-    .domain([minV - 2, maxV + 2])
+    .domain([minV - 5, maxV + 5])
     .range([H - PAD.bottom, PAD.top]);
 
   const getValue = (d: DualTrendPoint) =>
@@ -256,6 +266,8 @@ function MobileScoreTrend({
     { length: Math.ceil(dualData.length / step) },
     (_, i) => i * step,
   ).filter((i) => i < dualData.length);
+  const barW = Math.max(4, Math.min(14, (W - PAD.left - PAD.right) / dualData.length - 2));
+  const baseline = H - PAD.bottom;
 
   const handlePointerDown = (e: React.PointerEvent<SVGSVGElement>) => {
     e.currentTarget.releasePointerCapture(e.pointerId);
@@ -359,20 +371,41 @@ function MobileScoreTrend({
 
           {yTicks.map((v) => (
             <g key={v}>
-              <line x1={PAD.left} x2={W - PAD.right} y1={yScale(v)} y2={yScale(v)} stroke="#f1f5f1" strokeWidth={1} />
-              <text x={PAD.left - 6} y={yScale(v) + 4} textAnchor="end" fontSize={9} fill="#9ca3af">
+              <line x1={PAD.left} x2={W - PAD.right} y1={yScale(v)} y2={yScale(v)} stroke="#d1d5db" strokeWidth={1} />
+              <text x={PAD.left - 7} y={yScale(v) + 4} textAnchor="end" fontSize={11} fontWeight="bold" fill="#6b7280"
+                paintOrder="stroke" stroke="white" strokeWidth={4} strokeLinejoin="round">
                 {view === "hcp" ? formatHI(v) : v}
               </text>
             </g>
           ))}
 
-          <line x1={PAD.left} x2={W - PAD.right} y1={H - PAD.bottom} y2={H - PAD.bottom} stroke="#e5e7eb" strokeWidth={1} />
+          <line x1={PAD.left} x2={W - PAD.right} y1={H - PAD.bottom} y2={H - PAD.bottom} stroke="#d1d5db" strokeWidth={1} />
 
           {xTickIdxs.map((i) => (
-            <text key={i} x={xScale(i)} y={H - PAD.bottom + 14} textAnchor="middle" fontSize={9} fill="#9ca3af">
+            <text key={i} x={xScale(i)} y={H - PAD.bottom + 16} textAnchor="middle" fontSize={11} fontWeight="bold" fill="#6b7280">
               {i + 1}
             </text>
           ))}
+
+          {/* Bars: baseline → data point (score view only) */}
+          {view === "score" && dualData.map((d, i) => {
+            if (d.total_score == null) return null;
+            const barTop = yScale(d.total_score);
+            const barHeight = baseline - barTop;
+            if (barHeight <= 0) return null;
+            return (
+              <rect
+                key={`bar-${i}`}
+                x={xScale(i) - barW / 2}
+                y={barTop}
+                width={barW}
+                height={barHeight}
+                fill={getBarColor(d)}
+                fillOpacity={0.6}
+                rx={2}
+              />
+            );
+          })}
 
           {selected && (
             <line
@@ -429,6 +462,7 @@ function MobileScoreTrend({
               </g>
             );
           })}
+
         </svg>
       </div>
     </div>

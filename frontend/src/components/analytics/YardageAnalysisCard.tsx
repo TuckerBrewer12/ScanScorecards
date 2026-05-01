@@ -39,47 +39,44 @@ export function YardageAnalysisCard({ row }: YardageAnalysisCardProps) {
 
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
-      {/* Header */}
-      <div className="flex items-baseline justify-between mb-3">
+      {/* Header: yardage + sample size + Avg + To Par */}
+      <div className="flex items-start justify-between mb-3">
         <div>
           <span className="text-lg font-extrabold tracking-tight text-gray-900">
             {row.bucket_label}
           </span>
           <span className="text-xs font-medium text-gray-400 ml-1">YDS</span>
+          <div className="text-[10px] text-gray-400 mt-0.5">n={row.sample_size}</div>
         </div>
-        <span className="text-xs text-gray-400 bg-gray-50 rounded-full px-2 py-0.5">
-          n={row.sample_size}
-        </span>
-      </div>
-
-      {/* Scatter */}
-      <YardageTargetScatter rawScores={rawScores} bucketLabel={row.bucket_label} />
-
-      {/* Divider */}
-      <div className="border-t border-gray-50 mt-3 pt-3">
-        {/* 3-col metrics */}
-        <div className="grid grid-cols-3 gap-2 mb-2">
-          <div className="text-center">
-            <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-0.5">GIR%</div>
-            <div className="text-sm font-bold text-gray-800">
-              {row.gir_percentage != null ? `${row.gir_percentage.toFixed(0)}%` : "—"}
-            </div>
-          </div>
-          <div className="text-center">
+        <div className="flex gap-4 text-right">
+          <div>
             <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-0.5">Avg</div>
-            <div className="text-sm font-bold text-gray-800">
+            <div className="text-base font-bold text-gray-900">
               {(row.par + row.average_to_par).toFixed(1)}
             </div>
           </div>
-          <div className="text-center">
+          <div>
             <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wide mb-0.5">To Par</div>
             <div
-              className="text-sm font-bold"
+              className="text-base font-bold"
               style={{ color: toParColor(row.average_to_par) }}
             >
               {toParSign(row.average_to_par)}
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Scatter */}
+      <YardageTargetScatter rawScores={rawScores} bucketLabel={row.bucket_label} />
+
+      {/* Divider + GIR% + score distribution */}
+      <div className="border-t border-gray-50 mt-3 pt-3">
+        <div className="flex items-center justify-center gap-2 mb-3">
+          <span className="text-sm font-bold uppercase tracking-wide" style={{ color: "#059669" }}>GIR%</span>
+          <span className="text-sm font-bold text-gray-800">
+            {row.gir_percentage != null ? `${row.gir_percentage.toFixed(0)}%` : "—"}
+          </span>
         </div>
 
         {/* Score distribution bar */}
@@ -97,8 +94,9 @@ export function YardageAnalysisCard({ row }: YardageAnalysisCardProps) {
             <div className="flex flex-wrap gap-x-3 gap-y-0.5 mt-1.5">
               {segments.map(seg => (
                 <div key={seg.key} className="flex items-center gap-1">
-                  <div className="w-1.5 h-1.5 rounded-sm" style={{ backgroundColor: seg.color }} />
-                  <span className="text-[9px] text-gray-400">{seg.label} {seg.pct.toFixed(0)}%</span>
+                  <div className="w-2 h-2 rounded-sm" style={{ backgroundColor: seg.color }} />
+                  <span className="text-[11px] font-semibold" style={{ color: seg.color }}>{seg.label}</span>
+                  <span className="text-[11px] font-bold text-gray-600">{seg.pct.toFixed(0)}%</span>
                 </div>
               ))}
             </div>

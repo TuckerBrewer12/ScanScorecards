@@ -4,11 +4,11 @@ type Fmt = (v: any, name: any, props: any) => any;
 import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
-  BarChart, Bar, PieChart, Pie, Cell, Legend,
+  BarChart, Bar, PieChart, Pie, Cell, Sector,
   CartesianGrid, XAxis, YAxis, Tooltip, ReferenceLine, ResponsiveContainer,
 } from "recharts";
 import { SVGTimeSeriesArea } from "@/components/analytics/SVGTimeSeriesArea";
-import { Gauge, Hash, TrendingDown, Trophy, Target } from "lucide-react";
+import { TrendingDown, TrendingUp, Minus, Gauge, Hash, Trophy, Target } from "lucide-react";
 import { api } from "@/lib/api";
 import { getStoredColorBlindMode } from "@/lib/accessibility";
 import { getColorBlindPalette } from "@/lib/chartPalettes";
@@ -16,14 +16,12 @@ import type {
   AnalyticsFilters, ScoreTrendRow, ScoreTypeRow, GIRTrendRow, ScoringByParRow, PuttsTrendRow,
 } from "@/types/analytics";
 import { ScrollSection } from "@/components/analytics/ScrollSection";
-import { NarrativeInsight } from "@/components/analytics/NarrativeInsight";
-import { StickyScoreBar } from "@/components/analytics/StickyScoreBar";
 import { BestRoundCard } from "@/components/analytics/BestRoundCard";
 import { ParMatrixGrid } from "@/components/analytics/ParMatrixGrid";
-import { AnalyticsFilterBar } from "@/components/analytics/AnalyticsFilterBar";
 import { MobileAnalyticsPage } from "@/components/analytics/MobileAnalyticsPage";
+import { AnalyticsCommandCenter } from "@/components/analytics/AnalyticsCommandCenter";
 
-// ─── Constants ───────────────────────────────────────────────────────────────
+// ─── Constants ───────────────────────────���───────────────────────────────────
 
 const DEFAULT_FILTERS: AnalyticsFilters = { limit: 50, timeframe: "all", courseId: "all" };
 
@@ -48,12 +46,16 @@ const SCORE_KEYS = ["eagle", "birdie", "par", "bogey", "double_bogey", "triple_b
 const tooltipStyle = {
   fontSize: 12,
   borderRadius: 12,
-  border: "1px solid #f1f5f9",
-  boxShadow: "0 4px 24px rgba(0,0,0,0.07)",
-  background: "rgba(255,255,255,0.97)",
+  border: "1px solid rgba(255,255,255,0.07)",
+  boxShadow: "0 8px 32px rgba(0,0,0,0.32)",
+  background: "rgba(15,20,18,0.90)",
+  backdropFilter: "blur(16px)",
+  WebkitBackdropFilter: "blur(16px)",
+  color: "#f1f5f9",
 };
+const tooltipTextStyle = { fill: "#f1f5f9", color: "#f1f5f9" };
 
-// ─── Data helpers ─────────────────────────────────────────────────────────────
+// ─── Data helpers ─────────────────────────────────────────────────────���───────
 
 function rollingAvg(data: ScoreTrendRow[], w = 5) {
   return data.map((row, i) => {
@@ -99,7 +101,7 @@ function computeInsights(
 ): Insight[] {
   const out: Insight[] = [];
 
-  // ── Scoring ──────────────────────────────────────────────────────────────
+  // ── Scoring ────────────────────────��────────────────���────────────────────
   if (scoreTrend.length >= 6) {
     const mid = Math.floor(scoreTrend.length / 2);
     const first = scoreTrend.slice(0, mid).filter((r) => r.total_score != null).map((r) => r.total_score!);
@@ -129,7 +131,7 @@ function computeInsights(
     });
   }
 
-  // ── GIR ──────────────────────────────────────────────────────────────────
+  // ── GIR ──────────────────────────────────────────────────────────��───────
   const girWithData = girTrend.filter((r) => r.gir_percentage != null);
   if (girWithData.length >= 1) {
     const avgGIR = girWithData.reduce((a, r) => a + r.gir_percentage!, 0) / girWithData.length;
@@ -163,7 +165,7 @@ function computeInsights(
     }
   }
 
-  // ── Putting ───────────────────────────────────────────────────────────────
+  // ── Putting ─────────────────────────────────────────────────────��─────────
   const puttsWithData = puttsTrend.filter((r) => r.total_putts != null);
   if (puttsWithData.length >= 1) {
     const avgPutts = puttsWithData.reduce((a, r) => a + r.total_putts!, 0) / puttsWithData.length;
@@ -206,7 +208,7 @@ function formatHI(hi: number | null | undefined): string | null {
   return String(hi);
 }
 
-// ─── Sub-components ───────────────────────────────────────────────────────────
+// ─── Sub-components ──────────────────────────────────────────────────��────────
 
 function SectionLabel({ children }: { children: string }) {
   return (
@@ -229,10 +231,12 @@ function ChartCard({ title, subtitle, children }: { title: string; subtitle?: st
   );
 }
 
-// ─── Main Page ────────────────────────────────────────────────────────────────
+// ─── Main Page ───────────────────────────────���────────────────────────────────
 
 export function AnalyticsPage({ userId }: { userId: string }) {
   const [filters, setFilters] = useState<AnalyticsFilters>(DEFAULT_FILTERS);
+  const [activeSlice, setActiveSlice] = useState<string | null>(null);
+
   const { data, isLoading: loading } = useQuery({
     queryKey: ["analytics", userId, filters],
     queryFn: () => api.getAnalytics(userId, filters),
@@ -245,17 +249,18 @@ export function AnalyticsPage({ userId }: { userId: string }) {
     queryKey: ["user", userId],
     queryFn: () => api.getUser(userId),
   });
-  const colorBlindMode = useMemo(() => getStoredColorBlindMode(), []);
+
+  const colorBlindMode    = useMemo(() => getStoredColorBlindMode(), []);
   const colorBlindPalette = useMemo(() => getColorBlindPalette(colorBlindMode), [colorBlindMode]);
-  const scoreColors = colorBlindPalette?.score ?? SCORE_COLORS;
-  const trendPrimary = colorBlindPalette?.trend.primary ?? "#2d7a3a";
+  const scoreColors    = colorBlindPalette?.score ?? SCORE_COLORS;
+  const trendPrimary   = colorBlindPalette?.trend.primary   ?? "#2d7a3a";
   const trendSecondary = colorBlindPalette?.trend.secondary ?? "#f97316";
-  const trendTertiary = colorBlindPalette?.trend.tertiary ?? "#a855f7";
-  const successColor = colorBlindPalette?.ui.success ?? "#059669";
-  const dangerColor = colorBlindPalette?.ui.danger ?? "#f87171";
-  const neutralColor = colorBlindPalette?.ui.neutral ?? "#6b7280";
-  const gridColor = colorBlindPalette?.ui.grid ?? "#f1f5f1";
-  const mutedFill = colorBlindPalette?.ui.mutedFill ?? "#e5e7eb";
+  const trendTertiary  = colorBlindPalette?.trend.tertiary  ?? "#a855f7";
+  const successColor   = colorBlindPalette?.ui.success   ?? "#059669";
+  const dangerColor    = colorBlindPalette?.ui.danger    ?? "#f87171";
+  const neutralColor   = colorBlindPalette?.ui.neutral   ?? "#6b7280";
+  const gridColor      = colorBlindPalette?.ui.grid      ?? "#f1f5f1";
+  const mutedFill      = colorBlindPalette?.ui.mutedFill ?? "#e5e7eb";
 
   // ── Derived data ──────────────────────────────────────────────────────────
   const scoreTrendWithAvg = useMemo(
@@ -268,13 +273,11 @@ export function AnalyticsPage({ userId }: { userId: string }) {
     [data?.score_type_distribution],
   );
 
-  // Only include rounds that actually have GIR data recorded
   const girData = useMemo(
     () => (data?.gir_trend ?? []).filter((r) => r.gir_percentage != null && r.total_gir != null),
     [data?.gir_trend],
   );
 
-  // Only include rounds that have putt data recorded
   const threePuttsData = useMemo(() => {
     const roundsWithPutts = new Set(
       (data?.putts_trend ?? []).filter((r) => r.total_putts != null).map((r) => r.round_id),
@@ -292,10 +295,6 @@ export function AnalyticsPage({ userId }: { userId: string }) {
     [data?.score_trend, data?.gir_trend, data?.scoring_by_par, data?.putts_trend],
   );
 
-  const scoringInsights = insights.filter((i) => i.category === "scoring");
-  const girInsights     = insights.filter((i) => i.category === "gir");
-  const puttingInsights = insights.filter((i) => i.category === "putting");
-
   const birdiePct = donutData.find((d) => d.name === "birdie")?.value;
 
   const bestRound = useMemo(() => {
@@ -309,7 +308,56 @@ export function AnalyticsPage({ userId }: { userId: string }) {
     return (valid.reduce((a, b) => a + b, 0) / valid.length).toFixed(1);
   }, [data?.putts_trend]);
 
-  // ── Guards ────────────────────────────────────────────────────────────────
+  const hiTrend = useMemo(() => {
+    const trend = (data?.handicap_trend ?? []) as { handicap_index: number | null }[];
+    const valid = trend.filter((r) => r.handicap_index != null) as { handicap_index: number }[];
+    if (valid.length < 3) return null;
+    const diff = valid[0].handicap_index - valid[valid.length - 1].handicap_index;
+    if (Math.abs(diff) < 0.3) return "flat" as const;
+    return diff > 0 ? "down" as const : "up" as const;
+  }, [data?.handicap_trend]);
+
+  // Safe KPIs: computed from already-filtered trend data (excludes rounds without that stat recorded)
+  const safeKpis = useMemo(() => {
+    if (!data) return null;
+    const safeGirPct = girData.length > 0
+      ? Math.round(girData.reduce((a, r) => a + (r.gir_percentage ?? 0), 0) / girData.length * 10) / 10
+      : null;
+    const scramblingValid = data.scrambling_trend.filter((r) => r.scrambling_percentage != null);
+    const safeScrambling = scramblingValid.length > 0
+      ? Math.round(scramblingValid.reduce((a, r) => a + r.scrambling_percentage, 0) / scramblingValid.length * 10) / 10
+      : null;
+    return { ...data.kpis, gir_percentage: safeGirPct, scrambling_percentage: safeScrambling };
+  }, [data, girData]);
+
+  const divergingGirData = useMemo(() => {
+    return (data?.gir_vs_non_gir ?? []).map((row) => ({
+      bucket:         row.bucket,
+      "Birdie":       -(row.birdie ?? 0),
+      "Eagle":        -(row.eagle ?? 0),
+      "Par":          row.par ?? 0,
+      "Bogey":        row.bogey ?? 0,
+      "Double":       row.double_bogey ?? 0,
+      "Triple+":      (row.triple_bogey ?? 0) + (row.quad_bogey ?? 0),
+    }));
+  }, [data?.gir_vs_non_gir]);
+
+  // ── Active shape for interactive donut ─────────��─────────────────────────
+  const renderActiveShape = (props: Record<string, unknown>) => {
+    const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill } = props;
+    return (
+      <Sector
+        cx={cx as number} cy={cy as number}
+        innerRadius={(innerRadius as number) - 3}
+        outerRadius={(outerRadius as number) + 7}
+        startAngle={startAngle as number}
+        endAngle={endAngle as number}
+        fill={fill as string}
+      />
+    );
+  };
+
+  // ── Guards ─────────────────────────────────���──────────────────────────────
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -319,54 +367,32 @@ export function AnalyticsPage({ userId }: { userId: string }) {
   }
 
   const isEmpty = !data || data.kpis.total_rounds === 0;
-
-  const header = (
-    <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-6">
-      <div>
-        <h1 className="text-3xl font-extrabold tracking-tight text-gray-900">Analytics</h1>
-        <p className="text-sm text-gray-500 mt-1">
-          {(() => {
-            const parts: string[] = [];
-            parts.push(filters.limit === 500 ? "All rounds" : `Last ${filters.limit} rounds`);
-            if (filters.courseId !== "all") {
-              if (filters.courseId === "home") {
-                parts.push("Home Course");
-              } else {
-                const c = playedCourses.find((pc) => pc.id === filters.courseId);
-                if (c) parts.push(c.name ?? "Selected Course");
-              }
-            }
-            if (filters.timeframe === "ytd") parts.push("YTD");
-            if (filters.timeframe === "1y") parts.push("Last 12 mo");
-            return parts.map((p, i) => (
-              <span key={i}>
-                {i > 0 && <span className="text-gray-300 mx-1">·</span>}
-                <span className="font-semibold text-gray-700">{p}</span>
-              </span>
-            ));
-          })()}
-        </p>
-      </div>
-      <AnalyticsFilterBar
-        filters={filters}
-        onChange={setFilters}
-        playedCourses={playedCourses}
-        hasHomeCourse={!!user?.home_course_id}
-      />
-    </div>
-  );
+  const isFiltered = filters.courseId !== "all" || filters.timeframe !== "all";
 
   if (isEmpty) {
-    const isFiltered = filters.courseId !== "all" || filters.timeframe !== "all";
     return (
       <div>
-        {header}
-        <div className="flex flex-col items-center justify-center h-48 text-center">
-          <p className="text-gray-400 text-sm">
-            {isFiltered
-              ? "No rounds found for the selected filters."
-              : "Play some rounds to see your analytics."}
-          </p>
+        <div className="md:hidden">
+          <div className="flex flex-col items-center justify-center h-48 text-center">
+            <p className="text-gray-400 text-sm">
+              {isFiltered ? "No rounds found for the selected filters." : "Play some rounds to see your analytics."}
+            </p>
+          </div>
+        </div>
+        <div className="hidden md:block">
+          <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 mb-3">Analytics</h1>
+          <AnalyticsCommandCenter
+            filters={filters}
+            onChange={setFilters}
+            playedCourses={playedCourses}
+            hasHomeCourse={!!user?.home_course_id}
+            kpis={null}
+          />
+          <div className="flex flex-col items-center justify-center h-48 text-center mt-4">
+            <p className="text-gray-400 text-sm">
+              {isFiltered ? "No rounds found for the selected filters." : "Play some rounds to see your analytics."}
+            </p>
+          </div>
         </div>
       </div>
     );
@@ -380,7 +406,7 @@ export function AnalyticsPage({ userId }: { userId: string }) {
 
   return (
     <div>
-      {/* ── Mobile layout ─────────────────────────────────────────────────── */}
+      {/* ── Mobile layout ────────��────────────────────────────────────────── */}
       <div className="md:hidden">
         <MobileAnalyticsPage
           data={data}
@@ -409,356 +435,436 @@ export function AnalyticsPage({ userId }: { userId: string }) {
 
       {/* ── Desktop layout ────────────────────────────────────────────────── */}
       <div className="hidden md:block">
-      {/* ── Sticky bar ────────────────────────────────────────────────────── */}
-      <StickyScoreBar kpis={kpis} />
 
-      {/* ── Dynamic Header ────────────────────────────────────────────────── */}
-      {header}
+        {/* Page title */}
+        <h1 className="text-4xl font-extrabold tracking-tight text-gray-900 mb-3">Analytics</h1>
 
-      {/* ── Panoramic Bento Bar ───────────────────────────────────────────── */}
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm flex flex-wrap divide-y md:divide-y-0 md:divide-x divide-gray-50 overflow-hidden mb-4">
-        {/* Handicap — accent cell */}
-        <div className="flex-1 min-w-[110px] p-3 bg-primary relative overflow-hidden flex flex-col">
-          <div className="absolute -top-5 -right-5 w-20 h-20 rounded-full bg-white/5 blur-2xl pointer-events-none" />
-          <span className="text-[10px] font-bold uppercase tracking-widest text-white/50 mb-1">Handicap Index</span>
-          <span className="text-xl font-bold text-white">{formatHI(kpis.handicap_index) ?? "—"}</span>
-          <Gauge size={13} className="absolute top-3 right-3 text-white/25" />
+        {/* Unified Command Center */}
+        <AnalyticsCommandCenter
+          filters={filters}
+          onChange={setFilters}
+          playedCourses={playedCourses}
+          hasHomeCourse={!!user?.home_course_id}
+          kpis={safeKpis}
+        />
+
+        {/* ── Exploded KPI Bento Bar ──────────��──────────────────────────── */}
+        <div className="flex gap-3 mb-5 flex-wrap">
+          {/* Handicap card */}
+          <div className="flex-1 min-w-[130px] bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex flex-col items-center text-center relative">
+            <Gauge size={13} className="absolute top-3 right-3 text-gray-200" />
+            <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1">Handicap Index</span>
+            <span className="text-3xl font-bold text-gray-900 tracking-tighter">{formatHI(kpis.handicap_index) ?? "—"}</span>
+          </div>
+
+          {/* Secondary KPI cards */}
+          {(
+            [
+              { label: "Rounds",      value: kpis.total_rounds,              icon: Hash,        subtitle: undefined },
+              { label: "Scoring Avg", value: kpis.scoring_average,           icon: TrendingDown, subtitle: undefined },
+              { label: "Best Round",  value: bestRound?.total_score ?? null,  icon: Trophy,
+                subtitle: (() => {
+                  const ev = notable_achievements?.scoring_records_events?.lifetime?.lowest_score;
+                  return ev?.course;
+                })() },
+              { label: "Avg Putts",   value: avgPutts,                       icon: Target,       subtitle: undefined },
+            ] as { label: string; value: string | number | null; icon: typeof Hash; subtitle?: string }[]
+          ).map(({ label, value, icon: Icon, subtitle }) => (
+            <div
+              key={label}
+              className="flex-1 min-w-[110px] bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex flex-col items-center text-center relative"
+            >
+              <Icon size={13} className="absolute top-3 right-3 text-gray-200" />
+              <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1">{label}</span>
+              <span className="text-3xl font-bold text-gray-900 tracking-tighter">{value ?? "—"}</span>
+              {subtitle && <span className="text-xs text-gray-400 mt-0.5 truncate">{subtitle}</span>}
+            </div>
+          ))}
         </div>
-        {/* Regular cells */}
-        {[
-          { label: "Rounds",      value: kpis.total_rounds,            icon: Hash },
-          { label: "Scoring Avg", value: kpis.scoring_average,         icon: TrendingDown },
-          { label: "Best Round",  value: bestRound?.total_score ?? null, icon: Trophy,
-            subtitle: (() => { const ev = notable_achievements?.scoring_records_events?.lifetime?.lowest_score; return ev?.course; })() },
-          { label: "Avg Putts",   value: avgPutts,                     icon: Target },
-        ].map(({ label, value, icon: Icon, subtitle }) => (
-          <div key={label} className="flex-1 min-w-[110px] p-3 flex flex-col relative">
-            <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1">{label}</span>
-            <span className="text-xl font-bold text-gray-900">{value ?? "—"}</span>
-            {subtitle && <span className="text-xs text-gray-400 mt-0.5 truncate">{subtitle}</span>}
-            <Icon size={13} className="absolute top-3 right-3 text-gray-200" />
-          </div>
-        ))}
-      </div>
 
-      {/* ── Unified dense grid ────────────────────────────────────────────── */}
-      <ScrollSection>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        {/* ── Best Round (full-width) ───────────────────────────────────── */}
+        <div className="mb-5">
+          <BestRoundCard
+            scoreTrend={data.score_trend}
+            netScoreTrend={data.net_score_trend}
+            achievements={notable_achievements}
+          />
+        </div>
 
-          {/* ── Scoring ── */}
-          <div className="lg:col-span-2 flex items-center gap-3 mt-2 mb-0">
-            <SectionLabel>Scoring</SectionLabel>
-          </div>
+        {/* ── Dual-column chart grid ─────────────────────────────────────── */}
+        <ScrollSection>
+          <div className="flex flex-col lg:flex-row gap-5 items-start">
 
-          <div className="lg:col-span-2">
-            <BestRoundCard scoreTrend={data.score_trend} netScoreTrend={data.net_score_trend} achievements={notable_achievements} />
-          </div>
+            {/* ── Left column ─────────��─────────────────────────────────── */}
+            <div className="flex flex-col gap-5 flex-1 min-w-0">
 
-          {scoringInsights.length > 0 && (
-            <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-2">
-              {scoringInsights.slice(0, 2).map((ins, i) => (
-                <NarrativeInsight key={i} text={ins.text} trend={ins.trend} positiveUp={ins.positiveUp} />
-              ))}
+              <SectionLabel>Scoring</SectionLabel>
+
+              <ChartCard title="Score Trend" subtitle="5-round rolling average">
+                <SVGTimeSeriesArea
+                  dualTone
+                  data={scoreTrendWithAvg}
+                  valueKey="total_score"
+                  rollingAvgKey="rolling_avg"
+                  indexKey="round_index"
+                  color={trendPrimary}
+                  gridColor={gridColor}
+                  referenceLine={{ y: kpis.scoring_average ?? 90, label: `Avg ${kpis.scoring_average}` }}
+                  gradientSuffix="score"
+                  labelFontSize={11}
+                  showDots={false}
+                  height={130}
+                  tooltipLabel="Score"
+                />
+              </ChartCard>
+
+              <SectionLabel>Ball Striking</SectionLabel>
+
+              <ChartCard
+                title="GIR % per Round"
+                subtitle={girData.length < (data?.gir_trend ?? []).length ? "Rounds without GIR data excluded" : undefined}
+              >
+                <SVGTimeSeriesArea
+                  data={girData}
+                  valueKey="gir_percentage"
+                  unit="%"
+                  indexKey="round_index"
+                  color={successColor}
+                  gridColor={gridColor}
+                  yDomain={["auto", "auto"]}
+                  gradientSuffix="gir"
+                  labelFontSize={11}
+                  showDots={girData.length <= 30}
+                  height={130}
+                  tooltipLabel="GIR %"
+                  formatTooltipValue={(v) => `${v.toFixed(1)}%`}
+                />
+              </ChartCard>
+
+              {(scrambling_trend.length > 0 || up_and_down_trend.length > 0) && (
+                <ChartCard title="Short Game" subtitle="Scrambling % vs Up & Down %">
+                  <SVGTimeSeriesArea
+                    data={scrambling_trend.map((r, i) => ({
+                      ...r,
+                      up_and_down_pct: up_and_down_trend[i]?.percentage ?? null,
+                    }))}
+                    valueKey="scrambling_percentage"
+                    secondaryValueKey="up_and_down_pct"
+                    secondaryColor={trendTertiary}
+                    indexKey="round_index"
+                    unit="%"
+                    color={trendSecondary}
+                    gridColor={gridColor}
+                    yDomain={["auto", "auto"]}
+                    tooltipLabel="Scrambling"
+                    secondaryTooltipLabel="Up & Down"
+                    gradientSuffix="shortGame"
+                    labelFontSize={11}
+                    showDots={true}
+                    height={130}
+                    formatTooltipValue={(v) => `${v.toFixed(1)}%`}
+                  />
+                </ChartCard>
+              )}
+
+              <SectionLabel>Putting</SectionLabel>
+
+              <ChartCard title="Total Putts per Round">
+                <SVGTimeSeriesArea
+                  data={putts_trend.filter((r) => r.total_putts != null)}
+                  valueKey="total_putts"
+                  indexKey="round_index"
+                  color={neutralColor}
+                  gridColor={gridColor}
+                  referenceLine={{ y: 36, label: "36" }}
+                  gradientSuffix="putts"
+                  labelFontSize={11}
+                  showDots={true}
+                  height={130}
+                  tooltipLabel="Putts"
+                />
+              </ChartCard>
+
+              {threePuttsData.length > 0 && (
+                <ChartCard title="3-Putts per Round" subtitle="Holes with 3+ putts">
+                  <SVGTimeSeriesArea
+                    data={threePuttsData}
+                    valueKey="three_putt_count"
+                    indexKey="round_index"
+                    color={dangerColor}
+                    gridColor={gridColor}
+                    yDomain={["auto", "auto"]}
+                    referenceLine={{ y: 2, label: "2" }}
+                    gradientSuffix="threePutts"
+                    labelFontSize={11}
+                    showDots={true}
+                    height={130}
+                    tooltipLabel="3-Putts"
+                  />
+                </ChartCard>
+              )}
             </div>
-          )}
 
-          <ChartCard title="Score Trend" subtitle="5-round rolling average">
-            <SVGTimeSeriesArea
-              data={scoreTrendWithAvg}
-              valueKey="total_score"
-              rollingAvgKey="rolling_avg"
-              indexKey="round_index"
-              color={trendPrimary}
-              gridColor={gridColor}
-              referenceLine={{ y: 72, label: "Par 72" }}
-              gradientSuffix="score"
-              showDots={false}
-              height={130}
-              tooltipLabel="Score"
-            />
-          </ChartCard>
+            {/* ── Right column ───────────────────────────���──────────────── */}
+            <div className="flex flex-col gap-5 flex-1 min-w-0">
 
-          <ChartCard title="Net Score Trend" subtitle="Handicap-adjusted score per round">
-            <SVGTimeSeriesArea
-              data={net_score_trend}
-              valueKey="net_score"
-              indexKey="round_index"
-              color={trendPrimary}
-              gridColor={gridColor}
-              referenceLine={{ y: 72, label: "Par 72" }}
-              gradientSuffix="netScore"
-              showDots={false}
-              height={130}
-              tooltipLabel="Net Score"
-              renderTooltipExtra={(row) => (
-                <>
-                  {row.course_name && (
-                    <div className="text-[11px] text-gray-400 mt-1 truncate max-w-[160px]">{row.course_name}</div>
+              <ChartCard title="Net Score Trend" subtitle="Handicap-adjusted score per round">
+                <SVGTimeSeriesArea
+                  dualTone
+                  data={net_score_trend}
+                  valueKey="net_score"
+                  indexKey="round_index"
+                  color={trendPrimary}
+                  gridColor={gridColor}
+                  referenceLine={{ y: 72, label: "Par 72" }}
+                  gradientSuffix="netScore"
+                  labelFontSize={11}
+                  showDots={false}
+                  height={130}
+                  tooltipLabel="Net Score"
+                  renderTooltipExtra={(row) => (
+                    <>
+                      {row.course_name && (
+                        <div className="text-[11px] text-gray-400 mt-1 truncate max-w-[160px]">{row.course_name}</div>
+                      )}
+                      <div className="border-t border-white/10 mt-1.5 pt-1.5 flex flex-col gap-0.5">
+                        {row.to_par != null && (
+                          <div className="flex items-center justify-between gap-3">
+                            <span className="text-gray-400">To Par</span>
+                            <span className={`font-bold ${row.to_par < 0 ? "text-emerald-400" : row.to_par > 0 ? "text-red-400" : "text-gray-400"}`}>
+                              {row.to_par > 0 ? `+${row.to_par}` : row.to_par === 0 ? "E" : row.to_par}
+                            </span>
+                          </div>
+                        )}
+                        {row.course_handicap != null && (
+                          <div className="flex items-center justify-between gap-3">
+                            <span className="text-gray-400">Course HCP</span>
+                            <span className="font-bold text-white">
+                              {row.course_handicap < 0 ? `+${Math.abs(row.course_handicap)}` : row.course_handicap}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    </>
                   )}
-                  <div className="border-t border-gray-100 mt-1.5 pt-1.5 flex flex-col gap-0.5">
-                    {row.to_par != null && (
-                      <div className="flex items-center justify-between gap-3">
-                        <span className="text-gray-500">To Par</span>
-                        <span className={`font-semibold ${row.to_par < 0 ? "text-emerald-600" : row.to_par > 0 ? "text-red-500" : "text-gray-500"}`}>
-                          {row.to_par > 0 ? `+${row.to_par}` : row.to_par === 0 ? "E" : row.to_par}
-                        </span>
-                      </div>
-                    )}
-                    {row.course_handicap != null && (
-                      <div className="flex items-center justify-between gap-3">
-                        <span className="text-gray-500">Course HCP</span>
-                        <span className="font-semibold text-gray-800">
-                          {row.course_handicap < 0 ? `+${Math.abs(row.course_handicap)}` : row.course_handicap}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </>
-              )}
-            />
-          </ChartCard>
+                />
+              </ChartCard>
 
-          {/* ── Ball Striking ── */}
-          <div className="lg:col-span-2 flex items-center gap-3 mt-2 mb-0">
-            <SectionLabel>Ball Striking</SectionLabel>
-          </div>
-
-          {girInsights.length > 0 && (
-            <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-2">
-              {girInsights.map((ins, i) => (
-                <NarrativeInsight key={i} text={ins.text} trend={ins.trend} positiveUp={ins.positiveUp} />
-              ))}
-            </div>
-          )}
-
-          <ChartCard title="GIR % per Round" subtitle={girData.length < (data?.gir_trend ?? []).length ? "Rounds without GIR data excluded" : undefined}>
-            <SVGTimeSeriesArea
-              data={girData}
-              valueKey="gir_percentage"
-              unit="%"
-              indexKey="round_index"
-              color={successColor}
-              gridColor={gridColor}
-              yDomain={[0, 100]}
-              gradientSuffix="gir"
-              showDots={girData.length <= 30}
-              height={130}
-              tooltipLabel="GIR %"
-              formatTooltipValue={(v) => `${v.toFixed(1)}%`}
-            />
-          </ChartCard>
-
-          {(scrambling_trend.length > 0 || up_and_down_trend.length > 0) ? (
-            <ChartCard title="Short Game" subtitle="Scrambling % vs Up & Down %">
-              <SVGTimeSeriesArea
-                data={scrambling_trend.map((r, i) => ({
-                  ...r,
-                  up_and_down_pct: up_and_down_trend[i]?.percentage ?? null,
-                }))}
-                valueKey="scrambling_percentage"
-                secondaryValueKey="up_and_down_pct"
-                secondaryColor={trendTertiary}
-                indexKey="round_index"
-                unit="%"
-                color={trendSecondary}
-                gridColor={gridColor}
-                yDomain={[0, 100]}
-                tooltipLabel="Scrambling"
-                secondaryTooltipLabel="Up & Down"
-                gradientSuffix="shortGame"
-                showDots={true}
-                height={130}
-                formatTooltipValue={(v) => `${v.toFixed(1)}%`}
-              />
-            </ChartCard>
-          ) : null}
-
-          {/* Score Mix Donut */}
-          <div>
-            <ChartCard title="Score Mix" subtitle="Career breakdown across all rounds">
-              <div className="flex items-center gap-4">
-                <div className="relative h-[160px] w-[160px] shrink-0">
-                  <ResponsiveContainer width={160} height={160}>
-                    <PieChart>
-                      <Pie
-                        data={donutData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={46}
-                        outerRadius={66}
-                        paddingAngle={2}
-                        dataKey="value"
-                        stroke="none"
-                      >
-                        {donutData.map((entry) => (
-                          <Cell key={entry.name} fill={scoreColors[entry.name]} />
-                        ))}
-                      </Pie>
-                      <Tooltip contentStyle={tooltipStyle}
-                        formatter={((v: number, name: string) => [`${v.toFixed(1)}%`, SCORE_LABELS[name] ?? name]) as Fmt}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
-                  <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                    {birdiePct != null && (
-                      <>
-                        <div className="text-xl font-black text-gray-800">{birdiePct.toFixed(0)}%</div>
-                        <div className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: successColor }}>birdies</div>
-                      </>
-                    )}
-                  </div>
-                </div>
-                <div className="flex flex-col gap-1.5 min-w-0">
-                  {donutData.map((d) => (
-                    <div key={d.name} className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-sm shrink-0" style={{ background: scoreColors[d.name] }} />
-                      <span className="text-xs text-gray-500 flex-1 truncate">{SCORE_LABELS[d.name] ?? d.name}</span>
-                      <span className="text-xs font-semibold text-gray-700 tabular-nums">{d.value.toFixed(1)}%</span>
+              {/* Score Mix — interactive donut */}
+              <ChartCard title="Score Mix" subtitle="Career breakdown across all rounds">
+                <div className="flex items-center gap-4">
+                  <div className="relative h-[180px] w-[180px] shrink-0">
+                    <ResponsiveContainer width={180} height={180}>
+                      <PieChart>
+                        <Pie
+                          data={donutData}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={52}
+                          outerRadius={72}
+                          paddingAngle={2}
+                          dataKey="value"
+                          stroke="none"
+                          activeIndex={donutData.findIndex((d) => d.name === activeSlice)}
+                          activeShape={renderActiveShape}
+                          onMouseEnter={(_, index) => setActiveSlice(donutData[index]?.name ?? null)}
+                          onMouseLeave={() => setActiveSlice(null)}
+                        >
+                          {donutData.map((entry) => (
+                            <Cell key={entry.name} fill={scoreColors[entry.name]} />
+                          ))}
+                        </Pie>
+                      </PieChart>
+                    </ResponsiveContainer>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                      {activeSlice ? (
+                        <>
+                          <div className="text-xl font-black text-gray-800">
+                            {donutData.find((d) => d.name === activeSlice)?.value.toFixed(1)}%
+                          </div>
+                          <div
+                            className="text-[10px] font-semibold uppercase tracking-wider"
+                            style={{ color: scoreColors[activeSlice] }}
+                          >
+                            {SCORE_LABELS[activeSlice]}
+                          </div>
+                        </>
+                      ) : birdiePct != null ? (
+                        <>
+                          <div className="text-xl font-black text-gray-800">{birdiePct.toFixed(0)}%</div>
+                          <div className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: successColor }}>
+                            birdies
+                          </div>
+                        </>
+                      ) : null}
                     </div>
-                  ))}
+                  </div>
+                  <div className="flex flex-col gap-1 min-w-0">
+                    {donutData.map((d) => (
+                      <div
+                        key={d.name}
+                        className={`flex items-center gap-2 rounded-lg px-2 py-1 cursor-default transition-colors ${activeSlice === d.name ? "bg-gray-50" : ""}`}
+                        onMouseEnter={() => setActiveSlice(d.name)}
+                        onMouseLeave={() => setActiveSlice(null)}
+                      >
+                        <div className="w-2 h-2 rounded-sm shrink-0" style={{ background: scoreColors[d.name] }} />
+                        <span className="text-xs text-gray-500 flex-1 truncate">{SCORE_LABELS[d.name] ?? d.name}</span>
+                        <span className="text-xs font-semibold text-gray-700 tabular-nums">{d.value.toFixed(1)}%</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            </ChartCard>
-          </div>
+              </ChartCard>
 
-          {/* ── Putting ── */}
-          <div className="lg:col-span-2 flex items-center gap-3 mt-2 mb-0">
-            <SectionLabel>Putting</SectionLabel>
-          </div>
+              <SectionLabel>Performance Profile</SectionLabel>
 
-          {puttingInsights.length > 0 && (
-            <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-2">
-              {puttingInsights.map((ins, i) => (
-                <NarrativeInsight key={i} text={ins.text} trend={ins.trend} positiveUp={ins.positiveUp} />
-              ))}
-              {kpis.putts_per_gir != null && (
-                <NarrativeInsight
-                  text={`${kpis.putts_per_gir} putts per GIR — ${kpis.putts_per_gir <= 1.8 ? "elite putting from the green." : kpis.putts_per_gir <= 2.0 ? "solid from the green, room to sharpen." : "two-putt rate is an area to target."}`}
-                  trend={kpis.putts_per_gir <= 1.9 ? "down" : "up"}
-                  positiveUp={false}
-                />
-              )}
+              <ChartCard title="Avg Score to Par by Hole Par">
+                <ResponsiveContainer width="100%" height={160}>
+                  <BarChart data={scoring_by_par} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+                    <CartesianGrid stroke={gridColor} vertical={false} />
+                    <XAxis dataKey="par" tick={{ fontSize: 13, fill: "#374151", fontWeight: 700 }} tickLine={false} axisLine={false}
+                      tickFormatter={(v) => `Par ${v}`}
+                    />
+                    <YAxis tick={{ fontSize: 12, fill: "#6b7280", fontWeight: 700 }} tickLine={false} axisLine={false}
+                      tickFormatter={(v) => (v > 0 ? `+${v}` : v)}
+                    />
+                    <Tooltip contentStyle={tooltipStyle} labelStyle={tooltipTextStyle} itemStyle={tooltipTextStyle}
+                      formatter={((v: number) => [v > 0 ? `+${v.toFixed(2)}` : v.toFixed(2), "Avg to Par"]) as Fmt}
+                    />
+                    <ReferenceLine y={0} stroke={mutedFill} />
+                    <Bar dataKey="average_to_par" radius={[6, 6, 0, 0]}>
+                      {scoring_by_par.map((row) => (
+                        <Cell key={row.par} fill={row.average_to_par <= 0 ? successColor : dangerColor} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </ChartCard>
+
+              <ChartCard title="Avg Score by Hole Difficulty" subtitle="Handicap 1 (hardest) → 18 (easiest)">
+                <ResponsiveContainer width="100%" height={160}>
+                  <BarChart data={scoring_by_handicap} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
+                    <CartesianGrid stroke={gridColor} vertical={false} />
+                    <XAxis dataKey="handicap" tick={{ fontSize: 12, fill: "#374151", fontWeight: 700 }} tickLine={false} axisLine={false} />
+                    <YAxis tick={{ fontSize: 12, fill: "#6b7280", fontWeight: 700 }} tickLine={false} axisLine={false}
+                      tickFormatter={(v) => (v > 0 ? `+${v}` : v)}
+                    />
+                    <Tooltip contentStyle={tooltipStyle} labelStyle={tooltipTextStyle} itemStyle={tooltipTextStyle}
+                      formatter={((v: number, _: unknown, props: { payload: { sample_size: number } }) => [
+                        `${v > 0 ? "+" : ""}${v.toFixed(2)} (${props.payload.sample_size} holes)`,
+                        "Avg to Par",
+                      ]) as Fmt}
+                      labelFormatter={(l) => `Hcp ${l}`}
+                    />
+                    <ReferenceLine y={0} stroke={mutedFill} />
+                    <Bar dataKey="average_to_par" radius={[4, 4, 0, 0]}>
+                      {scoring_by_handicap.map((row) => (
+                        <Cell key={row.handicap} fill={row.average_to_par <= 0 ? successColor : dangerColor} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </ChartCard>
+
             </div>
-          )}
-
-          <ChartCard title="Total Putts per Round">
-            <SVGTimeSeriesArea
-              data={putts_trend.filter((r) => r.total_putts != null)}
-              valueKey="total_putts"
-              indexKey="round_index"
-              color={neutralColor}
-              gridColor={gridColor}
-              referenceLine={{ y: 36, label: "36" }}
-              gradientSuffix="putts"
-              showDots={true}
-              height={130}
-              tooltipLabel="Putts"
-            />
-          </ChartCard>
-
-          {threePuttsData.length > 0 && (
-            <ChartCard title="3-Putts per Round" subtitle="Holes with 3+ putts">
-              <SVGTimeSeriesArea
-                data={threePuttsData}
-                valueKey="three_putt_count"
-                indexKey="round_index"
-                color={dangerColor}
-                gridColor={gridColor}
-                yDomain={[0, "auto"]}
-                referenceLine={{ y: 2, label: "2" }}
-                gradientSuffix="threePutts"
-                showDots={true}
-                height={130}
-                tooltipLabel="3-Putts"
-              />
-            </ChartCard>
-          )}
-
-          {/* ── Performance Profile ── */}
-          <div className="lg:col-span-2 flex items-center gap-3 mt-2 mb-0">
-            <SectionLabel>Performance Profile</SectionLabel>
           </div>
 
-          <ChartCard title="Avg Score to Par by Hole Par">
-            <ResponsiveContainer width="100%" height={160}>
-              <BarChart data={scoring_by_par} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
-                <CartesianGrid stroke={gridColor} vertical={false} />
-                <XAxis dataKey="par" tick={{ fontSize: 12, fill: "#6b7280" }} tickLine={false} axisLine={false}
-                  tickFormatter={(v) => `Par ${v}`}
-                />
-                <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false}
-                  tickFormatter={(v) => (v > 0 ? `+${v}` : v)}
-                />
-                <Tooltip contentStyle={tooltipStyle}
-                  formatter={((v: number) => [v > 0 ? `+${v.toFixed(2)}` : v.toFixed(2), "Avg to Par"]) as Fmt}
-                />
-                <ReferenceLine y={0} stroke={mutedFill} />
-                <Bar dataKey="average_to_par" radius={[6, 6, 0, 0]}>
-                  {scoring_by_par.map((row) => (
-                    <Cell key={row.par} fill={row.average_to_par <= 0 ? successColor : dangerColor} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </ChartCard>
-
-          <ChartCard title="Avg Score by Hole Difficulty" subtitle="Handicap 1 (hardest) → 18 (easiest)">
-            <ResponsiveContainer width="100%" height={160}>
-              <BarChart data={scoring_by_handicap} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
-                <CartesianGrid stroke={gridColor} vertical={false} />
-                <XAxis dataKey="handicap" tick={{ fontSize: 10, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
-                <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false}
-                  tickFormatter={(v) => (v > 0 ? `+${v}` : v)}
-                />
-                <Tooltip contentStyle={tooltipStyle}
-                  formatter={((v: number, _: unknown, props: { payload: { sample_size: number } }) => [
-                    `${v > 0 ? "+" : ""}${v.toFixed(2)} (${props.payload.sample_size} holes)`,
-                    "Avg to Par",
-                  ]) as Fmt}
-                  labelFormatter={(l) => `Hcp ${l}`}
-                />
-                <ReferenceLine y={0} stroke={mutedFill} />
-                <Bar dataKey="average_to_par" radius={[4, 4, 0, 0]}>
-                  {scoring_by_handicap.map((row) => (
-                    <Cell key={row.handicap} fill={row.average_to_par <= 0 ? successColor : dangerColor} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </ChartCard>
-
+          {/* ── Full-width: Range View ─────��───────────────────────────────── */}
           {scoring_by_yardage.length > 0 && (
-            <div className="lg:col-span-2">
+            <div className="mt-5">
               <ParMatrixGrid rows={scoring_by_yardage} />
             </div>
           )}
 
+          {/* ── Full-width: Diverging GIR vs No-GIR ──────────────────────── */}
           {gir_vs_non_gir.length > 0 && (
-            <div className="lg:col-span-2">
-              <ChartCard title="GIR vs No-GIR Score Distribution"
-                subtitle="On vs off the green in regulation">
-                <ResponsiveContainer width="100%" height={180}>
-                  <BarChart data={gir_vs_non_gir} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
-                    <CartesianGrid stroke={gridColor} vertical={false} />
-                    <XAxis dataKey="bucket" tick={{ fontSize: 12, fill: "#6b7280" }} tickLine={false} axisLine={false} />
-                    <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} tickLine={false} axisLine={false} unit="%" />
-                    <Tooltip contentStyle={tooltipStyle}
-                      formatter={((v: number, name: string) => [`${v?.toFixed(1)}%`, SCORE_LABELS[name] ?? name]) as Fmt}
+            <div className="mt-5">
+              <ChartCard
+                title="GIR vs No-GIR"
+              >
+                <ResponsiveContainer width="100%" height={120}>
+                  <BarChart
+                    data={divergingGirData}
+                    layout="vertical"
+                    barSize={28}
+                    margin={{ top: 4, right: 16, left: 56, bottom: 0 }}
+                  >
+                    <XAxis
+                      type="number"
+                      domain={[-40, 100]}
+                      ticks={[-40, -20, 0, 20, 40, 60, 80, 100]}
+                      tick={{ fontSize: 12, fill: "#111827", fontWeight: 700 }}
+                      tickLine={false}
+                      axisLine={false}
+                      tickFormatter={(v) => `${Math.abs(v)}%`}
                     />
-                    <Legend formatter={(name) => SCORE_LABELS[name] ?? name} wrapperStyle={{ fontSize: 11 }} />
-                    {(["eagle", "birdie", "par", "bogey", "double_bogey", "triple_bogey", "quad_bogey"] as const).map((key) => (
-                      <Bar key={key} dataKey={key} stackId="a" fill={scoreColors[key]}
-                        radius={key === "eagle" ? [4, 4, 0, 0] : [0, 0, 0, 0]}
-                      />
-                    ))}
+                    <YAxis
+                      type="category"
+                      dataKey="bucket"
+                      tickLine={false}
+                      axisLine={false}
+                      tick={(props: { x: string | number; y: string | number; payload: { value: string } }) => (
+                        <text
+                          x={props.x}
+                          y={props.y}
+                          dy={4}
+                          textAnchor="end"
+                          fontSize={14}
+                          fontWeight={700}
+                          fill={props.payload.value === "GIR" ? successColor : dangerColor}
+                        >
+                          {props.payload.value}
+                        </text>
+                      )}
+                    />
+                    <CartesianGrid stroke="#d1d5db" horizontal={false} />
+                    <ReferenceLine x={0} stroke="#d1d5db" strokeWidth={1.5} />
+                    <Tooltip
+                      content={({ payload, label }: { payload?: { dataKey: string; value: number; fill: string }[]; label?: string }) => {
+                        if (!payload?.length) return null;
+                        const visible = payload.filter((p) => Math.abs(p.value) > 0.05);
+                        if (!visible.length) return null;
+                        return (
+                          <div style={{ ...tooltipStyle, padding: "10px 12px" }}>
+                            <div className="font-semibold text-[11px] mb-1.5" style={{ color: label === "GIR" ? successColor : dangerColor }}>{label}</div>
+                            {visible.map((p) => (
+                              <div key={p.dataKey} className="flex items-center justify-between gap-4">
+                                <span style={{ color: p.fill }}>{p.dataKey}</span>
+                                <span style={{ color: p.fill }} className="font-bold">{Math.abs(p.value).toFixed(1)}%</span>
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      }}
+                    />
+                    <Bar dataKey="Birdie"       fill={successColor}                 stackId="neg" />
+                    <Bar dataKey="Eagle"        fill={scoreColors.eagle}             stackId="neg" radius={[4, 0, 0, 4]} />
+                    <Bar dataKey="Par"          fill={mutedFill}                     stackId="pos" />
+                    <Bar dataKey="Bogey"        fill={dangerColor}                   stackId="pos" />
+                    <Bar dataKey="Double"       fill={scoreColors.double_bogey}      stackId="pos" />
+                    <Bar dataKey="Triple+"      fill={scoreColors.triple_bogey}      stackId="pos" radius={[0, 4, 4, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
+                <div className="flex items-center gap-5 mt-3 justify-center flex-wrap">
+                  {[
+                    { label: "Birdie",       color: successColor              },
+                    { label: "Eagle",        color: scoreColors.eagle         },
+                    { label: "Par",          color: mutedFill                 },
+                    { label: "Bogey",        color: dangerColor               },
+                    { label: "Double",       color: scoreColors.double_bogey  },
+                    { label: "Triple+",      color: scoreColors.triple_bogey  },
+                  ].map(({ label, color }) => (
+                    <div key={label} className="flex items-center gap-1.5">
+                      <div className="w-2.5 h-2.5 rounded-sm" style={{ background: color }} />
+                      <span className="text-[11px] font-semibold text-gray-500">{label}</span>
+                    </div>
+                  ))}
+                </div>
               </ChartCard>
             </div>
           )}
 
-        </div>
-      </ScrollSection>
+        </ScrollSection>
       </div>{/* end desktop */}
     </div>
   );

@@ -1,10 +1,10 @@
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Fmt = (v: any, name: any, props: any) => any;
 
-import { useState, useRef } from "react";
-import { motion } from "framer-motion";
+import { useState, useRef, useMemo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import {
-  BarChart, Bar, PieChart, Pie, Cell, Legend,
+  BarChart, Bar, PieChart, Pie, Cell,
   CartesianGrid, XAxis, YAxis, Tooltip, ReferenceLine, ResponsiveContainer,
 } from "recharts";
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
@@ -54,16 +54,18 @@ const SCORE_LABELS: Record<string, string> = {
   triple_bogey: "Triple", quad_bogey: "Quad+",
 };
 
-const SCORE_KEYS = ["eagle", "birdie", "par", "bogey", "double_bogey", "triple_bogey", "quad_bogey"] as const;
 
 const TABS = ["Scoring", "Ball Striking", "Putting", "Profile", "Range View"] as const;
 
 const tooltipStyle = {
   fontSize: 12,
   borderRadius: 12,
-  border: "1px solid #f1f5f9",
-  boxShadow: "0 4px 24px rgba(0,0,0,0.07)",
-  background: "rgba(255,255,255,0.97)",
+  border: "1px solid rgba(255,255,255,0.08)",
+  boxShadow: "0 4px 24px rgba(0,0,0,0.25)",
+  background: "rgba(15,20,18,0.90)",
+  color: "#f9fafb",
+  backdropFilter: "blur(12px)",
+  WebkitBackdropFilter: "blur(12px)",
 };
 
 function formatHI(hi: number | null | undefined): string {
@@ -98,7 +100,7 @@ function StatCell({ label, value, sub, accent }: {
     <div className="px-3 py-2.5 relative">
       <div className="absolute top-0 left-3 right-3 h-[2px] rounded-full" style={{ background: accent }} />
       <div className="text-[8px] font-bold uppercase tracking-widest text-gray-400 mt-1 mb-0.5">{label}</div>
-      <div className="text-lg font-bold tracking-tight text-gray-900 leading-none tabular-nums">
+      <div className="text-xl font-bold tracking-tight text-gray-900 leading-none tabular-nums">
         {value ?? "—"}
       </div>
       {sub && <div className="text-[9px] text-gray-400 mt-0.5 truncate">{sub}</div>}
@@ -141,31 +143,61 @@ function ShortGameRow({ label, value, delta }: {
   );
 }
 
+const slideVariants = {
+  enter: (dir: number) => ({ x: dir > 0 ? "100%" : "-100%", opacity: 0 }),
+  center: { x: 0, opacity: 1 },
+  exit: (dir: number) => ({ x: dir > 0 ? "-100%" : "100%", opacity: 0 }),
+};
+
 function ChartCarousel({ children }: { children: React.ReactNode[] }) {
   const [idx, setIdx] = useState(0);
+  const [direction, setDirection] = useState(0);
   const startX = useRef<number | null>(null);
+  const startTime = useRef<number | null>(null);
+
+  function navigate(newIdx: number) {
+    setDirection(newIdx > idx ? 1 : -1);
+    setIdx(newIdx);
+  }
 
   function onPointerDown(e: React.PointerEvent) {
     startX.current = e.clientX;
+    startTime.current = Date.now();
     (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
   }
   function onPointerUp(e: React.PointerEvent) {
-    if (startX.current == null) return;
+    if (startX.current == null || startTime.current == null) return;
     const dx = e.clientX - startX.current;
-    if (dx < -40 && idx < children.length - 1) setIdx((i) => i + 1);
-    if (dx > 40 && idx > 0) setIdx((i) => i - 1);
+    const dt = Math.max(1, Date.now() - startTime.current);
+    const velocity = Math.abs(dx) / dt;
+    const threshold = velocity > 0.4 ? 20 : 40;
+    if (dx < -threshold && idx < children.length - 1) navigate(idx + 1);
+    else if (dx > threshold && idx > 0) navigate(idx - 1);
     startX.current = null;
+    startTime.current = null;
   }
 
   return (
-    <div onPointerDown={onPointerDown} onPointerUp={onPointerUp} className="touch-pan-y select-none">
-      {children[idx]}
+    <div onPointerDown={onPointerDown} onPointerUp={onPointerUp} className="touch-pan-y select-none overflow-hidden">
+      <AnimatePresence mode="wait" custom={direction} initial={false}>
+        <motion.div
+          key={idx}
+          custom={direction}
+          variants={slideVariants}
+          initial="enter"
+          animate="center"
+          exit="exit"
+          transition={{ duration: 0.18, ease: [0.32, 0.72, 0, 1] }}
+        >
+          {children[idx]}
+        </motion.div>
+      </AnimatePresence>
       {children.length > 1 && (
         <div className="flex justify-center gap-1.5 mt-2">
           {children.map((_, i) => (
             <button
               key={i}
-              onClick={() => setIdx(i)}
+              onClick={() => navigate(i)}
               className={`w-1.5 h-1.5 rounded-full transition-colors ${i === idx ? "bg-primary" : "bg-gray-200"}`}
             />
           ))}
@@ -238,6 +270,18 @@ export function MobileAnalyticsPage({
     return l != null && p != null ? l - p : null;
   })();
 
+  const divergingGirData = useMemo(() =>
+    gir_vs_non_gir.map((row) => ({
+      bucket:         row.bucket,
+      "Birdie":       -(row.birdie ?? 0),
+      "Eagle":        -(row.eagle ?? 0),
+      "Par":          row.par ?? 0,
+      "Bogey":        row.bogey ?? 0,
+      "Double":       row.double_bogey ?? 0,
+      "Triple+":      (row.triple_bogey ?? 0) + (row.quad_bogey ?? 0),
+    })),
+  [gir_vs_non_gir]);
+
   const bestRoundCourse = (() => {
     const ev = notable_achievements?.scoring_records_events?.lifetime?.lowest_score;
     return ev?.course ?? null;
@@ -282,6 +326,7 @@ export function MobileAnalyticsPage({
                   gradientSuffix="mScore"
                   showDots={false}
                   height={140}
+                  labelFontSize={11}
                   tooltipLabel="Score"
                 />
               </ChartCard>
@@ -304,6 +349,7 @@ export function MobileAnalyticsPage({
                 gradientSuffix="mNetScore"
                 showDots={false}
                 height={130}
+                labelFontSize={11}
                 tooltipLabel="Net Score"
               />
             </ChartCard>,
@@ -331,6 +377,7 @@ export function MobileAnalyticsPage({
             gradientSuffix="mGir"
             showDots={girData.length <= 30}
             height={130}
+            labelFontSize={11}
             tooltipLabel="GIR %"
             formatTooltipValue={(v) => `${v.toFixed(1)}%`}
           />
@@ -357,25 +404,80 @@ export function MobileAnalyticsPage({
       );
     }
 
-    if (gir_vs_non_gir.length > 0) {
+    if (divergingGirData.length > 0) {
       slides.push(
-        <ChartCard key="girvsnon" title="GIR vs No-GIR Score Distribution" subtitle="On vs off the green in regulation">
-          <ResponsiveContainer width="100%" height={160}>
-            <BarChart data={gir_vs_non_gir} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
-              <CartesianGrid stroke={gridColor} vertical={false} />
-              <XAxis dataKey="bucket" tick={{ fontSize: 11, fill: "#6b7280" }} tickLine={false} axisLine={false} />
-              <YAxis tick={{ fontSize: 10, fill: "#9ca3af" }} tickLine={false} axisLine={false} unit="%" />
-              <Tooltip contentStyle={tooltipStyle}
-                formatter={((v: number, name: string) => [`${v?.toFixed(1)}%`, SCORE_LABELS[name] ?? name]) as Fmt}
+        <ChartCard key="girvsnon" title="GIR vs No-GIR">
+          <ResponsiveContainer width="100%" height={130}>
+            <BarChart
+              data={divergingGirData}
+              layout="vertical"
+              barSize={28}
+              margin={{ top: 4, right: 12, left: 52, bottom: 0 }}
+            >
+              <XAxis
+                type="number"
+                domain={[-40, 100]}
+                tick={{ fontSize: 11, fill: "#6b7280" }}
+                tickLine={false}
+                axisLine={false}
+                tickFormatter={(v) => `${Math.abs(v)}%`}
               />
-              <Legend formatter={(name) => SCORE_LABELS[name] ?? name} wrapperStyle={{ fontSize: 10 }} />
-              {SCORE_KEYS.map((key) => (
-                <Bar key={key} dataKey={key} stackId="a" fill={scoreColors[key]}
-                  radius={key === "eagle" ? [4, 4, 0, 0] : [0, 0, 0, 0]}
-                />
-              ))}
+              <YAxis
+                type="category"
+                dataKey="bucket"
+                tickLine={false}
+                axisLine={false}
+                tick={(props: { x: string | number; y: string | number; payload: { value: string } }) => (
+                  <text x={props.x} y={props.y} dy={4} textAnchor="end" fontSize={12} fontWeight={600}
+                    fill={props.payload.value === "GIR" ? successColor : dangerColor}
+                  >
+                    {props.payload.value}
+                  </text>
+                )}
+              />
+              <CartesianGrid stroke={gridColor} horizontal={false} />
+              <ReferenceLine x={0} stroke="#d1d5db" strokeWidth={1.5} />
+              <Tooltip
+                content={({ payload, label }: { payload?: { dataKey: string; value: number; fill: string }[]; label?: string }) => {
+                  if (!payload?.length) return null;
+                  const visible = payload.filter((p) => Math.abs(p.value) > 0.05);
+                  if (!visible.length) return null;
+                  return (
+                    <div style={{ ...tooltipStyle, padding: "8px 10px" }}>
+                      <div className="font-semibold text-[11px] mb-1" style={{ color: label === "GIR" ? successColor : dangerColor }}>{label}</div>
+                      {visible.map((p) => (
+                        <div key={p.dataKey} className="flex items-center justify-between gap-3">
+                          <span style={{ color: p.fill }} className="text-[11px]">{p.dataKey}</span>
+                          <span style={{ color: p.fill }} className="font-bold text-[11px]">{Math.abs(p.value).toFixed(1)}%</span>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                }}
+              />
+              <Bar dataKey="Birdie"  fill={successColor}               stackId="neg" />
+              <Bar dataKey="Eagle"   fill={scoreColors.eagle}           stackId="neg" radius={[4, 0, 0, 4]} />
+              <Bar dataKey="Par"     fill={mutedFill}                   stackId="pos" />
+              <Bar dataKey="Bogey"   fill={dangerColor}                 stackId="pos" />
+              <Bar dataKey="Double"  fill={scoreColors.double_bogey}    stackId="pos" />
+              <Bar dataKey="Triple+" fill={scoreColors.triple_bogey}    stackId="pos" radius={[0, 4, 4, 0]} />
             </BarChart>
           </ResponsiveContainer>
+          <div className="flex items-center gap-3 mt-2.5 justify-center flex-wrap">
+            {[
+              { label: "Birdie",  color: successColor             },
+              { label: "Eagle",   color: scoreColors.eagle        },
+              { label: "Par",     color: mutedFill                },
+              { label: "Bogey",   color: dangerColor              },
+              { label: "Double",  color: scoreColors.double_bogey },
+              { label: "Triple+", color: scoreColors.triple_bogey },
+            ].map(({ label, color }) => (
+              <div key={label} className="flex items-center gap-1">
+                <div className="w-2 h-2 rounded-sm" style={{ background: color }} />
+                <span className="text-[11px] font-semibold text-gray-500">{label}</span>
+              </div>
+            ))}
+          </div>
         </ChartCard>
       );
     }
@@ -398,6 +500,7 @@ export function MobileAnalyticsPage({
           gradientSuffix="mPutts"
           showDots={true}
           height={130}
+          labelFontSize={11}
           tooltipLabel="Putts"
         />
       </ChartCard>,
@@ -416,6 +519,7 @@ export function MobileAnalyticsPage({
             gradientSuffix="mThreePutts"
             showDots={true}
             height={120}
+            labelFontSize={11}
             tooltipLabel="3-Putts"
           />
         </ChartCard>
@@ -480,7 +584,7 @@ export function MobileAnalyticsPage({
             <XAxis dataKey="par" tick={{ fontSize: 11, fill: "#6b7280" }} tickLine={false} axisLine={false}
               tickFormatter={(v) => `Par ${v}`}
             />
-            <YAxis tick={{ fontSize: 10, fill: "#9ca3af" }} tickLine={false} axisLine={false}
+            <YAxis tick={{ fontSize: 11, fill: "#6b7280" }} tickLine={false} axisLine={false}
               tickFormatter={(v) => (v > 0 ? `+${v}` : v)}
             />
             <Tooltip contentStyle={tooltipStyle}
@@ -499,8 +603,8 @@ export function MobileAnalyticsPage({
         <ResponsiveContainer width="100%" height={150}>
           <BarChart data={scoring_by_handicap} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
             <CartesianGrid stroke={gridColor} vertical={false} />
-            <XAxis dataKey="handicap" tick={{ fontSize: 9, fill: "#9ca3af" }} tickLine={false} axisLine={false} />
-            <YAxis tick={{ fontSize: 10, fill: "#9ca3af" }} tickLine={false} axisLine={false}
+            <XAxis dataKey="handicap" tick={{ fontSize: 11, fill: "#6b7280" }} tickLine={false} axisLine={false} />
+            <YAxis tick={{ fontSize: 11, fill: "#6b7280" }} tickLine={false} axisLine={false}
               tickFormatter={(v) => (v > 0 ? `+${v}` : v)}
             />
             <Tooltip contentStyle={tooltipStyle}
@@ -584,7 +688,7 @@ export function MobileAnalyticsPage({
       </div>
 
       {/* ── Tab bar ────────────────────────────────────────────────────────── */}
-      <div className="flex gap-2 overflow-x-auto pb-1 -mx-0.5 px-0.5">
+      <div className="flex gap-2 overflow-x-auto pb-1 -mx-0.5 px-0.5 [&::-webkit-scrollbar]:hidden [scrollbar-width:none]">
         {TABS.map((tab, i) => (
           <button
             key={tab}

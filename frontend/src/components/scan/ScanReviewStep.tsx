@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { CheckCircle, AlertTriangle, Loader2, X } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useMotionValue, animate } from "framer-motion";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { CourseLinkSearch, CourseLinkChip, CustomNameChip } from "@/components/CourseLinkSearch";
 import { formatToPar, calcCourseHandicap, calcNetScore } from "@/types/golf";
@@ -44,6 +44,69 @@ interface ScanReviewStepProps {
   setScanState: React.Dispatch<React.SetStateAction<ScanState>>;
 }
 
+
+function DragScrubCell({
+  value, min, max, onChange, children,
+}: {
+  value: number | null;
+  min: number;
+  max: number;
+  onChange: (v: number) => void;
+  children: React.ReactNode;
+}) {
+  const startY = useRef<number | null>(null);
+  const startVal = useRef<number>(0);
+  const dragging = useRef(false);
+  const motionY = useMotionValue(0);
+  const motionScale = useMotionValue(1);
+
+  function onPointerDown(e: React.PointerEvent) {
+    startY.current = e.clientY;
+    startVal.current = value ?? min;
+    dragging.current = false;
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+  }
+
+  function onPointerMove(e: React.PointerEvent) {
+    if (startY.current === null) return;
+    const dy = startY.current - e.clientY;
+    if (Math.abs(dy) >= 4) dragging.current = true;
+    if (!dragging.current) return;
+    motionScale.set(1.1);
+    // Number physically follows finger, capped at ±12px
+    motionY.set(Math.max(-12, Math.min(12, -dy * 0.5)));
+    const delta = Math.round(dy / 16);
+    const clamped = Math.max(min, Math.min(max, startVal.current + delta));
+    if (clamped !== value) onChange(clamped);
+  }
+
+  function onPointerUp(e: React.PointerEvent) {
+    const wasDrag = dragging.current;
+    startY.current = null;
+    dragging.current = false;
+    animate(motionY, 0, { type: "spring", stiffness: 500, damping: 28 });
+    animate(motionScale, 1, { type: "spring", stiffness: 500, damping: 28 });
+    if (!wasDrag) {
+      const input = (e.currentTarget as HTMLElement).querySelector<HTMLInputElement>("input");
+      input?.focus();
+      input?.select();
+    }
+  }
+
+  return (
+    <div
+      onPointerDown={onPointerDown}
+      onPointerMove={onPointerMove}
+      onPointerUp={onPointerUp}
+      style={{ touchAction: "none", cursor: "ns-resize" }}
+      className="select-none"
+    >
+      <motion.div style={{ y: motionY, scale: motionScale }}>
+        {children}
+      </motion.div>
+    </div>
+  );
+}
 
 function toParStr(strokes: number | null, par: number | null): string {
   if (strokes === null || par === null) return "-";
@@ -210,29 +273,36 @@ export function ScanReviewStep({
               return (
                 <td key={si} className="px-0.5 py-1 text-center">
                   <div className="inline-flex items-center gap-0.5">
-                    <div className="relative">
-                      <input
-                        type="text"
-                        inputMode="numeric"
-                        pattern="[0-9]*"
-                        maxLength={2}
-                        value={hs.strokes ?? ""}
-                        onChange={(e) => onScoreChange(origIdx, "strokes", e.target.value)}
-                        className="w-7 h-7 text-center px-0 py-0 text-sm font-semibold focus:outline-none"
-                        style={isLowConf
-                          ? { border: "1px solid #f59e0b", background: "#fffbeb", color: "#92400e", borderRadius: 4 }
-                          : scoreInputStyle(diff)
-                        }
-                      />
-                      {isLowConf && (
-                        <motion.div
-                          className="absolute inset-0 rounded border-2 border-amber-400 pointer-events-none"
-                          animate={{ opacity: [1, 0.2, 1] }}
-                          transition={{ duration: 1.4, repeat: Infinity, ease: "easeInOut" }}
+                    <DragScrubCell
+                      value={hs.strokes}
+                      min={1}
+                      max={15}
+                      onChange={(v) => onScoreChange(origIdx, "strokes", String(v))}
+                    >
+                      <div className="relative">
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          maxLength={2}
+                          value={hs.strokes ?? ""}
+                          onChange={(e) => onScoreChange(origIdx, "strokes", e.target.value)}
+                          className="w-7 h-7 text-center px-0 py-0 text-sm font-semibold focus:outline-none"
+                          style={isLowConf
+                            ? { fontSize: "16px", border: "1px solid #f59e0b", background: "#fffbeb", color: "#92400e", borderRadius: 4 }
+                            : { fontSize: "16px", ...scoreInputStyle(diff) }
+                          }
                         />
-                      )}
-                    </div>
-                    <div className="flex flex-col">
+                        {isLowConf && (
+                          <motion.div
+                            className="absolute inset-0 rounded border-2 border-amber-400 pointer-events-none"
+                            animate={{ opacity: [1, 0.2, 1] }}
+                            transition={{ duration: 1.4, repeat: Infinity, ease: "easeInOut" }}
+                          />
+                        )}
+                      </div>
+                    </DragScrubCell>
+                    <div className="hidden md:flex flex-col">
                       <button type="button" tabIndex={-1}
                         onClick={() => onScoreChange(origIdx, "strokes", String(Math.min(15, (hs.strokes ?? 1) + 1)))}
                         className="h-3.5 w-3.5 flex items-center justify-center text-gray-400 hover:text-gray-700 leading-none select-none text-[10px]"
@@ -290,20 +360,28 @@ export function ScanReviewStep({
                 const isEstimated = scoreMetadata[origIdx]?.putts_estimated === true;
                 return (
                   <td key={si} className="px-1 py-1 text-center">
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      maxLength={2}
-                      value={hs.putts ?? ""}
-                      onChange={(e) => onScoreChange(origIdx, "putts", e.target.value)}
-                      title={isEstimated ? "Estimated (2-putt default)" : undefined}
-                      className={`w-7 h-7 text-center px-0 py-0 border rounded text-sm focus:outline-none ${
-                        isEstimated
-                          ? "border-dashed border-amber-400 bg-amber-50/50 text-amber-700"
-                          : "border-gray-200"
-                      }`}
-                    />
+                    <DragScrubCell
+                      value={hs.putts}
+                      min={0}
+                      max={10}
+                      onChange={(v) => onScoreChange(origIdx, "putts", String(v))}
+                    >
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        maxLength={2}
+                        value={hs.putts ?? ""}
+                        onChange={(e) => onScoreChange(origIdx, "putts", e.target.value)}
+                        title={isEstimated ? "Estimated (2-putt default)" : undefined}
+                        className={`w-7 h-7 text-center px-0 py-0 border rounded text-sm focus:outline-none ${
+                          isEstimated
+                            ? "border-dashed border-amber-400 bg-amber-50/50 text-amber-700"
+                            : "border-gray-200"
+                        }`}
+                        style={{ fontSize: "16px" }}
+                      />
+                    </DragScrubCell>
                   </td>
                 );
               })}

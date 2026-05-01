@@ -31,6 +31,7 @@ body {
   -moz-osx-font-smoothing: grayscale;
   background-color: #f8faf8;
   color: #1a2e1a;
+  overscroll-behavior: none;
 }
 
 :root.dark body {

@@ -1,9 +1,10 @@
-import { useState, useMemo, useCallback, useRef, useEffect } from "react";
+import { useState, useMemo, useCallback, useRef, useEffect, Fragment } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "react-router-dom";
-import { Link2, Search } from "lucide-react";
+import { Link2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { CourseLinkSearch } from "@/components/CourseLinkSearch";
+import { GooeyInput } from "@/components/ui/gooey-input";
 import { api } from "@/lib/api";
 import { formatCourseName } from "@/lib/courseName";
 import { getStoredColorBlindMode } from "@/lib/accessibility";
@@ -29,11 +30,11 @@ function withAlpha(hex: string, alpha: number): string {
 }
 
 const rowVariants = {
-  hidden: { opacity: 0, y: 16 },
+  hidden: { opacity: 0, y: 10 },
   visible: (i: number) => ({
     opacity: 1,
     y: 0,
-    transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] as const, delay: i * 0.03 },
+    transition: { duration: 0.35, ease: [0.22, 1, 0.36, 1] as const, delay: Math.min(i * 0.03, 0.3) },
   }),
 };
 
@@ -53,15 +54,17 @@ function SortHeader({
   const active = sortKey === field;
   return (
     <th
-      className={`px-6 py-3 cursor-pointer select-none transition-colors ${
+      className={`px-6 py-3 cursor-pointer select-none transition-colors group/th ${
         active ? "text-primary" : "text-gray-400 hover:text-gray-600"
       }`}
       onClick={() => onSort(field)}
     >
       <span className="flex items-center gap-1">
         {label}
-        <span className={`text-[10px] transition-opacity ${active ? "opacity-100" : "opacity-0"}`}>
-          {sortAsc ? "↓" : "↑"}
+        <span className={`text-[10px] transition-opacity ${
+          active ? "opacity-100" : "opacity-0 group-hover/th:opacity-40"
+        }`}>
+          {active ? (sortAsc ? "↓" : "↑") : "↕"}
         </span>
       </span>
     </th>
@@ -199,14 +202,13 @@ export function RoundsPage({ userId }: RoundsPageProps) {
       <ScrollSection>
         <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 mb-5">Rounds</h1>
         {/* Search bar */}
-        <div className="mb-5 relative max-w-sm">
-          <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-          <input
-            type="text"
+        <div className="mb-5">
+          <GooeyInput
             placeholder="Search by course..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm bg-white/80 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary shadow-sm"
+            onValueChange={setSearch}
+            collapsedWidth={210}
+            expandedWidth={280}
           />
         </div>
 
@@ -234,9 +236,8 @@ export function RoundsPage({ userId }: RoundsPageProps) {
             </thead>
             <tbody className="divide-y divide-gray-50">
               {filtered.slice(0, visibleCount).map((r, i) => (
-                <AnimatePresence key={r.id} mode="wait">
+                <Fragment key={r.id}>
                   <motion.tr
-                    key={r.id}
                     custom={i}
                     variants={rowVariants}
                     initial="hidden"
@@ -328,29 +329,31 @@ export function RoundsPage({ userId }: RoundsPageProps) {
                   </motion.tr>
 
                   {/* Inline link-course panel */}
-                  {linkingRoundId === r.id && (
-                    <motion.tr
-                      key={`${r.id}-link`}
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-                    >
-                      <td colSpan={7} className="px-6 py-4 bg-blue-50/60 border-b border-blue-100">
-                        <CourseLinkSearch
-                          title={`Link "${r.course_name ? formatCourseName(r.course_name) : "this round"}" to a saved course`}
-                          query={linkQuery}
-                          results={linkResults}
-                          searching={linkSearching}
-                          linking={linking}
-                          onQueryChange={handleLinkQuery}
-                          onSelectCourse={(c) => handleSelectCourse(r.id, c)}
-                          onClose={closeLink}
-                        />
-                      </td>
-                    </motion.tr>
-                  )}
-                </AnimatePresence>
+                  <AnimatePresence>
+                    {linkingRoundId === r.id && (
+                      <motion.tr
+                        key={`${r.id}-link`}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        <td colSpan={7} className="px-6 py-4 bg-blue-50/60 border-b border-blue-100">
+                          <CourseLinkSearch
+                            title={`Link "${r.course_name ? formatCourseName(r.course_name) : "this round"}" to a saved course`}
+                            query={linkQuery}
+                            results={linkResults}
+                            searching={linkSearching}
+                            linking={linking}
+                            onQueryChange={handleLinkQuery}
+                            onSelectCourse={(c) => handleSelectCourse(r.id, c)}
+                            onClose={closeLink}
+                          />
+                        </td>
+                      </motion.tr>
+                    )}
+                  </AnimatePresence>
+                </Fragment>
               ))}
             </tbody>
           </table>

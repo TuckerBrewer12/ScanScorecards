@@ -9,6 +9,9 @@ interface DualTrendPoint {
   to_par: number | null;
   handicap_index: number | null;
   course_name?: string | null;
+  used_in_hi?: boolean | null;
+  differential?: number | null;
+  hi_threshold?: number | null;
 }
 
 interface SVGScoreHandicapTrendProps {
@@ -20,7 +23,7 @@ interface SVGScoreHandicapTrendProps {
 }
 
 const W = 560;
-const PAD = { top: 12, right: 52, bottom: 28, left: 36 };
+const PAD = { top: 12, right: 64, bottom: 20, left: 52 };
 
 function formatHI(hi: number | null | undefined): string {
   if (hi == null) return "—";
@@ -34,6 +37,13 @@ function getDotColor(toPar: number | null): string {
   if (toPar === -1) return "#059669";
   if (toPar === 0) return "#9ca3af";
   return "#ef4444";
+}
+
+function getBarColor(d: DualTrendPoint): string {
+  if (d.used_in_hi == null) return "#9ca3af";
+  if (d.used_in_hi) return "#059669";
+  if (d.hi_threshold != null && d.differential != null && d.differential - d.hi_threshold <= 2) return "#d97706";
+  return "#dc2626";
 }
 
 export function SVGScoreHandicapTrend({
@@ -65,7 +75,7 @@ export function SVGScoreHandicapTrend({
   const scoreMin = Math.min(...validScores.map((d) => d.total_score!));
   const scoreMax = Math.max(...validScores.map((d) => d.total_score!));
   const yScoreScale = scaleLinear()
-    .domain([scoreMin - 2, scoreMax + 2])
+    .domain([scoreMin - 5, scoreMax + 5])
     .range([H - PAD.bottom, PAD.top]);
 
   const hiMin = validHI.length ? Math.min(...validHI.map((d) => d.handicap_index!)) : 0;
@@ -99,6 +109,8 @@ export function SVGScoreHandicapTrend({
 
   const gridTicks = yScoreScale.ticks(5);
   const hiTicks = yHIScale.ticks(4);
+  const barW = Math.max(4, Math.min(14, (W - PAD.left - PAD.right) / data.length - 2));
+  const baseline = H - PAD.bottom;
 
   const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -146,15 +158,27 @@ export function SVGScoreHandicapTrend({
           />
         ))}
 
+        {/* Bottom axis line */}
+        <line
+          x1={PAD.left} x2={W - PAD.right}
+          y1={H - PAD.bottom} y2={H - PAD.bottom}
+          stroke="#e5e7eb" strokeWidth={1}
+        />
+
         {/* Left Y-axis labels (score) */}
         {gridTicks.map((v) => (
           <text
             key={`yl-${v}`}
-            x={PAD.left - 6}
+            x={PAD.left - 12}
             y={yScoreScale(v) + 4}
             textAnchor="end"
-            fontSize={9}
-            fill="#9ca3af"
+            fontSize={11}
+            fontWeight="600"
+            fill="#4b5563"
+            paintOrder="stroke"
+            stroke="white"
+            strokeWidth={4}
+            strokeLinejoin="round"
           >
             {v}
           </text>
@@ -164,16 +188,40 @@ export function SVGScoreHandicapTrend({
         {validHI.length > 0 && hiTicks.map((v) => (
           <text
             key={`yr-${v}`}
-            x={W - PAD.right + 6}
+            x={W - PAD.right + 12}
             y={yHIScale(v) + 4}
             textAnchor="start"
-            fontSize={9}
+            fontSize={11}
+            fontWeight="600"
             fill={handicapColor}
-            fillOpacity={0.7}
+            paintOrder="stroke"
+            stroke="white"
+            strokeWidth={4}
+            strokeLinejoin="round"
           >
             {formatHI(v)}
           </text>
         ))}
+
+        {/* Bars: baseline → data point, drawn before line so line sits on top */}
+        {data.map((d, i) => {
+          if (d.total_score == null) return null;
+          const barTop = yScoreScale(d.total_score);
+          const barHeight = baseline - barTop;
+          if (barHeight <= 0) return null;
+          return (
+            <rect
+              key={`bar-${i}`}
+              x={xScale(i) - barW / 2}
+              y={barTop}
+              width={barW}
+              height={barHeight}
+              fill={getBarColor(d)}
+              fillOpacity={0.6}
+              rx={2}
+            />
+          );
+        })}
 
         {/* HI area */}
         {validHI.length > 0 && (
