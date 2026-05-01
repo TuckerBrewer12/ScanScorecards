@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useRef, useEffect } from "react";
+import { useState, useMemo, useCallback, useRef, useEffect, Fragment } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "react-router-dom";
 import { Link2 } from "lucide-react";
@@ -30,11 +30,11 @@ function withAlpha(hex: string, alpha: number): string {
 }
 
 const rowVariants = {
-  hidden: { opacity: 0, y: 16 },
+  hidden: { opacity: 0, y: 10 },
   visible: (i: number) => ({
     opacity: 1,
     y: 0,
-    transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] as const, delay: i * 0.03 },
+    transition: { duration: 0.35, ease: [0.22, 1, 0.36, 1] as const, delay: Math.min(i * 0.03, 0.3) },
   }),
 };
 
@@ -236,9 +236,8 @@ export function RoundsPage({ userId }: RoundsPageProps) {
             </thead>
             <tbody className="divide-y divide-gray-50">
               {filtered.slice(0, visibleCount).map((r, i) => (
-                <AnimatePresence key={r.id} mode="wait">
+                <Fragment key={r.id}>
                   <motion.tr
-                    key={r.id}
                     custom={i}
                     variants={rowVariants}
                     initial="hidden"
@@ -330,29 +329,31 @@ export function RoundsPage({ userId }: RoundsPageProps) {
                   </motion.tr>
 
                   {/* Inline link-course panel */}
-                  {linkingRoundId === r.id && (
-                    <motion.tr
-                      key={`${r.id}-link`}
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-                    >
-                      <td colSpan={7} className="px-6 py-4 bg-blue-50/60 border-b border-blue-100">
-                        <CourseLinkSearch
-                          title={`Link "${r.course_name ? formatCourseName(r.course_name) : "this round"}" to a saved course`}
-                          query={linkQuery}
-                          results={linkResults}
-                          searching={linkSearching}
-                          linking={linking}
-                          onQueryChange={handleLinkQuery}
-                          onSelectCourse={(c) => handleSelectCourse(r.id, c)}
-                          onClose={closeLink}
-                        />
-                      </td>
-                    </motion.tr>
-                  )}
-                </AnimatePresence>
+                  <AnimatePresence>
+                    {linkingRoundId === r.id && (
+                      <motion.tr
+                        key={`${r.id}-link`}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        <td colSpan={7} className="px-6 py-4 bg-blue-50/60 border-b border-blue-100">
+                          <CourseLinkSearch
+                            title={`Link "${r.course_name ? formatCourseName(r.course_name) : "this round"}" to a saved course`}
+                            query={linkQuery}
+                            results={linkResults}
+                            searching={linkSearching}
+                            linking={linking}
+                            onQueryChange={handleLinkQuery}
+                            onSelectCourse={(c) => handleSelectCourse(r.id, c)}
+                            onClose={closeLink}
+                          />
+                        </td>
+                      </motion.tr>
+                    )}
+                  </AnimatePresence>
+                </Fragment>
               ))}
             </tbody>
           </table>

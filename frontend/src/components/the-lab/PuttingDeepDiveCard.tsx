@@ -82,27 +82,52 @@ export function PuttingDeepDiveCard({ threePuttsTrend, puttsTrend }: Props) {
               <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-2">
                 Putts per round trend
               </p>
-              <div className="flex items-end gap-0.5 h-10">
-                {puttsTrend.slice(-20).map((r, i) => {
-                  const putts = r.total_putts;
-                  if (putts == null) return <div key={i} className="flex-1 h-1 bg-gray-100 rounded-sm" />;
-                  const max = 42;
-                  const min = 26;
-                  const heightPct = Math.max(8, Math.min(100, ((putts - min) / (max - min)) * 100));
-                  const good = putts <= 32;
-                  return (
+              <div className="flex gap-2">
+                {/* Y-axis */}
+                <div className="relative shrink-0 w-5 h-28">
+                  {[42, 38, 34, 30, 26].map((v, i) => (
+                    <span
+                      key={v}
+                      className="absolute text-[9px] font-semibold text-gray-400 right-0 leading-none"
+                      style={{ top: `${(i / 4) * 100}%`, transform: "translateY(-50%)" }}
+                    >
+                      {v}
+                    </span>
+                  ))}
+                </div>
+                {/* Chart */}
+                <div className="flex-1 relative h-28">
+                  {/* Grid lines */}
+                  {[0, 25, 50, 75, 100].map((pct) => (
                     <div
-                      key={i}
-                      className="flex-1 rounded-t-sm transition-all"
-                      style={{
-                        height: `${heightPct}%`,
-                        backgroundColor: good ? "#059669" : putts <= 36 ? "#f59e0b" : "#ef4444",
-                        opacity: 0.65,
-                      }}
-                      title={`${putts} putts`}
+                      key={pct}
+                      className="absolute w-full border-t border-gray-100"
+                      style={{ top: `${pct}%` }}
                     />
-                  );
-                })}
+                  ))}
+                  <div className="flex items-end gap-0.5 h-full">
+                    {puttsTrend.slice(-20).map((r, i) => {
+                      const putts = r.total_putts;
+                      if (putts == null) return <div key={i} className="flex-1 h-1 bg-gray-100 rounded-sm" />;
+                      const max = 42;
+                      const min = 26;
+                      const heightPct = Math.max(8, Math.min(100, ((putts - min) / (max - min)) * 100));
+                      const good = putts <= 32;
+                      return (
+                        <div
+                          key={i}
+                          className="flex-1 rounded-t-sm transition-all"
+                          style={{
+                            height: `${heightPct}%`,
+                            backgroundColor: good ? "#059669" : putts <= 36 ? "#f59e0b" : "#ef4444",
+                            opacity: 0.65,
+                          }}
+                          title={`${putts} putts`}
+                        />
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
             </div>
           )}
