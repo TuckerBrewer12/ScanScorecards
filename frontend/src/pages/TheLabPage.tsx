@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { CheckCircle2 } from "lucide-react";
 import { api } from "@/lib/api";
 import { type ComparisonTargetValue } from "@/components/suggestions/ComparisonTargetToggle";
 import { BentoCard } from "@/components/ui/BentoCard";
@@ -81,7 +80,7 @@ export function TheLabPage({ userId }: TheLabPageProps) {
   });
   const currentGoal = user?.scoring_goal ?? null;
 
-  const { data: goalReport, isLoading: reportLoading } = useQuery({
+  const { data: goalReport } = useQuery({
     queryKey: ["goal-report", userId],
     queryFn: () => api.getGoalReport(userId, 20),
     enabled: !!currentGoal,
@@ -259,7 +258,6 @@ export function TheLabPage({ userId }: TheLabPageProps) {
     return "Your Performance Shape";
   }, [radarMode, targetHandicap, peakInsight, selectedFriend]);
 
-  const savers = goalReport?.savers ?? [];
 
   // Best score across all rounds
   const bestScore = useMemo(() => {
