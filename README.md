@@ -1,4 +1,5 @@
-# ScanScorecards
+# BirdieEyeView
+birdie-eye-view.com
 
 Snap a photo of your scorecard. Get a full round breakdown, your stats over time, and personalized tips to shoot lower.
 
