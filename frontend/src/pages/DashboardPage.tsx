@@ -12,6 +12,7 @@ import { MobileDashboard } from "@/components/dashboard/MobileDashboard";
 import { api } from "@/lib/api";
 import { getStoredColorBlindMode } from "@/lib/accessibility";
 import { getColorBlindPalette } from "@/lib/chartPalettes";
+import { SCORE_COLORS, SCORE_KEYS, SCORE_LABELS } from "@/lib/colors";
 import type { Milestone } from "@/types/golf";
 import { RecentRoundsTable } from "@/components/dashboard/RecentRoundsTable";
 import { BentoCard } from "@/components/ui/BentoCard";
@@ -31,21 +32,6 @@ const tooltipStyle = {
 };
 
 
-const SCORE_COLORS: Record<string, string> = {
-  eagle: "#b45309",
-  birdie: "#059669",
-  par: "#9ca3af",
-  bogey: "#f87171",
-  double_bogey: "#60a5fa",
-  triple_bogey: "#a78bfa",
-  quad_bogey: "#6d28d9",
-};
-const SCORE_KEYS = ["eagle", "birdie", "par", "bogey", "double_bogey", "triple_bogey", "quad_bogey"] as const;
-
-const SCORE_LABELS: Record<string, string> = {
-  eagle: "Eagle+", birdie: "Birdie", par: "Par",
-  bogey: "Bogey", double_bogey: "Double", triple_bogey: "Triple", quad_bogey: "Quad+",
-};
 
 
 function ShortGameSparkline({ scrambling, upAndDown }: {

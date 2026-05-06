@@ -13,6 +13,7 @@ import { BestRoundCard } from "@/components/analytics/BestRoundCard";
 import { NarrativeInsight } from "@/components/analytics/NarrativeInsight";
 import { ParMatrixGrid } from "@/components/analytics/ParMatrixGrid";
 import { AnalyticsFilterBar } from "@/components/analytics/AnalyticsFilterBar";
+import { average, trendDelta } from "@/lib/stats";
 import type {
   AnalyticsData, AnalyticsFilters, ScoreTrendRow,
   GIRTrendRow, PuttsTrendRow, ThreePuttRow,
@@ -207,14 +208,6 @@ function ChartCarousel({ children }: { children: React.ReactNode[] }) {
   );
 }
 
-function avgPct(rows: { scrambling_percentage: number }[]) {
-  if (!rows.length) return null;
-  return rows.reduce((s, r) => s + r.scrambling_percentage, 0) / rows.length;
-}
-function avgUd(rows: { percentage: number }[]) {
-  if (!rows.length) return null;
-  return rows.reduce((s, r) => s + r.percentage, 0) / rows.length;
-}
 
 export function MobileAnalyticsPage({
   data,
@@ -249,26 +242,10 @@ export function MobileAnalyticsPage({
   const birdiePct = donutData.find((d) => d.name === "birdie")?.value;
 
   // Short game deltas (last 5 vs prev 5)
-  const scrPct = (() => {
-    const rows = scrambling_trend.slice(-5);
-    return rows.length ? rows.reduce((s, r) => s + r.scrambling_percentage, 0) / rows.length : null;
-  })();
-  const scrDelta = (() => {
-    if (scrambling_trend.length < 6) return null;
-    const l = avgPct(scrambling_trend.slice(-5));
-    const p = avgPct(scrambling_trend.slice(-10, -5));
-    return l != null && p != null ? l - p : null;
-  })();
-  const udPct = (() => {
-    const rows = up_and_down_trend.slice(-5);
-    return rows.length ? rows.reduce((s, r) => s + r.percentage, 0) / rows.length : null;
-  })();
-  const udDelta = (() => {
-    if (up_and_down_trend.length < 6) return null;
-    const l = avgUd(up_and_down_trend.slice(-5));
-    const p = avgUd(up_and_down_trend.slice(-10, -5));
-    return l != null && p != null ? l - p : null;
-  })();
+  const scrPct = average(scrambling_trend.slice(-5).map((r) => r.scrambling_percentage));
+  const scrDelta = trendDelta(scrambling_trend, (r) => r.scrambling_percentage);
+  const udPct = average(up_and_down_trend.slice(-5).map((r) => r.percentage));
+  const udDelta = trendDelta(up_and_down_trend, (r) => r.percentage);
 
   const divergingGirData = useMemo(() =>
     gir_vs_non_gir.map((row) => ({

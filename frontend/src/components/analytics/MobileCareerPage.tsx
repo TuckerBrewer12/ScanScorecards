@@ -3,16 +3,11 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 import { SVGHandicapTrend } from "@/components/analytics/SVGHandicapTrend";
 import { UserRadarChart } from "@/components/analytics/UserRadarChart";
 import type { AnalyticsData } from "@/types/analytics";
+import { SCORE_LABELS } from "@/lib/colors";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type Fmt = (v: any, name: any, props: any) => any;
 type TimeWindow = "lifetime" | "one_year";
-
-const SCORE_LABELS: Record<string, string> = {
-  eagle: "Eagle+", birdie: "Birdie", par: "Par",
-  bogey: "Bogey", double_bogey: "Double",
-  triple_bogey: "Triple", quad_bogey: "Quad+",
-};
 
 const tooltipStyle = {
   fontSize: 12, borderRadius: 12,

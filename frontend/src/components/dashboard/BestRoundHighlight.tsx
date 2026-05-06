@@ -18,7 +18,7 @@ const CR = 9.5; // circle radius fits within CH
 function MiniScoreSvg({ strokes, diff }: { strokes: number; diff: number }) {
   const { eagle, birdie, par, bogey, double: dbl, triple } = SCORE_SYMBOL_COLORS;
 
-  let fg = par.fg;
+  let fg: string = par.fg;
   if (diff <= -2)       fg = eagle.fg;
   else if (diff === -1) fg = birdie.fg;
   else if (diff === 0)  fg = par.fg;

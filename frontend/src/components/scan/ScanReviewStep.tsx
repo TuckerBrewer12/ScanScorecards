@@ -4,6 +4,7 @@ import { motion, AnimatePresence, useMotionValue, animate } from "framer-motion"
 import { PageHeader } from "@/components/layout/PageHeader";
 import { CourseLinkSearch, CourseLinkChip, CustomNameChip } from "@/components/CourseLinkSearch";
 import { formatToPar, calcCourseHandicap, calcNetScore } from "@/types/golf";
+import { toParTextClass } from "@/lib/colors";
 import type { CourseSummary } from "@/types/golf";
 import type { ScanState, ScanResult, ExtractedHoleScore, FieldConfidence, ScoreMetadata } from "@/types/scan";
 import { initialScanState } from "@/types/scan";
@@ -108,19 +109,6 @@ function DragScrubCell({
   );
 }
 
-function toParStr(strokes: number | null, par: number | null): string {
-  if (strokes === null || par === null) return "-";
-  const d = strokes - par;
-  return d === 0 ? "E" : d > 0 ? `+${d}` : `${d}`;
-}
-
-function toParCls(strokes: number | null, par: number | null): string {
-  if (strokes === null || par === null) return "text-gray-400";
-  const d = strokes - par;
-  if (d < 0) return "text-green-600 font-semibold";
-  if (d > 0) return "text-red-500";
-  return "text-gray-600";
-}
 
 export function ScanReviewStep({
   result,
@@ -336,8 +324,8 @@ export function ScanReviewStep({
               const holeNum = hs.hole_number ?? startIdx + si + 1;
               const par = rd.course?.holes.find((h) => h.number === holeNum)?.par ?? null;
               return (
-                <td key={si} className={`px-1 py-1.5 text-center ${toParCls(hs.strokes, par)}`}>
-                  {toParStr(hs.strokes, par)}
+                <td key={si} className={`px-1 py-1.5 text-center ${toParTextClass(hs.strokes != null && par != null ? hs.strokes - par : null)}`}>
+                  {formatToPar(hs.strokes != null && par != null ? hs.strokes - par : null)}
                 </td>
               );
             })}
