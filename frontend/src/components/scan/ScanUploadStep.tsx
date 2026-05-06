@@ -1,4 +1,5 @@
-import { Camera, AlertTriangle, X, Search, ScanLine, MapPin, CheckCircle, Loader2, PenLine } from "lucide-react";
+import { Camera, AlertTriangle, X, Search, ScanLine, MapPin, CheckCircle, Loader2, PenLine, Images } from "lucide-react";
+import { isNative, pickImageNative } from "@/lib/nativeCamera";
 import { ScorecardLayoutPicker } from "./ScorecardLayoutPicker";
 import { motion, AnimatePresence } from "framer-motion";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -55,6 +56,11 @@ export function ScanUploadStep({
   const showCourseSearch = scanMode === "full";
   const hasFile = !!preview && !!file;
   const isDark = typeof document !== "undefined" && document.documentElement.classList.contains("dark");
+
+  const handleNativePick = async (source: 'camera' | 'photos') => {
+    const f = await pickImageNative(source);
+    if (f) onFile(f);
+  };
 
   return (
     <div>
@@ -150,75 +156,105 @@ export function ScanUploadStep({
 
       {/* Drop zone — hidden once a file is selected */}
       {showUploadArea && !hasFile && (
-        <motion.div
-          className="relative border-2 border-dashed rounded-2xl overflow-hidden cursor-pointer"
-          style={{ minHeight: 260 }}
-          animate={{
-            borderColor: dragOver ? "#2d7a3a" : (isDark ? "#2a2d30" : "#d1d5db"),
-            backgroundColor: dragOver
-              ? (isDark ? "rgba(45,122,58,0.14)" : "rgba(45,122,58,0.03)")
-              : (isDark ? "rgba(24,25,26,0.92)" : "rgba(249,250,249,0.6)"),
-            scale: dragOver ? 1.008 : 1,
-          }}
-          transition={{ duration: 0.18 }}
-          onDragOver={(e) => { e.preventDefault(); onDragOver(true); }}
-          onDragLeave={() => onDragOver(false)}
-          onDrop={(e) => { onDragOver(false); onDrop(e); }}
-        >
-          {/* Radial glow on drag */}
-          <AnimatePresence>
-            {dragOver && (
-              <motion.div
-                className="absolute inset-0 pointer-events-none"
-                style={{ background: "radial-gradient(ellipse at 50% 50%, rgba(45,122,58,0.09) 0%, transparent 68%)" }}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.2 }}
-              />
-            )}
-          </AnimatePresence>
-
-          <div className="flex flex-col items-center justify-center h-full py-14 px-8 text-center">
-            {/* Icon */}
-            <motion.div
-              animate={{ y: dragOver ? -8 : 0 }}
-              transition={{ type: "spring", stiffness: 340, damping: 22 }}
-              className="mb-6"
+        isNative ? (
+          /* Native camera picker — no drag-and-drop */
+          <div className="border-2 border-dashed border-gray-200 dark:border-slate-700 rounded-2xl bg-gray-50 dark:bg-slate-900/50 p-10 text-center">
+            <div
+              className="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-6"
+              style={{ background: isDark ? "#222426" : "#f3f4f6", border: `1.5px solid ${isDark ? "#2a2d30" : "#e5e7eb"}` }}
             >
-              <div
-                className="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto transition-colors duration-200"
-                style={{
-                  background: dragOver ? "rgba(45,122,58,0.08)" : (isDark ? "#222426" : "#f3f4f6"),
-                  border: `1.5px solid ${dragOver ? "rgba(45,122,58,0.3)" : (isDark ? "#2a2d30" : "#e5e7eb")}`,
-                }}
+              <ScanLine size={36} className="text-gray-400 dark:text-slate-400" />
+            </div>
+            <p className="text-base font-semibold text-gray-700 dark:text-slate-100 mb-1">Scan your scorecard</p>
+            <p className="text-sm text-gray-400 dark:text-slate-300 mb-7">Take a photo or pick from your library</p>
+            <div className="flex gap-3 justify-center">
+              <button
+                onClick={() => handleNativePick('camera')}
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-xl text-sm font-semibold hover:opacity-90 transition-opacity shadow-sm"
               >
-                <ScanLine size={36} className="transition-colors duration-200" style={{ color: dragOver ? "#2d7a3a" : (isDark ? "#94a3b8" : "#9ca3af") }} />
-              </div>
-            </motion.div>
-
-            <p className={`text-base font-semibold mb-1 transition-colors duration-200 ${dragOver ? "text-primary" : "text-gray-700 dark:text-slate-100"}`}>
-              {dragOver ? "Drop to scan" : "Drop your scorecard here"}
-            </p>
-            <p className="text-sm text-gray-400 dark:text-slate-300 mb-6">or browse to upload</p>
-
-            <label className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-xl text-sm font-semibold cursor-pointer hover:opacity-90 transition-opacity shadow-sm">
-              <Camera size={16} />
-              Choose File
-              <input
-                type="file"
-                accept="image/*,.pdf"
-                className="hidden"
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (f) onFile(f);
-                }}
-              />
-            </label>
-
-            <p className="text-xs text-gray-400 dark:text-slate-400 mt-5">JPG, PNG, WEBP, HEIC, PDF</p>
+                <Camera size={16} />
+                Take Photo
+              </button>
+              <button
+                onClick={() => handleNativePick('photos')}
+                className="inline-flex items-center gap-2 px-5 py-2.5 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 text-gray-700 dark:text-slate-100 rounded-xl text-sm font-semibold hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors"
+              >
+                <Images size={16} />
+                Photo Library
+              </button>
+            </div>
           </div>
-        </motion.div>
+        ) : (
+          /* Web drag-and-drop zone */
+          <motion.div
+            className="relative border-2 border-dashed rounded-2xl overflow-hidden cursor-pointer"
+            style={{ minHeight: 260 }}
+            animate={{
+              borderColor: dragOver ? "#2d7a3a" : (isDark ? "#2a2d30" : "#d1d5db"),
+              backgroundColor: dragOver
+                ? (isDark ? "rgba(45,122,58,0.14)" : "rgba(45,122,58,0.03)")
+                : (isDark ? "rgba(24,25,26,0.92)" : "rgba(249,250,249,0.6)"),
+              scale: dragOver ? 1.008 : 1,
+            }}
+            transition={{ duration: 0.18 }}
+            onDragOver={(e) => { e.preventDefault(); onDragOver(true); }}
+            onDragLeave={() => onDragOver(false)}
+            onDrop={(e) => { onDragOver(false); onDrop(e); }}
+          >
+            {/* Radial glow on drag */}
+            <AnimatePresence>
+              {dragOver && (
+                <motion.div
+                  className="absolute inset-0 pointer-events-none"
+                  style={{ background: "radial-gradient(ellipse at 50% 50%, rgba(45,122,58,0.09) 0%, transparent 68%)" }}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                />
+              )}
+            </AnimatePresence>
+
+            <div className="flex flex-col items-center justify-center h-full py-14 px-8 text-center">
+              <motion.div
+                animate={{ y: dragOver ? -8 : 0 }}
+                transition={{ type: "spring", stiffness: 340, damping: 22 }}
+                className="mb-6"
+              >
+                <div
+                  className="w-20 h-20 rounded-2xl flex items-center justify-center mx-auto transition-colors duration-200"
+                  style={{
+                    background: dragOver ? "rgba(45,122,58,0.08)" : (isDark ? "#222426" : "#f3f4f6"),
+                    border: `1.5px solid ${dragOver ? "rgba(45,122,58,0.3)" : (isDark ? "#2a2d30" : "#e5e7eb")}`,
+                  }}
+                >
+                  <ScanLine size={36} className="transition-colors duration-200" style={{ color: dragOver ? "#2d7a3a" : (isDark ? "#94a3b8" : "#9ca3af") }} />
+                </div>
+              </motion.div>
+
+              <p className={`text-base font-semibold mb-1 transition-colors duration-200 ${dragOver ? "text-primary" : "text-gray-700 dark:text-slate-100"}`}>
+                {dragOver ? "Drop to scan" : "Drop your scorecard here"}
+              </p>
+              <p className="text-sm text-gray-400 dark:text-slate-300 mb-6">or browse to upload</p>
+
+              <label className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-xl text-sm font-semibold cursor-pointer hover:opacity-90 transition-opacity shadow-sm">
+                <Camera size={16} />
+                Choose File
+                <input
+                  type="file"
+                  accept="image/*,.pdf"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) onFile(f);
+                  }}
+                />
+              </label>
+
+              <p className="text-xs text-gray-400 dark:text-slate-400 mt-5">JPG, PNG, WEBP, HEIC, PDF</p>
+            </div>
+          </motion.div>
+        )
       )}
 
       {/* File preview — full-width premium card */}

@@ -5,7 +5,7 @@ export const SCORE_COLORS = {
   eagle:        "#f59e0b",
   birdie:       "#059669",
   par:          "#9ca3af",
-  bogey:        "#ef4444",
+  bogey:        "#f87171",
   double_bogey: "#60a5fa",
   triple_bogey: "#a78bfa",
   quad_bogey:   "#6d28d9",
@@ -26,7 +26,7 @@ export const SCORE_LABELS: Record<string, string> = {
 export const UI_COLORS = {
   primary:    "#2d7a3a",
   success:    "#059669",
-  danger:     "#ef4444",
+  danger:     "#f87171",
   warning:    "#f97316",
   scrambling: "#f97316",
   updown:     "#a855f7",
@@ -50,6 +50,6 @@ export function scoreChartColor(key: string, palette?: ChartPalette | null): str
 export function toParTextClass(diff: number | null): string {
   if (diff == null) return "text-gray-400";
   if (diff < 0) return "text-green-600 font-semibold";
-  if (diff > 0) return "text-red-500";
+  if (diff > 0) return "text-red-400";
   return "text-gray-600";
 }

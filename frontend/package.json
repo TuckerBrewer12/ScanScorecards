@@ -9,11 +9,25 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:native": "tsc -b && vite build --mode native",
     "lint": "eslint .",
     "preview": "vite preview",
-    "serve": "node server.js"
+    "serve": "node server.js",
+    "sync": "npm run build:native && npx cap sync",
+    "open:ios": "npx cap open ios",
+    "open:android": "npx cap open android",
+    "gen-icons": "npx @capacitor/assets generate"
   },
   "dependencies": {
+    "@capacitor/android": "^8.3.1",
+    "@capacitor/camera": "^8.2.0",
+    "@capacitor/cli": "^8.3.1",
+    "@capacitor/core": "^8.3.1",
+    "@capacitor/filesystem": "^8.1.2",
+    "@capacitor/haptics": "^8.0.2",
+    "@capacitor/ios": "^8.3.1",
+    "@capacitor/splash-screen": "^8.0.1",
+    "@capacitor/status-bar": "^8.0.2",
     "@tanstack/react-query": "^5.91.0",
     "@types/d3-scale": "^4.0.9",
     "@types/d3-shape": "^3.1.8",
@@ -31,6 +45,7 @@
     "tailwind-merge": "^3.5.0"
   },
   "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
     "@eslint/js": "^9.39.1",
     "@tailwindcss/vite": "^4.2.0",
     "@testing-library/dom": "^10.4.1",
