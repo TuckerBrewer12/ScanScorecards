@@ -38,17 +38,45 @@ MAX_IMAGE_SIDE = 12_000
 PREPROCESS_CACHE_DIR = Path(tempfile.gettempdir()) / "scanscore_ocr_cache"
 PREPROCESS_CACHE_ENABLED = False
 MISTRAL_OCR_MODEL = os.environ.get("MISTRAL_OCR_MODEL") or "mistral-ocr-latest"
-ALLOWED_UPLOAD_SUFFIXES = {".jpg", ".jpeg", ".png", ".webp", ".heic", ".pdf"}
+
+
+def _initialize_heic_decoder() -> bool:
+    try:
+        from pillow_heif import register_heif_opener
+
+        register_heif_opener()
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("HEIC/HEIF decoder initialization failed: %s", exc)
+        return False
+
+    registered_extensions = Image.registered_extensions()
+    return ".heic" in registered_extensions or ".heif" in registered_extensions
+
+
+HEIC_DECODE_AVAILABLE = _initialize_heic_decoder()
+BASE_UPLOAD_SUFFIXES = {".jpg", ".jpeg", ".png", ".webp", ".pdf"}
+ALLOWED_UPLOAD_SUFFIXES = set(BASE_UPLOAD_SUFFIXES)
+if HEIC_DECODE_AVAILABLE:
+    ALLOWED_UPLOAD_SUFFIXES.add(".heic")
+
 ALLOWED_UPLOAD_MIME_TYPES = {
     "image/jpeg",
     "image/png",
     "image/webp",
-    "image/heic",
-    "image/heif",
     "application/pdf",
-    "application/octet-stream",  # some mobile clients use this for HEIC
 }
-ALLOWED_IMAGE_FORMATS = {"JPEG", "PNG", "WEBP", "HEIC", "HEIF"}
+if HEIC_DECODE_AVAILABLE:
+    ALLOWED_UPLOAD_MIME_TYPES.update(
+        {
+            "image/heic",
+            "image/heif",
+            "application/octet-stream",  # some mobile clients use this for HEIC
+        }
+    )
+
+ALLOWED_IMAGE_FORMATS = {"JPEG", "PNG", "WEBP"}
+if HEIC_DECODE_AVAILABLE:
+    ALLOWED_IMAGE_FORMATS.update({"HEIC", "HEIF"})
 
 
 def _env_bool(name: str, default: bool = False) -> bool:
@@ -75,6 +103,11 @@ def _extract_upload_suffix(file: UploadFile) -> str:
         raise HTTPException(400, "Filename is required.")
     suffix = Path(filename).suffix.lower()
     if suffix not in ALLOWED_UPLOAD_SUFFIXES:
+        if suffix == ".heic" and not HEIC_DECODE_AVAILABLE:
+            raise HTTPException(
+                400,
+                "HEIC uploads are temporarily unavailable on this server. Please convert to JPG/PNG and retry.",
+            )
         raise HTTPException(400, f"Unsupported file type: {suffix}. Allowed: {', '.join(sorted(ALLOWED_UPLOAD_SUFFIXES))}")
     content_type = (file.content_type or "").lower().strip()
     if content_type and content_type not in ALLOWED_UPLOAD_MIME_TYPES:
@@ -107,6 +140,11 @@ def _validate_upload_payload(path: Path, suffix: str) -> None:
     except HTTPException:
         raise
     except Exception as exc:  # noqa: BLE001
+        if suffix == ".heic" and not HEIC_DECODE_AVAILABLE:
+            raise HTTPException(
+                400,
+                "HEIC uploads are temporarily unavailable on this server. Please convert to JPG/PNG and retry.",
+            ) from exc
         raise HTTPException(400, "Invalid or unreadable image upload.") from exc
 
 
@@ -653,6 +691,21 @@ async def extract_scan(
             course_model=course_model,
             to_par_scoring=to_par_scoring,
         )
+
+        present_strokes = len(
+            [h for h in round_data.get("hole_scores", []) if h.get("strokes") is not None]
+        )
+        if present_strokes == 0:
+            if parsed_rows.player_name:
+                raise HTTPException(
+                    422,
+                    "Name is unclear in the scorecard image. Please upload a cleaner image with clearer handwriting and try again.",
+                )
+            raise HTTPException(
+                422,
+                "Unable to clearly read the score rows from this image. Please upload a cleaner image with clearer handwriting and better lighting, then try again.",
+            )
+
         confidence_data = _build_confidence_payload(round_data.get("hole_scores", []), fields_needing_review)
         t_parse_end = time.perf_counter()
         logger.info(
