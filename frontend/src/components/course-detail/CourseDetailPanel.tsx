@@ -21,6 +21,7 @@ import { api } from "@/lib/api";
 import { getStoredColorBlindMode } from "@/lib/accessibility";
 import { getColorBlindPalette, type ChartPalette } from "@/lib/chartPalettes";
 import type { Course, Tee } from "@/types/golf";
+import { formatToPar } from "@/types/golf";
 import type { CourseAnalyticsData } from "@/types/analytics";
 import { ScrollSection } from "@/components/analytics/ScrollSection";
 
@@ -233,11 +234,6 @@ function formatDate(dateStr: string | null): string {
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
-function formatToPar(toPar: number | null): string {
-  if (toPar == null) return "-";
-  if (toPar === 0) return "E";
-  return toPar > 0 ? `+${toPar}` : `${toPar}`;
-}
 
 type TrendPoint = { round_index: number; total_score: number | null; to_par: number | null; date: string | null };
 

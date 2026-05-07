@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import type { Round } from "@/types/golf";
+import { SCORE_COLORS } from "@/lib/colors";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -35,12 +36,12 @@ function RoundInNumbers({ holes }: { holes: HoleData[] }) {
     const hasBoth = front9.length > 0 && back9.length > 0;
 
     const chips: { val: number | string; label: string; color: string }[] = [
-      ...(eagles  > 0 ? [{ val: eagles,  label: eagles  === 1 ? "Eagle"  : "Eagles",  color: "#b45309" }] : []),
-      ...(birdies > 0 ? [{ val: birdies, label: birdies === 1 ? "Birdie" : "Birdies", color: "#059669" }] : []),
-      { val: pars, label: "Pars", color: "#9ca3af" },
-      ...(bogeys  > 0 ? [{ val: bogeys,  label: "Bogeys",  color: "#ef4444" }] : []),
-      ...(doubles > 0 ? [{ val: doubles, label: "Doubles", color: "#3b82f6" }] : []),
-      ...(triples > 0 ? [{ val: triples, label: "Triple+", color: "#8b5cf6" }] : []),
+      ...(eagles  > 0 ? [{ val: eagles,  label: eagles  === 1 ? "Eagle"  : "Eagles",  color: SCORE_COLORS.eagle        }] : []),
+      ...(birdies > 0 ? [{ val: birdies, label: birdies === 1 ? "Birdie" : "Birdies", color: SCORE_COLORS.birdie       }] : []),
+      { val: pars, label: "Pars", color: SCORE_COLORS.par },
+      ...(bogeys  > 0 ? [{ val: bogeys,  label: "Bogeys",  color: SCORE_COLORS.bogey        }] : []),
+      ...(doubles > 0 ? [{ val: doubles, label: "Doubles", color: SCORE_COLORS.double_bogey }] : []),
+      ...(triples > 0 ? [{ val: triples, label: "Triple+", color: SCORE_COLORS.triple_bogey }] : []),
     ];
 
     return {

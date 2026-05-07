@@ -4,7 +4,7 @@ export const SCORE_SYMBOL_COLORS = {
   eagle:  { bg: "#a16207", fg: "#fff" },
   birdie: { bg: "#0b8a5e", fg: "#fff" },
   par:    { bg: "#e5e7eb", fg: "#4b5563" },
-  bogey:  { bg: "#d94040", fg: "#fff" },
+  bogey:  { bg: "#f87171", fg: "#7f1d1d" },
   double: { bg: "#3b78e0", fg: "#fff" },
   triple: { bg: "#7c52e0", fg: "#fff" },
 } as const;

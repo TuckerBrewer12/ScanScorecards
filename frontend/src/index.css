@@ -24,6 +24,16 @@
   --radius-sm: 0.25rem;
 }
 
+/* iOS WebView: remove tap highlight and 300ms click delay */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button, a, [role="button"], label {
+  touch-action: manipulation;
+  cursor: pointer;
+}
+
 body {
   margin: 0;
   font-family: "Inter", system-ui, -apple-system, sans-serif;

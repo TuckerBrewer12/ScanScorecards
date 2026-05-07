@@ -5,6 +5,8 @@ import { Trophy, ArrowRight } from "lucide-react";
 import { api } from "@/lib/api";
 import { getStoredColorBlindMode } from "@/lib/accessibility";
 import { getColorBlindPalette, type ChartPalette } from "@/lib/chartPalettes";
+import { SCORE_COLORS } from "@/lib/colors";
+import { formatToPar } from "@/types/golf";
 import type { ScoreTrendRow, NotableAchievements, NetScoreTrendRow } from "@/types/analytics";
 import type { Round } from "@/types/golf";
 
@@ -15,20 +17,14 @@ interface BestRoundCardProps {
   compact?: boolean;
 }
 
-function formatToPar(v: number | null | undefined): string {
-  if (v == null) return "—";
-  if (v === 0) return "E";
-  return v > 0 ? `+${v}` : String(v);
-}
-
 function scoreColor(strokes: number | null, par: number | null, palette?: ChartPalette | null): string {
   if (strokes == null || par == null) return "#f3f4f6";
   const d = strokes - par;
-  if (d <= -2) return palette?.score.eagle ?? "#fbbf24"; // eagle+
-  if (d === -1) return palette?.score.birdie ?? "#34d399"; // birdie
-  if (d === 0)  return palette?.score.par ?? "#e5e7eb"; // par
-  if (d === 1)  return palette?.score.bogey ?? "#fca5a5"; // bogey
-  return palette?.score.double_bogey ?? "#93c5fd"; // double+
+  if (d <= -2) return palette?.score.eagle    ?? SCORE_COLORS.eagle;
+  if (d === -1) return palette?.score.birdie  ?? SCORE_COLORS.birdie;
+  if (d === 0)  return palette?.score.par     ?? SCORE_COLORS.par;
+  if (d === 1)  return palette?.score.bogey   ?? SCORE_COLORS.bogey;
+  return palette?.score.double_bogey ?? SCORE_COLORS.double_bogey;
 }
 
 function scoreTextColor(strokes: number | null, par: number | null): string {
@@ -70,11 +66,11 @@ function MiniScorecard({ round, palette }: { round: Round; palette?: ChartPalett
       {/* Legend */}
       <div className="flex items-center gap-3 mt-0.5">
         {[
-          { color: palette?.score.eagle ?? "#fbbf24", label: "Eagle+" },
-          { color: palette?.score.birdie ?? "#34d399", label: "Birdie" },
-          { color: palette?.score.par ?? "#e5e7eb", label: "Par" },
-          { color: palette?.score.bogey ?? "#fca5a5", label: "Bogey" },
-          { color: palette?.score.double_bogey ?? "#93c5fd", label: "Double+" },
+          { color: palette?.score.eagle        ?? SCORE_COLORS.eagle,        label: "Eagle+" },
+          { color: palette?.score.birdie       ?? SCORE_COLORS.birdie,       label: "Birdie" },
+          { color: palette?.score.par          ?? SCORE_COLORS.par,          label: "Par" },
+          { color: palette?.score.bogey        ?? SCORE_COLORS.bogey,        label: "Bogey" },
+          { color: palette?.score.double_bogey ?? SCORE_COLORS.double_bogey, label: "Double+" },
         ].map(({ color, label }) => (
           <div key={label} className="flex items-center gap-1">
             <div className="w-2 h-2 rounded-sm" style={{ background: color }} />
@@ -112,12 +108,12 @@ export function BestRoundCard({ scoreTrend, netScoreTrend, achievements, compact
     const doubles = holes.filter((h) => h.strokes! - h.par_played! === 2).length;
     const triples = holes.filter((h) => h.strokes! - h.par_played! >= 3).length;
     return [
-      ...(eagles  > 0 ? [{ n: eagles,  label: "Eagle+", color: "#b45309" }] : []),
-      ...(birdies > 0 ? [{ n: birdies, label: "Birdie", color: "#059669" }] : []),
-      ...(pars    > 0 ? [{ n: pars,    label: "Par",    color: "#9ca3af" }] : []),
-      ...(bogeys  > 0 ? [{ n: bogeys,  label: "Bogey",  color: "#ef4444" }] : []),
-      ...(doubles > 0 ? [{ n: doubles, label: "Double", color: "#3b82f6" }] : []),
-      ...(triples > 0 ? [{ n: triples, label: "Triple+",color: "#8b5cf6" }] : []),
+      ...(eagles  > 0 ? [{ n: eagles,  label: "Eagle+",  color: SCORE_COLORS.eagle        }] : []),
+      ...(birdies > 0 ? [{ n: birdies, label: "Birdie",  color: SCORE_COLORS.birdie       }] : []),
+      ...(pars    > 0 ? [{ n: pars,    label: "Par",     color: SCORE_COLORS.par          }] : []),
+      ...(bogeys  > 0 ? [{ n: bogeys,  label: "Bogey",   color: SCORE_COLORS.bogey        }] : []),
+      ...(doubles > 0 ? [{ n: doubles, label: "Double",  color: SCORE_COLORS.double_bogey }] : []),
+      ...(triples > 0 ? [{ n: triples, label: "Triple+", color: SCORE_COLORS.triple_bogey }] : []),
     ];
   }, [roundDetail]);
 

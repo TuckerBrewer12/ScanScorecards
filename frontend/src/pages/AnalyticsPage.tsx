@@ -12,6 +12,8 @@ import { TrendingDown, Gauge, Hash, Trophy, Target } from "lucide-react";
 import { api } from "@/lib/api";
 import { getStoredColorBlindMode } from "@/lib/accessibility";
 import { getColorBlindPalette } from "@/lib/chartPalettes";
+import { SCORE_COLORS, SCORE_KEYS, SCORE_LABELS } from "@/lib/colors";
+import { withRollingAverage } from "@/lib/stats";
 import type {
   AnalyticsFilters, ScoreTrendRow, ScoreTypeRow, GIRTrendRow, ScoringByParRow, PuttsTrendRow,
 } from "@/types/analytics";
@@ -25,23 +27,6 @@ import { AnalyticsCommandCenter } from "@/components/analytics/AnalyticsCommandC
 
 const DEFAULT_FILTERS: AnalyticsFilters = { limit: 50, timeframe: "all", courseId: "all" };
 
-const SCORE_COLORS: Record<string, string> = {
-  eagle:        "#f59e0b",
-  birdie:       "#059669",
-  par:          "#9ca3af",
-  bogey:        "#f87171",
-  double_bogey: "#60a5fa",
-  triple_bogey: "#a78bfa",
-  quad_bogey:   "#6d28d9",
-};
-
-const SCORE_LABELS: Record<string, string> = {
-  eagle: "Eagle+", birdie: "Birdie", par: "Par",
-  bogey: "Bogey", double_bogey: "Double",
-  triple_bogey: "Triple", quad_bogey: "Quad+",
-};
-
-const SCORE_KEYS = ["eagle", "birdie", "par", "bogey", "double_bogey", "triple_bogey", "quad_bogey"] as const;
 
 const tooltipStyle = {
   fontSize: 12,
@@ -57,16 +42,6 @@ const tooltipTextStyle = { fill: "#f1f5f9", color: "#f1f5f9" };
 
 // ─── Data helpers ─────────────────────────────────────────────────────���───────
 
-function rollingAvg(data: ScoreTrendRow[], w = 5) {
-  return data.map((row, i) => {
-    const slice = data.slice(Math.max(0, i - w + 1), i + 1);
-    const valid = slice.filter((r) => r.total_score != null).map((r) => r.total_score!);
-    return {
-      ...row,
-      rolling_avg: valid.length ? Math.round((valid.reduce((a, b) => a + b, 0) / valid.length) * 10) / 10 : null,
-    };
-  });
-}
 
 function aggregateDonut(dist: ScoreTypeRow[]) {
   const filtered = dist.filter((r) => r.holes_counted > 0);
@@ -264,7 +239,7 @@ export function AnalyticsPage({ userId }: { userId: string }) {
 
   // ── Derived data ──────────────────────────────────────────────────────────
   const scoreTrendWithAvg = useMemo(
-    () => rollingAvg(data?.score_trend ?? []),
+    () => withRollingAverage(data?.score_trend ?? [], (r) => r.total_score),
     [data?.score_trend],
   );
 

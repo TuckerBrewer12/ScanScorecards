@@ -100,8 +100,13 @@ export function SVGTimeSeriesArea<T extends object>({
     .domain([0, data.length - 1])
     .range([PAD.left, W - PAD.right]);
 
-  const minVal = validValues.reduce((a, b) => Math.min(a, b));
-  const maxVal = validValues.reduce((a, b) => Math.max(a, b));
+  const secondaryValues = secondaryValueKey
+    ? data.map(getSecondary).filter((v): v is number => v != null)
+    : [];
+  const allValues = [...validValues, ...secondaryValues];
+
+  const minVal = allValues.reduce((a, b) => Math.min(a, b));
+  const maxVal = allValues.reduce((a, b) => Math.max(a, b));
 
   const yMin = yDomain?.[0] === "auto" || yDomain?.[0] == null ? minVal * 0.95 : yDomain[0];
   const yMax = yDomain?.[1] === "auto" || yDomain?.[1] == null ? maxVal * 1.05 : yDomain[1];

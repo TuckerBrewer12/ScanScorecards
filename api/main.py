@@ -119,7 +119,11 @@ def create_app() -> FastAPI:
     allowed_hosts = parse_allowed_hosts()
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=allowed_hosts)
 
-    cors_origins_raw = os.environ.get("CORS_ALLOW_ORIGINS", "http://localhost:5173")
+    # capacitor://localhost = iOS native; http://localhost = Android native
+    cors_origins_raw = os.environ.get(
+        "CORS_ALLOW_ORIGINS",
+        "http://localhost:5173,capacitor://localhost,http://localhost",
+    )
     cors_origins = [o.strip() for o in cors_origins_raw.split(",") if o.strip()]
     app.add_middleware(
         CORSMiddleware,

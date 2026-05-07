@@ -8,6 +8,7 @@ import type { DashboardData } from "@/types/golf";
 import type { AnalyticsData, GoalReport } from "@/types/analytics";
 import { formatCourseName } from "@/lib/courseName";
 import { formatToPar } from "@/types/golf";
+import { trendDelta } from "@/lib/stats";
 
 interface DualTrendPoint {
   round_index: number;
@@ -486,27 +487,8 @@ export function MobileDashboard({
   const navigate = useNavigate();
   const firstName = user?.name?.split(" ")[0] ?? "Golfer";
 
-  const scramblingDelta = (() => {
-    const rows = trends?.scrambling_trend ?? [];
-    if (rows.length < 6) return null;
-    const last5 = rows.slice(-5);
-    const prev5 = rows.slice(-10, -5);
-    if (!prev5.length) return null;
-    const l = last5.reduce((s, r) => s + r.scrambling_percentage, 0) / last5.length;
-    const p = prev5.reduce((s, r) => s + r.scrambling_percentage, 0) / prev5.length;
-    return l - p;
-  })();
-
-  const upDownDelta = (() => {
-    const rows = trends?.up_and_down_trend ?? [];
-    if (rows.length < 6) return null;
-    const last5 = rows.slice(-5);
-    const prev5 = rows.slice(-10, -5);
-    if (!prev5.length) return null;
-    const l = last5.reduce((s, r) => s + r.percentage, 0) / last5.length;
-    const p = prev5.reduce((s, r) => s + r.percentage, 0) / prev5.length;
-    return l - p;
-  })();
+  const scramblingDelta = trendDelta(trends?.scrambling_trend ?? [], (r) => r.scrambling_percentage);
+  const upDownDelta = trendDelta(trends?.up_and_down_trend ?? [], (r) => r.percentage);
 
   const lastRound = data.recent_rounds[0] ?? null;
   const recentRounds = data.recent_rounds.slice(0, 3);
