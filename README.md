@@ -2,7 +2,7 @@
 [birdie-eye-view.com
 ](https://www.birdie-eye-view.com/)
 
-Snap a photo of your scorecard. Get a full round breakdown, your stats over time, and personalized tips to shoot lower.
+Snap a photo of your scorecard. MistralOCR + Gemini pipeline extracts the information into a digital scorecard. Get a full round breakdown, your stats over time, + more.
 
 ---
 
